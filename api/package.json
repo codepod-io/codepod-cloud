@@ -6,11 +6,13 @@
     "build": "tsc",
     "start": "node build/run.js",
     "dev": "ts-node-dev src/run.ts",
+    "dev:yjs": "ts-node-dev src/yjs/run.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
     "@codepod/prisma": "workspace:*",
+    "@codepod/yjs": "workspace:^",
     "@kubernetes/client-node": "^0.17.1",
     "@prisma/client": "4.3.1",
     "apollo-server": "^3.5.0",

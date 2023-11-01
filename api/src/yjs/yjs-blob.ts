@@ -18,7 +18,6 @@
 // throw new Error("Experimental not implemented.");
 
 import Y from "yjs";
-import { Node as ReactflowNode, Edge as ReactflowEdge } from "reactflow";
 
 import debounce from "lodash/debounce";
 
@@ -91,9 +90,9 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
     });
   }
   const rootMap = ydoc.getMap("rootMap");
-  const nodesMap = rootMap.get("nodesMap") as Y.Map<ReactflowNode<NodeData>>;
+  const nodesMap = rootMap.get("nodesMap") as Y.Map<any>;
   nodesMap.observe(observer);
-  const edgesMap = rootMap.get("edgesMap") as Y.Map<ReactflowEdge>;
+  const edgesMap = rootMap.get("edgesMap") as Y.Map<any>;
   edgesMap.observe(observer);
   const codeMap = rootMap.get("codeMap") as Y.Map<Y.Text>;
   codeMap.observeDeep(observer);
@@ -140,8 +139,8 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     } else {
       // init the ydoc
       const rootMap = ydoc.getMap("rootMap");
-      rootMap.set("nodesMap", new Y.Map<ReactflowNode<NodeData>>());
-      rootMap.set("edgesMap", new Y.Map<ReactflowEdge>());
+      rootMap.set("nodesMap", new Y.Map<any>());
+      rootMap.set("edgesMap", new Y.Map<any>());
       rootMap.set("codeMap", new Y.Map<Y.Text>());
       rootMap.set("richMap", new Y.Map<Y.XmlFragment>());
       rootMap.set("resultMap", new Y.Map<any>());
@@ -206,8 +205,8 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
   // TODO make sure the ydoc is empty.
   // 2. construct Y doc types
   const rootMap = ydoc.getMap("rootMap");
-  const nodesMap = new Y.Map<ReactflowNode<NodeData>>();
-  const edgesMap = new Y.Map<ReactflowEdge>();
+  const nodesMap = new Y.Map<any>();
+  const edgesMap = new Y.Map<any>();
   const codeMap = new Y.Map<Y.Text>();
   const richMap = new Y.Map<Y.XmlFragment>();
   rootMap.set("nodesMap", nodesMap);
