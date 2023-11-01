@@ -39,7 +39,7 @@ if (!apiUrl) {
   throw new Error("VITE_APP_API_URL is not defined");
 }
 if (!spawnerApiUrl) {
-  throw new Error("VITE_APP_RUNTIME_API_URL is not defined");
+  console.warn("VITE_APP_RUNTIME_API_URL is not defined");
 }
 
 const theme = createTheme({
