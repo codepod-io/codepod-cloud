@@ -1,5 +1,4 @@
 packages:
   - "api"
   - "ui"
-  - "yjs"
   - "packages/*"
