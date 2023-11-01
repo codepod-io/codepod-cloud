@@ -108,7 +108,6 @@ export function GoogleSignin() {
     let client_id = import.meta.env.DEV
       ? import.meta.env.VITE_APP_GOOGLE_CLIENT_ID
       : window.GOOGLE_CLIENT_ID || null;
-    console.log("google client_id", client_id);
     google.accounts.id.initialize({
       client_id,
       callback: handleGoogle,

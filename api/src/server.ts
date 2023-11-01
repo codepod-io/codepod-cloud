@@ -77,7 +77,7 @@ export async function startServer({ port }) {
   // graphql api will be available at /graphql
 
   await apollo.start();
-  apollo.applyMiddleware({ app: expapp });
+  apollo.applyMiddleware({ app: expapp as any });
 
   http_server.listen({ port }, () => {
     console.log(`🚀 Server ready at http://localhost:${port}`);
