@@ -1,5 +1,5 @@
-import "@codepod/ui/src/App.css";
-import "@codepod/ui/src/custom.css";
+import "./App.css";
+import "./custom.css";
 
 import {
   createBrowserRouter,
@@ -11,15 +11,18 @@ import {
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import { Dashboard, Repo, Test, Docs } from "@codepod/ui";
+import { Dashboard } from "./pages/dashboard";
+import { Repo } from "./pages/repo";
+import { Test } from "./pages/test";
 
 import { Profile } from "./pages/profile";
 import { SignIn } from "./pages/login";
 import { SignUp } from "./pages/signup";
 
-import { Header, Footer } from "@codepod/ui";
+import { Header, Footer } from "./components/Header";
+
 import { AuthProvider, useAuth } from "./lib/auth";
-import { useMe } from "@codepod/ui";
+import { useMe } from "./lib/me";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
@@ -136,14 +139,6 @@ const RequireSignIn = ({ children }) => {
 
 const router = createBrowserRouter([
   {
-    path: "docs",
-    element: (
-      <NormalLayout>
-        <Docs />
-      </NormalLayout>
-    ),
-  },
-  {
     path: "repo/:id",
     element: (
       // Not wrapperd with NormalLayout (header + padding) because:
@@ -198,7 +193,7 @@ const router = createBrowserRouter([
   },
 ]);
 
-export default function App() {
+export function App() {
   return (
     <ThemeProvider theme={theme}>
       <AuthProvider apiUrl={apiUrl} spawnerApiUrl={spawnerApiUrl}>
