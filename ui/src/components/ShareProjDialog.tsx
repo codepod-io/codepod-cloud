@@ -26,7 +26,7 @@ import React, { useContext, useReducer } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
-import { gql, useApolloClient, useMutation } from "@apollo/client";
+import { trpc } from "../lib/trpc";
 
 const initialState = { showInfo: false, status: "info", message: "wait..." };
 
@@ -103,24 +103,19 @@ function reducer(state, action) {
 }
 
 function CollaboratorList({ repoId, collaborators, dispatch }) {
-  const store = useContext(RepoContext)!;
-  const apolloClient = useApolloClient();
-  const [deleteCollaborator, { data, loading, error }] = useMutation(
-    gql`
-      mutation deleteCollaborator($repoId: String!, $collaboratorId: String!) {
-        deleteCollaborator(repoId: $repoId, collaboratorId: $collaboratorId)
-      }
-    `
-  );
+  const deleteCollaborator = trpc.repo.deleteCollaborator.useMutation();
 
   useEffect(() => {
-    if (error) {
-      dispatch({ type: "delete error", message: error.message });
+    if (deleteCollaborator.isError) {
+      dispatch({
+        type: "delete error",
+        message: deleteCollaborator.error.message,
+      });
     }
-    if (data) {
-      dispatch({ type: "delete success", name: data.deleteCollaborator });
+    if (deleteCollaborator.data) {
+      dispatch({ type: "delete success", name: deleteCollaborator.data });
     }
-  }, [error]);
+  }, [deleteCollaborator]);
 
   if (!collaborators || collaborators?.length === 0) {
     return (
@@ -156,11 +151,9 @@ function CollaboratorList({ repoId, collaborators, dispatch }) {
               edge="end"
               aria-label="delete"
               onClick={() =>
-                deleteCollaborator({
-                  variables: {
-                    repoId: repoId,
-                    collaboratorId: collab.id,
-                  },
+                deleteCollaborator.mutate({
+                  repoId: repoId,
+                  collaboratorId: collab.id,
                 })
               }
             >
@@ -185,38 +178,35 @@ function CollaboratorList({ repoId, collaborators, dispatch }) {
 }
 
 const useUpdateVisibility = ({ dispatch }) => {
-  const [updateVisibility, { data, error }] = useMutation(gql`
-    mutation updateVisibility($repoId: String!, $isPublic: Boolean!) {
-      updateVisibility(repoId: $repoId, isPublic: $isPublic)
-    }
-  `);
+  const updateVisibility = trpc.repo.updateVisibility.useMutation();
 
   useEffect(() => {
-    if (error) {
-      dispatch({ type: "change visibility error", message: error.message });
+    if (updateVisibility.isError) {
+      dispatch({
+        type: "change visibility error",
+        message: updateVisibility.error.message,
+      });
     }
-    if (data) {
+    if (updateVisibility.isSuccess) {
       dispatch({ type: "change visibility success" });
     }
-  }, [data, error]);
+  }, [updateVisibility]);
   return updateVisibility;
 };
 
 const useAddCollaborator = ({ dispatch }) => {
-  const [addCollaborator, { data, error }] = useMutation(gql`
-    mutation addCollaborator($repoId: String!, $email: String!) {
-      addCollaborator(repoId: $repoId, email: $email)
-    }
-  `);
-
+  const addCollaborator = trpc.repo.addCollaborator.useMutation();
   useEffect(() => {
-    if (error) {
-      dispatch({ type: "inivite error", message: error.message });
+    if (addCollaborator.isError) {
+      dispatch({
+        type: "inivite error",
+        message: addCollaborator.error.message,
+      });
     }
-    if (data) {
-      dispatch({ type: "inivite success", email: data.addCollaborator });
+    if (addCollaborator.isSuccess) {
+      dispatch({ type: "inivite success" });
     }
-  }, [data, error]);
+  }, [addCollaborator]);
   return addCollaborator;
 };
 
@@ -232,7 +222,6 @@ export function ShareProjDialog({
   const store = useContext(RepoContext)!;
   const [showHelp, setShowHelp] = useState(false);
   const [feedback, dispatch] = useReducer(reducer, initialState);
-  const apolloClient = useApolloClient();
   const isPublic = useStore(store, (state) => state.isPublic);
   const collaborators = useStore(store, (state) => state.collaborators);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
@@ -307,8 +296,9 @@ export function ShareProjDialog({
             <Button
               sx={{ float: "right" }}
               onClick={() => {
-                updateVisibility({
-                  variables: { repoId: id, isPublic: !isPublic },
+                updateVisibility.mutate({
+                  repoId: id,
+                  isPublic: !isPublic,
                 });
               }}
             >
@@ -363,7 +353,7 @@ export function ShareProjDialog({
                   dispatch({ type: "error", message: "Email cannot be empty" });
                   return;
                 }
-                addCollaborator({ variables: { repoId: id, email } });
+                addCollaborator.mutate({ repoId: id, email });
               }}
             >
               Share

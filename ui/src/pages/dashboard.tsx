@@ -1,4 +1,3 @@
-import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
 import React, { useState, useEffect, useCallback } from "react";
 
 import Link from "@mui/material/Link";
@@ -19,7 +18,6 @@ import PublicIcon from "@mui/icons-material/Public";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import { useMe } from "../lib/me";
 import { getUpTime } from "../lib/utils/utils";
 import {
   Button,
@@ -37,27 +35,23 @@ import {
 import { timeDifference } from "../lib/utils/utils";
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";
+import { trpc } from "../lib/trpc";
+import { useAuth } from "../lib/auth";
 
 function CreateRepoForm(props) {
-  const [createRepo] = useMutation(
-    gql`
-      mutation CreateRepo {
-        createRepo {
-          id
-        }
-      }
-    `
-  );
+  const createRepo = trpc.repo.createRepo.useMutation();
   const navigate = useNavigate();
+  useEffect(() => {
+    if (createRepo.data) {
+      navigate(`/repo/${createRepo.data.id}`);
+    }
+  }, [createRepo]);
   return (
     <Box>
       <Button
         variant="contained"
-        onClick={async () => {
-          let res = await createRepo();
-          if (res.data.createRepo.id) {
-            navigate(`/repo/${res.data.createRepo.id}`);
-          }
+        onClick={() => {
+          createRepo.mutate();
         }}
       >
         Create New Project
@@ -67,28 +61,19 @@ function CreateRepoForm(props) {
 }
 
 const StarButton = ({ repo }) => {
-  const { me } = useMe();
-  const [star, { loading: starLoading }] = useMutation(
-    gql`
-      mutation star($repoId: ID!) {
-        star(repoId: $repoId)
-      }
-    `,
-    {
-      refetchQueries: ["GetDashboardRepos"],
-    }
-  );
-  const [unstar, { loading: unstarLoading }] = useMutation(
-    gql`
-      mutation unstar($repoId: ID!) {
-        unstar(repoId: $repoId)
-      }
-    `,
-    {
-      refetchQueries: ["GetDashboardRepos"],
-    }
-  );
-  const isStarred = repo.stargazers?.map((_) => _.id).includes(me?.id);
+  const utils = trpc.useUtils();
+  const me = trpc.user.me.useQuery();
+  const star = trpc.repo.star.useMutation({
+    onSuccess(input) {
+      utils.repo.getDashboardRepos.invalidate();
+    },
+  });
+  const unstar = trpc.repo.unstar.useMutation({
+    onSuccess(input) {
+      utils.repo.getDashboardRepos.invalidate();
+    },
+  });
+  const isStarred = repo.stargazers?.map(({ id }) => id).includes(me.data?.id);
   return (
     <>
       {isStarred ? (
@@ -96,9 +81,9 @@ const StarButton = ({ repo }) => {
           <IconButton
             size="small"
             onClick={() => {
-              unstar({ variables: { repoId: repo.id } });
+              unstar.mutate({ repoId: repo.id });
             }}
-            disabled={unstarLoading}
+            disabled={unstar.isLoading}
           >
             <StarIcon
               fontSize="inherit"
@@ -114,9 +99,9 @@ const StarButton = ({ repo }) => {
           <IconButton
             size="small"
             onClick={() => {
-              star({ variables: { repoId: repo.id } });
+              star.mutate({ repoId: repo.id });
             }}
-            disabled={starLoading}
+            disabled={star.isLoading}
           >
             <StarBorderIcon fontSize="inherit" />
             {repo.stargazers.length}
@@ -130,28 +115,22 @@ const StarButton = ({ repo }) => {
 const DeleteRepoButton = ({ repo }) => {
   const [open, setOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
-  const [deleteRepo, { loading }] = useMutation(
-    gql`
-      mutation deleteRepo($id: ID!) {
-        deleteRepo(id: $id)
-      }
-    `,
-    {
-      refetchQueries: ["GetDashboardRepos"],
-      onCompleted() {
-        enqueueSnackbar("Successfully deleted repo", { variant: "success" });
-      },
-      onError() {
-        enqueueSnackbar("Failed to delete repo", { variant: "error" });
-      },
-    }
-  );
+  const utils = trpc.useUtils();
+  const deleteRepo = trpc.repo.deleteRepo.useMutation({
+    onSuccess(input) {
+      enqueueSnackbar("Successfully deleted repo", { variant: "success" });
+      utils.repo.getDashboardRepos.invalidate();
+    },
+    onError() {
+      enqueueSnackbar("Failed to delete repo", { variant: "error" });
+    },
+  });
   const theme = useTheme();
   return (
     <Box>
       <Tooltip title="Delete Repo">
         <IconButton
-          disabled={loading}
+          disabled={deleteRepo.isLoading}
           size="small"
           sx={{
             "&:hover": {
@@ -162,7 +141,7 @@ const DeleteRepoButton = ({ repo }) => {
             setOpen(true);
           }}
         >
-          {loading ? (
+          {deleteRepo.isLoading ? (
             <CircularProgress size="14px" />
           ) : (
             <DeleteIcon fontSize="inherit" />
@@ -176,10 +155,8 @@ const DeleteRepoButton = ({ repo }) => {
           <Button onClick={() => setOpen(false)}>Cancel</Button>
           <Button
             onClick={() => {
-              deleteRepo({
-                variables: {
-                  id: repo.id,
-                },
+              deleteRepo.mutate({
+                id: repo.id,
               });
               setOpen(false);
             }}
@@ -193,8 +170,25 @@ const DeleteRepoButton = ({ repo }) => {
   );
 };
 
-const RepoCard = ({ repo }) => {
-  const { me } = useMe();
+const RepoCard = ({
+  repo,
+}: {
+  repo: {
+    id: string;
+    userId: string;
+    createdAt: string;
+    updatedAt: string;
+    public: boolean;
+    stargazers: {
+      id: string;
+      updatedAt: string;
+    }[];
+    name: string | null;
+    yDocBlob: any;
+    accessedAt: string;
+  };
+}) => {
+  const me = trpc.user.me.useQuery();
   // peiredically re-render so that the "last viwed time" and "lact active time"
   // are updated every second.
   const [counter, setCounter] = useState(0);
@@ -230,14 +224,13 @@ const RepoCard = ({ repo }) => {
         </Stack>
         <Typography variant="subtitle2" color="gray">
           <Stack direction="row">
-            Viewed{" "}
-            {timeDifference(new Date(), new Date(parseInt(repo.accessedAt)))}
+            Viewed {timeDifference(new Date(), new Date(repo.accessedAt))}
           </Stack>
         </Typography>
       </CardContent>
       <CardActions disableSpacing>
         <Box>
-          {repo.userId !== me?.id && (
+          {repo.userId !== me.data?.id && (
             <Tooltip title="Shared with me">
               <GroupsIcon fontSize="small" color="primary" />
             </Tooltip>
@@ -256,44 +249,22 @@ const RepoCard = ({ repo }) => {
 };
 
 const RepoLists = () => {
-  const { loading, error, data } = useQuery(
-    gql`
-      query GetDashboardRepos {
-        getDashboardRepos {
-          name
-          id
-          userId
-          public
-          stargazers {
-            id
-          }
-          updatedAt
-          createdAt
-          accessedAt
-        }
-      }
-    `,
-    {
-      // So that we don't need to manually specify which query/mutation should
-      // refetech the Dashboard repo list query. UPDATE The
-      // star/unstar/delete-repo still needs to specify refetchQueries manually,
-      // because the user don't leave & re-enter the paeg, thus won't trigger
-      // the useQuery hook here.
-      fetchPolicy: "network-only",
-    }
-  );
+  const getDashboardRepos = trpc.repo.getDashboardRepos.useQuery();
 
-  if (loading) {
+  if (getDashboardRepos.isLoading) {
     return <CircularProgress />;
   }
-  if (error) {
-    return <Box>ERROR: {error.message}</Box>;
+  if (getDashboardRepos.isError) {
+    return <Box>ERROR: {getDashboardRepos.error.message}</Box>;
   }
-  const repos = data.getDashboardRepos.slice();
+  if (!getDashboardRepos.data) return <Box>no data</Box>;
+  const repos = getDashboardRepos.data?.slice();
   // sort repos by last access time
   repos.sort((a, b) => {
     if (a.accessedAt && b.accessedAt) {
-      return parseInt(b.accessedAt) - parseInt(a.accessedAt);
+      return (
+        new Date(b.accessedAt).getTime() - new Date(a.accessedAt).getTime()
+      );
     } else if (a.accessedAt) {
       return -1;
     } else if (b.accessedAt) {
@@ -352,13 +323,14 @@ const RepoLists = () => {
 };
 
 export function Dashboard() {
-  const { loading } = useMe();
-  if (loading)
+  const { isSignedIn } = useAuth();
+  if (!isSignedIn()) {
     return (
       <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
-        Loading ..
+        Not signed in.
       </Box>
     );
+  }
   return (
     <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
       <Box

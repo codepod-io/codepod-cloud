@@ -22,28 +22,12 @@ import { useFormik } from "formik";
 import { useAuth } from "../lib/auth";
 import { GoogleSignin } from "./login";
 import Divider from "@mui/material/Divider";
-
-function Copyright(props) {
-  return (
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      align="center"
-      {...props}
-    >
-      {"Copyright © "}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
+import { trpc } from "../lib/trpc";
 
 export function SignUp() {
-  const { signUp, isSignedIn } = useAuth();
-  const [error, setError] = useState(null);
+  const signup = trpc.user.signup.useMutation();
+  const { signIn, isSignedIn } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
   let navigate = useNavigate();
   useEffect(() => {
@@ -51,6 +35,15 @@ export function SignUp() {
       navigate("/");
     }
   }, [isSignedIn, navigate]);
+
+  useEffect(() => {
+    if (signup.error) {
+      setError(signup.error.message);
+    }
+    if (signup.data?.token) {
+      signIn(signup.data.token);
+    }
+  }, [signup]);
 
   const formik = useFormik({
     initialValues: {
@@ -63,14 +56,11 @@ export function SignUp() {
     onSubmit: (values) => {
       // alert(JSON.stringify(values, null, 2));
       setError(null);
-      return signUp({
+      return signup.mutate({
         email: values.email,
         firstname: values.firstname,
         lastname: values.lastname,
         password: values.password,
-      }).catch((err) => {
-        // TODO use more user friendly error message
-        setError(err.message);
       });
     },
   });
@@ -178,7 +168,6 @@ export function SignUp() {
           </Grid>
         </Box>
       </Box>
-      <Copyright sx={{ mt: 5 }} />
     </Container>
   );
 }

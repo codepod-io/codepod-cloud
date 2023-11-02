@@ -2,7 +2,6 @@ import { createStore, StateCreator, StoreApi } from "zustand";
 import { produce } from "immer";
 
 import { MyState } from ".";
-import { gql } from "@apollo/client";
 
 export interface RepoSlice {
   repoName: string | null;
@@ -13,20 +12,17 @@ export interface RepoSlice {
   setEditMode: (mode: "view" | "edit") => void;
   setRepo: (repoId: string) => void;
   setRepoName: (name: string) => void;
-  remoteUpdateRepoName: (client) => void;
   setRepoData: (repo: {
     id: string;
-    name: string;
+    name: string | null;
     userId: string;
     public: boolean;
-    collaborators: [
-      {
-        id: string;
-        email: string;
-        firstname: string;
-        lastname: string;
-      }
-    ];
+    collaborators: {
+      id: string;
+      email: string;
+      firstname: string;
+      lastname: string;
+    }[];
   }) => void;
   collaborators: any[];
   shareOpen: boolean;
@@ -61,39 +57,6 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
       produce((state: MyState) => {
         state.repoName = name;
         state.repoNameDirty = true;
-      })
-    );
-  },
-  remoteUpdateRepoName: async (client) => {
-    if (get().repoNameSyncing) return;
-    if (!get().repoNameDirty) return;
-    let { repoId, repoName } = get();
-    if (!repoId) return;
-    // Prevent double syncing.
-    set(
-      produce((state: MyState) => {
-        state.repoNameSyncing = true;
-      })
-    );
-    // Do the actual syncing.
-    await client.mutate({
-      mutation: gql`
-        mutation UpdateRepo($id: ID!, $name: String!) {
-          updateRepo(id: $id, name: $name)
-        }
-      `,
-      variables: {
-        id: repoId,
-        name: repoName,
-      },
-    });
-    set((state) =>
-      produce(state, (state) => {
-        state.repoNameSyncing = false;
-        // Set it as synced IF the name is still the same.
-        if (state.repoName === repoName) {
-          state.repoNameDirty = false;
-        }
       })
     );
   },

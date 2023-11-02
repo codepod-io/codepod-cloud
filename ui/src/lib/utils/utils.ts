@@ -10,13 +10,13 @@ export const getAuthHeaders = () => {
   };
 };
 
-export function timeDifference(current, previous) {
+export function timeDifference(current: Date, previous: Date) {
   const msPerMinute = 60 * 1000;
   const msPerHour = msPerMinute * 60;
   const msPerDay = msPerHour * 24;
   const msPerMonth = msPerDay * 30;
   const msPerYear = msPerDay * 365;
-  const elapsed = current - previous;
+  const elapsed = current.getTime() - previous.getTime();
 
   if (elapsed < msPerMinute) {
     return Math.round(elapsed / 1000) + " seconds ago";

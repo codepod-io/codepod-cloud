@@ -4,11 +4,10 @@ import Typography from "@mui/material/Typography";
 
 import Paper from "@mui/material/Paper";
 import { Container, Stack } from "@mui/material";
-
-import { useMe } from "../lib/me";
+import { trpc } from "../lib/trpc";
 
 export function Profile() {
-  const { loading, me } = useMe();
+  const me = trpc.user.me.useQuery();
 
   if (!me) {
     // router.push("/login");
@@ -21,9 +20,11 @@ export function Profile() {
     );
   }
 
+  if (me.isLoading) return <Box>Loading</Box>;
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
-      {loading ? (
+      {!me.data ? (
         "Loading"
       ) : (
         <Box>
@@ -31,9 +32,9 @@ export function Profile() {
             <Stack>
               <Typography variant="h4">User profile</Typography>
               <Box>
-                Name {me.firstname} {me.lastname}
+                Name {me.data.firstname} {me.data.lastname}
               </Box>
-              <Box> Email: {me.email}</Box>
+              <Box> Email: {me.data.email}</Box>
             </Stack>
           </Paper>
           <Divider />

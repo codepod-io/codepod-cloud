@@ -7,7 +7,6 @@ import AlertTitle from "@mui/material/AlertTitle";
 import ShareIcon from "@mui/icons-material/Share";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Button from "@mui/material/Button";
-import { gql, useApolloClient, useMutation, useQuery } from "@apollo/client";
 
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -20,7 +19,6 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import { useMe } from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -37,34 +35,21 @@ import {
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
+import { trpc } from "../lib/trpc";
+import { useAuth } from "../lib/auth";
 
 const HeaderItem = memo<any>(() => {
   const store = useContext(RepoContext)!;
   const repoName = useStore(store, (state) => state.repoName);
   const repoNameDirty = useStore(store, (state) => state.repoNameDirty);
   const setRepoName = useStore(store, (state) => state.setRepoName);
-  const apolloClient = useApolloClient();
-  const remoteUpdateRepoName = useStore(
-    store,
-    (state) => state.remoteUpdateRepoName
-  );
   const editMode = useStore(store, (state) => state.editMode);
 
+  // TODO put reponame into yjs
   usePrompt(
     "Repo name not saved. Do you want to leave this page?",
     repoNameDirty
   );
-
-  useEffect(() => {
-    remoteUpdateRepoName(apolloClient);
-    let intervalId = setInterval(() => {
-      remoteUpdateRepoName(apolloClient);
-    }, 1000);
-    return () => {
-      clearInterval(intervalId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [focus, setFocus] = useState(false);
   const [enter, setEnter] = useState(false);
@@ -150,15 +135,13 @@ function RepoHeader({ id }) {
   const store = useContext(RepoContext)!;
 
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const navigate = useNavigate();
-  const [copyRepo] = useMutation(
-    gql`
-      mutation CopyRepo($id: String!) {
-        copyRepo(repoId: $id)
-      }
-    `,
-    { variables: { id } }
-  );
+  const copyRepo = trpc.repo.copyRepo.useMutation();
+  useEffect(() => {
+    if (copyRepo.isSuccess) {
+      const newRepoId = copyRepo.data;
+      window.open(`/repo/${newRepoId}`);
+    }
+  }, [copyRepo]);
   return (
     <Header>
       <Breadcrumbs
@@ -183,11 +166,7 @@ function RepoHeader({ id }) {
       >
         <Button
           endIcon={<ContentCopyIcon />}
-          onClick={async () => {
-            const result = await copyRepo();
-            const newRepoId = result.data.copyRepo;
-            window.open(`/repo/${newRepoId}`);
-          }}
+          onClick={() => copyRepo.mutate({ repoId: id })}
           variant="contained"
         >
           Make a copy
@@ -339,52 +318,30 @@ function NotFoundAlert({}) {
 
 function RepoLoader({ id, children }) {
   // load the repo
-  let query = gql`
-    query Repo($id: String!) {
-      repo(id: $id) {
-        id
-        name
-        userId
-        collaborators {
-          id
-          email
-          firstname
-          lastname
-        }
-        public
-      }
-    }
-  `;
   // FIXME this should be a mutation as it changes the last access time.
-  const { data, loading, error } = useQuery(query, {
-    variables: {
-      id,
-    },
-    // CAUTION I must set this because refetechQueries does not work.
-    fetchPolicy: "no-cache",
-  });
+  const repoQuery = trpc.repo.repo.useQuery({ id });
   const store = useContext(RepoContext)!;
   const setRepoData = useStore(store, (state) => state.setRepoData);
 
-  const { me } = useMe();
+  const me = trpc.user.me.useQuery();
   const setEditMode = useStore(store, (state) => state.setEditMode);
 
   useEffect(() => {
-    if (data && data.repo) {
-      setRepoData(data.repo);
+    if (repoQuery.data && me.data) {
+      setRepoData(repoQuery.data);
       if (
-        me?.id === data.repo.userId ||
-        data.repo.collaborators.includes(me?.id)
+        me.data?.id === repoQuery.data.userId ||
+        repoQuery.data.collaborators.map(({ id }) => id).includes(me.data?.id)
       ) {
         setEditMode("edit");
       }
     }
-  }, [data, loading]);
-  if (loading) return <Box>Loading</Box>;
-  if (error) {
+  }, [repoQuery, me]);
+  if (repoQuery.isLoading) return <Box>Loading</Box>;
+  if (repoQuery.isError) {
     return <Box>Error: Repo not found</Box>;
   }
-  if (!data || !data.repo) return <NotFoundAlert />;
+  if (!repoQuery.data) return <NotFoundAlert />;
   return children;
 }
 
@@ -419,9 +376,9 @@ function WaitForProvider({ children, yjsWsUrl }) {
   const providerSynced = useStore(store, (state) => state.providerSynced);
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
   const connectYjs = useStore(store, (state) => state.connectYjs);
-  const { me } = useMe();
+  const me = trpc.user.me.useQuery();
   useEffect(() => {
-    connectYjs({ yjsWsUrl, name: me?.firstname || "Anonymous" });
+    connectYjs({ yjsWsUrl, name: me.data?.firstname || "Anonymous" });
     return () => {
       disconnectYjs();
     };
@@ -434,9 +391,9 @@ function WaitForProvider({ children, yjsWsUrl }) {
  * This loads users.
  */
 function UserWrapper({ children }) {
-  const { loading } = useMe();
+  const { isSignedIn } = useAuth();
 
-  if (loading) return <Box>Loading ..</Box>;
+  if (!isSignedIn()) return <Box>Not signed In</Box>;
 
   return children;
 }
