@@ -22,7 +22,6 @@ import { SignUp } from "./pages/signup";
 import { Header, Footer } from "./components/Header";
 
 import { AuthProvider, useAuth } from "./lib/auth";
-import { useMe } from "./lib/me";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
@@ -30,6 +29,8 @@ import { Link as ReactLink } from "react-router-dom";
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 import { Alert, Button, Typography } from "@mui/material";
+
+import { trpc } from "./lib/trpc";
 
 const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
 const apiUrl = import.meta.env.VITE_APP_API_URL;
@@ -54,11 +55,11 @@ const theme = createTheme({
 });
 
 const ProfileButton = () => {
-  const { me } = useMe();
+  const me = trpc.user.me.useQuery();
   return (
     <Box sx={{ mr: 2 }}>
       <Link component={ReactLink} to="/profile" underline="none">
-        {me?.firstname}
+        {me.data?.firstname}
       </Link>
     </Box>
   );

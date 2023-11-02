@@ -1,13 +1,8 @@
 import React, { useState, useContext, useEffect, createContext } from "react";
-import {
-  ApolloProvider,
-  ApolloClient,
-  InMemoryCache,
-  HttpLink,
-  gql,
-  useQuery,
-  split,
-} from "@apollo/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
+
+import { trpc } from "./trpc";
 
 type AuthContextType = ReturnType<typeof useProvideAuth>;
 
@@ -16,11 +11,29 @@ const authContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children, apiUrl, spawnerApiUrl }) {
   const auth = useProvideAuth({ apiUrl, spawnerApiUrl });
 
+  const queryClient = new QueryClient();
+  const trpcClient = trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "http://localhost:4000/trpc",
+        headers: auth.getAuthHeaders(),
+        // fetch(url, options) {
+        //   return fetch(url, {
+        //     ...options,
+        //     credentials: "include",
+        //   });
+        // },
+      }),
+    ],
+  });
+
   return (
     <authContext.Provider value={auth}>
-      <ApolloProvider client={auth.createApolloClient()}>
-        {children}
-      </ApolloProvider>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </trpc.Provider>
     </authContext.Provider>
   );
 }
@@ -45,26 +58,6 @@ function useProvideAuth({ apiUrl, spawnerApiUrl }) {
     };
   };
 
-  function createApolloClient(auth = true) {
-    const link = new HttpLink({
-      uri: apiUrl,
-      headers: auth ? getAuthHeaders() : undefined,
-    });
-    const yjslink = new HttpLink({
-      uri: spawnerApiUrl,
-      headers: auth ? getAuthHeaders() : undefined,
-    });
-
-    return new ApolloClient({
-      link: split(
-        (operation) => operation.getContext().clientName === "spawner",
-        yjslink,
-        link
-      ),
-      cache: new InMemoryCache(),
-    });
-  }
-
   const signOut = () => {
     console.log("sign out");
     // HEBI CAUTION this must be removed. Otherwise, when getItem back, it is not null, but "null"
@@ -73,89 +66,9 @@ function useProvideAuth({ apiUrl, spawnerApiUrl }) {
     setAuthToken(null);
   };
 
-  const handleGoogle = async (response) => {
-    const client = createApolloClient(false);
-    const LoginMutation = gql`
-      mutation LoginWithGoogleMutation($idToken: String!) {
-        loginWithGoogle(idToken: $idToken) {
-          token
-        }
-      }
-    `;
-    const result = await client.mutate({
-      mutation: LoginMutation,
-      variables: { idToken: response.credential },
-    });
-    console.log("LoginMutation result:", result);
-
-    if (result?.data?.loginWithGoogle?.token) {
-      const token = result.data.loginWithGoogle.token;
-      setAuthToken(token);
-      localStorage.setItem("token", token);
-    }
-  };
-
-  const signIn = async ({ email, password }) => {
-    const client = createApolloClient(false);
-    const LoginMutation = gql`
-      mutation LoginMutation($email: String!, $password: String!) {
-        login(email: $email, password: $password) {
-          token
-        }
-      }
-    `;
-    const result = await client.mutate({
-      mutation: LoginMutation,
-      variables: { email, password },
-    });
-
-    console.log(result);
-
-    if (result?.data?.login?.token) {
-      const token = result.data.login.token;
-      setAuthToken(token);
-      localStorage.setItem("token", token);
-    }
-  };
-
-  const signUp = async ({ firstname, lastname, email, password }) => {
-    const client = createApolloClient(false);
-    const LoginMutation = gql`
-      mutation SignupMutation(
-        $firstname: String!
-        $lastname: String!
-        $email: String!
-        $password: String!
-      ) {
-        signup(
-          firstname: $firstname
-          lastname: $lastname
-          email: $email
-          password: $password
-        ) {
-          token
-        }
-      }
-    `;
-    const result = await client.mutate({
-      mutation: LoginMutation,
-      variables: {
-        firstname,
-        lastname,
-        password,
-        email,
-      },
-    });
-
-    if (result.errors) {
-      throw Error(result.errors[0].message);
-    }
-
-    if (result?.data?.signup?.token) {
-      const token = result.data.signup.token;
-      setAuthToken(token);
-      localStorage.setItem("token", token);
-    }
+  const signIn = (token: string) => {
+    setAuthToken(token);
+    localStorage.setItem("token", token);
   };
 
   /**
@@ -177,11 +90,9 @@ function useProvideAuth({ apiUrl, spawnerApiUrl }) {
   }
 
   return {
-    createApolloClient,
+    getAuthHeaders,
     signIn,
     signOut,
-    handleGoogle,
-    signUp,
     isSignedIn,
     hasToken,
   };

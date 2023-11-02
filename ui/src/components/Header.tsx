@@ -71,6 +71,24 @@ export const Header = ({ children }: { children?: any }) => {
   );
 };
 
+function Copyright(props: any) {
+  return (
+    <Typography
+      variant="body2"
+      color="text.secondary"
+      align="center"
+      {...props}
+    >
+      {"Copyright © "}
+      <Link color="inherit" href="https://mui.com/">
+        CodePod Inc.
+      </Link>{" "}
+      {new Date().getFullYear()}
+      {"."}
+    </Typography>
+  );
+}
+
 export function Footer() {
   return (
     <Box
@@ -91,11 +109,7 @@ export function Footer() {
         </Link>
       </Box>
 
-      <Box fontSize="lg" fontWeight="bold">
-        <Link component={ReactLink} to="/" underline="none">
-          Copyright © CodePod Inc
-        </Link>
-      </Box>
+      <Copyright />
     </Box>
   );
 }

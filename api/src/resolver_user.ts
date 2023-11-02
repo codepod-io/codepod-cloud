@@ -8,21 +8,35 @@ import { lowercase, numbers } from "nanoid-dictionary";
 
 import prisma from "@codepod/prisma";
 
+import { z } from "zod";
+import { protectedProcedure, publicProcedure, router } from "./trpc";
+
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
-export function createUserResolver({ jwtSecret, googleClientId }) {
-  async function me(_, __, { userId }) {
-    if (!userId) throw Error("Unauthenticated");
-    const user = await prisma.user.findFirst({
-      where: {
-        id: userId,
-      },
-    });
-    if (!user) throw Error("Authorization token is not valid");
-    return user;
-  }
+const jwtSecret = z.string().parse(process.env.JWT_SECRET);
+const googleClientId = z.string().parse(process.env.GOOGLE_CLIENT_ID);
 
-  async function signup(_, { email, password, firstname, lastname }) {
+const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
+  if (!userId) throw Error("Unauthenticated");
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+  });
+  if (!user) throw Error("Authorization token is not valid");
+  return user;
+});
+
+const signup = publicProcedure
+  .input(
+    z.object({
+      email: z.string(),
+      password: z.string(),
+      firstname: z.string(),
+      lastname: z.string(),
+    })
+  )
+  .mutation(async ({ input: { email, password, firstname, lastname } }) => {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
     const user = await prisma.user.create({
@@ -39,34 +53,42 @@ export function createUserResolver({ jwtSecret, googleClientId }) {
         expiresIn: "30d",
       }),
     };
-  }
+  });
 
-  async function updateUser(_, { email, firstname, lastname }, { userId }) {
-    if (!userId) throw Error("Unauthenticated");
-    let user = await prisma.user.findFirst({
-      where: {
-        id: userId,
-      },
-    });
-    if (!user) throw Error("User not found.");
-    if (user.id !== userId) {
-      throw new Error("You do not have access to the user.");
+const updateUser = protectedProcedure
+  .input(
+    z.object({ email: z.string(), firstname: z.string(), lastname: z.string() })
+  )
+  .mutation(
+    async ({ ctx: { userId }, input: { email, firstname, lastname } }) => {
+      if (!userId) throw Error("Unauthenticated");
+      let user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+      if (!user) throw Error("User not found.");
+      if (user.id !== userId) {
+        throw new Error("You do not have access to the user.");
+      }
+      // do the udpate
+      await prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          firstname,
+          lastname,
+          email,
+        },
+      });
+      return true;
     }
-    // do the udpate
-    await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        firstname,
-        lastname,
-        email,
-      },
-    });
-    return true;
-  }
+  );
 
-  async function login(_, { email, password }) {
+const login = publicProcedure
+  .input(z.object({ email: z.string(), password: z.string() }))
+  .mutation(async ({ input: { email, password } }) => {
     // FIXME findUnique seems broken https://github.com/prisma/prisma/issues/5071
     const user = await prisma.user.findFirst({
       where: {
@@ -87,11 +109,13 @@ export function createUserResolver({ jwtSecret, googleClientId }) {
         }),
       };
     }
-  }
+  });
 
-  const client = new OAuth2Client(googleClientId);
+const client = new OAuth2Client(googleClientId);
 
-  async function loginWithGoogle(_, { idToken }) {
+const loginWithGoogle = publicProcedure
+  .input(z.object({ idToken: z.string() }))
+  .mutation(async ({ input: { idToken } }) => {
     const ticket = await client.verifyIdToken({
       idToken: idToken,
       audience: googleClientId, // Specify the CLIENT_ID of the app that accesses the backend
@@ -126,17 +150,12 @@ export function createUserResolver({ jwtSecret, googleClientId }) {
         expiresIn: "30d",
       }),
     };
-  }
+  });
 
-  return {
-    Query: {
-      me,
-    },
-    Mutation: {
-      login,
-      loginWithGoogle,
-      signup,
-      updateUser,
-    },
-  };
-}
+export const userRouter = router({
+  me,
+  login,
+  loginWithGoogle,
+  signup,
+  updateUser,
+});

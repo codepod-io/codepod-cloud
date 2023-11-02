@@ -21,24 +21,7 @@ import { Link as ReactLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth";
 import Divider from "@mui/material/Divider";
-
-function Copyright(props: any) {
-  return (
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      align="center"
-      {...props}
-    >
-      {"Copyright © "}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
+import { trpc } from "../lib/trpc";
 
 const theme = createTheme();
 
@@ -99,8 +82,16 @@ function useLoadGsiScript(options: UseLoadGsiScriptOptions = {}): boolean {
 declare var google: any;
 
 export function GoogleSignin() {
-  const { handleGoogle } = useAuth();
+  const login = trpc.user.loginWithGoogle.useMutation();
+  const { signIn } = useAuth();
   const scriptLoadedSuccessfully = useLoadGsiScript();
+
+  useEffect(() => {
+    if (login.data && login.data.token) {
+      signIn(login.data.token);
+      localStorage.setItem("token", login.data.token);
+    }
+  }, [login]);
 
   useEffect(() => {
     if (!scriptLoadedSuccessfully) return;
@@ -110,20 +101,24 @@ export function GoogleSignin() {
       : window.GOOGLE_CLIENT_ID || null;
     google.accounts.id.initialize({
       client_id,
-      callback: handleGoogle,
+      callback: (response) => {
+        login.mutate({ idToken: response.credential });
+        console.log("LoginMutation result:", login.data);
+      },
     });
     google.accounts.id.renderButton(
       document.getElementById("googleLoginDiv"),
       { theme: "outline", size: "large" } // customization attributes
     );
-  }, [handleGoogle, scriptLoadedSuccessfully]);
+  }, [scriptLoadedSuccessfully]);
   return <Box id="googleLoginDiv"></Box>;
 }
 
 export function SignIn() {
   /* eslint-disable no-unused-vars */
-  const { signIn, isSignedIn, handleGoogle } = useAuth();
-  const [error, setError] = useState(null);
+  const { isSignedIn, signIn } = useAuth();
+  const signin = trpc.user.login.useMutation();
+  const [error, setError] = useState<null | string>(null);
 
   let navigate = useNavigate();
   useEffect(() => {
@@ -131,6 +126,15 @@ export function SignIn() {
       navigate("/");
     }
   }, [isSignedIn, navigate]);
+
+  useEffect(() => {
+    if (signin.error) {
+      setError(signin.error.message);
+    }
+    if (signin.data?.token) {
+      signIn(signin.data.token);
+    }
+  }, [signin]);
 
   const formik = useFormik({
     initialValues: {
@@ -140,12 +144,9 @@ export function SignIn() {
     // validationSchema: validationSchema,
     onSubmit: (values) => {
       setError(null);
-      return signIn({
+      return signin.mutate({
         email: values.email,
         password: values.password,
-      }).catch((err) => {
-        // TODO use more user friendly error message
-        setError(err.message);
       });
     },
   });
@@ -202,10 +203,6 @@ export function SignIn() {
               value={formik.values.password}
               onChange={formik.handleChange}
             />
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            />
             {error && <Alert severity="error">{error}</Alert>}
             <Button
               type="submit"
@@ -232,7 +229,6 @@ export function SignIn() {
             </Grid>
           </Box>
         </Box>
-        <Copyright sx={{ mt: 8, mb: 4 }} />
       </Container>
     </ThemeProvider>
   );
