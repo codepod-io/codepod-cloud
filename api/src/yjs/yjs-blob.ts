@@ -17,7 +17,7 @@
 
 // throw new Error("Experimental not implemented.");
 
-import Y from "yjs";
+import * as Y from "yjs";
 
 import debounce from "lodash/debounce";
 
