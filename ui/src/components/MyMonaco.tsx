@@ -10,7 +10,7 @@ import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
-import { trpc } from "../lib/trpc";
+import { containerTrpc, trpc } from "../lib/trpc";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -393,7 +393,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
 
-  const runChain = trpc.spawner.runChain.useMutation();
+  const runChain = containerTrpc.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const focusedEditor = useStore(store, (state) => state.focusedEditor);

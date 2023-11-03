@@ -1,12 +1,13 @@
 import { userRouter } from "./resolver_user";
 import { repoRouter } from "./resolver_repo";
-import { router } from "./trpc";
-import { spawnerRouter } from "./resolver_spawner";
+import { protectedProcedure, publicProcedure, router } from "./trpc";
 
 export const appRouter = router({
+  hello: protectedProcedure.query(() => {
+    return "world";
+  }),
   user: userRouter,
   repo: repoRouter,
-  spawner: spawnerRouter,
 });
 
 // You can then access the merged route with
