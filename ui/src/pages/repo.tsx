@@ -69,7 +69,7 @@ const HeaderItem = memo<any>(() => {
         updateRepo.mutate({ id: repoId, name });
       },
       1000,
-      { maxWait: 2000 }
+      { maxWait: 5000 }
     ),
     []
   );
