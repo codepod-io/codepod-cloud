@@ -11,9 +11,17 @@ import Button from "@mui/material/Button";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
-import { useEffect, useState, useRef, useContext, memo } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useContext,
+  memo,
+  createContext,
+} from "react";
 
-import * as React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
 
 import { useStore } from "zustand";
 
@@ -35,7 +43,7 @@ import {
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
-import { trpc } from "../lib/trpc";
+import { containerContext, containerTrpc, trpc } from "../lib/trpc";
 import { useAuth } from "../lib/auth";
 
 const HeaderItem = memo<any>(() => {
@@ -398,6 +406,28 @@ function UserWrapper({ children }) {
   return children;
 }
 
+function ContainerTrpcProvider({ children }) {
+  const { getAuthHeaders } = useAuth();
+  const queryClient = new QueryClient();
+  const trpcClient = containerTrpc.createClient({
+    links: [
+      httpBatchLink({
+        // TODO replace with container url.
+        // FIXME add auth
+        url: "http://localhost:4001/trpc",
+        headers: getAuthHeaders(),
+      }),
+    ],
+  });
+  return (
+    <containerTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={containerContext}>
+        {children}
+      </QueryClientProvider>
+    </containerTrpc.Provider>
+  );
+}
+
 export function Repo({ yjsWsUrl }) {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
@@ -409,26 +439,28 @@ export function Repo({ yjsWsUrl }) {
   }, []);
   return (
     <RepoContext.Provider value={store}>
-      <UserWrapper>
-        <RepoLoader id={id}>
-          <WaitForProvider yjsWsUrl={yjsWsUrl}>
-            <ParserWrapper>
-              <HeaderWrapper id={id}>
-                <Box
-                  height="100%"
-                  border="solid 3px black"
-                  p={2}
-                  boxSizing={"border-box"}
-                  // m={2}
-                  overflow="auto"
-                >
-                  <Canvas />
-                </Box>
-              </HeaderWrapper>
-            </ParserWrapper>
-          </WaitForProvider>
-        </RepoLoader>
-      </UserWrapper>
+      <ContainerTrpcProvider>
+        <UserWrapper>
+          <RepoLoader id={id}>
+            <WaitForProvider yjsWsUrl={yjsWsUrl}>
+              <ParserWrapper>
+                <HeaderWrapper id={id}>
+                  <Box
+                    height="100%"
+                    border="solid 3px black"
+                    p={2}
+                    boxSizing={"border-box"}
+                    // m={2}
+                    overflow="auto"
+                  >
+                    <Canvas />
+                  </Box>
+                </HeaderWrapper>
+              </ParserWrapper>
+            </WaitForProvider>
+          </RepoLoader>
+        </UserWrapper>
+      </ContainerTrpcProvider>
     </RepoContext.Provider>
   );
 }

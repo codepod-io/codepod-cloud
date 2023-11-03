@@ -50,7 +50,7 @@ import {
   level2fontsize,
 } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { trpc } from "../../lib/trpc";
+import { containerTrpc, trpc } from "../../lib/trpc";
 
 function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext)!;
@@ -59,7 +59,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
   const getScopeChain = useStore(store, (state) => state.getScopeChain);
 
-  const runChain = trpc.spawner.runChain.useMutation();
+  const runChain = containerTrpc.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const autoLayout = useStore(store, (state) => state.autoLayout);
