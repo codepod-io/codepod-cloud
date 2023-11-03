@@ -111,6 +111,9 @@ importers:
       '@types/jsonwebtoken':
         specifier: ^8.5.9
         version: 8.5.9
+      '@types/lodash':
+        specifier: ^4.14.200
+        version: 4.14.200
       '@types/node':
         specifier: ^18.11.2
         version: 18.11.2
@@ -366,6 +369,9 @@ importers:
       lib0:
         specifier: ^0.2.83
         version: 0.2.83
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       monaco-editor:
         specifier: ^0.34.1
         version: 0.34.1
@@ -445,6 +451,9 @@ importers:
         specifier: ^4.4.1
         version: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     devDependencies:
+      '@types/lodash':
+        specifier: ^4.14.200
+        version: 4.14.200
       '@types/node':
         specifier: ^20.5.6
         version: 20.5.9
@@ -4484,6 +4493,10 @@ packages:
     resolution: {integrity: sha512-272FMnFGzAVMGtu9tkr29hRL6bZj4Zs1KZNeHLnKqAvp06tAIcarTMwOh8/8bz4FmKRcMxZhZNeUAQsNLoiPhg==}
     dependencies:
       '@types/node': 20.8.10
+    dev: true
+
+  /@types/lodash@4.14.200:
+    resolution: {integrity: sha512-YI/M/4HRImtNf3pJgbF+W6FrXovqj+T+/HpENLTooK9PnkacBsDpeP3IpHab40CClUfhNmdM2WTNP2sa2dni5Q==}
     dev: true
 
   /@types/long@4.0.2:

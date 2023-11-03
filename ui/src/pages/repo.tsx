@@ -18,12 +18,15 @@ import {
   useContext,
   memo,
   createContext,
+  useCallback,
 } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 
 import { useStore } from "zustand";
+
+import debounce from "lodash/debounce";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
@@ -49,14 +52,26 @@ import { useAuth } from "../lib/auth";
 const HeaderItem = memo<any>(() => {
   const store = useContext(RepoContext)!;
   const repoName = useStore(store, (state) => state.repoName);
-  const repoNameDirty = useStore(store, (state) => state.repoNameDirty);
   const setRepoName = useStore(store, (state) => state.setRepoName);
   const editMode = useStore(store, (state) => state.editMode);
+  const repoId = useStore(store, (state) => state.repoId)!;
 
-  // TODO put reponame into yjs
-  usePrompt(
-    "Repo name not saved. Do you want to leave this page?",
-    repoNameDirty
+  const utils = trpc.useUtils();
+  const updateRepo = trpc.repo.updateRepo.useMutation({
+    onSuccess: () => {
+      utils.repo.getDashboardRepos.invalidate();
+    },
+  });
+  const debouncedUpdateRepo = useCallback(
+    debounce(
+      (name: string) => {
+        console.log("update repo", name);
+        updateRepo.mutate({ id: repoId, name });
+      },
+      1000,
+      { maxWait: 2000 }
+    ),
+    []
   );
 
   const [focus, setFocus] = useState(false);
@@ -107,6 +122,7 @@ const HeaderItem = memo<any>(() => {
       onChange={(e) => {
         const name = e.target.value;
         setRepoName(name);
+        debouncedUpdateRepo(name);
       }}
     />
   );
@@ -134,7 +150,6 @@ const HeaderItem = memo<any>(() => {
       ) : (
         textfield
       )}
-      {repoNameDirty && <Box>saving..</Box>}
     </Stack>
   );
 });
