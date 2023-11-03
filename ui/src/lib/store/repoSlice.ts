@@ -5,8 +5,6 @@ import { MyState } from ".";
 
 export interface RepoSlice {
   repoName: string | null;
-  repoNameSyncing: boolean;
-  repoNameDirty: boolean;
   repoId: string | null;
   editMode: "view" | "edit";
   setEditMode: (mode: "view" | "edit") => void;
@@ -36,8 +34,6 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
 ) => ({
   repoId: null,
   repoName: null,
-  repoNameSyncing: false,
-  repoNameDirty: false,
   collaborators: [],
   isPublic: false,
   shareOpen: false,
@@ -56,7 +52,6 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
     set(
       produce((state: MyState) => {
         state.repoName = name;
-        state.repoNameDirty = true;
       })
     );
   },
