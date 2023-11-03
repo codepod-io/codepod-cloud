@@ -30,6 +30,10 @@ Step 2: Start the app:
 > pnpm dev:yjs
 # 🚀 Server ready at http://localhost:4233
 
+> cd container
+> pnpm dev
+# 🚀 Server ready at http://localhost:4001
+
 > cd ui
 > pnpm dev
 # Local:   http://localhost:3000/
