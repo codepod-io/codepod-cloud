@@ -1,4 +1,4 @@
-import Y from "yjs";
+import * as Y from "yjs";
 import WebSocket from "ws";
 import { z } from "zod";
 

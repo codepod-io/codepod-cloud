@@ -1,4 +1,4 @@
-import Y from "yjs";
+import * as Y from "yjs";
 
 import prisma from "@codepod/prisma";
 import { json2yxml } from "@codepod/yjs";

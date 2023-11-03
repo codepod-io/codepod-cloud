@@ -1,6 +1,6 @@
 // Code from https://github.com/yjs/y-protocols
 
-import Y from "yjs";
+import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import * as syncProtocol from "y-protocols/sync";
 
