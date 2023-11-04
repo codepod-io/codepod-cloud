@@ -398,7 +398,7 @@ function MyFloatingToolbar({
   // const pod = useStore(store, (state) => state.pods[id]);
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
   const getEdgeChain = useStore(store, (state) => state.getEdgeChain);
-  const runChain = containerTrpc.runChain.useMutation();
+  const runChain = containerTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   // right, bottom

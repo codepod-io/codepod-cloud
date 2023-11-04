@@ -59,7 +59,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
   const getScopeChain = useStore(store, (state) => state.getScopeChain);
 
-  const runChain = containerTrpc.runChain.useMutation();
+  const runChain = containerTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const autoLayout = useStore(store, (state) => state.autoLayout);

@@ -56,179 +56,181 @@ export const appRouter = router({
   hello: protectedProcedure.query(() => {
     return "world";
   }),
-  spawnRuntime: protectedProcedure
-    .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
-    .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
-      console.log("spawnRuntime", runtimeId, repoId);
-      // create the runtime container
-      const wsUrl = await spawnRuntime(runtimeId);
-      console.log("Runtime spawned at", wsUrl);
-      routingTable.set(runtimeId, wsUrl);
-      // set initial runtimeMap info for this runtime
-      console.log("Loading yDoc ..");
-      const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
-      console.log("yDoc loaded");
-      const rootMap = doc.getMap("rootMap");
-      const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
-      runtimeMap.set(runtimeId, {});
-      //   console.log("=== runtimeMap", runtimeMap);
-      let values = Array.from(runtimeMap.values());
-      const keys = Array.from(runtimeMap.keys());
-      console.log("all runtimes", keys);
-      const nodesMap = rootMap.get("nodesMap") as Y.Map<any>;
-      const nodes = Array.from(nodesMap.values());
-      console.log("all nodes", nodes);
-      return true;
-    }),
-  killRuntime: protectedProcedure
-    .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
-    .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
-      await killRuntime(runtimeId);
-      console.log("Removing route ..");
-      // remove from runtimeMap
-      const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
-      const rootMap = doc.getMap("rootMap");
-      const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
-      runtimeMap.delete(runtimeId);
-      routingTable.delete(runtimeId);
-      return true;
-    }),
+  kernel: router({
+    create: protectedProcedure
+      .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
+      .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
+        console.log("spawnRuntime", runtimeId, repoId);
+        // create the runtime container
+        const wsUrl = await spawnRuntime(runtimeId);
+        console.log("Runtime spawned at", wsUrl);
+        routingTable.set(runtimeId, wsUrl);
+        // set initial runtimeMap info for this runtime
+        console.log("Loading yDoc ..");
+        const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
+        console.log("yDoc loaded");
+        const rootMap = doc.getMap("rootMap");
+        const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
+        runtimeMap.set(runtimeId, {});
+        //   console.log("=== runtimeMap", runtimeMap);
+        let values = Array.from(runtimeMap.values());
+        const keys = Array.from(runtimeMap.keys());
+        console.log("all runtimes", keys);
+        const nodesMap = rootMap.get("nodesMap") as Y.Map<any>;
+        const nodes = Array.from(nodesMap.values());
+        console.log("all nodes", nodes);
+        return true;
+      }),
+    delete: protectedProcedure
+      .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
+      .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
+        await killRuntime(runtimeId);
+        console.log("Removing route ..");
+        // remove from runtimeMap
+        const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
+        const rootMap = doc.getMap("rootMap");
+        const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
+        runtimeMap.delete(runtimeId);
+        routingTable.delete(runtimeId);
+        return true;
+      }),
 
-  connectRuntime: protectedProcedure
-    .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
-    .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
-      console.log("=== connectRuntime", runtimeId, repoId);
-      // assuming doc is already loaded.
-      // FIXME this socket/ is the prefix of url. This is very prone to errors.
-      const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
-      const rootMap = doc.getMap("rootMap");
-      console.log("rootMap", Array.from(rootMap.keys()));
-      const runtimeMap = rootMap.get("runtimeMap") as any;
-      const resultMap = rootMap.get("resultMap") as any;
-      await connectSocket({
-        runtimeId,
-        runtimeMap,
-        resultMap,
-        routingTable,
-      });
-    }),
-  disconnectRuntime: protectedProcedure
-    .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
-    .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
-      console.log("=== disconnectRuntime", runtimeId);
-      // get socket
-      const socket = runtime2socket.get(runtimeId);
-      if (socket) {
-        socket.close();
-        runtime2socket.delete(runtimeId);
-      }
-
-      const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
-      const rootMap = doc.getMap("rootMap");
-      const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
-      runtimeMap.set(runtimeId, {});
-    }),
-  runCode: protectedProcedure
-    .input(
-      z.object({
-        runtimeId: z.string(),
-        spec: z.object({ code: z.string(), podId: z.string() }),
-      })
-    )
-    .mutation(
-      async ({
-        input: {
+    connect: protectedProcedure
+      .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
+      .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
+        console.log("=== connectRuntime", runtimeId, repoId);
+        // assuming doc is already loaded.
+        // FIXME this socket/ is the prefix of url. This is very prone to errors.
+        const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
+        const rootMap = doc.getMap("rootMap");
+        console.log("rootMap", Array.from(rootMap.keys()));
+        const runtimeMap = rootMap.get("runtimeMap") as any;
+        const resultMap = rootMap.get("resultMap") as any;
+        await connectSocket({
           runtimeId,
-          spec: { code, podId },
-        },
-      }) => {
-        console.log("runCode", runtimeId, podId);
+          runtimeMap,
+          resultMap,
+          routingTable,
+        });
+      }),
+    disconnect: protectedProcedure
+      .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
+      .mutation(async ({ input: { runtimeId, repoId }, ctx: { token } }) => {
+        console.log("=== disconnectRuntime", runtimeId);
+        // get socket
+        const socket = runtime2socket.get(runtimeId);
+        if (socket) {
+          socket.close();
+          runtime2socket.delete(runtimeId);
+        }
+
+        const doc = await getMyYDoc({ repoId, yjsServerUrl, token });
+        const rootMap = doc.getMap("rootMap");
+        const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
+        runtimeMap.set(runtimeId, {});
+      }),
+    run: protectedProcedure
+      .input(
+        z.object({
+          runtimeId: z.string(),
+          spec: z.object({ code: z.string(), podId: z.string() }),
+        })
+      )
+      .mutation(
+        async ({
+          input: {
+            runtimeId,
+            spec: { code, podId },
+          },
+        }) => {
+          console.log("runCode", runtimeId, podId);
+          const socket = runtime2socket.get(runtimeId);
+          if (!socket) return false;
+          // clear old results
+          // TODO move this to frontend, because it is hard to get ydoc in GraphQL handler.
+          //
+          // console.log("clear old result");
+          // console.log("old", resultMap.get(runtimeId));
+          // resultMap.set(podId, { data: [] });
+          // console.log("new", resultMap.get(runtimeId));
+          // console.log("send new result");
+          socket.send(
+            JSON.stringify({
+              type: "runCode",
+              payload: {
+                lang: "python",
+                code: code,
+                raw: true,
+                podId: podId,
+                sessionId: runtimeId,
+              },
+            })
+          );
+          return true;
+        }
+      ),
+    runChain: protectedProcedure
+      .input(
+        z.object({
+          runtimeId: z.string(),
+          specs: z.array(z.object({ code: z.string(), podId: z.string() })),
+        })
+      )
+      .mutation(async ({ input: { runtimeId, specs } }) => {
+        console.log("runChain", runtimeId);
         const socket = runtime2socket.get(runtimeId);
         if (!socket) return false;
-        // clear old results
-        // TODO move this to frontend, because it is hard to get ydoc in GraphQL handler.
-        //
-        // console.log("clear old result");
-        // console.log("old", resultMap.get(runtimeId));
-        // resultMap.set(podId, { data: [] });
-        // console.log("new", resultMap.get(runtimeId));
-        // console.log("send new result");
+        specs.forEach(({ code, podId }) => {
+          socket.send(
+            JSON.stringify({
+              type: "runCode",
+              payload: {
+                lang: "python",
+                code: code,
+                raw: true,
+                podId: podId,
+                sessionId: runtimeId,
+              },
+            })
+          );
+        });
+        return true;
+      }),
+    interrupt: protectedProcedure
+      .input(z.object({ runtimeId: z.string() }))
+      .mutation(async ({ input: { runtimeId } }) => {
+        const socket = runtime2socket.get(runtimeId);
+        if (!socket) return false;
         socket.send(
           JSON.stringify({
-            type: "runCode",
+            type: "interruptKernel",
             payload: {
-              lang: "python",
-              code: code,
-              raw: true,
-              podId: podId,
               sessionId: runtimeId,
             },
           })
         );
         return true;
-      }
-    ),
-  runChain: protectedProcedure
-    .input(
-      z.object({
-        runtimeId: z.string(),
-        specs: z.array(z.object({ code: z.string(), podId: z.string() })),
-      })
-    )
-    .mutation(async ({ input: { runtimeId, specs } }) => {
-      console.log("runChain", runtimeId);
-      const socket = runtime2socket.get(runtimeId);
-      if (!socket) return false;
-      specs.forEach(({ code, podId }) => {
+      }),
+    status: protectedProcedure
+      .input(z.object({ runtimeId: z.string() }))
+      .mutation(async ({ input: { runtimeId } }) => {
+        console.log("requestKernelStatus", runtimeId);
+        const socket = runtime2socket.get(runtimeId);
+        if (!socket) {
+          console.log("WARN: socket not found");
+          return false;
+        }
         socket.send(
           JSON.stringify({
-            type: "runCode",
+            type: "requestKernelStatus",
             payload: {
-              lang: "python",
-              code: code,
-              raw: true,
-              podId: podId,
               sessionId: runtimeId,
             },
           })
         );
-      });
-      return true;
-    }),
-  interruptKernel: protectedProcedure
-    .input(z.object({ runtimeId: z.string() }))
-    .mutation(async ({ input: { runtimeId } }) => {
-      const socket = runtime2socket.get(runtimeId);
-      if (!socket) return false;
-      socket.send(
-        JSON.stringify({
-          type: "interruptKernel",
-          payload: {
-            sessionId: runtimeId,
-          },
-        })
-      );
-      return true;
-    }),
-  requestKernelStatus: protectedProcedure
-    .input(z.object({ runtimeId: z.string() }))
-    .mutation(async ({ input: { runtimeId } }) => {
-      console.log("requestKernelStatus", runtimeId);
-      const socket = runtime2socket.get(runtimeId);
-      if (!socket) {
-        console.log("WARN: socket not found");
-        return false;
-      }
-      socket.send(
-        JSON.stringify({
-          type: "requestKernelStatus",
-          payload: {
-            sessionId: runtimeId,
-          },
-        })
-      );
-      return true;
-    }),
+        return true;
+      }),
+  }),
 });
 
 export type ContainerRouter = typeof appRouter;
