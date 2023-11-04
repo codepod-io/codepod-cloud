@@ -393,7 +393,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
 
-  const runChain = containerTrpc.runChain.useMutation();
+  const runChain = containerTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const focusedEditor = useStore(store, (state) => state.focusedEditor);

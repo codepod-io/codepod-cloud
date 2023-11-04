@@ -521,8 +521,8 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
   const repoId = useStore(store, (state) => state.repoId);
   if (!repoId) throw new Error("repoId is null");
 
-  const killRuntime = containerTrpc.killRuntime.useMutation();
-  const disconnectRuntime = containerTrpc.disconnectRuntime.useMutation();
+  const deleteKernel = containerTrpc.kernel.delete.useMutation();
+  const disconnectKernel = containerTrpc.kernel.disconnect.useMutation();
 
   return (
     <Box component="span">
@@ -556,7 +556,7 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            disconnectRuntime.mutate({ runtimeId, repoId });
+            disconnectKernel.mutate({ runtimeId, repoId });
             handleClose();
           }}
         >
@@ -564,7 +564,7 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            killRuntime.mutate({ runtimeId, repoId: repoId });
+            deleteKernel.mutate({ runtimeId, repoId: repoId });
             handleClose();
           }}
         >
@@ -587,9 +587,9 @@ const RuntimeItem = ({ runtimeId }) => {
   const repoId = useStore(store, (state) => state.repoId);
   if (!repoId) throw new Error("repoId is null");
 
-  const connect = containerTrpc.connectRuntime.useMutation();
-  const requestKernelStatus = containerTrpc.requestKernelStatus.useMutation();
-  const interruptKernel = containerTrpc.interruptKernel.useMutation();
+  const connect = containerTrpc.kernel.connect.useMutation();
+  const requestKernelStatus = containerTrpc.kernel.status.useMutation();
+  const interruptKernel = containerTrpc.kernel.interrupt.useMutation();
 
   useEffect(() => {
     // if the runtime is disconnected, keep trying to connect.
@@ -690,7 +690,7 @@ const RuntimeStatus = () => {
   // Observe runtime change
   const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
   const ids = Array.from<string>(runtimeMap.keys());
-  const spawnRuntime = containerTrpc.spawnRuntime.useMutation();
+  const createKernel = containerTrpc.kernel.create.useMutation();
 
   return (
     <>
@@ -698,7 +698,7 @@ const RuntimeStatus = () => {
       <Button
         onClick={() => {
           const id = myNanoId();
-          spawnRuntime.mutate({ runtimeId: id, repoId: repoId });
+          createKernel.mutate({ runtimeId: id, repoId: repoId });
         }}
       >
         Create New Runtime
