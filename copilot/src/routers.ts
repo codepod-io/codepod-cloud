@@ -53,7 +53,7 @@ export const appRouter = router({
           };
         } else {
           data = JSON.stringify({
-            prompt: inputPrefix,
+            prompt: inputPrefix, // FIXME, https://github.com/ggerganov/llama.cpp/pull/4028
             input_prefix: inputPrefix,
             input_suffix: inputSuffix,
             temperature: 0.1,
