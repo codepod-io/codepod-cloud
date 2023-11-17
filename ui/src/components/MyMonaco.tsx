@@ -10,7 +10,9 @@ import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
-import { containerTrpc, trpc } from "../lib/trpc";
+import { containerTrpc, trpc, copilotTrpc } from "../lib/trpc";
+
+import { llamaInlineCompletionProvider } from "../lib/llamaCompletionProvider";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -406,6 +408,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
 
+  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
+
   // TODO support other languages.
   let lang = "python";
   let [editor, setEditor] =
@@ -436,7 +440,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const editMode = useStore(store, (state) => state.editMode);
-
+  const { client } = copilotTrpc.useUtils();
+  
   // FIXME useCallback?
   function onEditorDidMount(
     editor: monaco.editor.IStandaloneCodeEditor,
@@ -486,12 +491,33 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         }
       },
     });
+    editor.addAction({
+      id: "trigger-inline-suggest",
+      label: "Trigger Suggest",
+      keybindings: [
+        monaco.KeyMod.WinCtrl | monaco.KeyMod.Shift | monaco.KeyCode.Space,
+      ],
+      run: () => {
+        editor.trigger(null, "editor.action.inlineSuggest.trigger", null);
+      },
+    });
 
     // editor.onDidChangeModelContent(async (e) => {
     //   // content is value?
     //   updateGitGutter(editor);
     // });
 
+    const llamaCompletionProvider = new llamaInlineCompletionProvider(
+      id,
+      editor,
+      client,
+      copilotManualMode || false
+    );
+    monaco.languages.registerInlineCompletionsProvider(
+      "python",
+      llamaCompletionProvider
+    );
+    
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {
       throw new Error("codeMap doesn't have pod " + id);

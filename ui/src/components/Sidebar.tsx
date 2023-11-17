@@ -71,6 +71,11 @@ function SidebarSettings() {
   );
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
+  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
+  const setCopilotManualMode = useStore(
+    store,
+    (state) => state.setCopilotManualMode
+  );
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const setContextualZoom = useStore(store, (state) => state.setContextualZoom);
 
@@ -485,6 +490,26 @@ function SidebarSettings() {
                 />
               }
               label="Enable Annotations"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip
+          title={"Ctrl+Shift+Space to trigger Copilot manually"}
+          disableInteractive
+        >
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={copilotManualMode}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setCopilotManualMode(event.target.checked);
+                  }}
+                />
+              }
+              label="Trigger Copilot Manually"
             />
           </FormGroup>
         </Tooltip>

@@ -46,7 +46,7 @@ import {
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
-import { containerContext, containerTrpc, trpc } from "../lib/trpc";
+import { containerContext, containerTrpc, copilotContext, copilotTrpc, trpc } from "../lib/trpc";
 import { useAuth } from "../lib/auth";
 
 const HeaderItem = memo<any>(() => {
@@ -443,6 +443,29 @@ function ContainerTrpcProvider({ children }) {
   );
 }
 
+function CopilotTrpcProvider({ children }) {
+  const { getAuthHeaders } = useAuth();
+  const queryClient = new QueryClient();
+  const trpcClient = copilotTrpc.createClient({
+    links: [
+      httpBatchLink({
+        // TODO replace with copilot url.
+        // FIXME add auth
+        url: "http://localhost:4333/trpc",
+        headers: getAuthHeaders(),
+      }),
+    ],
+  });
+  return (
+    <copilotTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={copilotContext}>
+        {children}
+      </QueryClientProvider>
+    </copilotTrpc.Provider>
+  );
+}
+
+
 export function Repo({ yjsWsUrl }) {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
@@ -455,6 +478,7 @@ export function Repo({ yjsWsUrl }) {
   return (
     <RepoContext.Provider value={store}>
       <ContainerTrpcProvider>
+        <CopilotTrpcProvider>
         <UserWrapper>
           <RepoLoader id={id}>
             <WaitForProvider yjsWsUrl={yjsWsUrl}>
@@ -475,6 +499,7 @@ export function Repo({ yjsWsUrl }) {
             </WaitForProvider>
           </RepoLoader>
         </UserWrapper>
+        </CopilotTrpcProvider>
       </ContainerTrpcProvider>
     </RepoContext.Provider>
   );
