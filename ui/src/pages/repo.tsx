@@ -46,7 +46,13 @@ import {
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
-import { containerContext, containerTrpc, copilotContext, copilotTrpc, trpc } from "../lib/trpc";
+import {
+  containerContext,
+  containerTrpc,
+  copilotContext,
+  copilotTrpc,
+  trpc,
+} from "../lib/trpc";
 import { useAuth } from "../lib/auth";
 
 const HeaderItem = memo<any>(() => {
@@ -465,7 +471,6 @@ function CopilotTrpcProvider({ children }) {
   );
 }
 
-
 export function Repo({ yjsWsUrl }) {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
@@ -479,26 +484,26 @@ export function Repo({ yjsWsUrl }) {
     <RepoContext.Provider value={store}>
       <ContainerTrpcProvider>
         <CopilotTrpcProvider>
-        <UserWrapper>
-          <RepoLoader id={id}>
-            <WaitForProvider yjsWsUrl={yjsWsUrl}>
-              <ParserWrapper>
-                <HeaderWrapper id={id}>
-                  <Box
-                    height="100%"
-                    border="solid 3px black"
-                    p={2}
-                    boxSizing={"border-box"}
-                    // m={2}
-                    overflow="auto"
-                  >
-                    <Canvas />
-                  </Box>
-                </HeaderWrapper>
-              </ParserWrapper>
-            </WaitForProvider>
-          </RepoLoader>
-        </UserWrapper>
+          <UserWrapper>
+            <RepoLoader id={id}>
+              <WaitForProvider yjsWsUrl={yjsWsUrl}>
+                <ParserWrapper>
+                  <HeaderWrapper id={id}>
+                    <Box
+                      height="100%"
+                      border="solid 3px black"
+                      p={2}
+                      boxSizing={"border-box"}
+                      // m={2}
+                      overflow="auto"
+                    >
+                      <Canvas />
+                    </Box>
+                  </HeaderWrapper>
+                </ParserWrapper>
+              </WaitForProvider>
+            </RepoLoader>
+          </UserWrapper>
         </CopilotTrpcProvider>
       </ContainerTrpcProvider>
     </RepoContext.Provider>

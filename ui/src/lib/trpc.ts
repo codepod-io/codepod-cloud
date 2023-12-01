@@ -16,9 +16,7 @@ export const containerTrpc = createTRPCReact<ContainerRouter>({
   reactQueryContext: containerContext,
 });
 
-export const copilotContext = createContext<QueryClient | undefined>(
-  undefined
-);
+export const copilotContext = createContext<QueryClient | undefined>(undefined);
 export const copilotTrpc = createTRPCReact<CopilotRouter>({
   context: createContext(null),
   reactQueryContext: copilotContext,
