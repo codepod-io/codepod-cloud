@@ -11,6 +11,8 @@ export interface SettingSlice {
   autoRunLayout?: boolean;
   setAutoRunLayout: (b: boolean) => void;
   contextualZoomParams: Record<any, number>;
+  copilotManualMode?: boolean;
+  setCopilotManualMode: (b: boolean) => void;
   setContextualZoomParams: (
     r: Record<any, number>,
     n: number,
@@ -64,6 +66,15 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     // also write to local storage
     localStorage.setItem("autoRunLayout", JSON.stringify(b));
   },
+  copilotManualMode: localStorage.getItem("copilotManualMode")
+    ? JSON.parse(localStorage.getItem("copilotManualMode")!)
+    : false,
+  setCopilotManualMode: (b: boolean) => {
+    // set it
+    set({ copilotManualMode: b });
+    // also write to local storage
+    localStorage.setItem("copilotManualMode", JSON.stringify(b));
+  },
 
   contextualZoom: localStorage.getItem("contextualZoom")
     ? JSON.parse(localStorage.getItem("contextualZoom")!)
@@ -86,13 +97,13 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
   contextualZoomParams: localStorage.getItem("contextualZoomParams")
     ? JSON.parse(localStorage.getItem("contextualZoomParams")!)
     : {
-        0: 48,
-        1: 32,
-        2: 24,
-        3: 16,
-        next: 8,
-        threshold: 16,
-      },
+      0: 48,
+      1: 32,
+      2: 24,
+      3: 16,
+      next: 8,
+      threshold: 16,
+    },
   setContextualZoomParams: (
     contextualZoomParams: Record<any, number>,
     level: number,

@@ -2,4 +2,5 @@ packages:
   - "api"
   - "ui"
   - "container"
+  - "copilot"
   - "packages/*"
