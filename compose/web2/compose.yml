@@ -60,6 +60,22 @@ services:
       YJS_WS_URL: "ws://yjs:4233/socket"
     command: sh -c "pnpm run dev:runtime"
 
+  copilot:
+    build: ../..
+    working_dir: /app/api
+    volumes:
+      - ../../api/src:/app/api/src
+    ports:
+      - "4333:4333"
+    environment:
+      # Setup:
+      # 1. run llama.cpp server on Mac host to utilize Metal GPU for better performance
+      # 2. access the host from the container ref:
+      #    https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container
+      LLAMA_CPP_SERVER: "host.docker.internal"
+      LLAMA_CPP_PORT: "8080"
+    command: sh -c "pnpm run dev:copilot"
+
   ui:
     build: ../..
     working_dir: /app/ui
@@ -71,7 +87,7 @@ services:
       VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
       VITE_APP_API_URL: "http://localhost:4000/trpc"
       VITE_APP_RUNTIME_API_URL: "http://localhost:4001/trpc"
-      VITE_APP_COPILOT_API_URL: ""
+      VITE_APP_COPILOT_API_URL: "http://localhost:4333/trpc"
     ports:
       - "3000:3000"
 

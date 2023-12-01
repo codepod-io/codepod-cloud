@@ -3,8 +3,6 @@ import http from "http";
 
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 
-require("dotenv").config();
-
 const copilotIpAddress = z.string().parse(process.env.LLAMA_CPP_SERVER);
 const copilotPort = z.string().parse(process.env.LLAMA_CPP_PORT);
 

@@ -27,6 +27,8 @@ JWT_SECRET=mysecret
 DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/codepod?schema=public"
 GOOGLE_CLIENT_ID=...
 
+YJS_WS_URL=ws://localhost:4233/socket
+
 LLAMA_CPP_SERVER=127.0.0.1
 LLAMA_CPP_PORT=8080
 ```
@@ -35,8 +37,11 @@ ui/.env
 
 ```sh
 VITE_APP_GOOGLE_CLIENT_ID=...
+
 VITE_APP_YJS_WS_URL="ws://localhost:4233/socket"
-VITE_APP_API_URL="http://localhost:4000/graphql"
+VITE_APP_API_URL="http://localhost:4000/trpc"
+VITE_APP_RUNTIME_API_URL="http://localhost:4001/trpc"
+VITE_APP_COPILOT_API_URL="http://localhost:4333/trpc"
 ```
 
 ## (optional) Start copilot server
