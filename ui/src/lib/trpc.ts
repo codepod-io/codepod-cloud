@@ -1,7 +1,7 @@
 import { createTRPCReact } from "@trpc/react-query";
-import type { AppRouter } from "../../../api/src/routers";
-import type { ContainerRouter } from "../../../container/src/routers";
-import type { CopilotRouter } from "../../../copilot/src/routers";
+import type { AppRouter } from "../../../api/src/main/routers";
+import type { ContainerRouter } from "../../../api/src/container/routers";
+import type { CopilotRouter } from "../../../api/src/copilot/routers";
 import { createContext } from "react";
 import { QueryClient } from "@tanstack/react-query";
 
