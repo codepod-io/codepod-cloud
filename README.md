@@ -26,11 +26,7 @@ api/.env
 JWT_SECRET=mysecret
 DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/codepod?schema=public"
 GOOGLE_CLIENT_ID=...
-```
 
-copilot/.env
-
-```sh
 LLAMA_CPP_SERVER=127.0.0.1
 LLAMA_CPP_PORT=8080
 ```
@@ -56,39 +52,43 @@ make -j
 
 This will setup the REST API listening on http://localhost:8080
 
-## Start the app stack
+## Start the database in a docker container
 
-Step 1: start the DB
+Start the DB container:
 
-```
-> cd compose/db
-> docker compose up -d
-> cd packages/prisma
-> npx prisma migrate dev
+```sh
+cd compose/db
+docker compose up -d
 ```
 
-Step 2: Start the app:
+If it's the first time you setup the DB, you need to initialize the DB with the tables:
 
+```sh
+cd api
+pnpm dlx prisma migrate dev
 ```
-> cd api
-> pnpm dev
+
+## Start the app
+
+Start the servers:
+
+```sh
+cd api
+pnpm dev:main
 # 🚀 Server ready at http://localhost:4000
-
-> cd api
-> pnpm dev:yjs
+pnpm dev:yjs
 # 🚀 Server ready at http://localhost:4233
-
-> cd container
-> pnpm dev
+pnpm dev:container
 # 🚀 Server ready at http://localhost:4001
-
-# optional: copilot
-> cd copilot
-> pnpm dev
+pnpm dev:copilot
 # 🚀 Server ready at http://localhost:4333
+```
 
-> cd ui
-> pnpm dev
+Start the web UI
+
+```sh
+cd ui
+pnpm dev
 # Local:   http://localhost:3000/
 ```
 

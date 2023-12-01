@@ -6,7 +6,7 @@ import { OAuth2Client } from "google-auth-library";
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
 
-import prisma from "@codepod/prisma";
+import prisma from "./prisma";
 
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
