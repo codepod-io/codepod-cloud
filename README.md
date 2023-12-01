@@ -10,6 +10,54 @@ more on our website at https://codepod.io.
 
 # Develop
 
+## The .env files
+
+compose/db/.env
+
+```sh
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=mypassword
+POSTGRES_DB=codepod
+```
+
+api/.env
+
+```sh
+JWT_SECRET=mysecret
+DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/codepod?schema=public"
+GOOGLE_CLIENT_ID=...
+```
+
+copilot/.env
+
+```sh
+LLAMA_CPP_SERVER=127.0.0.1
+LLAMA_CPP_PORT=8080
+```
+
+ui/.env
+
+```sh
+VITE_APP_GOOGLE_CLIENT_ID=...
+VITE_APP_YJS_WS_URL="ws://localhost:4233/socket"
+VITE_APP_API_URL="http://localhost:4000/graphql"
+```
+
+## (optional) Start copilot server
+
+compile and start the llama.cpp server
+
+```sh
+cd llama.cpp
+cmake .
+make -j
+./server -m /path/to/codellama-7b.Q4_0.gguf -c 2048
+```
+
+This will setup the REST API listening on http://localhost:8080
+
+## Start the app stack
+
 Step 1: start the DB
 
 ```
@@ -34,35 +82,14 @@ Step 2: Start the app:
 > pnpm dev
 # 🚀 Server ready at http://localhost:4001
 
+# optional: copilot
+> cd copilot
+> pnpm dev
+# 🚀 Server ready at http://localhost:4333
+
 > cd ui
 > pnpm dev
 # Local:   http://localhost:3000/
-```
-
-## The .env files
-
-compose/db/.env
-
-```
-POSTGRES_USER=myuser
-POSTGRES_PASSWORD=mypassword
-POSTGRES_DB=codepod
-```
-
-api/.env
-
-```
-JWT_SECRET=mysecret
-DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/codepod?schema=public"
-GOOGLE_CLIENT_ID=...
-```
-
-ui/.env
-
-```
-VITE_APP_GOOGLE_CLIENT_ID=...
-VITE_APP_YJS_WS_URL="ws://localhost:4233/socket"
-VITE_APP_API_URL="http://localhost:4000/graphql"
 ```
 
 # Citation
