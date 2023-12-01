@@ -391,6 +391,9 @@ importers:
       yjs:
         specifier: ^13.6.7
         version: 13.6.7
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
       zustand:
         specifier: ^4.4.1
         version: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)

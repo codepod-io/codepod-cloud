@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import "./App.css";
 import "./custom.css";
 
@@ -32,23 +34,14 @@ import { Alert, Button, Typography } from "@mui/material";
 
 import { trpc } from "./lib/trpc";
 
-const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
-const apiUrl = import.meta.env.VITE_APP_API_URL;
-const runtimeApiUrl = import.meta.env.VITE_APP_RUNTIME_API_URL;
-const copilotApiUrl = import.meta.env.VITE_APP_COPILOT_API_URL;
-
-if (!yjsWsUrl) {
-  throw new Error("VITE_APP_YJS_WS_URL is not defined");
-}
-if (!apiUrl) {
-  throw new Error("VITE_APP_API_URL is not defined");
-}
-if (!runtimeApiUrl) {
-  throw new Error("VITE_APP_RUNTIME_API_URL is not defined");
-}
-if (!copilotApiUrl) {
-  console.warn("VITE_APP_COPILOT_API_URL is not defined");
-}
+const yjsWsUrl = z.string().parse(import.meta.env.VITE_APP_YJS_WS_URL);
+const apiUrl = z.string().parse(import.meta.env.VITE_APP_API_URL);
+const runtimeApiUrl = z
+  .string()
+  .parse(import.meta.env.VITE_APP_RUNTIME_API_URL);
+const copilotApiUrl = z
+  .string()
+  .parse(import.meta.env.VITE_APP_COPILOT_API_URL);
 
 const theme = createTheme({
   typography: {
