@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { inferAsyncReturnType } from "@trpc/server";
 
@@ -13,7 +14,10 @@ export const createContext = async ({
   let userId;
 
   if (token) {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    const decoded = jwt.verify(
+      token,
+      z.string().parse(process.env.JWT_SECRET)
+    ) as {
       id: string;
     };
     userId = decoded.id;

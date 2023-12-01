@@ -2,20 +2,73 @@ import React, { useState, useContext, useEffect, createContext } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 
-import { trpc } from "./trpc";
+import {
+  runtimeContext,
+  runtimeTrpc,
+  copilotContext,
+  copilotTrpc,
+  trpc,
+} from "../lib/trpc";
+
+function RuntimeTrpcProvider({ children, apiUrl }) {
+  const { getAuthHeaders } = useAuth();
+  const queryClient = new QueryClient();
+  const trpcClient = runtimeTrpc.createClient({
+    links: [
+      httpBatchLink({
+        // FIXME add auth
+        url: apiUrl,
+        headers: getAuthHeaders(),
+      }),
+    ],
+  });
+  return (
+    <runtimeTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={runtimeContext}>
+        {children}
+      </QueryClientProvider>
+    </runtimeTrpc.Provider>
+  );
+}
+
+function CopilotTrpcProvider({ children, apiUrl }) {
+  const { getAuthHeaders } = useAuth();
+  const queryClient = new QueryClient();
+  const trpcClient = copilotTrpc.createClient({
+    links: [
+      httpBatchLink({
+        // FIXME add auth
+        url: apiUrl,
+        headers: getAuthHeaders(),
+      }),
+    ],
+  });
+  return (
+    <copilotTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={copilotContext}>
+        {children}
+      </QueryClientProvider>
+    </copilotTrpc.Provider>
+  );
+}
 
 type AuthContextType = ReturnType<typeof useProvideAuth>;
 
 const authContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children, apiUrl, spawnerApiUrl }) {
-  const auth = useProvideAuth({ apiUrl, spawnerApiUrl });
+export function AuthProvider({
+  children,
+  apiUrl,
+  runtimeApiUrl,
+  copilotApiUrl,
+}) {
+  const auth = useProvideAuth();
 
   const queryClient = new QueryClient();
   const trpcClient = trpc.createClient({
     links: [
       httpBatchLink({
-        url: "http://localhost:4000/trpc",
+        url: apiUrl,
         headers: auth.getAuthHeaders(),
         // fetch(url, options) {
         //   return fetch(url, {
@@ -31,7 +84,11 @@ export function AuthProvider({ children, apiUrl, spawnerApiUrl }) {
     <authContext.Provider value={auth}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <RuntimeTrpcProvider apiUrl={runtimeApiUrl}>
+            <CopilotTrpcProvider apiUrl={copilotApiUrl}>
+              {children}
+            </CopilotTrpcProvider>
+          </RuntimeTrpcProvider>
         </QueryClientProvider>
       </trpc.Provider>
     </authContext.Provider>
@@ -42,7 +99,7 @@ export const useAuth = () => {
   return useContext(authContext)!;
 };
 
-function useProvideAuth({ apiUrl, spawnerApiUrl }) {
+function useProvideAuth() {
   const [authToken, setAuthToken] = useState<String | null>(null);
 
   useEffect(() => {

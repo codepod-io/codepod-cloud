@@ -34,7 +34,8 @@ import { trpc } from "./lib/trpc";
 
 const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
 const apiUrl = import.meta.env.VITE_APP_API_URL;
-const spawnerApiUrl = import.meta.env.VITE_APP_SPAWNER_API_URL;
+const runtimeApiUrl = import.meta.env.VITE_APP_RUNTIME_API_URL;
+const copilotApiUrl = import.meta.env.VITE_APP_COPILOT_API_URL;
 
 if (!yjsWsUrl) {
   throw new Error("VITE_APP_YJS_WS_URL is not defined");
@@ -42,8 +43,11 @@ if (!yjsWsUrl) {
 if (!apiUrl) {
   throw new Error("VITE_APP_API_URL is not defined");
 }
-if (!spawnerApiUrl) {
-  console.warn("VITE_APP_RUNTIME_API_URL is not defined");
+if (!runtimeApiUrl) {
+  throw new Error("VITE_APP_RUNTIME_API_URL is not defined");
+}
+if (!copilotApiUrl) {
+  console.warn("VITE_APP_COPILOT_API_URL is not defined");
 }
 
 const theme = createTheme({
@@ -197,7 +201,11 @@ const router = createBrowserRouter([
 export function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider apiUrl={apiUrl} spawnerApiUrl={spawnerApiUrl}>
+      <AuthProvider
+        apiUrl={apiUrl}
+        runtimeApiUrl={runtimeApiUrl}
+        copilotApiUrl={copilotApiUrl}
+      >
         <SnackbarProvider maxSnack={5}>
           <RouterProvider router={router} />
         </SnackbarProvider>

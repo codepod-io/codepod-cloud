@@ -1,6 +1,6 @@
 import * as Y from "yjs";
 
-import prisma from "@codepod/prisma";
+import prisma from "../prisma";
 import { json2yxml } from "@codepod/yjs";
 
 /**

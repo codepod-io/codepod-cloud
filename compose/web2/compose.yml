@@ -1,0 +1,79 @@
+# Use postgres/example user/password credentials
+version: "3.5"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  prisma:
+    build: ../..
+    restart: always
+    command: sh -c "npx prisma studio"
+    working_dir: /app/api
+    ports:
+      - "5555:5555"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+
+  api:
+    build: ../..
+    working_dir: /app/api
+    command: sh -c "pnpm run dev:main"
+    volumes:
+      - ../../api/src:/app/api/src
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+
+  yjs:
+    build: ../..
+    working_dir: /app/api
+    volumes:
+      - ../../api/src:/app/api/src
+    ports:
+      - "4233:4233"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+    command: sh -c "pnpm run dev:yjs"
+
+  runtime:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.runtime
+    working_dir: /app/api
+    volumes:
+      - ../../api/src:/app/api/src
+    ports:
+      - "4001:4001"
+    environment:
+      YJS_WS_URL: "ws://yjs:4233/socket"
+    command: sh -c "pnpm run dev:runtime"
+
+  ui:
+    build: ../..
+    working_dir: /app/ui
+    volumes:
+      - ../../ui/src:/app/ui/src
+    command: sh -c "pnpm run dev"
+    environment:
+      VITE_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
+      VITE_APP_API_URL: "http://localhost:4000/trpc"
+      VITE_APP_RUNTIME_API_URL: "http://localhost:4001/trpc"
+      VITE_APP_COPILOT_API_URL: ""
+    ports:
+      - "3000:3000"
+
+volumes:
+  db-data:
