@@ -233,4 +233,4 @@ export const appRouter = router({
   }),
 });
 
-export type ContainerRouter = typeof appRouter;
+export type RuntimeRouter = typeof appRouter;

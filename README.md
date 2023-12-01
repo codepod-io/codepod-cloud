@@ -78,7 +78,7 @@ pnpm dev:main
 # 🚀 Server ready at http://localhost:4000
 pnpm dev:yjs
 # 🚀 Server ready at http://localhost:4233
-pnpm dev:container
+pnpm dev:runtime
 # 🚀 Server ready at http://localhost:4001
 pnpm dev:copilot
 # 🚀 Server ready at http://localhost:4333
