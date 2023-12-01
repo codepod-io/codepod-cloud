@@ -49,8 +49,7 @@ async function getMyYDoc({ repoId, yjsServerUrl, token }): Promise<Y.Doc> {
 
 const routingTable: Map<string, string> = new Map();
 
-// FIXME hard-coded yjs server url
-const yjsServerUrl = `ws://localhost:4233/socket`;
+const yjsServerUrl = z.string().parse(process.env.YJS_WS_URL);
 
 export const appRouter = router({
   hello: protectedProcedure.query(() => {

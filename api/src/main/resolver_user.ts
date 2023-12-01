@@ -14,6 +14,9 @@ import { protectedProcedure, publicProcedure, router } from "./trpc";
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
 const jwtSecret = z.string().parse(process.env.JWT_SECRET);
+
+// FIXME even if this is undefined, the token verification still works. Looks
+// like I only need to set client ID in the frontend?
 const googleClientId = z.string().parse(process.env.GOOGLE_CLIENT_ID);
 
 const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
@@ -116,6 +119,7 @@ const client = new OAuth2Client(googleClientId);
 const loginWithGoogle = publicProcedure
   .input(z.object({ idToken: z.string() }))
   .mutation(async ({ input: { idToken } }) => {
+    console.log("login with google");
     const ticket = await client.verifyIdToken({
       idToken: idToken,
       audience: googleClientId, // Specify the CLIENT_ID of the app that accesses the backend

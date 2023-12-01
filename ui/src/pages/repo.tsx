@@ -427,50 +427,6 @@ function UserWrapper({ children }) {
   return children;
 }
 
-function RuntimeTrpcProvider({ children }) {
-  const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
-  const trpcClient = runtimeTrpc.createClient({
-    links: [
-      httpBatchLink({
-        // TODO replace with container url.
-        // FIXME add auth
-        url: "http://localhost:4001/trpc",
-        headers: getAuthHeaders(),
-      }),
-    ],
-  });
-  return (
-    <runtimeTrpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient} context={runtimeContext}>
-        {children}
-      </QueryClientProvider>
-    </runtimeTrpc.Provider>
-  );
-}
-
-function CopilotTrpcProvider({ children }) {
-  const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
-  const trpcClient = copilotTrpc.createClient({
-    links: [
-      httpBatchLink({
-        // TODO replace with copilot url.
-        // FIXME add auth
-        url: "http://localhost:4333/trpc",
-        headers: getAuthHeaders(),
-      }),
-    ],
-  });
-  return (
-    <copilotTrpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient} context={copilotContext}>
-        {children}
-      </QueryClientProvider>
-    </copilotTrpc.Provider>
-  );
-}
-
 export function Repo({ yjsWsUrl }) {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
@@ -482,30 +438,26 @@ export function Repo({ yjsWsUrl }) {
   }, []);
   return (
     <RepoContext.Provider value={store}>
-      <RuntimeTrpcProvider>
-        <CopilotTrpcProvider>
-          <UserWrapper>
-            <RepoLoader id={id}>
-              <WaitForProvider yjsWsUrl={yjsWsUrl}>
-                <ParserWrapper>
-                  <HeaderWrapper id={id}>
-                    <Box
-                      height="100%"
-                      border="solid 3px black"
-                      p={2}
-                      boxSizing={"border-box"}
-                      // m={2}
-                      overflow="auto"
-                    >
-                      <Canvas />
-                    </Box>
-                  </HeaderWrapper>
-                </ParserWrapper>
-              </WaitForProvider>
-            </RepoLoader>
-          </UserWrapper>
-        </CopilotTrpcProvider>
-      </RuntimeTrpcProvider>
+      <UserWrapper>
+        <RepoLoader id={id}>
+          <WaitForProvider yjsWsUrl={yjsWsUrl}>
+            <ParserWrapper>
+              <HeaderWrapper id={id}>
+                <Box
+                  height="100%"
+                  border="solid 3px black"
+                  p={2}
+                  boxSizing={"border-box"}
+                  // m={2}
+                  overflow="auto"
+                >
+                  <Canvas />
+                </Box>
+              </HeaderWrapper>
+            </ParserWrapper>
+          </WaitForProvider>
+        </RepoLoader>
+      </UserWrapper>
     </RepoContext.Provider>
   );
 }
