@@ -48,7 +48,7 @@ import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
 import { getAbsPos, newNodeShapeConfig } from "../lib/store/canvasSlice";
-import { containerTrpc, trpc } from "../lib/trpc";
+import { runtimeTrpc, trpc } from "../lib/trpc";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -150,7 +150,7 @@ function useJump() {
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
   const getScopeChain = useStore(store, (state) => state.getScopeChain);
 
-  const runChain = containerTrpc.kernel.runChain.useMutation();
+  const runChain = runtimeTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const setCenterSelection = useStore(

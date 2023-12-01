@@ -1,6 +1,6 @@
 import { createTRPCReact } from "@trpc/react-query";
 import type { AppRouter } from "../../../api/src/main/routers";
-import type { ContainerRouter } from "../../../api/src/container/routers";
+import type { RuntimeRouter } from "../../../api/src/runtime/routers";
 import type { CopilotRouter } from "../../../api/src/copilot/routers";
 import { createContext } from "react";
 import { QueryClient } from "@tanstack/react-query";
@@ -8,12 +8,10 @@ import { QueryClient } from "@tanstack/react-query";
 export const trpc = createTRPCReact<AppRouter>();
 
 // Use multiple trpc clients in the same app. Ref: https://github.com/trpc/trpc/pull/3049
-export const containerContext = createContext<QueryClient | undefined>(
-  undefined
-);
-export const containerTrpc = createTRPCReact<ContainerRouter>({
+export const runtimeContext = createContext<QueryClient | undefined>(undefined);
+export const runtimeTrpc = createTRPCReact<RuntimeRouter>({
   context: createContext(null),
-  reactQueryContext: containerContext,
+  reactQueryContext: runtimeContext,
 });
 
 export const copilotContext = createContext<QueryClient | undefined>(undefined);

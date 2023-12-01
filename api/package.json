@@ -8,7 +8,7 @@
     "dev:main": "ts-node-dev src/main/run.ts",
     "dev:yjs": "ts-node-dev src/yjs/run.ts",
     "dev:copilot": "ts-node-dev src/copilot/run.ts",
-    "dev:container": "ts-node-dev src/container/run.ts",
+    "dev:runtime": "ts-node-dev src/runtime/run.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {

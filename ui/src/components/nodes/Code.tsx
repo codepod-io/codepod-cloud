@@ -60,7 +60,7 @@ import { timeDifference } from "../../lib/utils/utils";
 import { ButtonGroup } from "@mui/material";
 
 import { ConfirmDeleteButton } from "./utils";
-import { containerTrpc, trpc } from "../../lib/trpc";
+import { runtimeTrpc, trpc } from "../../lib/trpc";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -398,7 +398,7 @@ function MyFloatingToolbar({
   // const pod = useStore(store, (state) => state.pods[id]);
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
   const getEdgeChain = useStore(store, (state) => state.getEdgeChain);
-  const runChain = containerTrpc.kernel.runChain.useMutation();
+  const runChain = runtimeTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   // right, bottom

@@ -47,8 +47,8 @@ import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
 import {
-  containerContext,
-  containerTrpc,
+  runtimeContext,
+  runtimeTrpc,
   copilotContext,
   copilotTrpc,
   trpc,
@@ -427,10 +427,10 @@ function UserWrapper({ children }) {
   return children;
 }
 
-function ContainerTrpcProvider({ children }) {
+function RuntimeTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
   const queryClient = new QueryClient();
-  const trpcClient = containerTrpc.createClient({
+  const trpcClient = runtimeTrpc.createClient({
     links: [
       httpBatchLink({
         // TODO replace with container url.
@@ -441,11 +441,11 @@ function ContainerTrpcProvider({ children }) {
     ],
   });
   return (
-    <containerTrpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient} context={containerContext}>
+    <runtimeTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={runtimeContext}>
         {children}
       </QueryClientProvider>
-    </containerTrpc.Provider>
+    </runtimeTrpc.Provider>
   );
 }
 
@@ -482,7 +482,7 @@ export function Repo({ yjsWsUrl }) {
   }, []);
   return (
     <RepoContext.Provider value={store}>
-      <ContainerTrpcProvider>
+      <RuntimeTrpcProvider>
         <CopilotTrpcProvider>
           <UserWrapper>
             <RepoLoader id={id}>
@@ -505,7 +505,7 @@ export function Repo({ yjsWsUrl }) {
             </RepoLoader>
           </UserWrapper>
         </CopilotTrpcProvider>
-      </ContainerTrpcProvider>
+      </RuntimeTrpcProvider>
     </RepoContext.Provider>
   );
 }

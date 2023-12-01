@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import { createSetupWSConnection } from "./yjs-setupWS";
 import { bindState, writeState } from "./yjs-blob";
 
-import prisma from "@codepod/prisma";
+import prisma from "../prisma";
 interface TokenInterface {
   id: string;
 }

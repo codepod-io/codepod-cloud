@@ -21,7 +21,7 @@ import * as Y from "yjs";
 
 import debounce from "lodash/debounce";
 
-import prisma from "@codepod/prisma";
+import prisma from "../prisma";
 
 const debounceRegistry = new Map<string, any>();
 /**

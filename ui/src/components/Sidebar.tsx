@@ -51,7 +51,7 @@ import { getUpTime, myNanoId } from "../lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
-import { containerTrpc, trpc } from "../lib/trpc";
+import { runtimeTrpc, trpc } from "../lib/trpc";
 
 function SidebarSettings() {
   const store = useContext(RepoContext)!;
@@ -546,8 +546,8 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
   const repoId = useStore(store, (state) => state.repoId);
   if (!repoId) throw new Error("repoId is null");
 
-  const deleteKernel = containerTrpc.kernel.delete.useMutation();
-  const disconnectKernel = containerTrpc.kernel.disconnect.useMutation();
+  const deleteKernel = runtimeTrpc.kernel.delete.useMutation();
+  const disconnectKernel = runtimeTrpc.kernel.disconnect.useMutation();
 
   return (
     <Box component="span">
@@ -612,9 +612,9 @@ const RuntimeItem = ({ runtimeId }) => {
   const repoId = useStore(store, (state) => state.repoId);
   if (!repoId) throw new Error("repoId is null");
 
-  const connect = containerTrpc.kernel.connect.useMutation();
-  const requestKernelStatus = containerTrpc.kernel.status.useMutation();
-  const interruptKernel = containerTrpc.kernel.interrupt.useMutation();
+  const connect = runtimeTrpc.kernel.connect.useMutation();
+  const requestKernelStatus = runtimeTrpc.kernel.status.useMutation();
+  const interruptKernel = runtimeTrpc.kernel.interrupt.useMutation();
 
   useEffect(() => {
     // if the runtime is disconnected, keep trying to connect.
@@ -715,7 +715,7 @@ const RuntimeStatus = () => {
   // Observe runtime change
   const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
   const ids = Array.from<string>(runtimeMap.keys());
-  const createKernel = containerTrpc.kernel.create.useMutation();
+  const createKernel = runtimeTrpc.kernel.create.useMutation();
 
   return (
     <>

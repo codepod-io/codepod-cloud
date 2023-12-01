@@ -10,7 +10,7 @@ import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
-import { containerTrpc, trpc, copilotTrpc } from "../lib/trpc";
+import { runtimeTrpc, trpc, copilotTrpc } from "../lib/trpc";
 
 import { llamaInlineCompletionProvider } from "../lib/llamaCompletionProvider";
 
@@ -395,7 +395,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const preprocessChain = useStore(store, (state) => state.preprocessChain);
 
-  const runChain = containerTrpc.kernel.runChain.useMutation();
+  const runChain = runtimeTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
