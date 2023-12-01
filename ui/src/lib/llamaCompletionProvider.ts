@@ -1,7 +1,8 @@
 import { monaco } from "react-monaco-editor";
 
 export class llamaInlineCompletionProvider
-  implements monaco.languages.InlineCompletionsProvider {
+  implements monaco.languages.InlineCompletionsProvider
+{
   private readonly podId: string;
   private readonly editor: monaco.editor.IStandaloneCodeEditor;
   private readonly trpc: any;
@@ -40,7 +41,7 @@ export class llamaInlineCompletionProvider
     }
     if (
       context.triggerKind ===
-      monaco.languages.InlineCompletionTriggerKind.Automatic &&
+        monaco.languages.InlineCompletionTriggerKind.Automatic &&
       this.manualMode
     ) {
       return;
@@ -102,9 +103,9 @@ export class llamaInlineCompletionProvider
   handleItemDidShow?(
     completions: monaco.languages.InlineCompletions<monaco.languages.InlineCompletion>,
     item: monaco.languages.InlineCompletion
-  ): void { }
+  ): void {}
 
   freeInlineCompletions(
     completions: monaco.languages.InlineCompletions<monaco.languages.InlineCompletion>
-  ): void { }
+  ): void {}
 }

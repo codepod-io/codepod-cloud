@@ -441,7 +441,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const editMode = useStore(store, (state) => state.editMode);
   const { client } = copilotTrpc.useUtils();
-  
+
   // FIXME useCallback?
   function onEditorDidMount(
     editor: monaco.editor.IStandaloneCodeEditor,
@@ -517,7 +517,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       "python",
       llamaCompletionProvider
     );
-    
+
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {
       throw new Error("codeMap doesn't have pod " + id);

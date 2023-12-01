@@ -97,13 +97,13 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
   contextualZoomParams: localStorage.getItem("contextualZoomParams")
     ? JSON.parse(localStorage.getItem("contextualZoomParams")!)
     : {
-      0: 48,
-      1: 32,
-      2: 24,
-      3: 16,
-      next: 8,
-      threshold: 16,
-    },
+        0: 48,
+        1: 32,
+        2: 24,
+        3: 16,
+        next: 8,
+        threshold: 16,
+      },
   setContextualZoomParams: (
     contextualZoomParams: Record<any, number>,
     level: number,
