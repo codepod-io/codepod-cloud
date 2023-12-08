@@ -23,7 +23,7 @@ export class llamaInlineCompletionProvider
   }
 
   private async provideSuggestions(prefix: string, suffix: string) {
-    const suggestion = await this.trpc.copilot.complete.mutate({
+    const suggestion = await this.trpc.copilot.completeV2.mutate({
       inputPrefix: prefix,
       inputSuffix: suffix,
       podId: this.podId,
