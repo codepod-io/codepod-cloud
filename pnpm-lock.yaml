@@ -78,8 +78,8 @@ importers:
         specifier: ^4.3.0
         version: 4.3.0
       node-llama-cpp:
-        specifier: ^2.8.1
-        version: 2.8.1
+        specifier: ^2.8.3
+        version: 2.8.3(typescript@5.3.2)
       prisma:
         specifier: 4.3.1
         version: 4.3.1
@@ -1796,7 +1796,7 @@ packages:
       underscore: 1.13.6
       ws: 7.5.9
     optionalDependencies:
-      openid-client: 5.6.1
+      openid-client: 5.6.2
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -8741,11 +8741,16 @@ packages:
   /node-int64@0.4.0:
     resolution: {integrity: sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw==}
 
-  /node-llama-cpp@2.8.1:
-    resolution: {integrity: sha512-n6iTdR4uk4bfM7tfsUu/gRnU3Onprx7kjEOKS+ZHlaSoXixVqs02eOll1rdzIp1Kcr5QcRPF1eG3tbQBa8+eDA==}
+  /node-llama-cpp@2.8.3(typescript@5.3.2):
+    resolution: {integrity: sha512-ToVLUIWwl5mz5ihJqxU3XpbT6HTS+E42Cw9CCv6C3ehx6UBd4LklF2shAmk4lsUGFS8M6uRPpFofqicsxbbyWg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
+    peerDependencies:
+      typescript: '>=5.0.0'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
     dependencies:
       chalk: 5.3.0
       chmodrp: 1.0.2
@@ -8760,6 +8765,7 @@ packages:
       octokit: 3.1.2
       ora: 7.0.1
       simple-git: 3.21.0
+      typescript: 5.3.2
       uuid: 9.0.1
       which: 4.0.0
       yargs: 17.7.2
@@ -8912,8 +8918,8 @@ packages:
     dependencies:
       mimic-fn: 2.1.0
 
-  /openid-client@5.6.1:
-    resolution: {integrity: sha512-PtrWsY+dXg6y8mtMPyL/namZSYVz8pjXz3yJiBNZsEdCnu9miHLB4ELVC85WvneMKo2Rg62Ay7NkuCpM0bgiLQ==}
+  /openid-client@5.6.2:
+    resolution: {integrity: sha512-TIVimoK/fAvpiISLcoGZyNJx2TOfd5AE6TXn58FFj6Y8qbU/jqky54Aws7sYKuCph1bLPWSRUa1r/Rd6K21bhg==}
     requiresBuild: true
     dependencies:
       jose: 4.15.4
@@ -10692,7 +10698,6 @@ packages:
     resolution: {integrity: sha512-6l+RyNy7oAHDfxC4FzSJcz9vnjTKxrLpDG5M2Vu4SHRVNg6xzqZp6LYSR9zjqQTu8DU/f5xwxUdADOkbrIX2gQ==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
 
   /unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
