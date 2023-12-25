@@ -3,7 +3,7 @@ import { repoRouter } from "./resolver_repo";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 
 export const appRouter = router({
-  hello: protectedProcedure.query(() => {
+  hello: publicProcedure.query(() => {
     return "world";
   }),
   user: userRouter,

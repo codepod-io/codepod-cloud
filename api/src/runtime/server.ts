@@ -16,7 +16,7 @@ export async function startServer({ port }) {
   app.use(cors());
 
   app.use(
-    "/trpc",
+    "/runtime",
     trpcExpress.createExpressMiddleware({
       router: appRouter,
       createContext,

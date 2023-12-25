@@ -13,83 +13,71 @@ services:
       - db-data:/var/lib/postgresql/data
 
   prisma:
-    build: ../..
+    image: codepod-cloud:latest
     restart: always
     command: sh -c "npx prisma studio"
     working_dir: /app/api
-    ports:
-      - "5555:5555"
+    # ports:
+    #   - "5555:5555"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
   api:
-    build: ../..
+    image: codepod-cloud:latest
     working_dir: /app/api
     command: sh -c "pnpm run dev:main"
     volumes:
       - ../../api/src:/app/api/src
-    ports:
-      - "4000:4000"
+    # ports:
+    #   - "4000:4000"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
   yjs:
-    build: ../..
+    image: codepod-cloud:latest
     working_dir: /app/api
     volumes:
       - ../../api/src:/app/api/src
-    ports:
-      - "4233:4233"
+    # ports:
+    #   - "4233:4233"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
     command: sh -c "pnpm run dev:yjs"
 
   runtime:
-    build:
-      context: ../..
-      dockerfile: Dockerfile.runtime
+    image: codepod-cloud-runtime:latest
     working_dir: /app/api
     volumes:
       - ../../api/src:/app/api/src
-    ports:
-      - "4001:4001"
+    # ports:
+    #   - "4001:4001"
     environment:
-      YJS_WS_URL: "ws://yjs:4233/socket"
+      YJS_WS_URL: "ws://yjs:4233/yjs"
     command: sh -c "pnpm run dev:runtime"
 
-  copilot:
-    build: ../..
-    working_dir: /app/api
-    volumes:
-      - ../../api/src:/app/api/src
-    ports:
-      - "4333:4333"
-    environment:
-      # Setup:
-      # 1. run llama.cpp server on Mac host to utilize Metal GPU for better performance
-      # 2. access the host from the container ref:
-      #    https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container
-      LLAMA_CPP_SERVER: "host.docker.internal"
-      LLAMA_CPP_PORT: "8080"
-    command: sh -c "pnpm run dev:copilot"
-
   ui:
-    build: ../..
+    image: codepod-cloud:latest
     working_dir: /app/ui
     volumes:
       - ../../ui/src:/app/ui/src
     command: sh -c "pnpm run dev"
+    # ports:
+    #   - "3000:3000"
     environment:
       VITE_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
-      VITE_APP_API_URL: "http://localhost:4000/trpc"
-      VITE_APP_RUNTIME_API_URL: "http://localhost:4001/trpc"
-      VITE_APP_COPILOT_API_URL: "http://localhost:4333/trpc"
+
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - ui
+      - api
     ports:
-      - "3000:3000"
+      - 8080:8080
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
 
 volumes:
   db-data:

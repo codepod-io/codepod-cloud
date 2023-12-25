@@ -8,7 +8,91 @@ more on our website at https://codepod.io.
 
 ![screenshot](./screenshot-canvas.png)
 
-# Develop
+# (NEW) Develop with docker
+
+Without docker, we need to manually launch 5 processes and there're many `.env`
+files to coordinate ports and variables among the processes. This is tedious.
+
+Previously we moved away from docker because:
+
+1. pnpm store seems incompatible with docker & host
+2. hot-reloading is sometimes not working.
+
+It turns out that (1) can be solved by building a docker image w/ `pnpm i`, and
+mounting only src folders. (2) is/was not that bad. So we move back to docker.
+
+## Step 1: Build docker images
+
+Build the docker images `codepod-cloud` and `codepod-cloud-runtime`:
+
+```sh
+docker build -t codepod-cloud .
+docker build -t codepod-cloud-runtime -f Dockerfile.runtime .
+```
+
+## Step 2: Run the app
+
+Add one single .env file at `compose/web2/.env`:
+
+```sh
+# COMPOSE_PROJECT_NAME=mystackname
+
+# DB
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=mypassword
+POSTGRES_DB=codepod
+
+# API
+JWT_SECRET=mysecret
+GOOGLE_CLIENT_ID=
+```
+
+Inside `compose/web2`, run
+
+```sh
+docker compose up -d
+```
+
+(Setup once) If the DB is not initialized, attach a shell in `api` container and run DB init:
+
+```sh
+npx prisma migrate dev
+```
+
+Go to `http://localhost:8080` to see the app.
+
+## Step 3: (Optional) copilot server
+
+Copilot is not performant inside docker contianer (on an Apple Sillicon Mac,
+compared to host machine w/ Metal). We launch the copilot server on the host and
+let the docker stack proxy the request to the host machine.
+
+Add a config file `api/.env`:
+
+```sh
+LLAMA_CPP_SERVER=127.0.0.1
+LLAMA_CPP_PORT=8080
+
+MODEL_DIR="/path/to/models"
+MODEL_NAME="codellama-7b.Q4_0.gguf"
+CONTEXT_SIZE=2048
+THREADS=6
+
+N_PREDICT=128
+TEMPERATURE=0.1
+TOP_K=40
+TOP_P=0.9
+REPEAT_PENALTY=1.05
+```
+
+Launch the copilot server at http://localhost:4333:
+
+```sh
+cd api
+pnpm dev:copilot
+```
+
+# (Deprecated) Develop natively on the host
 
 ## The .env files
 

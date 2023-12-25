@@ -1,7 +1,7 @@
 import { z } from "zod";
 import http from "http";
 
-import { protectedProcedure, router } from "./trpc";
+import { protectedProcedure, publicProcedure, router } from "./trpc";
 
 import { LlamaModelParser } from "./llama";
 
@@ -37,7 +37,7 @@ const llamaModelParser = new LlamaModelParser(
 );
 
 export const appRouter = router({
-  hello: protectedProcedure.query(() => {
+  hello: publicProcedure.query(() => {
     return "world";
   }),
   copilot: router({

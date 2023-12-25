@@ -34,15 +34,6 @@ import { Alert, Button, Typography } from "@mui/material";
 
 import { trpc } from "./lib/trpc";
 
-const yjsWsUrl = z.string().parse(import.meta.env.VITE_APP_YJS_WS_URL);
-const apiUrl = z.string().parse(import.meta.env.VITE_APP_API_URL);
-const runtimeApiUrl = z
-  .string()
-  .parse(import.meta.env.VITE_APP_RUNTIME_API_URL);
-const copilotApiUrl = z
-  .string()
-  .parse(import.meta.env.VITE_APP_COPILOT_API_URL);
-
 const theme = createTheme({
   typography: {
     button: {
@@ -143,7 +134,7 @@ const router = createBrowserRouter([
       // 1. Need to use vh to make the Canvas exact full screen
       // 2. Need to populate more buttons to header.
       <Box height="100vh" width="100%" boxSizing={"border-box"}>
-        <Repo yjsWsUrl={yjsWsUrl} />
+        <Repo />
       </Box>
     ),
   },
@@ -194,11 +185,7 @@ const router = createBrowserRouter([
 export function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider
-        apiUrl={apiUrl}
-        runtimeApiUrl={runtimeApiUrl}
-        copilotApiUrl={copilotApiUrl}
-      >
+      <AuthProvider>
         <SnackbarProvider maxSnack={5}>
           <RouterProvider router={router} />
         </SnackbarProvider>

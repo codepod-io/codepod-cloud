@@ -24,7 +24,7 @@ export async function startServer({ port }) {
   );
 
   expapp.use(
-    "/trpc",
+    "/api",
     trpcExpress.createExpressMiddleware({
       router: appRouter,
       createContext,

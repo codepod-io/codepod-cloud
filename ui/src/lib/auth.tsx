@@ -10,14 +10,14 @@ import {
   trpc,
 } from "../lib/trpc";
 
-function RuntimeTrpcProvider({ children, apiUrl }) {
+function RuntimeTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
   const queryClient = new QueryClient();
   const trpcClient = runtimeTrpc.createClient({
     links: [
       httpBatchLink({
         // FIXME add auth
-        url: apiUrl,
+        url: "/runtime",
         headers: getAuthHeaders(),
       }),
     ],
@@ -31,14 +31,14 @@ function RuntimeTrpcProvider({ children, apiUrl }) {
   );
 }
 
-function CopilotTrpcProvider({ children, apiUrl }) {
+function CopilotTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
   const queryClient = new QueryClient();
   const trpcClient = copilotTrpc.createClient({
     links: [
       httpBatchLink({
         // FIXME add auth
-        url: apiUrl,
+        url: "/copilot",
         headers: getAuthHeaders(),
       }),
     ],
@@ -56,19 +56,14 @@ type AuthContextType = ReturnType<typeof useProvideAuth>;
 
 const authContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({
-  children,
-  apiUrl,
-  runtimeApiUrl,
-  copilotApiUrl,
-}) {
+export function AuthProvider({ children }) {
   const auth = useProvideAuth();
 
   const queryClient = new QueryClient();
   const trpcClient = trpc.createClient({
     links: [
       httpBatchLink({
-        url: apiUrl,
+        url: "/api",
         headers: auth.getAuthHeaders(),
         // fetch(url, options) {
         //   return fetch(url, {
@@ -84,10 +79,8 @@ export function AuthProvider({
     <authContext.Provider value={auth}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
-          <RuntimeTrpcProvider apiUrl={runtimeApiUrl}>
-            <CopilotTrpcProvider apiUrl={copilotApiUrl}>
-              {children}
-            </CopilotTrpcProvider>
+          <RuntimeTrpcProvider>
+            <CopilotTrpcProvider>{children}</CopilotTrpcProvider>
           </RuntimeTrpcProvider>
         </QueryClientProvider>
       </trpc.Provider>

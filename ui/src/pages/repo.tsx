@@ -400,14 +400,14 @@ function ParserWrapper({ children }) {
   return children;
 }
 
-function WaitForProvider({ children, yjsWsUrl }) {
+function WaitForProvider({ children }) {
   const store = useContext(RepoContext)!;
   const providerSynced = useStore(store, (state) => state.providerSynced);
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
   const connectYjs = useStore(store, (state) => state.connectYjs);
   const me = trpc.user.me.useQuery();
   useEffect(() => {
-    connectYjs({ yjsWsUrl, name: me.data?.firstname || "Anonymous" });
+    connectYjs({ name: me.data?.firstname || "Anonymous" });
     return () => {
       disconnectYjs();
     };
@@ -427,7 +427,7 @@ function UserWrapper({ children }) {
   return children;
 }
 
-export function Repo({ yjsWsUrl }) {
+export function Repo() {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
 
@@ -440,7 +440,7 @@ export function Repo({ yjsWsUrl }) {
     <RepoContext.Provider value={store}>
       <UserWrapper>
         <RepoLoader id={id}>
-          <WaitForProvider yjsWsUrl={yjsWsUrl}>
+          <WaitForProvider>
             <ParserWrapper>
               <HeaderWrapper id={id}>
                 <Box

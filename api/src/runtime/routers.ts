@@ -52,7 +52,7 @@ const routingTable: Map<string, string> = new Map();
 const yjsServerUrl = z.string().parse(process.env.YJS_WS_URL);
 
 export const appRouter = router({
-  hello: protectedProcedure.query(() => {
+  hello: publicProcedure.query(() => {
     return "world";
   }),
   kernel: router({

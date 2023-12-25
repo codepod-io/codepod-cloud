@@ -22,7 +22,7 @@ export interface YjsSlice {
   yjsConnecting: boolean;
   // The status of yjs connection.
   yjsStatus?: string;
-  connectYjs: ({ yjsWsUrl, name }: { yjsWsUrl: string; name: string }) => void;
+  connectYjs: ({ name }: { name: string }) => void;
   disconnectYjs: () => void;
   // The status of the uploading and syncing of actual Y.Doc.
   yjsSyncStatus?: string;
@@ -85,10 +85,14 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
         state.resultChanged[id] = !state.resultChanged[id];
       })
     ),
-  connectYjs: ({ yjsWsUrl, name }) => {
+  connectYjs: ({ name }) => {
     if (get().yjsConnecting) return;
     if (get().provider) return;
     set({ yjsConnecting: true });
+    // construct yjs url from current window url, as ws://host:port/yjs
+    const yjsWsUrl = `${
+      window.location.protocol === "https:" ? "wss" : "ws"
+    }://${window.location.host}/yjs`;
     console.log(`connecting yjs socket ${yjsWsUrl} ..`);
     const ydoc = new Doc();
 
