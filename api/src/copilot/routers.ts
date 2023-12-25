@@ -1,10 +1,40 @@
 import { z } from "zod";
 import http from "http";
 
-import { protectedProcedure, publicProcedure, router } from "./trpc";
+import { protectedProcedure, router } from "./trpc";
 
-const copilotIpAddress = z.string().parse(process.env.LLAMA_CPP_SERVER);
-const copilotPort = z.string().parse(process.env.LLAMA_CPP_PORT);
+import { LlamaModelParser } from "./llama";
+
+require("dotenv").config();
+
+const copilotIpAddress = process.env.LLAMA_CPP_SERVER;
+const copilotPort = process.env.LLAMA_CPP_PORT;
+
+if (!process.env.MODEL_DIR) {
+  throw new Error("LLAMA model MODEL_DIR env variable is not set.");
+}
+if (!process.env.MODEL_NAME) {
+  throw new Error("LLAMA model MODEL_NAME env variable is not set.");
+}
+const modelDir = process.env.MODEL_DIR;
+const modelName = process.env.MODEL_NAME;
+const contextSize = Number(process.env.CONTEXT_SIZE);
+const threads = Number(process.env.THREADS);
+
+const inferenceOptions = {
+  nPredict: Number(process.env.N_PREDICT),
+  temperature: Number(process.env.TEMPERATURE),
+  topK: Number(process.env.TOP_K),
+  topP: Number(process.env.TOP_P),
+  repeatPenalty: Number(process.env.REPEAT_PENALTY),
+};
+
+const llamaModelParser = new LlamaModelParser(
+  modelDir,
+  modelName,
+  contextSize,
+  threads
+);
 
 export const appRouter = router({
   hello: protectedProcedure.query(() => {
@@ -30,12 +60,12 @@ export const appRouter = router({
         if (inputSuffix.length == 0) {
           data = JSON.stringify({
             prompt: inputPrefix,
-            temperature: 0.1,
-            top_k: 40,
-            top_p: 0.9,
-            repeat_penalty: 1.05,
+            temperature: inferenceOptions["temperature"],
+            top_k: inferenceOptions["topK"],
+            top_p: inferenceOptions["topP"],
+            repeat_penalty: inferenceOptions["repeatPenalty"],
             // large n_predict significantly slows down the server, a small value is good enough for testing purposes
-            n_predict: 128,
+            n_predict: inferenceOptions["nPredict"],
             stream: false,
           });
 
@@ -54,12 +84,12 @@ export const appRouter = router({
             prompt: inputPrefix, // FIXME, https://github.com/ggerganov/llama.cpp/pull/4028
             input_prefix: inputPrefix,
             input_suffix: inputSuffix,
-            temperature: 0.1,
-            top_k: 40,
-            top_p: 0.9,
-            repeat_penalty: 1.05,
+            temperature: inferenceOptions["temperature"],
+            top_k: inferenceOptions["topK"],
+            top_p: inferenceOptions["topP"],
+            repeat_penalty: inferenceOptions["repeatPenalty"],
             // large n_predict significantly slows down the server, a small value is good enough for testing purposes
-            n_predict: 128,
+            n_predict: inferenceOptions["nPredict"],
           });
 
           options = {
@@ -103,6 +133,32 @@ export const appRouter = router({
 
           req.write(data);
           req.end();
+        });
+      }),
+    completeV2: protectedProcedure
+      .input(
+        z.object({
+          inputPrefix: z.string(),
+          inputSuffix: z.string(),
+          podId: z.string(),
+        })
+      )
+      .mutation(async ({ input: { inputPrefix, inputSuffix, podId } }) => {
+        console.log(
+          `======= codeAutoComplete of pod ${podId} ========\n`,
+          "inputPrefix\n",
+          inputPrefix,
+          "inputSuffix\n",
+          inputSuffix
+        );
+
+        return new Promise((resolve, reject) => {
+          const response = llamaModelParser.generate(
+            inputPrefix,
+            inputSuffix,
+            inferenceOptions
+          );
+          resolve(response);
         });
       }),
   }),
