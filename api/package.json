@@ -35,7 +35,7 @@
     "lodash": "^4.17.21",
     "nanoid": "^3.0.0",
     "nanoid-dictionary": "^4.3.0",
-    "node-llama-cpp": "^2.8.1",
+    "node-llama-cpp": "^2.8.3",
     "prisma": "4.3.1",
     "prosemirror-model": "^1.19.3",
     "prosemirror-view": "^1.31.7",
