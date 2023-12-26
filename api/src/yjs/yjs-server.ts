@@ -58,7 +58,14 @@ export async function startWsServer({ jwtSecret, port }) {
     createSetupWSConnection(bindState, writeState)(...args)
   );
 
+  http_server.on("request", async (request, response) => {
+    // return a hello world response
+    response.writeHead(200, { "Content-Type": "text/plain" });
+    response.end("Hello World\n");
+  });
+
   http_server.on("upgrade", async (request, socket, head) => {
+    console.log("new WS connection");
     // You may check auth of request here..
     // See https://github.com/websockets/ws#client-authentication
     function deny() {

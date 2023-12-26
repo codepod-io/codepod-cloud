@@ -1,0 +1,18 @@
+version: "3.7"
+
+services:
+  rancher:
+    image: rancher/rancher:latest
+    restart: unless-stopped
+    privileged: true
+    command: --no-cacerts
+    volumes:
+      - var-lib-rancher:/var/lib/rancher
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN
+
+volumes:
+  var-lib-rancher:
