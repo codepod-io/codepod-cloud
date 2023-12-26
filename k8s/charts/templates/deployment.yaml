@@ -1,0 +1,285 @@
+# UI
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-ui-deployment
+  labels:
+    app: codepod-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-ui
+  template:
+    metadata:
+      labels:
+        app: codepod-ui
+    spec:
+      containers:
+        - name: codepod-ui
+          image: codepod-cloud:latest
+          imagePullPolicy: Never
+          workingDir: /app/ui
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run dev
+
+          env:
+            - name: VITE_APP_GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_ID
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - mountPath: /app/ui/src
+              name: uisrc
+              readOnly: false
+          resources:
+            limits:
+              memory: 5120Mi
+              cpu: "4"
+            requests:
+              memory: 1024Mi
+              cpu: "1"
+      volumes:
+        - name: uisrc
+          hostPath:
+            path: {{ .Values.srcDir }}/ui/src
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-ui-service
+spec:
+  selector:
+    app: codepod-ui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+
+# API
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-api-deployment
+  labels:
+    app: codepod-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-api
+  template:
+    metadata:
+      labels:
+        app: codepod-api
+    spec:
+      # serviceAccountName: api-account
+      containers:
+        - name: codepod-api
+          image: codepod-cloud:latest
+          imagePullPolicy: Never
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:main"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run dev:main
+          ports:
+            - containerPort: 4000
+          volumeMounts:
+            - mountPath: /app/api/src
+              name: apisrc
+              readOnly: false
+          env:
+            - name: DATABASE_URL
+              # value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=require"
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_ID
+          resources:
+            limits:
+              memory: 5120Mi
+              cpu: "4"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+      volumes:
+        - name: apisrc
+          hostPath:
+            path: {{ .Values.srcDir }}/api/src
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-api-service
+spec:
+  selector:
+    app: codepod-api
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
+
+# Yjs server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-yjs-deployment
+  labels:
+    app: codepod-yjs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-yjs
+  template:
+    metadata:
+      labels:
+        app: codepod-yjs
+    spec:
+      containers:
+        - name: codepod-yjs
+          # image: node:20
+          image: codepod-cloud:latest
+          imagePullPolicy: Never
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:yjs"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run dev:yjs
+          ports:
+            - containerPort: 4233
+          volumeMounts:
+            - mountPath: /app/api/src
+              name: apisrc
+              readOnly: false
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+      volumes:
+        - name: apisrc
+          hostPath:
+            path: {{ .Values.srcDir }}/api/src
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-yjs-service
+spec:
+  selector:
+    app: codepod-yjs
+  ports:
+    - protocol: TCP
+      port: 4233
+      targetPort: 4233
+
+---
+# runtime server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-runtime-deployment
+  labels:
+    app: codepod-runtime
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-runtime
+  template:
+    metadata:
+      labels:
+        app: codepod-runtime
+    spec:
+      containers:
+        - name: codepod-runtime
+          image: codepod-cloud-runtime:latest
+          imagePullPolicy: Never
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:runtime"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run dev:runtime
+          ports:
+            - containerPort: 4001
+          volumeMounts:
+            - mountPath: /app/api/src
+              name: apisrc
+              readOnly: false
+          env:
+            - name: YJS_WS_URL
+              value: "ws://codepod-yjs-service:4233/yjs"
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+      volumes:
+        - name: apisrc
+          hostPath:
+            path: {{ .Values.srcDir }}/api/src
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-runtime-service
+spec:
+  selector:
+    app: codepod-runtime
+  ports:
+    - protocol: TCP
+      port: 4001
+      targetPort: 4001

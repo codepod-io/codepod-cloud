@@ -1,0 +1,4 @@
+srcDir: "/path/to/codepod-cloud/src/dir"
+databaseUrl: "postgresql://..."
+jwtSecret:
+googleClientId:

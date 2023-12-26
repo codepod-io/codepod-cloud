@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codepod-ingress
+spec:
+  rules:
+    - host: codepod.127.0.0.1.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-ui-service
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-api-service
+                port:
+                  number: 4000
+          - path: /runtime
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-runtime-service
+                port:
+                  number: 4001
+          - path: /yjs
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-yjs-service
+                port:
+                  number: 4233
