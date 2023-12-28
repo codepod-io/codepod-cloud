@@ -1,3 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tailwind preflight fixes for list-styles. Refs: 
+  - https://stackoverflow.com/a/69519605/5886056
+  - https://tailwindcss.com/docs/preflight#lists-are-unstyled
+ */
+@layer base {
+  ul,
+  ol {
+    list-style: revert;
+    margin: revert;
+    padding: revert;
+  }
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

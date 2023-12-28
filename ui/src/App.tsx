@@ -21,7 +21,7 @@ import { Profile } from "./pages/profile";
 import { SignIn } from "./pages/login";
 import { SignUp } from "./pages/signup";
 
-import { Header, Footer } from "./components/Header";
+import { Header, Footer, UserProfile } from "./components/Header";
 
 import { AuthProvider, useAuth } from "./lib/auth";
 
@@ -42,21 +42,7 @@ const theme = createTheme({
   },
 });
 
-const ProfileButton = () => {
-  const me = trpc.user.me.useQuery();
-  return (
-    <Box sx={{ mr: 2 }}>
-      <Link component={ReactLink} to="/profile" underline="none">
-        {me.data?.firstname}
-      </Link>
-    </Box>
-  );
-};
-
 const NormalLayout = ({ children }) => {
-  const { isSignedIn, signOut } = useAuth();
-  let navigate = useNavigate();
-
   return (
     <Box>
       <Header>
@@ -71,32 +57,7 @@ const NormalLayout = ({ children }) => {
             <Typography noWrap>CodePod</Typography>
           </Link>
         </Box>
-
-        {isSignedIn() ? (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-          >
-            <ProfileButton />
-            <Button
-              onClick={() => {
-                signOut();
-                navigate("/login");
-              }}
-            >
-              Logout
-            </Button>
-          </Box>
-        ) : (
-          <Box display="block">
-            <Link to="/login" component={ReactLink} underline="none">
-              Login
-            </Link>
-          </Box>
-        )}
+        <UserProfile />
       </Header>
       <Box pt="50px">{children}</Box>
       {/* <Footer /> */}
@@ -164,11 +125,7 @@ const router = createBrowserRouter([
   },
   {
     path: "test",
-    element: (
-      <NormalLayout>
-        <Test />
-      </NormalLayout>
-    ),
+    element: <Test />,
   },
   {
     path: "/",

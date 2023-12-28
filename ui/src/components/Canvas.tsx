@@ -663,7 +663,14 @@ function CanvasImpl() {
               }}
               nodeBorderRadius={2}
             />
-            <Controls showInteractive={editMode === "edit"} />
+            <Controls
+              showInteractive={editMode === "edit"}
+              style={{
+                display: "flex",
+                backdropFilter: "blur(5px)",
+              }}
+              position="bottom-center"
+            />
 
             <HelperLines
               horizontal={helperLineHorizontal}

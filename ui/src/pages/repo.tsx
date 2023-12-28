@@ -8,9 +8,6 @@ import ShareIcon from "@mui/icons-material/Share";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Button from "@mui/material/Button";
 
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-
 import {
   useEffect,
   useState,
@@ -21,19 +18,15 @@ import {
   useCallback,
 } from "react";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink } from "@trpc/client";
-
 import { useStore } from "zustand";
 
 import debounce from "lodash/debounce";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import { Canvas } from "../components/Canvas";
-import { Header } from "../components/Header";
-import { Sidebar } from "../components/Sidebar";
-import { useLocalStorage } from "../hooks/useLocalStorage";
+import { Canvas } from "@/components/Canvas";
+import { Header, UserProfile } from "@/components/Header";
+import { TabSidebar } from "@/components/Sidebar";
 import {
   Breadcrumbs,
   Drawer,
@@ -172,7 +165,12 @@ function RepoHeader({ id }) {
     }
   }, [copyRepo]);
   return (
-    <Header>
+    <Header
+      style={{
+        boxShadow: "0px 0px 10px 0px rgba(0,0,0,0.75)",
+        borderRadius: "10px",
+      }}
+    >
       <Breadcrumbs
         aria-label="breadcrumb"
         sx={{
@@ -196,7 +194,7 @@ function RepoHeader({ id }) {
         <Button
           endIcon={<ContentCopyIcon />}
           onClick={() => copyRepo.mutate({ repoId: id })}
-          variant="contained"
+          variant="outlined"
         >
           Make a copy
         </Button>
@@ -211,122 +209,13 @@ function RepoHeader({ id }) {
         <Button
           endIcon={<ShareIcon />}
           onClick={() => setShareOpen(true)}
-          variant="contained"
+          variant="outlined"
         >
           Share
         </Button>
       </Box>
+      <UserProfile />
     </Header>
-  );
-}
-
-/**
- * Wrap the repo page with a header, a sidebar and a canvas.
- */
-function HeaderWrapper({ children, id }) {
-  const store = useContext(RepoContext)!;
-  const isSidebarOnLeftHand = useStore(
-    store,
-    (state) => state.isSidebarOnLeftHand
-  );
-  const [open, setOpen] = useState(true);
-  let sidebar_width = "240px";
-  let header_height = "50px";
-
-  return (
-    <Box
-      sx={{
-        height: "100%",
-      }}
-    >
-      {/* The header. */}
-      <RepoHeader id={id} />
-      {/* The sidebar */}
-      <Drawer
-        sx={{
-          width: sidebar_width,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: sidebar_width,
-            boxSizing: "border-box",
-          },
-        }}
-        variant="persistent"
-        anchor={isSidebarOnLeftHand ? "left" : "right"}
-        open={open}
-      >
-        <Box
-          sx={{
-            pt: header_height,
-            verticalAlign: "top",
-            height: "100%",
-            overflow: "auto",
-          }}
-        >
-          <Box sx={{ mx: 2, my: 1 }}>
-            <Sidebar />
-          </Box>
-        </Box>
-      </Drawer>
-
-      {/* The button to toggle sidebar. */}
-      <Box
-        style={{
-          position: "absolute",
-          margin: "5px",
-          top: header_height,
-          ...(isSidebarOnLeftHand && { left: open ? sidebar_width : 0 }),
-          ...(!isSidebarOnLeftHand && { right: open ? sidebar_width : 0 }),
-          transition: "all .2s",
-          zIndex: 100,
-        }}
-      >
-        <IconButton
-          onClick={() => {
-            setOpen(!open);
-          }}
-          size="small"
-          color="primary"
-        >
-          {isSidebarOnLeftHand ? (
-            open ? (
-              <ChevronLeftIcon />
-            ) : (
-              <ChevronRightIcon />
-            )
-          ) : open ? (
-            <ChevronRightIcon />
-          ) : (
-            <ChevronLeftIcon />
-          )}
-        </IconButton>
-      </Box>
-
-      {/* The Canvas */}
-      <Box
-        sx={{
-          display: "inline-flex",
-          flexGrow: 1,
-          verticalAlign: "top",
-          height: "100%",
-          ...(isSidebarOnLeftHand && { ml: open ? sidebar_width : 0 }),
-          width: open ? `calc(100% - ${sidebar_width})` : "100%",
-          overflow: "scroll",
-        }}
-      >
-        <Box
-          sx={{
-            boxSizing: "border-box",
-            width: "100%",
-            height: "100%",
-            pt: header_height,
-            mx: "auto",
-          }}
-        >
-          {children}
-        </Box>
-      </Box>
-    </Box>
   );
 }
 
@@ -442,18 +331,34 @@ export function Repo() {
         <RepoLoader id={id}>
           <WaitForProvider>
             <ParserWrapper>
-              <HeaderWrapper id={id}>
+              <Box
+                sx={{
+                  height: "100%",
+                }}
+              >
+                {/* The header. */}
+                <div
+                  style={{
+                    zIndex: 1300,
+                    boxShadow: "0px 0px 10px 0px rgba(0,0,0,0.75)",
+                    borderRadius: "10px",
+                  }}
+                >
+                  <RepoHeader id={id} />
+                </div>
+
+                <TabSidebar />
+
+                {/* The Canvas */}
                 <Box
                   height="100%"
                   border="solid 3px black"
-                  p={2}
                   boxSizing={"border-box"}
-                  // m={2}
                   overflow="auto"
                 >
                   <Canvas />
                 </Box>
-              </HeaderWrapper>
+              </Box>
             </ParserWrapper>
           </WaitForProvider>
         </RepoLoader>
