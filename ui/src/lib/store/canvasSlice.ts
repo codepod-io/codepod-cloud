@@ -48,7 +48,7 @@ import {
   getHelperLines,
   level2fontsize,
   sortNodes,
-} from "../../components/nodes/utils";
+} from "@/components/nodes/utils";
 import { json2yxml, yxml2json } from "../utils/y-utils";
 
 // TODO add node's data typing.

@@ -22,7 +22,7 @@ import { useStore } from "zustand";
 
 import debounce from "lodash/debounce";
 
-import { createRepoStore, RepoContext } from "../lib/store";
+import { createRepoStore, RepoContext } from "@/lib/store";
 
 import { Canvas } from "@/components/Canvas";
 import { Header, UserProfile } from "@/components/Header";
@@ -36,17 +36,9 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { initParser } from "../lib/parser";
-
-import { usePrompt } from "../lib/prompt";
-import {
-  runtimeContext,
-  runtimeTrpc,
-  copilotContext,
-  copilotTrpc,
-  trpc,
-} from "../lib/trpc";
-import { useAuth } from "../lib/auth";
+import { initParser } from "@/lib/parser";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/lib/auth";
 
 const HeaderItem = memo<any>(() => {
   const store = useContext(RepoContext)!;

@@ -13,17 +13,17 @@ import {
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import { Dashboard } from "./pages/dashboard";
-import { Repo } from "./pages/repo";
-import { Test } from "./pages/test";
+import { Dashboard } from "@/pages/dashboard";
+import { Repo } from "@/pages/repo";
+import { Test } from "@/pages/test";
 
-import { Profile } from "./pages/profile";
-import { SignIn } from "./pages/login";
-import { SignUp } from "./pages/signup";
+import { Profile } from "@/pages/profile";
+import { SignIn } from "@/pages/login";
+import { SignUp } from "@/pages/signup";
 
-import { Header, Footer, UserProfile } from "./components/Header";
+import { Header, Footer, UserProfile } from "@/components/Header";
 
-import { AuthProvider, useAuth } from "./lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
@@ -31,8 +31,6 @@ import { Link as ReactLink } from "react-router-dom";
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 import { Alert, Button, Typography } from "@mui/material";
-
-import { trpc } from "./lib/trpc";
 
 const theme = createTheme({
   typography: {

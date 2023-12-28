@@ -40,7 +40,7 @@ import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
 
-import { RepoContext } from "../../lib/store";
+import { RepoContext } from "@/lib/store";
 
 import { NodeResizer, NodeResizeControl } from "reactflow";
 import {
@@ -50,7 +50,7 @@ import {
   level2fontsize,
 } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { runtimeTrpc, trpc } from "../../lib/trpc";
+import { runtimeTrpc, trpc } from "@/lib/trpc";
 
 function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext)!;

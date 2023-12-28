@@ -8,7 +8,7 @@ import {
   copilotContext,
   copilotTrpc,
   trpc,
-} from "../lib/trpc";
+} from "@/lib/trpc";
 
 function RuntimeTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();

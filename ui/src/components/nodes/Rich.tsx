@@ -141,7 +141,7 @@ import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
 import { ConfirmDeleteButton, Handles, level2fontsize } from "./utils";
-import { RepoContext } from "../../lib/store";
+import { RepoContext } from "@/lib/store";
 
 import "./remirror-size.css";
 

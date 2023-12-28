@@ -19,10 +19,10 @@ import Alert from "@mui/material/Alert";
 
 import { useFormik } from "formik";
 
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@/lib/auth";
 import { GoogleSignin } from "./login";
 import Divider from "@mui/material/Divider";
-import { trpc } from "../lib/trpc";
+import { trpc } from "@/lib/trpc";
 
 export function SignUp() {
   const signup = trpc.user.signup.useMutation();

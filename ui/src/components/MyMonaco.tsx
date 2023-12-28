@@ -6,13 +6,13 @@ import { Node } from "reactflow";
 import { useStore } from "zustand";
 import * as Y from "yjs";
 
-import { RepoContext } from "../lib/store";
+import { RepoContext } from "@/lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
-import { Annotation } from "../lib/parser";
-import { runtimeTrpc, trpc, copilotTrpc } from "../lib/trpc";
+import { Annotation } from "@/lib/parser";
+import { runtimeTrpc, trpc, copilotTrpc } from "@/lib/trpc";
 
-import { llamaInlineCompletionProvider } from "../lib/llamaCompletionProvider";
+import { llamaInlineCompletionProvider } from "@/lib/llamaCompletionProvider";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",

@@ -10,7 +10,7 @@ import {
 } from "kbar";
 
 import { useStore } from "zustand";
-import { RepoContext } from "../lib/store";
+import { RepoContext } from "@/lib/store";
 import { useContext } from "react";
 
 function RenderResults() {

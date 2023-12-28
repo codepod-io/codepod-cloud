@@ -18,7 +18,7 @@ import PublicIcon from "@mui/icons-material/Public";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import { getUpTime } from "../lib/utils/utils";
+
 import {
   Button,
   Card,
@@ -32,11 +32,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { timeDifference } from "../lib/utils/utils";
+import { timeDifference } from "@/lib/utils/utils";
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";
-import { trpc } from "../lib/trpc";
-import { useAuth } from "../lib/auth";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/lib/auth";
 
 function CreateRepoForm(props) {
   const createRepo = trpc.repo.createRepo.useMutation();

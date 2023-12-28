@@ -20,8 +20,8 @@ import Container from "@mui/material/Container";
 import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
-import { trpc } from "../lib/trpc";
-import { useAuth } from "../lib/auth";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/lib/auth";
 
 const ProfileButton = () => {
   const me = trpc.user.me.useQuery();

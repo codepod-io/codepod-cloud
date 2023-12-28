@@ -31,7 +31,7 @@ import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { InputRule } from "@remirror/pm";
 import { markInputRule } from "@remirror/core-utils";
 
-import { RepoContext } from "../../../lib/store";
+import { RepoContext } from "@/lib/store";
 
 export class LinkExtension extends RemirrorLinkExtension {
   createInputRules(): InputRule[] {

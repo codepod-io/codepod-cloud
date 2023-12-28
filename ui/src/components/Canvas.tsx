@@ -37,7 +37,7 @@ import Box from "@mui/material/Box";
 import { useStore } from "zustand";
 import * as Y from "yjs";
 
-import { RepoContext } from "../lib/store";
+import { RepoContext } from "@/lib/store";
 
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { ShareProjDialog } from "./ShareProjDialog";
@@ -47,8 +47,8 @@ import { ScopeNode } from "./nodes/Scope";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
-import { getAbsPos, newNodeShapeConfig } from "../lib/store/canvasSlice";
-import { runtimeTrpc, trpc } from "../lib/trpc";
+import { getAbsPos, newNodeShapeConfig } from "@/lib/store/canvasSlice";
+import { runtimeTrpc, trpc } from "@/lib/trpc";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {

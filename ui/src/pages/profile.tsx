@@ -4,7 +4,7 @@ import Typography from "@mui/material/Typography";
 
 import Paper from "@mui/material/Paper";
 import { Container, Stack } from "@mui/material";
-import { trpc } from "../lib/trpc";
+import { trpc } from "@/lib/trpc";
 
 export function Profile() {
   const me = trpc.user.me.useQuery();

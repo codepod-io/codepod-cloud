@@ -19,9 +19,9 @@ import { useFormik } from "formik";
 
 import { Link as ReactLink, useNavigate } from "react-router-dom";
 
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@/lib/auth";
 import Divider from "@mui/material/Divider";
-import { trpc } from "../lib/trpc";
+import { trpc } from "@/lib/trpc";
 
 const theme = createTheme();
 
