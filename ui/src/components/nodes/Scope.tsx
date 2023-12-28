@@ -43,12 +43,7 @@ import { shallow } from "zustand/shallow";
 import { RepoContext } from "@/lib/store";
 
 import { NodeResizer, NodeResizeControl } from "reactflow";
-import {
-  ConfirmDeleteButton,
-  Handles,
-  ResizeIcon,
-  level2fontsize,
-} from "./utils";
+import { ConfirmDeleteButton, Handles, ResizeIcon } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 
@@ -184,55 +179,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     };
   }, shallow);
 
-  const contextualZoom = useStore(store, (state) => state.contextualZoom);
-  const contextualZoomParams = useStore(
-    store,
-    (state) => state.contextualZoomParams
-  );
-  const threshold = useStore(
-    store,
-    (state) => state.contextualZoomParams.threshold
-  );
-  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const node = nodesMap.get(id);
   if (!node) return null;
-
-  const fontSize = level2fontsize(
-    node?.data.level,
-    contextualZoomParams,
-    contextualZoom
-  );
-
-  if (contextualZoom && fontSize * zoomLevel < threshold) {
-    // Return a collapsed blcok.
-    let text = node?.data.name ? `${node?.data.name}` : "A Scope";
-    return (
-      <Box
-        sx={{
-          fontSize: fontSize * 2,
-          background: "#eee",
-          borderRadius: "5px",
-          border: "5px solid red",
-          textAlign: "center",
-          height: height,
-          width: width,
-          color: "deeppink",
-        }}
-        className="custom-drag-handle scope-block"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          {text}
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <Box
@@ -244,7 +192,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         borderColor: selected ? "#003c8f" : undefined,
         borderRadius: "4px",
         cursor: "auto",
-        fontSize,
       }}
       onMouseEnter={() => {
         setShowToolbar(true);
@@ -312,7 +259,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
             }}
           >
             {id} at ({xPos}, {yPos}), w: {width}, h: {height} parent: {parent}{" "}
-            level: {data.level} fontSize: {fontSize}
+            level: {data.level}
           </Box>
         )}
         <Grid container spacing={2} sx={{ alignItems: "center" }}>
@@ -327,7 +274,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                 display: "flex",
                 flexGrow: 1,
                 justifyContent: "center",
-                fontSize,
               }}
             >
               <InputBase
@@ -352,7 +298,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                     padding: "0px",
                     textAlign: "center",
                     textOverflow: "ellipsis",
-                    fontSize,
                     width: width ? width : undefined,
                   },
                 }}

@@ -10,17 +10,8 @@ export interface SettingSlice {
   setDevMode: (b: boolean) => void;
   autoRunLayout?: boolean;
   setAutoRunLayout: (b: boolean) => void;
-  contextualZoomParams: Record<any, number>;
   copilotManualMode?: boolean;
   setCopilotManualMode: (b: boolean) => void;
-  setContextualZoomParams: (
-    r: Record<any, number>,
-    n: number,
-    n1: number
-  ) => void;
-  restoreParamsDefault: () => void;
-  contextualZoom: boolean;
-  setContextualZoom: (b: boolean) => void;
   showLineNumbers?: boolean;
   setShowLineNumbers: (b: boolean) => void;
 }
@@ -74,14 +65,6 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     localStorage.setItem("copilotManualMode", JSON.stringify(b));
   },
 
-  contextualZoom: localStorage.getItem("contextualZoom")
-    ? JSON.parse(localStorage.getItem("contextualZoom")!)
-    : false,
-  setContextualZoom: (b: boolean) => {
-    set({ contextualZoom: b });
-    // also write to local storage
-    localStorage.setItem("contextualZoom", JSON.stringify(b));
-  },
   showLineNumbers: localStorage.getItem("showLineNumbers")
     ? JSON.parse(localStorage.getItem("showLineNumbers")!)
     : false,
@@ -90,68 +73,5 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     set({ showLineNumbers: b });
     // also write to local storage
     localStorage.setItem("showLineNumbers", JSON.stringify(b));
-  },
-  // TODO Make it configurable.
-  contextualZoomParams: localStorage.getItem("contextualZoomParams")
-    ? JSON.parse(localStorage.getItem("contextualZoomParams")!)
-    : {
-        0: 48,
-        1: 32,
-        2: 24,
-        3: 16,
-        next: 8,
-        threshold: 16,
-      },
-  setContextualZoomParams: (
-    contextualZoomParams: Record<any, number>,
-    level: number,
-    newSize: number
-  ) => {
-    let updatedParams;
-    switch (level) {
-      case 0:
-        updatedParams = { ...contextualZoomParams, 0: newSize };
-        break;
-      case 1:
-        updatedParams = { ...contextualZoomParams, 1: newSize };
-        break;
-      case 2:
-        updatedParams = { ...contextualZoomParams, 2: newSize };
-        break;
-      case 3:
-        updatedParams = { ...contextualZoomParams, 3: newSize };
-        break;
-      case 4:
-        updatedParams = { ...contextualZoomParams, next: newSize };
-        break;
-    }
-    set((state) => ({
-      contextualZoomParams: {
-        ...updatedParams,
-      },
-    }));
-    localStorage.setItem(
-      "contextualZoomParams",
-      JSON.stringify({ ...updatedParams })
-    );
-  },
-  restoreParamsDefault: () => {
-    const updatedParams = {
-      0: 48,
-      1: 32,
-      2: 24,
-      3: 16,
-      next: 8,
-      threshold: 16,
-    };
-    set((state) => ({
-      contextualZoomParams: {
-        ...updatedParams,
-      },
-    }));
-    localStorage.setItem(
-      "contextualZoomParams",
-      JSON.stringify({ ...updatedParams })
-    );
   },
 });

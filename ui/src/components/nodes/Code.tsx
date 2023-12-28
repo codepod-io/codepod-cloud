@@ -55,7 +55,7 @@ import { RepoContext } from "@/lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 
-import { Handles, level2fontsize } from "./utils";
+import { Handles } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 import { ButtonGroup } from "@mui/material";
 
@@ -531,17 +531,6 @@ export const CodeNode = memo<NodeProps>(function ({
     }
   }, [data.name, setPodName, id]);
 
-  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
-  const contextualZoom = useStore(store, (state) => state.contextualZoom);
-  const contextualZoomParams = useStore(
-    store,
-    (state) => state.contextualZoomParams
-  );
-  const threshold = useStore(
-    store,
-    (state) => state.contextualZoomParams.threshold
-  );
-
   // A helper state to allow single-click a selected pod and enter edit mode.
   const [singleClickEdit, setSingleClickEdit] = useState(false);
   useEffect(() => {
@@ -550,53 +539,6 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const node = nodesMap.get(id);
   if (!node) return null;
-
-  const fontSize = level2fontsize(
-    node.data.level,
-    contextualZoomParams,
-    contextualZoom
-  );
-
-  if (contextualZoom && fontSize * zoomLevel < threshold) {
-    // Return a collapsed block.
-    let text = "<some code>";
-    // let text = pod.content;
-    if (text) {
-      const index = text.indexOf("\n");
-      if (index !== -1) {
-        text = text.substring(0, index);
-      }
-    }
-    text = text || "Empty";
-    return (
-      <Box
-        sx={{
-          fontSize: fontSize * 2,
-          background: "#eee",
-          borderRadius: "5px",
-          border: "5px solid red",
-          // Offset the border to prevent the node height from changing.
-          margin: "-5px",
-          textAlign: "center",
-          height: node.height,
-          width: node.width,
-          color: "green",
-        }}
-        className="custom-drag-handle"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          {text}
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <>
@@ -619,7 +561,6 @@ export const CodeNode = memo<NodeProps>(function ({
         }}
         sx={{
           cursor: "auto",
-          fontSize,
         }}
         className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
@@ -723,7 +664,7 @@ export const CodeNode = memo<NodeProps>(function ({
               >
                 {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {node.width}
                 , h: {node.height}), parent: {node.parentNode} level:{" "}
-                {node?.data.level} fontSize: {fontSize}
+                {node?.data.level}
               </Box>
             )}
             {/* We actually don't need the name for a pod. Users can just write comments. */}
@@ -803,7 +744,7 @@ export const CodeNode = memo<NodeProps>(function ({
             >
               {/* Overlay */}
             </Box>
-            <MyMonaco id={id} fontSize={fontSize} />
+            <MyMonaco id={id} />
             <ResultBlock id={id} layout={layout} />
           </Box>
         </Box>

@@ -44,11 +44,7 @@ import {
   getConnectedEdges,
 } from "reactflow";
 import { quadtree } from "d3-quadtree";
-import {
-  getHelperLines,
-  level2fontsize,
-  sortNodes,
-} from "@/components/nodes/utils";
+import { getHelperLines, sortNodes } from "@/components/nodes/utils";
 import { json2yxml, yxml2json } from "../utils/y-utils";
 
 // TODO add node's data typing.
@@ -515,22 +511,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           nodesMap,
           node.height!
         );
-        const fromLevel = node?.data.level;
-        const toLevel = scopeNode.data.level + 1;
-        const fromFontSize = level2fontsize(
-          fromLevel,
-          get().contextualZoomParams,
-          get().contextualZoom
-        );
-        const toFontSize = level2fontsize(
-          toLevel,
-          get().contextualZoomParams,
-          get().contextualZoom
-        );
-        const newWidth = node.width! * (toFontSize / fromFontSize);
 
-        node.width = newWidth;
-        node.data.level = toLevel;
+        node.data.level = scopeNode.data.level + 1;
         node.position = posInsideScope;
         node.parentNode = scopeNode.id;
 
@@ -777,24 +759,11 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           nodeHeight
         );
       }
-      // need to adjust the node width according to the from and to scopes
-      const fromFontSize = level2fontsize(
-        fromLevel,
-        get().contextualZoomParams,
-        get().contextualZoom
-      );
-      const toFontSize = level2fontsize(
-        toLevel,
-        get().contextualZoomParams,
-        get().contextualZoom
-      );
-      const newWidth = node.width! * (toFontSize / fromFontSize);
       // create the new node
       let newNode: Node = {
         ...node,
         position,
         parentNode: scopeId,
-        width: newWidth,
         data: {
           ...node.data,
           level: toLevel,
