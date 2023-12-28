@@ -20,19 +20,73 @@ import Container from "@mui/material/Container";
 import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
+import { trpc } from "../lib/trpc";
+import { useAuth } from "../lib/auth";
 
-export const Header = ({ children }: { children?: any }) => {
+const ProfileButton = () => {
+  const me = trpc.user.me.useQuery();
   return (
-    <AppBar
-      position="fixed"
-      color="inherit"
-      sx={{
+    <Box sx={{ mr: 2 }}>
+      <Link component={ReactLink} to="/profile" underline="none">
+        {me.data?.firstname}
+      </Link>
+    </Box>
+  );
+};
+
+export const UserProfile = () => {
+  const { isSignedIn, signOut } = useAuth();
+  let navigate = useNavigate();
+  return (
+    <>
+      {isSignedIn() ? (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <ProfileButton />
+          <Button
+            onClick={() => {
+              signOut();
+              navigate("/login");
+            }}
+          >
+            Logout
+          </Button>
+        </Box>
+      ) : (
+        <Box display="block">
+          <Link to="/login" component={ReactLink} underline="none">
+            Login
+          </Link>
+        </Box>
+      )}
+    </>
+  );
+};
+
+export const Header = ({ children, style = {} }) => {
+  return (
+    <div
+      style={{
+        position: "absolute",
         // The default zIndex is 1100, but the default zIndex of the drawer is
         // 1200. Thus we make this 1300 to make sure it is on top of the drawer.
         zIndex: 1300,
+
+        width: "80%",
+        left: "10%",
+        top: "10px",
+
+        backdropFilter: "blur(5px)",
+        ...style,
       }}
+      color="transparent"
     >
-      <Container maxWidth="xl">
+      <Container maxWidth="md">
         <Toolbar
           disableGutters
           variant="dense"
@@ -67,7 +121,7 @@ export const Header = ({ children }: { children?: any }) => {
           </Box>
         </Toolbar>
       </Container>
-    </AppBar>
+    </div>
   );
 };
 

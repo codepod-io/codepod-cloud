@@ -28,7 +28,10 @@
     // "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     // For Remirror to work
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

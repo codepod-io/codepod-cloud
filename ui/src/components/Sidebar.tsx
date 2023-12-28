@@ -28,6 +28,14 @@ import TreeItem from "@mui/lab/TreeItem";
 import { useSnackbar, VariantType } from "notistack";
 
 import { useStore } from "zustand";
+
+import { Text, Tabs, Tooltip as RadixTooltip } from "@radix-ui/themes";
+
+import { gray, mauve, violet } from "@radix-ui/colors";
+import { AnimatePresence, motion } from "framer-motion";
+
+import { Files, Search, ListTree, Cpu, Settings } from "lucide-react";
+
 import { MyKBar } from "./MyKBar";
 
 import { usePrompt } from "../lib/prompt";
@@ -93,14 +101,6 @@ function SidebarSettings() {
     store,
     (state) => state.restoreParamsDefault
   );
-  const isSidebarOnLeftHand = useStore(
-    store,
-    (state) => state.isSidebarOnLeftHand
-  );
-  const setIsSidebarOnLeftHand = useStore(
-    store,
-    (state) => state.setIsSidebarOnLeftHand
-  );
 
   return (
     <Box>
@@ -121,26 +121,6 @@ function SidebarSettings() {
               label="Show Line Numbers"
             />
           </FormGroup>
-        </Tooltip>
-        <Tooltip
-          title={
-            "When turned off, the Sidebar appears at the right end of the screen."
-          }
-          disableInteractive
-        >
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isSidebarOnLeftHand}
-                size="small"
-                color="warning"
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setIsSidebarOnLeftHand(event.target.checked);
-                }}
-              />
-            }
-            label="Sidebar on the Lefthand Side"
-          />
         </Tooltip>
         <Tooltip
           title={"Enable Debug Mode, e.g., show pod IDs"}
@@ -973,3 +953,167 @@ export const Sidebar = () => {
     </>
   );
 };
+
+const MyTabsRoot = ({
+  tabs,
+  children,
+}: {
+  tabs: { key: string; icon: any; content: any }[];
+  children: any;
+}) => {
+  const [value, setValue] = useState(tabs[0].key);
+  const [open, setOpen] = useState(true);
+  return (
+    <Tabs.Root
+      defaultValue={tabs[0].key}
+      orientation="vertical"
+      className="flex"
+      value={value}
+      style={{
+        flexDirection: "row",
+      }}
+    >
+      <Tabs.List
+        style={{
+          flexDirection: "column",
+          // height: "300px",
+          height: "80vh",
+          backgroundColor: "#eee",
+          border: "1px solid black",
+          borderRadius: "10px",
+          alignItems: "flex-start",
+          zIndex: 2,
+        }}
+        // make the tabs align left
+        // className="flex flex-col justify-start"
+      >
+        {tabs.map(({ key, icon }) => (
+          <Tabs.Trigger
+            key={key}
+            value={key}
+            className="justify-start"
+            style={{
+              ...(key === value ? { color: "red" } : {}),
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              if (value === key) {
+                setOpen(!open);
+                // setValue("");
+              } else {
+                setOpen(true);
+                setValue(key);
+              }
+            }}
+          >
+            <RadixTooltip content={key} delayDuration={100} side="right">
+              {icon}
+            </RadixTooltip>
+          </Tabs.Trigger>
+        ))}
+      </Tabs.List>
+      <AnimatePresence>{open && children}</AnimatePresence>
+    </Tabs.Root>
+  );
+};
+
+function MyTabs({
+  tabs,
+}: {
+  tabs: { key: string; icon: any; content: any }[];
+}) {
+  return (
+    <MyTabsRoot tabs={tabs}>
+      <motion.div
+        initial={{ opacity: 0, x: -100 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -100 }}
+        className="px-4 pt-3 pb-2"
+        style={{
+          originX: 0,
+          originY: 0,
+          border: "1px solid black",
+          borderRadius: "10px",
+          width: "200px",
+          backgroundColor: gray.gray1,
+        }}
+      >
+        <>
+          {tabs.map(({ key, content }) => (
+            <Tabs.Content key={key} value={key}>
+              <motion.div
+                layoutId="text"
+                layout="position"
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -10, opacity: 0 }}
+              >
+                <Text size="2">{content}</Text>
+              </motion.div>
+            </Tabs.Content>
+          ))}
+        </>
+      </motion.div>
+    </MyTabsRoot>
+  );
+}
+
+export function TabSidebar() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        zIndex: 100,
+        top: "10%",
+        left: "10px",
+      }}
+    >
+      <MyTabs
+        tabs={[
+          {
+            key: "Files",
+            icon: <Files />,
+            // content: "Make changes to your account.".repeat(10),
+            content: (
+              <>
+                <YjsSyncStatus />
+                <Typography variant="h6">Export to ..</Typography>
+                <ExportButtons />
+              </>
+            ),
+          },
+          { key: "Search", icon: <Search />, content: "Search".repeat(10) },
+          {
+            key: "Outline",
+            icon: <ListTree />,
+            content: (
+              <>
+                <Typography variant="h6">Table of Pods</Typography>
+                <TableofPods />
+              </>
+            ),
+          },
+          {
+            key: "Runtime",
+            icon: <Cpu />,
+            content: (
+              <>
+                <RuntimeStatus />
+              </>
+            ),
+          },
+          {
+            key: "Settings",
+            icon: <Settings />,
+            content: (
+              <>
+                <Typography variant="h6">Site Settings</Typography>
+                <SidebarSettings />
+              </>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
