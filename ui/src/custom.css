@@ -88,13 +88,6 @@
   z-index: 9999 !important;
 }
 
-/* some scope nodes have z-index: 1000. This is set internally by reactflow, we
-  have to force set the collapsed scope block (when contextual zoomed) to be above
-  it, so that we can drag the block. */
-.react-flow__node:has(.scope-block) {
-  z-index: 1001 !important;
-}
-
 .global-drag-handle {
   position: absolute;
 

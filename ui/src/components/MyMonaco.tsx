@@ -382,13 +382,9 @@ async function updateGitGutter(editor) {
 
 interface MyMonacoProps {
   id: string;
-  fontSize: number;
 }
 
-export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
-  id = "0",
-  fontSize = 14,
-}) {
+export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
   // there's no racket language support
   console.debug("[perf] rendering MyMonaco", id);
   const store = useContext(RepoContext)!;
@@ -561,7 +557,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
         },
-        fontSize,
       }}
       editorDidMount={onEditorDidMount}
     />
