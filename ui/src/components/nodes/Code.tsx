@@ -51,16 +51,16 @@ import Ansi from "ansi-to-react";
 import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
 
-import { RepoContext } from "../../lib/store";
+import { RepoContext } from "@/lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 
 import { Handles, level2fontsize } from "./utils";
-import { timeDifference } from "../../lib/utils/utils";
+import { timeDifference } from "@/lib/utils/utils";
 import { ButtonGroup } from "@mui/material";
 
 import { ConfirmDeleteButton } from "./utils";
-import { runtimeTrpc, trpc } from "../../lib/trpc";
+import { runtimeTrpc, trpc } from "@/lib/trpc";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);

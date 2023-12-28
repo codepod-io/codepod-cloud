@@ -38,9 +38,7 @@ import { Files, Search, ListTree, Cpu, Settings } from "lucide-react";
 
 import { MyKBar } from "./MyKBar";
 
-import { usePrompt } from "../lib/prompt";
-
-import { RepoContext } from "../lib/store";
+import { RepoContext } from "@/lib/store";
 
 import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
@@ -55,11 +53,11 @@ import {
   Paper,
   Menu,
 } from "@mui/material";
-import { getUpTime, myNanoId } from "../lib/utils/utils";
+import { getUpTime, myNanoId } from "@/lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
-import { runtimeTrpc, trpc } from "../lib/trpc";
+import { runtimeTrpc, trpc } from "@/lib/trpc";
 
 function SidebarSettings() {
   const store = useContext(RepoContext)!;

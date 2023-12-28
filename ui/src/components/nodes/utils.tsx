@@ -15,7 +15,7 @@ import NoteIcon from "@mui/icons-material/Note";
 
 import { useStore } from "zustand";
 
-import { RepoContext } from "../../lib/store";
+import { RepoContext } from "@/lib/store";
 import {
   Box,
   ClickAwayListener,

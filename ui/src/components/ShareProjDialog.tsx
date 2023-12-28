@@ -25,8 +25,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import React, { useContext, useReducer } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useStore } from "zustand";
-import { RepoContext } from "../lib/store";
-import { trpc } from "../lib/trpc";
+import { RepoContext } from "@/lib/store";
+import { trpc } from "@/lib/trpc";
 
 const initialState = { showInfo: false, status: "info", message: "wait..." };
 

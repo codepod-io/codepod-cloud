@@ -1,5 +1,5 @@
 import { useStore } from "zustand";
-import { RepoContext } from "../lib/store";
+import { RepoContext } from "@/lib/store";
 import Box from "@mui/material/Box";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
