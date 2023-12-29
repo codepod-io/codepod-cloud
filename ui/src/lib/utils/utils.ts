@@ -19,9 +19,9 @@ export function timeDifference(current: Date, previous: Date) {
   const elapsed = current.getTime() - previous.getTime();
 
   if (elapsed < msPerMinute) {
-    return Math.round(elapsed / 1000) + " seconds ago";
+    return Math.round(elapsed / 1000) + " sec ago";
   } else if (elapsed < msPerHour) {
-    return Math.round(elapsed / msPerMinute) + " minutes ago";
+    return Math.round(elapsed / msPerMinute) + " min ago";
   } else if (elapsed < msPerDay) {
     return Math.round(elapsed / msPerHour) + " hours ago";
   } else if (elapsed < msPerMonth) {

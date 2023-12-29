@@ -1001,31 +1001,17 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (nodes.length == 0) return;
     const edges = get().edges;
     // consider the output box
-    const id2height = new Map<string, number>();
-    const id2width = new Map<string, number>();
-    // Leave some room for the top toolbar.
-    // FIXME fixed value.
-    const paddingTopPod = 50;
-    nodes.forEach((node) => {
-      const bottom = document.querySelector(`#result-${node.id}-bottom`);
-      const right = document.querySelector("#result-" + node.id + "-right");
-      const boxheight = bottom?.clientHeight || 0;
-      const boxwidth = right?.clientWidth || 0;
-      // FIXME a scope's height is NaN
-      id2height.set(node.id, (node.height || 0) + boxheight);
-      id2width.set(node.id, (node.width || 0) + boxwidth);
-      // id2height.set(node.id, node.height!);
-    });
+
     // Save initial minimum offset of the nodes.
     let initOffX = Math.min(...nodes.map((node) => node.position.x));
     let initOffY = Math.min(...nodes.map((node) => node.position.y));
 
     const tmpNodes: NodeType[] = nodes.map((node) => ({
       id: node.id,
-      x: node.position.x + id2width.get(node.id)! / 2,
-      y: node.position.y + id2height.get(node.id)! / 2,
-      width: id2width.get(node.id)!,
-      height: id2height.get(node.id)! + paddingTopPod,
+      x: node.position.x + node.width! / 2,
+      y: node.position.y + node.height! / 2,
+      width: node.width!,
+      height: node.height!,
     }));
     const tmpEdges = edges.map((edge) => ({
       source: edge.source,
@@ -1060,8 +1046,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       .stop();
     simulation.tick(10);
     tmpNodes.forEach((node) => {
-      node.x -= id2width.get(node.id)! / 2;
-      node.y -= id2height.get(node.id)! / 2;
+      node.x -= node.width! / 2;
+      node.y -= node.height! / 2;
     });
 
     if (!scopeId) {
@@ -1084,12 +1070,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       let miny = Math.min(...y1s);
       // calculate the offset, leave 50 padding for the scope.
       // Leave some room at the top of the scope for inner pod toolbars.
-      const paddingTop = 70;
-      const paddingBottom = 50;
-      const paddingLeft = 50;
-      const paddingRight = 50;
-      const offsetx = paddingLeft - minx;
-      const offsety = paddingTop - miny;
+      const offsetx = -minx;
+      const offsety = -miny;
       // move the nodes
       tmpNodes.forEach((node) => {
         node.x += offsetx;
@@ -1112,23 +1094,23 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       minx = Math.min(...x1s);
       y1s = tmpNodes.map((node) => node.y);
       miny = Math.min(...y1s);
-      const x2s = tmpNodes.map((node) => node.x + id2width.get(node.id)!);
+      const x2s = tmpNodes.map((node) => node.x + node.width!);
       const maxx = Math.max(...x2s);
-      const y2s = tmpNodes.map((node) => node.y + id2height.get(node.id)!);
+      const y2s = tmpNodes.map((node) => node.y + node.height!);
       const maxy = Math.max(...y2s);
       const scope = nodesMap.get(scopeId)!;
       nodesMap.set(scopeId, {
         ...scope,
         position: {
-          x: scope.position.x + initOffX - paddingLeft,
-          y: scope.position.y + initOffY - paddingTop,
+          x: scope.position.x + initOffX,
+          y: scope.position.y + initOffY,
         },
-        width: maxx - minx + paddingLeft + paddingRight,
-        height: maxy - miny + paddingTop + paddingBottom,
+        width: maxx - minx,
+        height: maxy - miny,
         style: {
           ...scope!.style,
-          width: maxx - minx + paddingLeft + paddingRight,
-          height: maxy - miny + paddingTop + paddingBottom,
+          width: maxx - minx,
+          height: maxy - miny,
         },
       });
     }
