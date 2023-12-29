@@ -59,9 +59,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
 
   const autoLayout = useStore(store, (state) => state.autoLayout);
 
-  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
-  const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
-
   return (
     <Box
       sx={{
@@ -69,17 +66,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
         alignItems: "center",
       }}
     >
-      <Box
-        className="custom-drag-handle"
-        sx={{
-          cursor: "grab",
-          fontSize: iconFontSize,
-          padding: "8px",
-          display: "inline-flex",
-        }}
-      >
-        <DragIndicatorIcon fontSize="inherit" />
-      </Box>
       {editMode === "edit" && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
@@ -91,7 +77,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
               }
             }}
           >
-            <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />
+            <PlayCircleOutlineIcon />
           </IconButton>
         </Tooltip>
       )}
@@ -103,16 +89,12 @@ function MyFloatingToolbar({ id }: { id: string }) {
               autoLayout(id);
             }}
           >
-            <ViewTimelineOutlinedIcon style={{ fontSize: iconFontSize }} />
+            <ViewTimelineOutlinedIcon />
           </IconButton>
         </Tooltip>
       )}
       {editMode === "edit" && (
-        <Tooltip
-          style={{ fontSize: iconFontSize }}
-          title="Delete"
-          className="nodrag"
-        >
+        <Tooltip title="Delete" className="nodrag">
           <ConfirmDeleteButton
             handleConfirm={(e: any) => {
               // This does not work, will throw "Parent node
@@ -126,17 +108,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
           />
         </Tooltip>
       )}
-      <Box
-        className="custom-drag-handle"
-        sx={{
-          cursor: "grab",
-          fontSize: iconFontSize,
-          padding: "8px",
-          display: "inline-flex",
-        }}
-      >
-        <DragIndicatorIcon fontSize="inherit" />
-      </Box>
     </Box>
   );
 }

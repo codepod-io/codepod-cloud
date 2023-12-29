@@ -63,12 +63,12 @@ function collectSymbolTables(
   edges.forEach(({ source, target }) => {
     if (target === node.parentNode) {
       if (nodesMap.get(source)?.type === "CODE") {
-        allSymbolTables.push(parseResult[target].symbolTable || {});
+        allSymbolTables.push(parseResult[target]?.symbolTable || {});
       } else {
         const children = nodes.filter((n) => n.parentNode === source);
         let tables = (children || [])
           .filter(({ id }) => parseResult[id].ispublic)
-          .map(({ id }) => parseResult[id].symbolTable);
+          .map(({ id }) => parseResult[id]?.symbolTable);
         allSymbolTables.push(Object.assign({}, ...tables));
       }
     }

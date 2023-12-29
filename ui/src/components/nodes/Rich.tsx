@@ -469,8 +469,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const editMode = useStore(store, (state) => state.editMode);
-  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
-  const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
 
   return (
     <>
@@ -478,8 +476,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
         className="custom-drag-handle"
         sx={{
           cursor: "grab",
-          fontSize: iconFontSize,
-          padding: "8px",
           display: "inline-flex",
         }}
       >
@@ -499,8 +495,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
         className="custom-drag-handle"
         sx={{
           cursor: "grab",
-          fontSize: iconFontSize,
-          padding: "8px",
           display: "inline-flex",
         }}
       >

@@ -394,15 +394,12 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const annotations = useStore(
     store,
     (state) => state.parseResult[id]?.annotations
   );
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
-  const updateView = useStore(store, (state) => state.updateView);
 
   const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
 
@@ -410,12 +407,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
   let lang = "python";
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-
-  useEffect(() => {
-    if (focusedEditor === id) {
-      editor?.focus();
-    }
-  }, [focusedEditor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -433,9 +424,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
   const provider = useStore(store, (state) => state.provider);
   const codeMap = useStore(store, (state) => state.getCodeMap());
 
-  const selectPod = useStore(store, (state) => state.selectPod);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-  const editMode = useStore(store, (state) => state.editMode);
   const { client } = copilotTrpc.useUtils();
 
   // FIXME useCallback?
@@ -450,15 +438,10 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
       if (!editorElement) {
         return;
       }
-      editorElement.style.height = `${contentHeight}px`;
+      // Set a minimum height of 50px for the code editor.
+      editorElement.style.height = `${Math.max(100, contentHeight)}px`;
       editor.layout();
     };
-    editor.onDidBlurEditorText(() => {
-      setFocusedEditor(undefined);
-    });
-    editor.onDidFocusEditorText(() => {
-      if (resetSelection()) updateView();
-    });
     editor.onDidContentSizeChange(updateHeight);
     // Note: must use addAction instead of addCommand. The addCommand is not
     // working because it is bound to only the latest Monaco instance. This is a
@@ -471,19 +454,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
         if (activeRuntime) {
           const specs = preprocessChain([id]);
           if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-        }
-      },
-    });
-    editor.addAction({
-      id: "Leave-editor",
-      label: "Leave editor",
-      keybindings: [monaco.KeyCode.Escape],
-      run: () => {
-        if (document.activeElement) {
-          (document.activeElement as any).blur();
-          setFocusedEditor(undefined);
-          resetSelection();
-          selectPod(id, true);
         }
       },
     });
@@ -535,7 +505,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
-        readOnly: editMode === "view" || focusedEditor !== id,
+        readOnly: false,
+        fontSize: 14,
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.
         scrollBeyondLastLine: false,

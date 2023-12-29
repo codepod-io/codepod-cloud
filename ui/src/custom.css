@@ -105,3 +105,16 @@
     border-radius: 0.25rem;
   }
 }
+
+/* https://codepen.io/stevenlewis/pen/jOKvMx */
+.result-content::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+.result-content::-webkit-scrollbar:vertical {
+  width: 11px;
+}
+.result-content::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  border: 2px solid white; /* should match background, can't be transparent */
+  background-color: rgba(0, 0, 0, 0.5);
+}
