@@ -555,6 +555,8 @@ export const RichNode = memo<Props>(function ({
       <div
         style={{
           width: "100%",
+          border: "1px solid black",
+          borderRadius: "0 0 4px 4px",
         }}
       >
         <MyLexical />
