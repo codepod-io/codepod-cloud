@@ -30,7 +30,14 @@
     // For Remirror to work
     "experimentalDecorators": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "shared/canUseDOM": ["./shared/src/canUseDOM.ts"],
+      "shared/caretFromPoint": ["./shared/src/caretFromPoint.ts"],
+      "shared/simpleDiffWithCursor": ["./shared/src/simpleDiffWithCursor.ts"],
+      "shared/invariant": ["./shared/src/invariant.ts"],
+      "shared/warnOnlyOnce": ["./shared/src/warnOnlyOnce.ts"],
+      "shared/environment": ["./shared/src/environment.ts"],
+      "shared/useLayoutEffect": ["./shared/src/useLayoutEffect.ts"]
     }
   },
   "include": ["src"],

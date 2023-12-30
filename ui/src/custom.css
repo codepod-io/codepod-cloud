@@ -37,7 +37,8 @@
 }
 
 .react-flow__node-SCOPE.active {
-  box-shadow: 2px 2px 2px 2px rgba(208, 2, 27, 1),
+  box-shadow:
+    2px 2px 2px 2px rgba(208, 2, 27, 1),
     8px 8px 8px 8px rgba(218, 102, 123, 1);
 }
 
@@ -106,7 +107,8 @@
   }
 }
 
-/* https://codepen.io/stevenlewis/pen/jOKvMx */
+/* Force display the vertical scrollbar. Ref:
+https://codepen.io/stevenlewis/pen/jOKvMx */
 .result-content::-webkit-scrollbar {
   -webkit-appearance: none;
 }
