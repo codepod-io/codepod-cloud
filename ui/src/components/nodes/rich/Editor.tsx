@@ -26,7 +26,9 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { CAN_USE_DOM } from "shared/canUseDOM";
 
-import { createWebsocketProvider } from "./collaboration";
+import { WebsocketProvider } from "y-websocket";
+import { Provider } from "@lexical/yjs";
+
 // import { useSettings } from "./context/SettingsContext.tsx";
 import { useSharedHistoryContext } from "./context/SharedHistoryContext";
 // import ActionsPlugin from './plugins/ActionsPlugin';
@@ -69,17 +71,37 @@ import TreeViewPlugin from "./plugins/TreeViewPlugin";
 // import TwitterPlugin from './plugins/TwitterPlugin';
 // import YouTubePlugin from './plugins/YouTubePlugin';
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { Doc } from "yjs";
 
 const skipCollaborationInit =
   // @ts-expect-error
   window.parent != null && window.parent.frames.right === window;
+
+function createWebsocketProvider(
+  id: string,
+  yjsDocMap: Map<string, Doc>
+): Provider {
+  let doc = yjsDocMap.get(id);
+
+  if (doc === undefined) {
+    doc = new Doc();
+    yjsDocMap.set(id, doc);
+  } else {
+    doc.load();
+  }
+
+  // @ts-expect-error
+  return new WebsocketProvider("ws://localhost:1234/yjs/pod", id, doc, {
+    connect: false,
+  });
+}
 
 /**
  * FIXME
  * 1. Table: bug: https://github.com/facebook/lexical/issues/5411
  * 2. Ctrl-k. Not working: https://github.com/facebook/lexical/issues/2769
  */
-export default function Editor(): JSX.Element {
+export default function Editor({ id }: { id: string }): JSX.Element {
   const { historyState } = useSharedHistoryContext();
   const isEditable = useLexicalEditable();
   const [floatingAnchorElem, setFloatingAnchorElem] =
@@ -112,7 +134,7 @@ export default function Editor(): JSX.Element {
   }, [isSmallWidthViewport]);
 
   // TODO toggle colab mode
-  const isCollab = false;
+  const isCollab = true;
 
   return (
     <>
@@ -144,7 +166,7 @@ export default function Editor(): JSX.Element {
         <>
           {isCollab ? (
             <CollaborationPlugin
-              id="main"
+              id={id}
               providerFactory={createWebsocketProvider}
               shouldBootstrap={!skipCollaborationInit}
             />

@@ -111,7 +111,7 @@ function prepopulatedRichText() {
 
 import "./index.css";
 
-export function MyLexical(): JSX.Element {
+export function MyLexical({ id }: { id: string }): JSX.Element {
   const initialConfig = {
     // editorState: isCollab
     //   ? null
@@ -120,6 +120,7 @@ export function MyLexical(): JSX.Element {
     //   : prepopulatedRichText,
 
     // editorState: prepopulatedRichText,
+    editorState: null,
     namespace: "Playground",
     nodes: [...PlaygroundNodes],
     onError: (error: Error) => {
@@ -139,7 +140,7 @@ export function MyLexical(): JSX.Element {
             </a>
           </header> */}
           <div className="editor-shell">
-            <Editor />
+            <Editor id={id} />
           </div>
           {/* {isDevPlayground ? <DocsPlugin /> : null} */}
           {/* {isDevPlayground ? <PasteLogPlugin /> : null} */}

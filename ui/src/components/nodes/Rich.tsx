@@ -559,7 +559,7 @@ export const RichNode = memo<Props>(function ({
           borderRadius: "0 0 4px 4px",
         }}
       >
-        <MyLexical />
+        <MyLexical id={id} />
       </div>
 
       <Handles
