@@ -1070,8 +1070,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       let miny = Math.min(...y1s);
       // calculate the offset, leave 50 padding for the scope.
       // Leave some room at the top of the scope for inner pod toolbars.
-      const offsetx = -minx;
-      const offsety = -miny;
+      const paddingTop = 70;
+      const paddingBottom = 50;
+      const paddingLeft = 50;
+      const paddingRight = 50;
+      const offsetx = paddingLeft - minx;
+      const offsety = paddingTop - miny;
       // move the nodes
       tmpNodes.forEach((node) => {
         node.x += offsetx;
@@ -1094,23 +1098,23 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       minx = Math.min(...x1s);
       y1s = tmpNodes.map((node) => node.y);
       miny = Math.min(...y1s);
-      const x2s = tmpNodes.map((node) => node.x + node.width!);
+      const x2s = tmpNodes.map((node) => node.x + node.width);
       const maxx = Math.max(...x2s);
-      const y2s = tmpNodes.map((node) => node.y + node.height!);
+      const y2s = tmpNodes.map((node) => node.y + node.height);
       const maxy = Math.max(...y2s);
       const scope = nodesMap.get(scopeId)!;
       nodesMap.set(scopeId, {
         ...scope,
         position: {
-          x: scope.position.x + initOffX,
-          y: scope.position.y + initOffY,
+          x: scope.position.x + initOffX - paddingLeft,
+          y: scope.position.y + initOffY - paddingTop,
         },
-        width: maxx - minx,
-        height: maxy - miny,
+        width: maxx - minx + paddingLeft + paddingRight,
+        height: maxy - miny + paddingTop + paddingBottom,
         style: {
           ...scope!.style,
-          width: maxx - minx,
-          height: maxy - miny,
+          width: maxx - minx + paddingLeft + paddingRight,
+          height: maxy - miny + paddingTop + paddingBottom,
         },
       });
     }
