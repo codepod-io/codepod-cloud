@@ -93,7 +93,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
       <div
         className="px-1 flex space-x-2"
         style={{
-          backgroundColor: "var(--accent-5)",
+          backgroundColor: "var(--accent-3)",
           height: "var(--space-6)",
           alignItems: "center",
         }}
@@ -116,8 +116,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           <Flex grow="1" />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <RadixButton variant="classic" size="1">
-                Menu
+              <RadixButton variant="ghost" size="1">
                 <CaretDownIcon />
               </RadixButton>
             </DropdownMenu.Trigger>
@@ -150,6 +149,9 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           backgroundColor: "var(--accent-2)",
           maxHeight: "200px",
           overflow: "scroll",
+          fontSize: "0.8em",
+          padding: "0 5px",
+          whiteSpace: "pre-wrap",
         }}
       >
         {results &&
@@ -159,30 +161,20 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             switch (res.type) {
               case "stream_stdout":
                 return (
-                  <Box
-                    component="pre"
-                    whiteSpace="pre-wrap"
-                    key={combinedKey}
-                    sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
-                  >
+                  <div key={combinedKey} style={{}}>
                     <Ansi>{res.text}</Ansi>
-                  </Box>
+                  </div>
                 );
               case "stream_stderr":
                 return (
-                  <Box
-                    component="pre"
-                    whiteSpace="pre-wrap"
-                    key={combinedKey}
-                    sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
-                  >
+                  <div key={combinedKey}>
                     <Ansi>{res.text}</Ansi>
-                  </Box>
+                  </div>
                 );
               case "display_data":
                 // TODO html results
                 return (
-                  <Box component="pre" whiteSpace="pre-wrap" key={combinedKey}>
+                  <div key={combinedKey}>
                     {res.text}
                     {res.html && (
                       <div dangerouslySetInnerHTML={{ __html: res.html }} />
@@ -193,18 +185,13 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
                         alt="output"
                       />
                     )}
-                  </Box>
+                  </div>
                 );
               case "execute_result":
                 return (
-                  <Box
-                    component="pre"
-                    whiteSpace="pre-wrap"
+                  <div
                     key={combinedKey}
-                    sx={{
-                      fontSize: "0.8em",
-                      margin: 0,
-                      padding: 0,
+                    style={{
                       borderTop: "1px solid rgb(214, 222, 230)",
                     }}
                   >
@@ -212,7 +199,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
                     {res.html && (
                       <div dangerouslySetInnerHTML={{ __html: res.html }} />
                     )}
-                  </Box>
+                  </div>
                 );
               default:
                 return <Box key="unknown">[WARN] Unknown Result</Box>;
@@ -223,9 +210,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
         {error?.stacktrace && error?.stacktrace.length > 0 && (
           <Box>
             <Box>StackTrace</Box>
-            <Box whiteSpace="pre-wrap" sx={{ fontSize: "0.8em" }}>
-              <Ansi>{error.stacktrace.join("\n")}</Ansi>
-            </Box>
+            <Ansi>{error.stacktrace.join("\n")}</Ansi>
           </Box>
         )}
       </div>
@@ -246,8 +231,7 @@ function HeaderBar({ id }: { id: string }) {
       className="custom-drag-handle"
       style={{
         height: "var(--space-6)",
-        backgroundColor: "var(--accent-8)",
-        border: "solid 1px var(--gray-12)",
+        backgroundColor: "var(--accent-3)",
         borderRadius: "4px 4px 0 0",
         cursor: "grab",
         display: "flex",
@@ -257,8 +241,7 @@ function HeaderBar({ id }: { id: string }) {
     >
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <RadixButton variant="classic" size="1">
-            Menu
+          <RadixButton variant="ghost" size="1">
             <CaretDownIcon />
           </RadixButton>
         </DropdownMenu.Trigger>
@@ -300,7 +283,7 @@ function HeaderBar({ id }: { id: string }) {
       </DropdownMenu.Root>
       <div className="flex-grow"></div>
       <RadixButton
-        variant="classic"
+        variant="soft"
         size="1"
         onClick={() => {
           if (activeRuntime) {
@@ -353,17 +336,12 @@ export const CodeNode = memo<NodeProps>(function ({
         // minHeight: "50px",
         // border: "solid 1px black",
         backgroundColor: "white",
+        border: "solid 1px var(--gray-12)",
+        borderRadius: "4px",
       }}
     >
       <HeaderBar id={id} />
-      <div
-        style={{
-          backgroundColor: "var(--accent-2)",
-          // minHeight: "60px",
-          border: "solid 1px var(--gray-12)",
-          borderRadius: "0 0 4px 4px",
-        }}
-      >
+      <div style={{ paddingTop: "5px", cursor: "auto" }}>
         <MyMonaco id={id} />
       </div>
       <ResultBlock id={id} />

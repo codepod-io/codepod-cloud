@@ -19,7 +19,7 @@ const theme: monaco.editor.IStandaloneThemeData = {
   inherit: true,
   rules: [],
   colors: {
-    "editor.background": "#f3f3f340",
+    // "editor.background": "#f3f3f340",
     "editor.lineHighlightBackground": "#f3f3f340",
   },
 };
