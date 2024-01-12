@@ -529,10 +529,10 @@ export const RichNode = memo<Props>(function ({
       }}
     >
       {/* Using Remirror Editor */}
-      {/* <MyRemirror id={id} /> */}
+      <MyRemirror id={id} />
 
       {/* Using Lexical Editor */}
-      <MyLexical1 id={id} />
+      {/* <MyLexical1 id={id} /> */}
 
       <Handles
         width={node.width}
