@@ -2996,7 +2996,7 @@ packages:
       '@types/react-dom':
         optional: true
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.23.7
       '@radix-ui/react-primitive': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
       '@types/react': 18.2.15
       '@types/react-dom': 18.2.7
@@ -3956,7 +3956,7 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.23.7
       '@radix-ui/react-use-callback-ref': 1.0.1(@types/react@18.2.15)(react@18.2.0)
       '@types/react': 18.2.15
       react: 18.2.0
@@ -3999,7 +3999,7 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.23.7
       '@radix-ui/rect': 1.0.1
       '@types/react': 18.2.15
       react: 18.2.0
@@ -4044,7 +4044,7 @@ packages:
   /@radix-ui/rect@1.0.1:
     resolution: {integrity: sha512-fyrgCaedtvMg9NK3en0pnOYJdtfwxUcNolezkNPUsoX57X8oQk+NkqcvzHXD2uKNij6GXmWU9NDru2IWjrO4BQ==}
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.23.7
     dev: false
 
   /@radix-ui/themes@2.0.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0):
@@ -6619,7 +6619,7 @@ packages:
   /a11y-status@2.0.1:
     resolution: {integrity: sha512-VcW0aF3xb5wYFDYEfK7u41HBIU/bCE9zWl4zG+RhW1g0jGgTdS3h4ulVjVs7/2+KbGMpZvafP7wf/CDs/duNtA==}
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.23.7
       '@types/throttle-debounce': 2.1.0
       throttle-debounce: 3.0.1
     dev: false
@@ -11346,7 +11346,7 @@ packages:
   /prosemirror-resizable-view@2.0.14(@remirror/pm@2.0.5)(@types/node@20.5.9):
     resolution: {integrity: sha512-TgCaOWaMdR/R34AYsxHtHuQlC9rtHTuSBEgcmD5V9ldVe1+Ul72xz9G73xo9wLhVpTwt3YxzpenTcRWPZIofow==}
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.23.7
       '@remirror/core-helpers': 3.0.0
       '@remirror/core-utils': 2.0.13(@remirror/pm@2.0.5)(@types/node@20.5.9)
       prosemirror-model: 1.19.3
