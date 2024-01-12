@@ -143,6 +143,8 @@ import { BlockHandleExtension } from "./extensions/blockHandle";
 import { ConfirmDeleteButton, Handles } from "./utils";
 import { RepoContext } from "@/lib/store";
 
+import { MyLexical } from "./rich/MyLexical";
+
 import "./remirror-size.css";
 
 /**
@@ -252,30 +254,6 @@ const MyStyledWrapper = styled("div")(
 `
 );
 
-function HotkeyControl({ id }) {
-  const store = useContext(RepoContext)!;
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const selectPod = useStore(store, (state) => state.selectPod);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-
-  useKeymap("Escape", () => {
-    setFocusedEditor(undefined);
-    resetSelection();
-    selectPod(id, true);
-    return true;
-  });
-  const commands = useCommands();
-  useEffect(() => {
-    if (focusedEditor === id) {
-      commands.focus();
-    } else {
-      commands.blur();
-    }
-  }, [focusedEditor]);
-  return <></>;
-}
-
 // FIXME re-rendering performance
 const MyEditor = ({
   placeholder = "Start typing...",
@@ -290,10 +268,6 @@ const MyEditor = ({
   // the Yjs extension for Remirror
   const provider = useStore(store, (state) => state.provider)!;
 
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-  const updateView = useStore(store, (state) => state.updateView);
   const richMap = useStore(store, (state) => state.getRichMap());
   if (!richMap.has(id)) {
     throw new Error("richMap does not have id" + id);
@@ -394,13 +368,6 @@ const MyEditor = ({
   return (
     <Box
       className="remirror-theme"
-      onFocus={() => {
-        setFocusedEditor(id);
-        if (resetSelection()) updateView();
-      }}
-      onBlur={() => {
-        setFocusedEditor(undefined);
-      }}
       sx={{
         userSelect: "text",
         cursor: "auto",
@@ -419,19 +386,6 @@ const MyEditor = ({
     >
       <ThemeProvider>
         <MyStyledWrapper>
-          <Box
-            sx={{
-              // Put it 100% the width and height, above the following components.
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              zIndex: focusedEditor === id ? -1 : 10,
-            }}
-          >
-            {/* Overlay */}
-          </Box>
           <Remirror
             editable={editMode === "edit"}
             manager={manager}
@@ -447,7 +401,6 @@ const MyEditor = ({
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
           >
-            <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
             <EditorComponent />
 
@@ -465,42 +418,47 @@ const MyEditor = ({
   );
 };
 
-function MyFloatingToolbar({ id }: { id: string }) {
-  const store = useContext(RepoContext)!;
-  const reactFlowInstance = useReactFlow();
-  const editMode = useStore(store, (state) => state.editMode);
-
+function MyRemirror({ id }) {
   return (
-    <>
-      <Box
+    <div className="flex flex-col">
+      <div
         className="custom-drag-handle"
-        sx={{
+        style={{
+          height: "var(--space-6)",
+          backgroundColor: "var(--accent-8)",
+          border: "solid 1px var(--gray-12)",
+          borderRadius: "4px 4px 0 0",
           cursor: "grab",
-          display: "inline-flex",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 10px",
+        }}
+      ></div>
+      <div
+        style={{
+          width: "100%",
+          border: "1px solid black",
+          borderRadius: "0 0 4px 4px",
         }}
       >
-        <DragIndicatorIcon fontSize="inherit" />
-      </Box>
-      {editMode === "edit" && (
-        <Tooltip title="Delete">
-          <ConfirmDeleteButton
-            size="small"
-            handleConfirm={() => {
-              reactFlowInstance.deleteElements({ nodes: [{ id }] });
-            }}
-          />
-        </Tooltip>
-      )}
-      <Box
-        className="custom-drag-handle"
-        sx={{
-          cursor: "grab",
-          display: "inline-flex",
-        }}
-      >
-        <DragIndicatorIcon fontSize="inherit" />
-      </Box>
-    </>
+        <MyEditor id={id} />
+      </div>
+    </div>
+  );
+}
+
+function MyLexical1({ id }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        border: "1px solid black",
+        // borderRadius: "0 0 4px 4px",
+        borderRadius: "4px",
+      }}
+    >
+      <MyLexical id={id} />
+    </div>
   );
 }
 
@@ -529,9 +487,6 @@ export const RichNode = memo<Props>(function ({
   const store = useContext(RepoContext)!;
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
-  const editMode = useStore(store, (state) => state.editMode);
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
   // A helper state to allow single-click a selected pod and enter edit mode.
   const [singleClickEdit, setSingleClickEdit] = useState(false);
@@ -561,178 +516,68 @@ export const RichNode = memo<Props>(function ({
   if (!node) return null;
 
   return (
-    <>
-      <Box
-        onMouseEnter={() => {
-          setShowToolbar(true);
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        minWidth: "300px",
+        // This is the key to let the node auto-resize w.r.t. the content.
+        height: "auto",
+        backgroundColor: "white",
+        cursor: "auto",
+      }}
+    >
+      {/* Using Remirror Editor */}
+      <MyRemirror id={id} />
+
+      {/* Using Lexical Editor */}
+      {/* <MyLexical1 id={id} /> */}
+
+      <Handles
+        width={node.width}
+        height={node.height}
+        parent={node.parentNode}
+        xPos={xPos}
+        yPos={yPos}
+      />
+      <NodeResizeControl
+        style={{
+          background: "transparent",
+          border: "none",
+          zIndex: 100,
+          // put it to the right-bottom corner, instead of right-middle.
+          top: "100%",
+          color: "red",
         }}
-        onMouseLeave={() => {
-          setShowToolbar(false);
-          // hide drag handle
-          const elems = document.getElementsByClassName("global-drag-handle");
-          Array.from(elems).forEach((elem) => {
-            (elem as HTMLElement).style.display = "none";
-          });
-        }}
-        onClick={() => {
-          if (singleClickEdit) {
-            setFocusedEditor(id);
-          } else {
-            setSingleClickEdit(true);
+        minWidth={300}
+        minHeight={50}
+        // this allows the resize happens in X-axis only.
+        position="right"
+        onResizeEnd={() => {
+          // remove style.height so that the node auto-resizes.
+          const node = nodesMap.get(id);
+          if (node) {
+            nodesMap.set(id, {
+              ...node,
+              style: { ...node.style, height: undefined },
+            });
+          }
+          if (autoRunLayout) {
+            autoLayoutROOT();
           }
         }}
-        onDoubleClick={() => {
-          setFocusedEditor(id);
-        }}
-        sx={{
-          cursor: "auto",
-        }}
-        className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
-        {" "}
-        <Box
+        <HeightIcon
           sx={{
-            border: "solid 1px #d6dee6",
-            borderWidth: "2px",
-            borderRadius: "4px",
-            width: "100%",
-            minWidth: "300px",
-            height: "auto",
-            minHeight: "50px",
-            backgroundColor: "white",
-            borderColor: false // FIXME pod.ispublic
-              ? "green"
-              : selected
-              ? "#003c8f"
-              : focusedEditor !== id
-              ? "#d6dee6"
-              : "#003c8f",
+            transform: "rotate(90deg)",
+            position: "absolute",
+            right: 5,
+            bottom: 5,
           }}
-        >
-          {editMode === "edit" && (
-            <NodeResizeControl
-              style={{
-                background: "transparent",
-                border: "none",
-                zIndex: 100,
-                // put it to the right-bottom corner, instead of right-middle.
-                top: "100%",
-                // show on hover
-                opacity: showToolbar ? 1 : 0,
-                color: "red",
-              }}
-              minWidth={300}
-              minHeight={50}
-              // this allows the resize happens in X-axis only.
-              position="right"
-              onResizeEnd={() => {
-                // remove style.height so that the node auto-resizes.
-                const node = nodesMap.get(id);
-                if (node) {
-                  nodesMap.set(id, {
-                    ...node,
-                    style: { ...node.style, height: undefined },
-                  });
-                }
-                if (autoRunLayout) {
-                  autoLayoutROOT();
-                }
-              }}
-            >
-              <HeightIcon
-                sx={{
-                  transform: "rotate(90deg)",
-                  position: "absolute",
-                  right: 5,
-                  bottom: 5,
-                }}
-              />
-            </NodeResizeControl>
-          )}
-          <Box
-            sx={{
-              opacity: showToolbar ? 1 : 0,
-            }}
-          >
-            <Handles
-              width={node.width}
-              height={node.height}
-              parent={parent}
-              xPos={xPos}
-              yPos={yPos}
-            />
-          </Box>
-
-          <Box>
-            {devMode && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "-48px",
-                  bottom: "0px",
-                  userSelect: "text",
-                  cursor: "auto",
-                }}
-                className="nodrag"
-              >
-                {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {node.width}
-                , h: {node.height})
-              </Box>
-            )}
-            <Box
-              sx={{
-                position: "absolute",
-                top: "-24px",
-                width: "50%",
-              }}
-            >
-              <InputBase
-                inputRef={inputRef}
-                className="nodrag"
-                defaultValue={data.name || ""}
-                disabled={editMode === "view"}
-                onBlur={(e) => {
-                  const name = e.target.value;
-                  if (name === data.name) return;
-                  const node = nodesMap.get(id);
-                  if (node) {
-                    nodesMap.set(id, {
-                      ...node,
-                      data: { ...node.data, name },
-                    });
-                  }
-                }}
-                inputProps={{
-                  style: {
-                    padding: "0px",
-                    textOverflow: "ellipsis",
-                  },
-                }}
-              ></InputBase>
-            </Box>
-            <Box
-              sx={{
-                opacity: showToolbar ? 1 : 0,
-                display: "flex",
-                marginLeft: "10px",
-                borderRadius: "4px",
-                position: "absolute",
-                border: "solid 1px #d6dee6",
-                right: "25px",
-                top: "-15px",
-                background: "white",
-                zIndex: 10,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <MyFloatingToolbar id={id} />
-            </Box>
-          </Box>
-          <MyEditor id={id} />
-        </Box>
-      </Box>
-    </>
+        />
+      </NodeResizeControl>
+    </div>
   );
 });
 

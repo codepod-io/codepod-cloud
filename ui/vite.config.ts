@@ -10,6 +10,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // find: "shared",
+      // replacement: path.resolve("./shared/src"),
+      shared: path.resolve(__dirname, "./shared/src"),
     },
   },
   plugins: [
@@ -19,4 +22,9 @@ export default defineConfig({
       typescript: true,
     }),
   ],
+  // Support for excalidraw. Ref:
+  // https://docs.excalidraw.com/docs/@excalidraw/excalidraw/integration#preact
+  define: {
+    "process.env.IS_PREACT": JSON.stringify("true"),
+  },
 });
