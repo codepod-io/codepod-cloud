@@ -254,30 +254,6 @@ const MyStyledWrapper = styled("div")(
 `
 );
 
-function HotkeyControl({ id }) {
-  const store = useContext(RepoContext)!;
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const selectPod = useStore(store, (state) => state.selectPod);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-
-  useKeymap("Escape", () => {
-    setFocusedEditor(undefined);
-    resetSelection();
-    selectPod(id, true);
-    return true;
-  });
-  const commands = useCommands();
-  useEffect(() => {
-    if (focusedEditor === id) {
-      commands.focus();
-    } else {
-      commands.blur();
-    }
-  }, [focusedEditor]);
-  return <></>;
-}
-
 // FIXME re-rendering performance
 const MyEditor = ({
   placeholder = "Start typing...",
@@ -292,10 +268,6 @@ const MyEditor = ({
   // the Yjs extension for Remirror
   const provider = useStore(store, (state) => state.provider)!;
 
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-  const updateView = useStore(store, (state) => state.updateView);
   const richMap = useStore(store, (state) => state.getRichMap());
   if (!richMap.has(id)) {
     throw new Error("richMap does not have id" + id);
@@ -396,13 +368,6 @@ const MyEditor = ({
   return (
     <Box
       className="remirror-theme"
-      onFocus={() => {
-        setFocusedEditor(id);
-        if (resetSelection()) updateView();
-      }}
-      onBlur={() => {
-        setFocusedEditor(undefined);
-      }}
       sx={{
         userSelect: "text",
         cursor: "auto",
@@ -421,19 +386,6 @@ const MyEditor = ({
     >
       <ThemeProvider>
         <MyStyledWrapper>
-          <Box
-            sx={{
-              // Put it 100% the width and height, above the following components.
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              zIndex: focusedEditor === id ? -1 : 10,
-            }}
-          >
-            {/* Overlay */}
-          </Box>
           <Remirror
             editable={editMode === "edit"}
             manager={manager}
@@ -449,7 +401,6 @@ const MyEditor = ({
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
           >
-            <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
             <EditorComponent />
 
@@ -466,6 +417,50 @@ const MyEditor = ({
     </Box>
   );
 };
+
+function MyRemirror({ id }) {
+  return (
+    <div className="flex flex-col">
+      <div
+        className="custom-drag-handle"
+        style={{
+          height: "var(--space-6)",
+          backgroundColor: "var(--accent-8)",
+          border: "solid 1px var(--gray-12)",
+          borderRadius: "4px 4px 0 0",
+          cursor: "grab",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 10px",
+        }}
+      ></div>
+      <div
+        style={{
+          width: "100%",
+          border: "1px solid black",
+          borderRadius: "0 0 4px 4px",
+        }}
+      >
+        <MyEditor id={id} />
+      </div>
+    </div>
+  );
+}
+
+function MyLexical1({ id }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        border: "1px solid black",
+        // borderRadius: "0 0 4px 4px",
+        borderRadius: "4px",
+      }}
+    >
+      <MyLexical id={id} />
+    </div>
+  );
+}
 
 /**
  * The React Flow node.
@@ -492,9 +487,6 @@ export const RichNode = memo<Props>(function ({
   const store = useContext(RepoContext)!;
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
-  const editMode = useStore(store, (state) => state.editMode);
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
   // A helper state to allow single-click a selected pod and enter edit mode.
   const [singleClickEdit, setSingleClickEdit] = useState(false);
@@ -536,31 +528,11 @@ export const RichNode = memo<Props>(function ({
         cursor: "auto",
       }}
     >
-      <div
-        className="custom-drag-handle"
-        style={{
-          height: "var(--space-6)",
-          backgroundColor: "var(--accent-8)",
-          border: "solid 1px var(--gray-12)",
-          borderRadius: "4px 4px 0 0",
-          cursor: "grab",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 10px",
-        }}
-      ></div>
-      {/* editor */}
-      {/* <MyEditor id={id} /> */}
-      {/* <div>Editor</div> */}
-      <div
-        style={{
-          width: "100%",
-          border: "1px solid black",
-          borderRadius: "0 0 4px 4px",
-        }}
-      >
-        <MyLexical id={id} />
-      </div>
+      {/* Using Remirror Editor */}
+      {/* <MyRemirror id={id} /> */}
+
+      {/* Using Lexical Editor */}
+      <MyLexical1 id={id} />
 
       <Handles
         width={node.width}

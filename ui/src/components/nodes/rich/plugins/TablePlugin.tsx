@@ -96,8 +96,8 @@ export function InsertTableDialog({
   activeEditor: LexicalEditor;
   onClose: () => void;
 }): JSX.Element {
-  const [rows, setRows] = useState('5');
-  const [columns, setColumns] = useState('5');
+  const [rows, setRows] = useState('3');
+  const [columns, setColumns] = useState('3');
   const [isDisabled, setIsDisabled] = useState(true);
 
   useEffect(() => {

@@ -45,7 +45,7 @@ import {
 import * as React from "react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
-import { createWebsocketProvider } from "../collaboration";
+// import { createWebsocketProvider } from "../collaboration";
 import { useSharedHistoryContext } from "../context/SharedHistoryContext";
 // import EmojisPlugin from "../plugins/EmojisPlugin";
 // import KeywordsPlugin from "../plugins/KeywordsPlugin";
@@ -375,42 +375,9 @@ export default function ImageComponent({
             maxWidth={maxWidth}
           />
         </div>
-        {showCaption && (
-          <div className="image-caption-container">
-            <LexicalNestedComposer initialEditor={caption}>
-              <AutoFocusPlugin />
-              {/* <MentionsPlugin /> */}
-              {/* <LinkPlugin /> */}
-              {/* <EmojisPlugin /> */}
-              <HashtagPlugin />
-              {/* <KeywordsPlugin /> */}
-              {isCollabActive ? (
-                <CollaborationPlugin
-                  id={caption.getKey()}
-                  providerFactory={createWebsocketProvider}
-                  shouldBootstrap={true}
-                />
-              ) : (
-                <HistoryPlugin externalHistoryState={historyState} />
-              )}
-              <RichTextPlugin
-                contentEditable={
-                  <ContentEditable className="ImageNode__contentEditable" />
-                }
-                placeholder={
-                  <Placeholder className="ImageNode__placeholder">
-                    Enter a caption...
-                  </Placeholder>
-                }
-                ErrorBoundary={LexicalErrorBoundary}
-              />
-              {/* {showNestedEditorTreeView === true ? <TreeViewPlugin /> : null} */}
-            </LexicalNestedComposer>
-          </div>
-        )}
         {resizable && $isNodeSelection(selection) && isFocused && (
           <ImageResizer
-            showCaption={showCaption}
+            showCaption={false}
             setShowCaption={setShowCaption}
             editor={editor}
             buttonRef={buttonRef}

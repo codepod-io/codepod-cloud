@@ -198,7 +198,7 @@
   background-position: center;
   background-repeat: no-repeat;
   display: block;
-  content: ' ';
+  content: " ";
   position: absolute;
   top: 0;
   left: 0;
@@ -226,7 +226,7 @@
   background-position: center;
   background-repeat: no-repeat;
   display: block;
-  content: ' ';
+  content: " ";
   position: absolute;
   top: 0;
   left: 0;
@@ -282,36 +282,36 @@
 .PlaygroundEditorTheme__ol1 {
   padding: 0;
   margin: 0;
-  list-style-position: inside;
+  /* list-style-position: inside; */
 }
 .PlaygroundEditorTheme__ol2 {
   padding: 0;
   margin: 0;
   list-style-type: upper-alpha;
-  list-style-position: inside;
+  /* list-style-position: inside; */
 }
 .PlaygroundEditorTheme__ol3 {
   padding: 0;
   margin: 0;
   list-style-type: lower-alpha;
-  list-style-position: inside;
+  /* list-style-position: inside; */
 }
 .PlaygroundEditorTheme__ol4 {
   padding: 0;
   margin: 0;
   list-style-type: upper-roman;
-  list-style-position: inside;
+  /* list-style-position: inside; */
 }
 .PlaygroundEditorTheme__ol5 {
   padding: 0;
   margin: 0;
   list-style-type: lower-roman;
-  list-style-position: inside;
+  /* list-style-position: inside; */
 }
 .PlaygroundEditorTheme__ul {
   padding: 0;
   margin: 0;
-  list-style-position: inside;
+  /* list-style-position: inside; */
 }
 .PlaygroundEditorTheme__listItem {
   margin: 0 32px;
@@ -331,7 +331,7 @@
 }
 .PlaygroundEditorTheme__listItemUnchecked:before,
 .PlaygroundEditorTheme__listItemChecked:before {
-  content: '';
+  content: "";
   width: 16px;
   height: 16px;
   top: 2px;
@@ -341,8 +341,8 @@
   background-size: cover;
   position: absolute;
 }
-.PlaygroundEditorTheme__listItemUnchecked[dir='rtl']:before,
-.PlaygroundEditorTheme__listItemChecked[dir='rtl']:before {
+.PlaygroundEditorTheme__listItemUnchecked[dir="rtl"]:before,
+.PlaygroundEditorTheme__listItemChecked[dir="rtl"]:before {
   left: auto;
   right: 0;
 }
@@ -362,7 +362,7 @@
   background-repeat: no-repeat;
 }
 .PlaygroundEditorTheme__listItemChecked:after {
-  content: '';
+  content: "";
   cursor: pointer;
   border-color: #fff;
   border-style: solid;

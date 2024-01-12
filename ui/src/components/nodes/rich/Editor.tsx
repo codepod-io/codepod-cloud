@@ -51,7 +51,7 @@ import ExcalidrawPlugin from "./plugins/ExcalidrawPlugin";
 import FloatingLinkEditorPlugin from "./plugins/FloatingLinkEditorPlugin";
 import FloatingTextFormatToolbarPlugin from "./plugins/FloatingTextFormatToolbarPlugin";
 import ImagesPlugin from "./plugins/ImagesPlugin";
-import InlineImagePlugin from "./plugins/InlineImagePlugin";
+// import InlineImagePlugin from "./plugins/InlineImagePlugin";
 // import KeywordsPlugin from './plugins/KeywordsPlugin';
 import { LayoutPlugin } from "./plugins/LayoutPlugin/LayoutPlugin";
 import LinkPlugin from "./plugins/LinkPlugin";
@@ -137,9 +137,20 @@ export default function Editor({ id }: { id: string }): JSX.Element {
   const isCollab = true;
 
   return (
-    <>
-      {/* <ToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} /> */}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Important plugins */}
       <ToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+
+      {floatingAnchorElem && (
+        <FloatingTextFormatToolbarPlugin anchorElem={floatingAnchorElem} />
+      )}
+      <ComponentPickerPlugin />
+      {/* Other */}
       <div
         className={`editor-container tree-view`}
         style={{
@@ -150,7 +161,7 @@ export default function Editor({ id }: { id: string }): JSX.Element {
         <DragDropPaste />
         <AutoFocusPlugin />
         <ClearEditorPlugin />
-        <ComponentPickerPlugin />
+
         <EmojiPickerPlugin />
         {/* <AutoEmbedPlugin /> */}
 
@@ -206,7 +217,7 @@ export default function Editor({ id }: { id: string }): JSX.Element {
                   pointerEvents: "none",
                 }}
               >
-                start typing
+                type / to insert ..
               </div>
             }
             ErrorBoundary={LexicalErrorBoundary}
@@ -219,7 +230,7 @@ export default function Editor({ id }: { id: string }): JSX.Element {
           <TablePlugin hasCellMerge={true} hasCellBackgroundColor={true} />
           {/* <TableCellResizer /> */}
           <ImagesPlugin />
-          <InlineImagePlugin />
+          {/* <InlineImagePlugin /> */}
           <LinkPlugin />
           {/* <PollPlugin /> */}
           {/* <TwitterPlugin /> */}
@@ -247,9 +258,6 @@ export default function Editor({ id }: { id: string }): JSX.Element {
                   anchorElem={floatingAnchorElem}
                   cellMerge={true}
                 /> */}
-              <FloatingTextFormatToolbarPlugin
-                anchorElem={floatingAnchorElem}
-              />
             </>
           )}
         </>
@@ -261,6 +269,6 @@ export default function Editor({ id }: { id: string }): JSX.Element {
       </div>
       {/* for debugging */}
       {/* <TreeViewPlugin /> */}
-    </>
+    </div>
   );
 }

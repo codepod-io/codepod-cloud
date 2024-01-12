@@ -26,7 +26,8 @@ import PlaygroundNodes from "./nodes/PlaygroundNodes";
 import PlaygroundEditorTheme from "./themes/PlaygroundEditorTheme";
 
 console.warn(
-  "If you are profiling the playground app, please ensure you turn off the debug view. You can disable it by pressing on the settings control in the bottom-left of your screen and toggling the debug view setting."
+  "If you are profiling the playground app, please ensure you turn off the debug view." +
+    " You can disable it by pressing on the settings control in the bottom-left of your screen and toggling the debug view setting."
 );
 
 function prepopulatedRichText() {

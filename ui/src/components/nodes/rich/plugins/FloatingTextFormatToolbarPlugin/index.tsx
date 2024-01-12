@@ -11,9 +11,13 @@ import "./index.css";
 import { $isCodeHighlightNode } from "@lexical/code";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { mergeRegister } from "@lexical/utils";
+import {
+  $getNearestBlockElementAncestorOrThrow,
+  mergeRegister,
+} from "@lexical/utils";
 import {
   $INTERNAL_isPointSelection,
+  $createParagraphNode,
   $getSelection,
   $isParagraphNode,
   $isRangeSelection,
@@ -46,19 +50,33 @@ import {
   $getSelectionStyleValueForProperty,
   $patchStyleText,
 } from "@lexical/selection";
-import { Code, Link, Underline } from "lucide-react";
+import { Code, Eraser, Link, Underline } from "lucide-react";
 import { Button, Flex } from "@radix-ui/themes";
 import { DropdownMenu } from "@radix-ui/themes";
 import { match } from "ts-pattern";
+import { $isHeadingNode, $isQuoteNode } from "@lexical/rich-text";
+import { $isDecoratorBlockNode } from "@lexical/react/LexicalDecoratorBlockNode";
 
 function ColorPicker({ editor, fontColor, bgColor }) {
-  type Style = "red" | "green" | "blue" | "bg-yellow" | "bg-pink" | "none";
+  type Style =
+    | "none"
+    | "red"
+    | "green"
+    | "blue"
+    | "yellow"
+    | "bg-red"
+    | "bg-green"
+    | "bg-blue"
+    | "bg-yellow";
   const style = match({ fontColor, bgColor })
     .with({ fontColor: "red" }, () => "red")
     .with({ fontColor: "green" }, () => "green")
     .with({ fontColor: "blue" }, () => "blue")
+    .with({ fontColor: "orange" }, () => "yellow")
+    .with({ bgColor: "pink" }, () => "bg-red")
+    .with({ bgColor: "lightgreen" }, () => "bg-green")
+    .with({ bgColor: "lightblue" }, () => "bg-blue")
     .with({ bgColor: "yellow" }, () => "bg-yellow")
-    .with({ bgColor: "pink" }, () => "bg-pink")
     .otherwise(() => "none") as Style;
   const applyStyleText = useCallback(
     (styles: Record<string, string>, skipHistoryStack?: boolean) => {
@@ -86,110 +104,178 @@ function ColorPicker({ editor, fontColor, bgColor }) {
     },
     [applyStyleText]
   );
+  const tw =
+    "border-[1px] border-transparent hover:border-violet11 hover:border-[1px]";
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         <Button
           variant="ghost"
-          className="hover:bg-violet3 hover:text-violet11 hover:border-emerald-400"
           style={{
             height: "0.7em",
             color: fontColor,
             backgroundColor: bgColor,
+            cursor: "pointer",
           }}
         >
           A
           <CaretDownIcon />
         </Button>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <Flex>
+      <DropdownMenu.Content variant="soft">
+        <Flex direction="column" gap="1">
+          {/* The foreground color */}
+          <Flex
+            gap="1"
+            style={{
+              justifyContent: "center",
+            }}
+          >
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "red" ? "2px solid" : "",
+                color: "red",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("red", false);
+                onBgColorSelect("white", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "green" ? "2px solid" : "",
+                color: "green",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("green", false);
+                onBgColorSelect("white", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "blue" ? "2px solid" : "",
+                color: "blue",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("blue", false);
+                onBgColorSelect("white", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "yellow" ? "2px solid" : "",
+                color: "orange",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("orange", false);
+                onBgColorSelect("white", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+          </Flex>
+          {/* The background colors */}
+          <Flex
+            gap="1"
+            style={{
+              justifyContent: "center",
+            }}
+          >
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "bg-red" ? "2px solid" : "",
+                backgroundColor: "pink",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("black", false);
+                onBgColorSelect("pink", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "bg-green" ? "2px solid" : "",
+                backgroundColor: "lightgreen",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("black", false);
+                onBgColorSelect("lightgreen", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "bg-blue" ? "2px solid" : "",
+                backgroundColor: "lightblue",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("black", false);
+                onBgColorSelect("lightblue", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Item
+              className={tw}
+              style={{
+                border: style === "bg-yellow" ? "2px solid" : "",
+                backgroundColor: "yellow",
+                padding: "5px",
+                height: "1.6em",
+              }}
+              onClick={() => {
+                onFontColorSelect("black", false);
+                onBgColorSelect("yellow", false);
+              }}
+            >
+              A
+            </DropdownMenu.Item>
+          </Flex>
+          {/* clear formatting */}
           <DropdownMenu.Item
+            className={tw}
             style={{
               border: style === "none" ? "2px solid" : "",
               padding: "5px",
               height: "1.6em",
+              justifyContent: "center",
             }}
             onClick={() => {
               onFontColorSelect("black", false);
               onBgColorSelect("white", false);
             }}
           >
-            A
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className={" text-red-500"}
-            style={{
-              border: style === "red" ? "2px solid" : "",
-              padding: "5px",
-              height: "1.6em",
-            }}
-            onClick={() => {
-              onFontColorSelect("red", false);
-              onBgColorSelect("white", false);
-            }}
-          >
-            A
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className={" text-green-500"}
-            style={{
-              border: style === "green" ? "2px solid" : "",
-              padding: "5px",
-              height: "1.6em",
-              marginLeft: "1px",
-            }}
-            onClick={() => {
-              onFontColorSelect("green", false);
-              onBgColorSelect("white", false);
-            }}
-          >
-            A
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className={" text-blue-500"}
-            style={{
-              border: style === "blue" ? "2px solid" : "",
-              padding: "5px",
-              height: "1.6em",
-              marginLeft: "1px",
-            }}
-            onClick={() => {
-              onFontColorSelect("blue", false);
-              onBgColorSelect("white", false);
-            }}
-          >
-            A
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className={" bg-yellow-200"}
-            style={{
-              border: style === "bg-yellow" ? "2px solid" : "",
-              padding: "5px",
-              height: "1.6em",
-              marginLeft: "1px",
-            }}
-            onClick={() => {
-              onFontColorSelect("black", false);
-              onBgColorSelect("yellow", false);
-            }}
-          >
-            A
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className={" bg-pink-200"}
-            style={{
-              border: style === "bg-pink" ? "2px solid" : "",
-              padding: "5px",
-              height: "1.6em",
-              marginLeft: "1px",
-            }}
-            onClick={() => {
-              onFontColorSelect("black", false);
-              onBgColorSelect("pink", false);
-            }}
-          >
-            A
+            Clear
           </DropdownMenu.Item>
         </Flex>
       </DropdownMenu.Content>
@@ -344,12 +430,70 @@ function TextFormatFloatingToolbar({
     );
   }, [editor, updateTextFormatFloatingToolbar]);
 
+  const clearFormatting = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const anchor = selection.anchor;
+        const focus = selection.focus;
+        const nodes = selection.getNodes();
+
+        if (anchor.key === focus.key && anchor.offset === focus.offset) {
+          return;
+        }
+
+        nodes.forEach((node, idx) => {
+          // We split the first and last node by the selection
+          // So that we don't format unselected text inside those nodes
+          if ($isTextNode(node)) {
+            // Use a separate variable to ensure TS does not lose the refinement
+            let textNode = node;
+            if (idx === 0 && anchor.offset !== 0) {
+              textNode = textNode.splitText(anchor.offset)[1] || textNode;
+            }
+            if (idx === nodes.length - 1) {
+              textNode = textNode.splitText(focus.offset)[0] || textNode;
+            }
+
+            if (textNode.__style !== "") {
+              textNode.setStyle("");
+            }
+            if (textNode.__format !== 0) {
+              textNode.setFormat(0);
+              $getNearestBlockElementAncestorOrThrow(textNode).setFormat("");
+            }
+            node = textNode;
+          } else if ($isHeadingNode(node) || $isQuoteNode(node)) {
+            node.replace($createParagraphNode(), true);
+          } else if ($isDecoratorBlockNode(node)) {
+            node.setFormat("");
+          }
+        });
+      }
+    });
+  }, [editor]);
+
   const itemClasses1 = [
-    "flex-shrink-0 flex-grow-0 basis-auto ",
-    "text-mauve11 h-[25px] px-[5px] rounded inline-flex text-[13px] leading-none",
-    "items-center justify-center bg-white ml-0.5 outline-none",
-    "hover:bg-violet3 hover:text-violet11 focus:relative focus:shadow-[0_0_0_2px]",
-    "focus:shadow-violet7 first:ml-0",
+    // "flex-shrink-0 flex-grow-0 basis-auto ",
+    // "text-mauve11 h-[25px] px-[5px] rounded inline-flex text-[13px] leading-none",
+    // "items-center justify-center bg-white ml-0.5 outline-none",
+    // "hover:bg-violet3 hover:text-violet11 focus:relative focus:shadow-[0_0_0_2px]",
+    // "focus:shadow-violet7 first:ml-0",
+
+    // small
+    "inline-flex",
+    "items-center",
+
+    "h-[25px]",
+    "px-[5px]",
+
+    "ml-0.5",
+    "first:ml-0",
+
+    "bg-white",
+    "rounded",
+
+    "hover:bg-violet3 hover:text-violet11",
   ].join(" ");
 
   return (
@@ -451,6 +595,9 @@ function TextFormatFloatingToolbar({
               <Code size={12} />
             </Toolbar.Button>
 
+            {/* separator */}
+            <Toolbar.Separator className="w-[1px] bg-mauve6 mx-[3px]" />
+
             {/* link */}
             <Toolbar.Button
               onClick={insertLink}
@@ -464,12 +611,15 @@ function TextFormatFloatingToolbar({
               <Link size={12} />
             </Toolbar.Button>
 
-            <Toolbar.Button
-              className={itemClasses1}
-              value="color"
+            <div
+              className={
+                itemClasses1 +
+                " border-[1px] border-transparent hover:border-[1px] hover:border-violet11"
+              }
               aria-label="Font color"
               style={{
                 padding: "10px",
+                cursor: "pointer",
               }}
             >
               <ColorPicker
@@ -477,6 +627,15 @@ function TextFormatFloatingToolbar({
                 fontColor={fontColor}
                 bgColor={bgColor}
               />
+              {/* color */}
+            </div>
+            <Toolbar.Button
+              onClick={clearFormatting}
+              className={itemClasses1}
+              value="clear"
+              aria-label="Clear formatting"
+            >
+              <Eraser size={12} />
             </Toolbar.Button>
           </Toolbar.Root>
         </>

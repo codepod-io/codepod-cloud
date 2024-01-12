@@ -92,11 +92,33 @@ import {
   InsertImageDialog,
   InsertImagePayload,
 } from "../ImagesPlugin";
-import { InsertInlineImageDialog } from "../InlineImagePlugin";
+// import { InsertInlineImageDialog } from "../InlineImagePlugin";
 import InsertLayoutDialog from "../LayoutPlugin/InsertLayoutDialog";
 // import {INSERT_PAGE_BREAK} from '../PageBreakPlugin';
 // import {InsertPollDialog} from '../PollPlugin';
 import { InsertTableDialog } from "../TablePlugin";
+import { Button, DropdownMenu, Separator } from "@radix-ui/themes";
+import { CaretDownIcon } from "@radix-ui/react-icons";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  CheckSquare2,
+  FileText,
+  Heading1,
+  Heading2,
+  Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
+  List,
+  ListOrdered,
+  Pencil,
+  Quote,
+  TerminalSquare,
+  Text,
+} from "lucide-react";
+import { match } from "ts-pattern";
 
 const blockTypeToBlockName = {
   bullet: "Bulleted List",
@@ -111,6 +133,23 @@ const blockTypeToBlockName = {
   number: "Numbered List",
   paragraph: "Normal",
   quote: "Quote",
+};
+
+const size = 16;
+
+const blockTypeToBlockIcon = {
+  bullet: <List size={size} />,
+  check: <CheckSquare2 size={size} />,
+  code: <TerminalSquare size={size} />,
+  h1: <Heading1 size={size} />,
+  h2: <Heading2 size={size} />,
+  h3: <Heading3 size={size} />,
+  h4: <Heading4 size={size} />,
+  h5: <Heading5 size={size} />,
+  h6: <Heading6 size={size} />,
+  number: <ListOrdered size={size} />,
+  paragraph: <Pencil size={size} />,
+  quote: <Quote size={size} />,
 };
 
 const rootTypeToRootName = {
@@ -287,77 +326,60 @@ function BlockFormatDropDown({
   };
 
   return (
-    <DropDown
-      disabled={disabled}
-      buttonClassName="toolbar-item block-controls"
-      buttonIconClassName={"icon block-type " + blockType}
-      // buttonLabel={blockTypeToBlockName[blockType]}
-      buttonAriaLabel="Formatting options for text style"
-    >
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "paragraph")}
-        onClick={formatParagraph}
-      >
-        <i className="icon paragraph" />
-        <span className="text">Normal</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "h1")}
-        onClick={() => formatHeading("h1")}
-      >
-        <i className="icon h1" />
-        <span className="text">Heading 1</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "h2")}
-        onClick={() => formatHeading("h2")}
-      >
-        <i className="icon h2" />
-        <span className="text">Heading 2</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "h3")}
-        onClick={() => formatHeading("h3")}
-      >
-        <i className="icon h3" />
-        <span className="text">Heading 3</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "bullet")}
-        onClick={formatBulletList}
-      >
-        <i className="icon bullet-list" />
-        <span className="text">Bullet List</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "number")}
-        onClick={formatNumberedList}
-      >
-        <i className="icon numbered-list" />
-        <span className="text">Numbered List</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "check")}
-        onClick={formatCheckList}
-      >
-        <i className="icon check-list" />
-        <span className="text">Check List</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "quote")}
-        onClick={formatQuote}
-      >
-        <i className="icon quote" />
-        <span className="text">Quote</span>
-      </DropDownItem>
-      <DropDownItem
-        className={"item " + dropDownActiveClass(blockType === "code")}
-        onClick={formatCode}
-      >
-        <i className="icon code" />
-        <span className="text">Code Block</span>
-      </DropDownItem>
-    </DropDown>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button
+          variant="ghost"
+          style={{
+            // height: "0.7em",
+            backgroundColor: "transparent",
+            cursor: "pointer",
+          }}
+        >
+          {blockTypeToBlockIcon[blockType]}
+          {/* {blockTypeToBlockName[blockType]} */}
+          <CaretDownIcon />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item onClick={formatParagraph}>
+          {blockTypeToBlockIcon["paragraph"]}
+          Normal
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={() => formatHeading("h1")}>
+          {blockTypeToBlockIcon["h1"]}
+          {blockTypeToBlockName["h1"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={() => formatHeading("h2")}>
+          {blockTypeToBlockIcon["h2"]}
+          {blockTypeToBlockName["h2"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={() => formatHeading("h3")}>
+          {blockTypeToBlockIcon["h3"]}
+          {blockTypeToBlockName["h3"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={formatBulletList}>
+          {blockTypeToBlockIcon["bullet"]}
+          {blockTypeToBlockName["bullet"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={formatNumberedList}>
+          {blockTypeToBlockIcon["number"]}
+          {blockTypeToBlockName["number"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={formatCheckList}>
+          {blockTypeToBlockIcon["check"]}
+          {blockTypeToBlockName["check"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={formatQuote}>
+          {blockTypeToBlockIcon["quote"]}
+          {blockTypeToBlockName["quote"]}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={formatCode}>
+          {blockTypeToBlockIcon["code"]}
+          {blockTypeToBlockName["code"]}
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   );
 }
 
@@ -436,9 +458,56 @@ function ElementFormatDropdown({
   const formatOption = ELEMENT_FORMAT_OPTIONS[value || "left"];
 
   return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button
+          variant="ghost"
+          style={{
+            backgroundColor: "transparent",
+            cursor: "pointer",
+          }}
+        >
+          {match(value)
+            .with("left", () => <AlignLeft />)
+            .with("center", () => <AlignCenter />)
+            .with("right", () => <AlignRight />)
+            .otherwise(() => value)}
+          <CaretDownIcon />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item
+          onClick={() => {
+            editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "left");
+          }}
+        >
+          <AlignLeft />
+          <span className="text">Left Align</span>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          onClick={() => {
+            editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "center");
+          }}
+        >
+          <AlignCenter />
+          <span className="text">Center Align</span>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          onClick={() => {
+            editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right");
+          }}
+        >
+          <AlignRight />
+          <span className="text">Right Align</span>
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  );
+
+  return (
     <DropDown
       disabled={disabled}
-      // buttonLabel={formatOption.name}
+      buttonLabel={formatOption.name}
       buttonIconClassName={`icon ${
         isRTL ? formatOption.iconRTL : formatOption.icon
       }`}
@@ -471,64 +540,6 @@ function ElementFormatDropdown({
       >
         <i className="icon right-align" />
         <span className="text">Right Align</span>
-      </DropDownItem>
-      <DropDownItem
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "justify");
-        }}
-        className="item"
-      >
-        <i className="icon justify-align" />
-        <span className="text">Justify Align</span>
-      </DropDownItem>
-      <DropDownItem
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "start");
-        }}
-        className="item"
-      >
-        <i
-          className={`icon ${
-            isRTL
-              ? ELEMENT_FORMAT_OPTIONS.start.iconRTL
-              : ELEMENT_FORMAT_OPTIONS.start.icon
-          }`}
-        />
-        <span className="text">Start Align</span>
-      </DropDownItem>
-      <DropDownItem
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "end");
-        }}
-        className="item"
-      >
-        <i
-          className={`icon ${
-            isRTL
-              ? ELEMENT_FORMAT_OPTIONS.end.iconRTL
-              : ELEMENT_FORMAT_OPTIONS.end.icon
-          }`}
-        />
-        <span className="text">End Align</span>
-      </DropDownItem>
-      <Divider />
-      <DropDownItem
-        onClick={() => {
-          editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined);
-        }}
-        className="item"
-      >
-        <i className={"icon " + (isRTL ? "indent" : "outdent")} />
-        <span className="text">Outdent</span>
-      </DropDownItem>
-      <DropDownItem
-        onClick={() => {
-          editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined);
-        }}
-        className="item"
-      >
-        <i className={"icon " + (isRTL ? "outdent" : "indent")} />
-        <span className="text">Indent</span>
       </DropDownItem>
     </DropDown>
   );
@@ -816,6 +827,105 @@ export default function ToolbarPlugin({
   );
 
   return (
+    <div
+      className="custom-drag-handle"
+      style={{
+        height: "var(--space-6)",
+        backgroundColor: "var(--accent-3)",
+        borderRadius: "4px 4px 0 0",
+        cursor: "grab",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 10px",
+      }}
+    >
+      {blockType in blockTypeToBlockName && activeEditor === editor && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            width: "100%",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "flex" }} className="nodrag">
+            <BlockFormatDropDown
+              disabled={!isEditable}
+              blockType={blockType}
+              rootType={rootType}
+              editor={editor}
+            />
+            {/* <Separator orientation="vertical" />
+            <button
+              disabled={!canUndo || !isEditable}
+              onClick={() => {
+                activeEditor.dispatchCommand(UNDO_COMMAND, undefined);
+              }}
+              title={IS_APPLE ? "Undo (⌘Z)" : "Undo (Ctrl+Z)"}
+              type="button"
+              className="toolbar-item "
+              aria-label="Undo"
+            >
+              <i className="format undo" />
+            </button>
+            <button
+              disabled={!canRedo || !isEditable}
+              onClick={() => {
+                activeEditor.dispatchCommand(REDO_COMMAND, undefined);
+              }}
+              title={IS_APPLE ? "Redo (⌘Y)" : "Redo (Ctrl+Y)"}
+              type="button"
+              className="toolbar-item"
+              aria-label="Redo"
+            >
+              <i className="format redo" />
+            </button> */}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexGrow: 1,
+              // backgroundColor: "green",
+            }}
+          ></div>
+
+          {/* {blockType === "code" && (
+            <DropDown
+              disabled={!isEditable}
+              buttonClassName="toolbar-item code-language"
+              // buttonLabel={getLanguageFriendlyName(codeLanguage)}
+              buttonLabel={codeLanguage}
+              buttonAriaLabel="Select language"
+            >
+              {CODE_LANGUAGE_OPTIONS.map(([value, name]) => {
+                return (
+                  <DropDownItem
+                    className={`item ${dropDownActiveClass(
+                      value === codeLanguage
+                    )}`}
+                    onClick={() => onCodeLanguageSelect(value)}
+                    key={value}
+                  >
+                    <span className="text">{name}</span>
+                  </DropDownItem>
+                );
+              })}
+            </DropDown>
+          )} */}
+          {/* <div className="flex nodrag">
+            <ElementFormatDropdown
+              disabled={!isEditable}
+              value={elementFormat}
+              editor={editor}
+              isRTL={isRTL}
+            />
+          </div> */}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
     <div className="toolbar" style={{ borderBottom: "1px solid gray" }}>
       {blockType in blockTypeToBlockName && activeEditor === editor && (
         <>
@@ -1014,7 +1124,7 @@ export default function ToolbarPlugin({
               <i className="icon image" />
               <span className="text">Image</span>
             </DropDownItem>
-            <DropDownItem
+            {/* <DropDownItem
               onClick={() => {
                 showModal("Insert Inline Image", (onClose) => (
                   <InsertInlineImageDialog
@@ -1027,7 +1137,7 @@ export default function ToolbarPlugin({
             >
               <i className="icon image" />
               <span className="text">Inline Image</span>
-            </DropDownItem>
+            </DropDownItem> */}
             {/* <DropDownItem
               onClick={() =>
                 insertGifOnClick({
