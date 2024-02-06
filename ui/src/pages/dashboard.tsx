@@ -261,13 +261,11 @@ const RepoLists = () => {
   const repos = getDashboardRepos.data?.slice();
   // sort repos by last access time
   repos.sort((a, b) => {
-    if (a.accessedAt && b.accessedAt) {
-      return (
-        new Date(b.accessedAt).getTime() - new Date(a.accessedAt).getTime()
-      );
-    } else if (a.accessedAt) {
+    if (a.createdAt && b.createdAt) {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (a.createdAt) {
       return -1;
-    } else if (b.accessedAt) {
+    } else if (b.createdAt) {
       return 1;
     } else {
       return 0;
