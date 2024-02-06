@@ -43,7 +43,7 @@ import { shallow } from "zustand/shallow";
 import { RepoContext } from "@/lib/store";
 
 import { NodeResizer, NodeResizeControl } from "reactflow";
-import { ConfirmDeleteButton, Handles, ResizeIcon } from "./utils";
+import { ConfirmDeleteButton, ResizeIcon } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 
@@ -207,14 +207,14 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           opacity: showToolbar ? 1 : 0,
         }}
       >
-        <Handles
+        {/* <Handles
           id={id}
           width={width}
           height={height}
           parent={parent}
           xPos={xPos}
           yPos={yPos}
-        />
+        /> */}
       </Box>
       {/* The header of scope nodes. */}
       <Box

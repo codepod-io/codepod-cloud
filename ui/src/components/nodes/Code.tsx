@@ -419,12 +419,16 @@ export const CodeNode = function ({
     }
   }, [data.name, setPodName, id]);
 
+  const [hover, setHover] = useState(false);
+
   const node = nodesMap.get(id);
   if (!node) return null;
 
   return (
     <div
       // className="nodrag"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -452,14 +456,9 @@ export const CodeNode = function ({
         <MyMonaco id={id} />
       </div>
       <ResultBlock id={id} />
-      <Handles
-        id={id}
-        width={node.width}
-        height={node.height}
-        parent={node.parentNode}
-        xPos={xPos}
-        yPos={yPos}
-      />
+
+      <Handles id={id} hover={hover} />
+
       <NodeResizeControl
         style={{
           background: "transparent",

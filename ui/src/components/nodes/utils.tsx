@@ -29,6 +29,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import React from "react";
+import { ChevronLeft } from "lucide-react";
 
 export function ResizeIcon() {
   return (
@@ -321,193 +322,66 @@ export function getHelperLines(
     }, defaultResult);
 }
 
-/**
- * The 4 handles for connecting reactflow nodes, with pop-up buttons for adding
- * new nodes.
- */
-export const Handles = ({ id, xPos, yPos, width, height, parent }) => {
-  return (
-    <>
-      <MyHandle
-        id={id}
-        position={Position.Top}
-        width={width}
-        height={height}
-        parent={parent}
-        xPos={xPos}
-        yPos={yPos}
-      />
-      <MyHandle
-        id={id}
-        position={Position.Bottom}
-        width={width}
-        height={height}
-        parent={parent}
-        xPos={xPos}
-        yPos={yPos}
-      />
-      <MyHandle
-        id={id}
-        position={Position.Left}
-        width={width}
-        height={height}
-        parent={parent}
-        xPos={xPos}
-        yPos={yPos}
-      />
-      <MyHandle
-        id={id}
-        position={Position.Right}
-        width={width}
-        height={height}
-        parent={parent}
-        xPos={xPos}
-        yPos={yPos}
-      />
-    </>
-  );
-};
-
-/**
- * The Wrapped Hanlde with pop-up buttons.
- */
-const MyHandle = ({ id, position, width, height, parent, xPos, yPos }) => {
-  return (
-    <WrappedHandle position={position}>
-      <HandleButton
-        id={id}
-        position={position}
-        width={width}
-        height={height}
-        parent={parent}
-        xPos={xPos}
-        yPos={yPos}
-      />
-    </WrappedHandle>
-  );
-};
-
-const ClickAwayContext = React.createContext<() => void>(() => {});
-
-/**
- * A react Handle wrapped with a popper and click away listener.
- */
-const WrappedHandle = ({ position, children }) => {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(anchorEl ? null : event.currentTarget);
-  };
+export const Handles = ({ id, hover }) => {
   const store = useContext(RepoContext)!;
-  const moved = useStore(store, (state) => state.moved);
-  const open = Boolean(anchorEl);
-  const handler = React.useCallback((e) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setAnchorEl(null);
-    }
-  }, []);
+  const toggleFold = useStore(store, (state) => state.toggleFold);
 
-  React.useEffect(() => {
-    document.addEventListener("keydown", handler);
-
-    return () => {
-      document.removeEventListener("keydown", handler);
-    };
-  }, []);
-  // Remove the popper when the Canvas is moved.
-  React.useEffect(() => {
-    setAnchorEl(null);
-  }, [moved]);
-  return (
-    <>
-      <Handle
-        id={position}
-        type="source"
-        position={position}
-        onClick={handleClick}
-      />
-
-      <Popper
-        open={open}
-        anchorEl={anchorEl}
-        placement={position}
-        disablePortal={true}
-      >
-        <ClickAwayListener
-          onClickAway={() => {
-            setAnchorEl(null);
-          }}
-        >
-          <Box>
-            {/* Must wrap the ClickAwayContext.Provider in this <Box> elem for the click away functionality to work. */}
-            <ClickAwayContext.Provider value={() => setAnchorEl(null)}>
-              {children}
-            </ClickAwayContext.Provider>
-          </Box>
-        </ClickAwayListener>
-      </Popper>
-    </>
-  );
-};
-
-/**
- * The two buttons.
- */
-const HandleButton = ({ id, position, width, height, parent, xPos, yPos }) => {
-  const store = useContext(RepoContext)!;
-  const addNode = useStore(store, (state) => state.addNode);
-  const clickAway = useContext(ClickAwayContext);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const node = nodesMap.get(id)!;
-  const parentId = node.data.parent;
-  const parentNode = nodesMap.get(parentId!);
-  const index = parentNode?.data.children?.indexOf(id)!;
-  let realParentId;
-  let realIndex;
-  switch (position) {
-    case Position.Top:
-      yPos = yPos - height! - 50;
-      realParentId = parentId;
-      realIndex = index;
-      break;
-    case Position.Bottom:
-      yPos = yPos + height! + 50;
-      realParentId = parentId;
-      realIndex = index + 1;
-      break;
-    case Position.Left:
-      xPos = xPos - width! - 50;
-      // not valid
-      break;
-    case Position.Right:
-      xPos = xPos + width! + 50;
-      realParentId = id;
-      realIndex = -1;
-      break;
-  }
+
+  const node = nodesMap.get(id);
+  if (!node) return null;
   return (
-    <Stack sx={{ border: 1, p: 1, bgcolor: "background.paper" }} spacing={1}>
-      <Button
-        variant="contained"
+    <>
+      <Handle id="left" type="source" position={Position.Left} />
+      <Handle
+        id="right"
+        type="source"
+        position={Position.Right}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+
+          textAlign: "center",
+          width: "20px",
+          height: "20px",
+          right: "-10px",
+          color: "red",
+          ...(node.data.children.length > 0
+            ? node.data.folded
+              ? {
+                  borderColor: "red",
+                  backgroundColor: "white",
+                }
+              : hover
+                ? {
+                    borderColor: "red",
+                    backgroundColor: "white",
+                  }
+                : {
+                    borderColor: "lightgray",
+                    backgroundColor: "white",
+                  }
+            : {
+                borderColor: "lightgray",
+                backgroundColor: "white",
+              }),
+        }}
         onClick={() => {
-          // addNode("CODE", { x: xPos, y: yPos }, parent);
-          addNode("CODE", realParentId, realIndex);
-          clickAway();
+          if (node.data.children.length > 0) {
+            toggleFold(id);
+          }
         }}
       >
-        Code
-      </Button>
-      <Button
-        variant="contained"
-        onClick={() => {
-          // addNode("RICH", { x: xPos, y: yPos }, parent);
-          addNode("RICH", realParentId, realIndex);
-          clickAway();
-        }}
-      >
-        Rich
-      </Button>
-    </Stack>
+        {node.data.folded ? (
+          node.data.children.length
+        ) : hover ? (
+          <ChevronLeft />
+        ) : (
+          ""
+        )}
+      </Handle>
+    </>
   );
 };
 

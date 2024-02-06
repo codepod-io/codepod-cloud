@@ -179,6 +179,7 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
           data: {
             level: 0,
             children: [],
+            folded: false,
           },
           style: {
             width: 300,

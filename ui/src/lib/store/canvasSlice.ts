@@ -56,6 +56,7 @@ export type NodeData = {
   name?: string;
   children: string[];
   parent?: string;
+  folded: boolean;
 };
 
 const newScopeNodeShapeConfig = {
@@ -120,6 +121,7 @@ function createNewNode(
       // parent: "ROOT",
       level: 0,
       children: [],
+      folded: false,
     },
     dragHandle: ".custom-drag-handle",
   };
@@ -231,6 +233,8 @@ export interface CanvasSlice {
   dragHighlight?: string;
   setDragHighlight: (dropHighlight: string) => void;
   removeDragHighlight: () => void;
+
+  toggleFold: (id: string) => void;
 
   selectedPods: Set<string>;
   selectionParent: string | undefined;
@@ -371,22 +375,32 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   updateView: () => {
     const nodesMap = get().getNodesMap();
     let selectedPods = get().selectedPods;
-    let nodes = Array.from<Node>(nodesMap.values());
-    nodes = nodes
-      .sort((a: Node, b: Node) => a.data.level - b.data.level)
-      .map((node) => ({
-        ...node,
-        style: {
-          ...node.style,
-          backgroundColor:
-            node.type === "SCOPE" ? level2color[node.data.level] : undefined,
-        },
-        selected: selectedPods.has(node.id),
-        // className: get().dragHighlight === node.id ? "active" : "",
-        className: match(node.id)
-          .with(get().dragHighlight || "", () => "active")
-          .otherwise(() => undefined),
-      }));
+    // let nodes = Array.from<Node>(nodesMap.values());
+    // follow the tree order, skip folded nodes
+    function dfs(node: Node) {
+      if (node.data.folded) return [node];
+      let children = node.data.children
+        .map((id) => nodesMap.get(id))
+        .filter((n) => n);
+      return [node, ...children.flatMap(dfs)];
+    }
+    let nodes = dfs(nodesMap.get("ROOT")!);
+
+    // nodes = nodes
+    //   .sort((a: Node, b: Node) => a.data.level - b.data.level)
+    //   .map((node) => ({
+    //     ...node,
+    //     style: {
+    //       ...node.style,
+    //       backgroundColor:
+    //         node.type === "SCOPE" ? level2color[node.data.level] : undefined,
+    //     },
+    //     selected: selectedPods.has(node.id),
+    //     // className: get().dragHighlight === node.id ? "active" : "",
+    //     className: match(node.id)
+    //       .with(get().dragHighlight || "", () => "active")
+    //       .otherwise(() => undefined),
+    //   }));
 
     set({ nodes });
     // edges view
@@ -406,6 +420,20 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       return edges;
     }
     set({ edges: generateEdge(nodes) });
+  },
+
+  toggleFold: (id: string) => {
+    const nodesMap = get().getNodesMap();
+    const node = nodesMap.get(id);
+    if (!node) throw new Error("Node not found");
+    nodesMap.set(id, {
+      ...node,
+      data: {
+        ...node.data,
+        folded: !node.data.folded,
+      },
+    });
+    get().updateView();
   },
 
   addNode: (type, parentId, index) => {
@@ -1022,7 +1050,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         id: node.id,
         width: node.width!,
         height: node.height!,
-        children: children ? children.map(subtree) : [],
+        children: node.data.folded ? [] : children ? children.map(subtree) : [],
       };
     }
     // get all root nodes
@@ -1057,17 +1085,19 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       tree.each((node) => {
         const n = nodesMap.get(node.data.id)!;
         // horizontal
-        n.position = {
-          x: rootNode.position.x + node.y,
-          // center the node
-          y:
-            rootNode.position.y +
-            rootNode.height! / 2 +
-            node.x -
-            node.data.height / 2,
-          // y: node.x,
-        };
-        nodesMap.set(node.data.id, n);
+        nodesMap.set(node.data.id, {
+          ...n,
+          position: {
+            x: rootNode.position.x + node.y,
+            // center the node
+            y:
+              rootNode.position.y +
+              rootNode.height! / 2 +
+              node.x -
+              node.data.height / 2,
+            // y: node.x,
+          },
+        });
       });
     }
 
