@@ -144,7 +144,7 @@ export default function Editor({ id }: { id: string }): JSX.Element {
       }}
     >
       {/* Important plugins */}
-      <ToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+      {/* <ToolbarPlugin setIsLinkEditMode={setIsLinkEditMode}></ToolbarPlugin> */}
 
       {floatingAnchorElem && (
         <FloatingTextFormatToolbarPlugin anchorElem={floatingAnchorElem} />

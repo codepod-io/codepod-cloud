@@ -29,7 +29,14 @@ import { useSnackbar, VariantType } from "notistack";
 
 import { useStore } from "zustand";
 
-import { Text, Tabs, Tooltip as RadixTooltip } from "@radix-ui/themes";
+import {
+  Text,
+  Tabs,
+  Tooltip as RadixTooltip,
+  Separator,
+  Heading,
+  Flex,
+} from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
 import { AnimatePresence, motion } from "framer-motion";
@@ -768,6 +775,9 @@ function MyTabs({
 }
 
 export function TabSidebar() {
+  const store = useContext(RepoContext)!;
+  const autoLayoutTree = useStore(store, (state) => state.autoLayoutTree);
+  const messUp = useStore(store, (state) => state.messUp);
   return (
     <div
       style={{
@@ -784,11 +794,34 @@ export function TabSidebar() {
             icon: <Files />,
             // content: "Make changes to your account.".repeat(10),
             content: (
-              <>
+              <Flex direction="column">
                 <YjsSyncStatus />
                 <Typography variant="h6">Export to ..</Typography>
                 <ExportButtons />
-              </>
+                <Separator my="3" size="4" />
+                <Heading mb="2" size="4">
+                  Experimental
+                </Heading>
+
+                <Button
+                  onClick={() => {
+                    console.log("autolayout tree");
+                    autoLayoutTree();
+                    console.log("done");
+                  }}
+                >
+                  Layout tree
+                </Button>
+                <Button
+                  onClick={() => {
+                    console.log("mess up");
+                    messUp();
+                    console.log("done");
+                  }}
+                >
+                  Mess Up
+                </Button>
+              </Flex>
             ),
           },
           { key: "Search", icon: <Search />, content: "Search".repeat(10) },
@@ -798,7 +831,7 @@ export function TabSidebar() {
             content: (
               <>
                 <Typography variant="h6">Table of Pods</Typography>
-                <TableofPods />
+                {/* <TableofPods /> */}
               </>
             ),
           },

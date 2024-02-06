@@ -828,12 +828,10 @@ export default function ToolbarPlugin({
 
   return (
     <div
-      className="custom-drag-handle"
       style={{
         height: "var(--space-6)",
         backgroundColor: "var(--accent-3)",
         borderRadius: "4px 4px 0 0",
-        cursor: "grab",
         display: "flex",
         alignItems: "center",
         padding: "0 10px",

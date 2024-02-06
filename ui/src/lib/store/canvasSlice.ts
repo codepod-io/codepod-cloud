@@ -21,6 +21,9 @@ import {
   SimulationNodeDatum,
   SimulationLinkDatum,
 } from "d3-force";
+
+import { flextree } from "d3-flextree";
+
 import * as Y from "yjs";
 
 import { myNanoId, level2color } from "../utils/utils";
@@ -51,6 +54,8 @@ import { json2yxml, yxml2json } from "../utils/y-utils";
 export type NodeData = {
   level: number;
   name?: string;
+  children: string[];
+  parent?: string;
 };
 
 const newScopeNodeShapeConfig = {
@@ -109,11 +114,12 @@ function createNewNode(
           },
         }),
     data: {
-      label: id,
-      name: "",
+      // label: id,
+      // name: "",
       // FIXME the key "ROOT" is deprecated.
-      parent: "ROOT",
+      // parent: "ROOT",
       level: 0,
+      children: [],
     },
     dragHandle: ".custom-drag-handle",
   };
@@ -250,11 +256,7 @@ export interface CanvasSlice {
   nodeClicked: boolean;
   toggleNodeClicked: () => void;
 
-  addNode: (
-    type: "CODE" | "SCOPE" | "RICH",
-    position: XYPosition,
-    parent?: string
-  ) => void;
+  addNode: (type: "CODE" | "RICH", parentId: string, index: number) => void;
 
   importLocalCode: (
     position: XYPosition,
@@ -272,8 +274,6 @@ export interface CanvasSlice {
   setHelperLineVertical: (line: number | undefined) => void;
 
   onNodesChange: OnNodesChange;
-  onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
 
   node2children: Map<string, string[]>;
   buildNode2Children: () => void;
@@ -282,6 +282,8 @@ export interface CanvasSlice {
   autoLayoutROOT: () => void;
   autoLayoutOnce: boolean;
   setAutoLayoutOnce: (b: boolean) => void;
+  autoLayoutTree: () => void;
+  messUp: () => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -388,13 +390,27 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
     set({ nodes });
     // edges view
-    const edgesMap = get().getEdgesMap();
-    set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
+    // const edgesMap = get().getEdgesMap();
+    // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
+    function generateEdge(nodes: Node[]) {
+      const edges: any[] = [];
+      nodes.forEach((node) => {
+        node.data.children.map((id: string) => {
+          edges.push({
+            id: `${node.id}-${id}`,
+            source: node.id,
+            target: id,
+          });
+        });
+      });
+      return edges;
+    }
+    set({ edges: generateEdge(nodes) });
   },
 
-  addNode: (type, position, parent) => {
-    let nodesMap = get().getNodesMap();
-    let node = createNewNode(type, position);
+  addNode: (type, parentId, index) => {
+    const nodesMap = get().getNodesMap();
+    const node = createNewNode(type, { x: 0, y: 0 });
     switch (type) {
       case "CODE":
         get().getCodeMap().set(node.id, new Y.Text());
@@ -403,17 +419,33 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         get().getRichMap().set(node.id, new Y.XmlFragment());
         break;
     }
-    // FIXME the above codeMap/richMap should be synced first, which may not be guranteed.
-    nodesMap.set(node.id, node);
-    if (parent) {
-      // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
-      get().moveIntoScope([node.id], parent);
+    nodesMap.set(node.id, {
+      ...node,
+      data: {
+        ...node.data,
+        parent: parentId,
+      },
+    });
+    const parent = nodesMap.get(parentId);
+    if (!parent) throw new Error("Parent node not found");
+    // add the node to the children field at index
+    const children = [...parent.data.children];
+    if (index === -1) {
+      children.push(node.id);
+    } else {
+      children.splice(index, 0, node.id);
     }
-    // Set initial width as about 30 characters.
-    get().updateView();
-    // run auto-layout
+    // update the parent node
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        children,
+      },
+    });
+    // console.log("new node added, all nodes", Array.from(nodesMap.values()));
     if (get().autoRunLayout) {
-      get().autoLayoutROOT();
+      get().autoLayoutTree();
     }
   },
 
@@ -873,7 +905,35 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           // remove from yjs
           //
           // TODO remove from codeMap and richMap?
+          const node = nodesMap.get(change.id);
+          if (!node) throw new Error("Node not found");
+          // remove all descendants
+          const removeDescendants = (id) => {
+            const node = nodesMap.get(id);
+            if (!node) throw new Error("Node not found");
+            node.data.children.forEach((childId) => {
+              removeDescendants(childId);
+              nodesMap.delete(childId);
+            });
+          };
+          removeDescendants(change.id);
+          // remove the node itself
           nodesMap.delete(change.id);
+          // update parent node's children field.
+          const parentId = node.data.parent;
+          if (!parentId) break;
+          const parent = nodesMap.get(parentId);
+          if (!parent) break;
+          nodesMap.set(
+            parentId,
+            produce(parent, (draft) => {
+              draft.data.children.splice(
+                draft.data.children.indexOf(change.id),
+                1
+              );
+            })
+          );
+
           // remove from selected pods
           get().selectPod(change.id, false);
           // run auto-layout
@@ -886,48 +946,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           throw new Error("Unknown change type");
       }
     });
-    get().updateView();
-  },
-  onEdgesChange: (changes: EdgeChange[]) => {
-    // TODO sync with remote peer
-    const edgesMap = get().getEdgesMap();
-    // apply the changes. Especially for the "select" change.
-    set({
-      edges: applyEdgeChanges(changes, get().edges),
-    });
-    // FIXME this will create edge with IDs. But I probably would love to control the IDs to save in DB.
-    changes.forEach((change) => {
-      // console.log("=== onEdgeChange", change.type, change);
-      // TODO update nodesMap to sync with remote peers
-      switch (change.type) {
-        case "add":
-          break;
-        case "remove":
-          const edge = edgesMap.get(change.id);
-          if (!edge) throw new Error("Edge not found");
-          edgesMap.delete(change.id);
-          break;
-        case "reset":
-          break;
-        case "select":
-          break;
-        default:
-          throw new Error("NO REACH");
-      }
-    });
-  },
-  onConnect: (connection: Connection) => {
-    const edgesMap = get().getEdgesMap();
-    if (!connection.source || !connection.target) return null;
-    const edge = {
-      // TODO This ID doesn't support multiple types of edges between the same nodes.
-      id: `${connection.source}_${connection.target}`,
-      source: connection.source,
-      sourceHandle: "top",
-      target: connection.target,
-      targetHandle: "top",
-    };
-    edgesMap.set(edge.id, edge);
     get().updateView();
   },
 
@@ -972,6 +990,90 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     }
     set({ node2children });
+  },
+
+  /**
+   * This is only for testing layout algorithm. Move all pods to left & up by 100.
+   */
+  messUp: () => {
+    //
+    const nodesMap = get().getNodesMap();
+    const nodes = Array.from(nodesMap.values());
+    nodes.forEach((node) => {
+      if (node.type === "SCOPE") return;
+      if (node.id === "ROOT") return;
+      const pos = getAbsPos(node, nodesMap);
+      node.position = { x: pos.x - 100, y: pos.y - 100 };
+      nodesMap.set(node.id, node);
+    });
+    get().updateView();
+  },
+
+  autoLayoutTree: () => {
+    // tree-based auto-layout
+    // construct the nodes to be used in layouting
+    const nodesMap = get().getNodesMap();
+
+    function subtree(id) {
+      const node = nodesMap.get(id);
+      if (!node) throw new Error("Node not found");
+      const children = node.data.children;
+      return {
+        id: node.id,
+        width: node.width!,
+        height: node.height!,
+        children: children ? children.map(subtree) : [],
+      };
+    }
+    // get all root nodes
+
+    function layoutOneTree(id) {
+      // const data = subtree("1");
+      const rootNode = nodesMap.get(id);
+      // console.log("RootNode", rootNode);
+      if (!rootNode) throw new Error("Root node not found");
+      const data = subtree(id);
+      // console.log("Data", data);
+      const paddingX = 100;
+      const paddingY = 100;
+      // const paddingX = 0;
+      // const paddingY = 0;
+
+      const layout = flextree({
+        children: (data) => data.children,
+        // horizontal
+        nodeSize: (node) => [
+          node.data.height + paddingY,
+          node.data.width + paddingX,
+        ],
+        // spacing: 100,
+      });
+      const tree = layout.hierarchy(data);
+      layout(tree);
+      // console.log("Layout Result", layout.dump(tree)); //=> prints the results
+      // console.log("Tree", tree);
+      // tree.each((node) => console.log(`(${node.x}, ${node.y})`));
+      // update the nodesMap
+      tree.each((node) => {
+        const n = nodesMap.get(node.data.id)!;
+        // horizontal
+        n.position = {
+          x: rootNode.position.x + node.y,
+          // center the node
+          y:
+            rootNode.position.y +
+            rootNode.height! / 2 +
+            node.x -
+            node.data.height / 2,
+          // y: node.x,
+        };
+        nodesMap.set(node.data.id, n);
+      });
+    }
+
+    layoutOneTree("ROOT");
+
+    get().updateView();
   },
   autoLayoutROOT: () => {
     // get all scopes,

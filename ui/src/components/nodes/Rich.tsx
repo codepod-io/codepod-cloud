@@ -146,6 +146,15 @@ import { RepoContext } from "@/lib/store";
 import { MyLexical } from "./rich/MyLexical";
 
 import "./remirror-size.css";
+import { Button, DropdownMenu } from "@radix-ui/themes";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  FunctionSquare,
+  MoreHorizontal,
+  Pencil,
+} from "lucide-react";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -255,7 +264,7 @@ const MyStyledWrapper = styled("div")(
 );
 
 // FIXME re-rendering performance
-const MyEditor = ({
+const MyRemirror = ({
   placeholder = "Start typing...",
   id,
 }: {
@@ -418,46 +427,137 @@ const MyEditor = ({
   );
 };
 
-function MyRemirror({ id }) {
-  return (
-    <div className="flex flex-col">
-      <div
-        className="custom-drag-handle"
-        style={{
-          height: "var(--space-6)",
-          backgroundColor: "var(--accent-8)",
-          border: "solid 1px var(--gray-12)",
-          borderRadius: "4px 4px 0 0",
-          cursor: "grab",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 10px",
-        }}
-      ></div>
-      <div
-        style={{
-          width: "100%",
-          border: "1px solid black",
-          borderRadius: "0 0 4px 4px",
-        }}
-      >
-        <MyEditor id={id} />
-      </div>
-    </div>
-  );
-}
-
-function MyLexical1({ id }) {
+function HeaderBar({ id }) {
+  const store = useContext(RepoContext)!;
+  const reactFlowInstance = useReactFlow();
+  const addNode = useStore(store, (state) => state.addNode);
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const node = nodesMap.get(id)!;
+  const parentId = node.data.parent;
+  let index = 0;
+  if (parentId) {
+    const parentNode = nodesMap.get(parentId);
+    index = parentNode?.data.children?.indexOf(id)!;
+  }
   return (
     <div
       style={{
-        width: "100%",
-        border: "1px solid black",
-        // borderRadius: "0 0 4px 4px",
-        borderRadius: "4px",
+        height: "var(--space-6)",
+        backgroundColor: "var(--accent-3)",
+        borderRadius: "4px 4px 0 0",
+        cursor: "auto",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 10px",
       }}
     >
-      <MyLexical id={id} />
+      <div
+        style={{
+          display: "flex",
+          flexGrow: 1,
+        }}
+      ></div>
+
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <Button
+            variant="ghost"
+            style={{
+              margin: 0,
+            }}
+          >
+            <MoreHorizontal size={15} />
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          {parentId && (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                <ArrowUp />
+                Up
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("CODE", parentId, index);
+                  }}
+                >
+                  <FunctionSquare />
+                  Code…
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("RICH", parentId, index);
+                  }}
+                >
+                  <Pencil /> Note…
+                </DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          )}
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              <ArrowRight /> Right
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              <DropdownMenu.Item
+                onClick={() => {
+                  addNode("CODE", id, -1);
+                }}
+              >
+                <FunctionSquare />
+                Code…
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => {
+                  addNode("RICH", id, -1);
+                }}
+              >
+                <Pencil />
+                Note…
+              </DropdownMenu.Item>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+          {parentId && (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger disabled={!parentId}>
+                <ArrowDown />
+                Down
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("CODE", parentId, index + 1);
+                  }}
+                >
+                  <FunctionSquare />
+                  Code…
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("RICH", parentId, index + 1);
+                  }}
+                >
+                  <Pencil /> Note…
+                </DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          )}
+          <DropdownMenu.Item onClick={() => {}}>Run Chain</DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            shortcut="⌘ ⌫"
+            color="red"
+            disabled={node.id === "ROOT"}
+            onClick={() => {
+              // Delete all edges connected to the node.
+              reactFlowInstance.deleteElements({ nodes: [{ id }] });
+            }}
+          >
+            Delete
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
     </div>
   );
 }
@@ -517,6 +617,7 @@ export const RichNode = memo<Props>(function ({
 
   return (
     <div
+      className="nodrag"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -526,15 +627,19 @@ export const RichNode = memo<Props>(function ({
         height: "auto",
         backgroundColor: "white",
         cursor: "auto",
+        border: "solid 1px var(--gray-12)",
+        borderRadius: "4px",
       }}
     >
-      {/* Using Remirror Editor */}
+      <HeaderBar id={id} />
+
+      {/* Two alternative editors */}
+
+      {/* <MyLexical id={id} /> */}
       <MyRemirror id={id} />
 
-      {/* Using Lexical Editor */}
-      {/* <MyLexical1 id={id} /> */}
-
       <Handles
+        id={id}
         width={node.width}
         height={node.height}
         parent={node.parentNode}
