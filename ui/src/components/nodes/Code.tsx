@@ -42,7 +42,17 @@ import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 import { DropdownMenu, Flex, Button as RadixButton } from "@radix-ui/themes";
-import { Check, Play, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  Check,
+  FunctionSquare,
+  MoreHorizontal,
+  Pencil,
+  Play,
+  X,
+} from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 
 function Timer({ lastExecutedAt }) {
@@ -225,24 +235,53 @@ function HeaderBar({ id }: { id: string }) {
   const getEdgeChain = useStore(store, (state) => state.getEdgeChain);
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const addNode = useStore(store, (state) => state.addNode);
+  const node = nodesMap.get(id)!;
+  const parentId = node.data.parent;
+  let index = 0;
+  if (parentId) {
+    const parentNode = nodesMap.get(parentId);
+    index = parentNode?.data.children?.indexOf(id)!;
+  }
 
   return (
     <div
-      className="custom-drag-handle"
+      // className="custom-drag-handle"
       style={{
         height: "var(--space-6)",
         backgroundColor: "var(--accent-3)",
         borderRadius: "4px 4px 0 0",
-        cursor: "grab",
+        cursor: "auto",
         display: "flex",
         alignItems: "center",
         padding: "0 10px",
       }}
     >
+      <div className="flex-grow"></div>
+      <RadixButton
+        variant="ghost"
+        style={{
+          margin: 0,
+        }}
+        onClick={() => {
+          if (activeRuntime) {
+            const specs = preprocessChain([id]);
+            if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+          }
+        }}
+      >
+        <Play size={15} />
+      </RadixButton>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <RadixButton variant="ghost" size="1">
-            <CaretDownIcon />
+          <RadixButton
+            variant="ghost"
+            style={{
+              margin: 0,
+            }}
+          >
+            <MoreHorizontal size={15} />
           </RadixButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
@@ -268,6 +307,80 @@ function HeaderBar({ id }: { id: string }) {
           >
             Run Chain
           </DropdownMenu.Item>
+
+          {parentId && (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                <ArrowUp />
+                Up
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("CODE", parentId, index);
+                  }}
+                >
+                  <FunctionSquare />
+                  Code…
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("RICH", parentId, index);
+                  }}
+                >
+                  <Pencil /> Note…
+                </DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          )}
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              <ArrowRight /> Right
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              <DropdownMenu.Item
+                onClick={() => {
+                  addNode("CODE", id, -1);
+                }}
+              >
+                <FunctionSquare />
+                Code…
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => {
+                  addNode("RICH", id, -1);
+                }}
+              >
+                <Pencil />
+                Note…
+              </DropdownMenu.Item>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+          {parentId && (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                <ArrowDown />
+                Down
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("CODE", parentId, index + 1);
+                  }}
+                >
+                  <FunctionSquare />
+                  Code…
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    addNode("RICH", parentId, index + 1);
+                  }}
+                >
+                  <Pencil /> Note…
+                </DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          )}
           <DropdownMenu.Separator />
           <DropdownMenu.Item
             shortcut="⌘ ⌫"
@@ -281,25 +394,11 @@ function HeaderBar({ id }: { id: string }) {
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-      <div className="flex-grow"></div>
-      <RadixButton
-        variant="soft"
-        size="1"
-        onClick={() => {
-          if (activeRuntime) {
-            const specs = preprocessChain([id]);
-            if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-          }
-        }}
-      >
-        Run
-        <Play size="10" />
-      </RadixButton>
     </div>
   );
 }
 
-export const CodeNode = memo<NodeProps>(function ({
+export const CodeNode = function ({
   data,
   id,
   selected,
@@ -337,15 +436,24 @@ export const CodeNode = memo<NodeProps>(function ({
         // border: "solid 1px black",
         backgroundColor: "white",
         border: "solid 1px var(--gray-12)",
-        borderRadius: "4px",
+        // NOTE: monaco editor has a overflow-guard that doesn't have border
+        // radius on the bottom. So we don't apply the border-radius on the
+        // bottom to avoid inconsistent looking.
+        borderRadius: "4px 4px 0 0",
       }}
     >
       <HeaderBar id={id} />
-      <div style={{ paddingTop: "5px", cursor: "auto" }}>
+      <div
+        style={{
+          paddingTop: "5px",
+          cursor: "auto",
+        }}
+      >
         <MyMonaco id={id} />
       </div>
       <ResultBlock id={id} />
       <Handles
+        id={id}
         width={node.width}
         height={node.height}
         parent={node.parentNode}
@@ -388,4 +496,4 @@ export const CodeNode = memo<NodeProps>(function ({
       </NodeResizeControl>
     </div>
   );
-});
+};

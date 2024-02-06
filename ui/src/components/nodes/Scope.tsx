@@ -208,6 +208,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         }}
       >
         <Handles
+          id={id}
           width={width}
           height={height}
           parent={parent}

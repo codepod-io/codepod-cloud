@@ -165,6 +165,29 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
     provider.maxBackoffTime = 10000;
     provider.once("synced", () => {
       console.log("Provider synced, setting initial content ...");
+      // load initial nodes
+      const nodesMap = get().getNodesMap();
+      const edgesMap = get().getEdgesMap();
+      const codeMap = get().getCodeMap();
+      const richMap = get().getRichMap();
+      // init nodesMap
+      if (nodesMap.size == 0) {
+        nodesMap.set("ROOT", {
+          id: "ROOT",
+          type: "RICH",
+          position: { x: 0, y: 0 },
+          data: {
+            level: 0,
+            children: [],
+          },
+          style: {
+            width: 300,
+            // height: 100,
+          },
+        });
+        richMap.set("ROOT", new Y.XmlFragment());
+      }
+
       get().adjustLevel();
       get().updateView();
       // Trigger initial results rendering.
@@ -186,7 +209,6 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
           });
         }
       );
-      const nodesMap = get().getNodesMap();
       // FIXME do I need to unobserve it when disconnecting?
       nodesMap.observe(
         (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
@@ -194,7 +216,6 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
           get().updateView();
         }
       );
-      const edgesMap = get().getEdgesMap();
       edgesMap.observe(
         (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
           if (transaction.local) return;

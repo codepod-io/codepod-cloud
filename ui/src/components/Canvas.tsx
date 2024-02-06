@@ -37,9 +37,10 @@ import Box from "@mui/material/Box";
 import { useStore } from "zustand";
 import * as Y from "yjs";
 
+import { timer } from "d3-timer";
+
 import { RepoContext } from "@/lib/store";
 
-import { CanvasContextMenu } from "./CanvasContextMenu";
 import { ShareProjDialog } from "./ShareProjDialog";
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
@@ -49,6 +50,8 @@ import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
 import { getAbsPos, newNodeShapeConfig } from "@/lib/store/canvasSlice";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
+import { ListItemIcon, ListItemText, MenuItem, MenuList } from "@mui/material";
+import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -369,6 +372,56 @@ function ViewportInfo() {
 }
 
 /**
+ * Animate nodes and edges when their positions change.
+ */
+type UseAnimatedNodeOptions = {
+  animationDuration?: number;
+};
+
+function useAnimatedNodes(
+  nodes: Node[],
+  { animationDuration = 300 }: UseAnimatedNodeOptions = {}
+) {
+  const [tmpNodes, setTmpNodes] = useState(nodes);
+  const { getNode } = useReactFlow();
+
+  useEffect(() => {
+    const transitions = nodes.map((node) => ({
+      id: node.id,
+      from: getNode(node.id)?.position ?? node.position,
+      to: node.position,
+      node,
+    }));
+
+    const t = timer((elapsed) => {
+      const s = elapsed / animationDuration;
+
+      const currNodes = transitions.map(({ node, from, to }) => {
+        return {
+          ...node,
+          position: {
+            x: from.x + (to.x - from.x) * s,
+            y: from.y + (to.y - from.y) * s,
+          },
+        };
+      });
+
+      setTmpNodes(currNodes);
+
+      if (elapsed > animationDuration) {
+        // it's important to set the final nodes here to avoid glitches
+        setTmpNodes(nodes);
+        t.stop();
+      }
+    });
+
+    return () => t.stop();
+  }, [nodes, getNode, animationDuration]);
+
+  return { nodes: tmpNodes };
+}
+
+/**
  * The canvas.
  * @returns
  */
@@ -378,12 +431,12 @@ function CanvasImpl() {
   const store = useContext(RepoContext)!;
 
   const nodes = useStore(store, (state) => state.nodes);
+  const { nodes: animatedNodes } = useAnimatedNodes(nodes, {
+    animationDuration: 100,
+  });
   const edges = useStore(store, (state) => state.edges);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const onNodesChange = useStore(store, (state) => state.onNodesChange);
-  const onEdgesChange = useStore(store, (state) => state.onEdgesChange);
-  const onConnect = useStore(store, (state) => state.onConnect);
-  const moveIntoScope = useStore(store, (state) => state.moveIntoScope);
   const setDragHighlight = useStore(store, (state) => state.setDragHighlight);
   const removeDragHighlight = useStore(
     store,
@@ -392,7 +445,6 @@ function CanvasImpl() {
   const updateView = useStore(store, (state) => state.updateView);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
 
-  const addNode = useStore(store, (state) => state.addNode);
   const importLocalCode = useStore(store, (state) => state.importLocalCode);
 
   const selectedPods = useStore(store, (state) => state.selectedPods);
@@ -566,11 +618,9 @@ function CanvasImpl() {
     >
       <Box sx={{ height: "100%" }} ref={reactFlowWrapper}>
         <ReactFlow
-          nodes={nodes}
+          nodes={animatedNodes}
           edges={edges}
           onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
           onMove={() => {
             toggleMoved();
             // Hide the Rich node drag handle when moving.
@@ -585,22 +635,6 @@ function CanvasImpl() {
           onNodeClick={() => {
             toggleNodeClicked();
           }}
-          onNodeDragStop={(event, node) => {
-            removeDragHighlight();
-            let mousePos = project({ x: event.clientX, y: event.clientY });
-            let scope = getScopeAtPos(mousePos, node.id);
-            let toScope = scope?.id;
-            const parentScope = node.parentNode;
-            if (selectedPods.size > 0 && parentScope !== toScope) {
-              moveIntoScope(Array.from(selectedPods), toScope);
-              // update view manually to remove the drag highlight.
-              updateView();
-            }
-            // run auto layout on drag stop
-            if (autoRunLayout) {
-              autoLayoutROOT();
-            }
-          }}
           onNodeDrag={(event, node) => {
             let mousePos = project({ x: event.clientX, y: event.clientY });
             let scope = getScopeAtPos(mousePos, node.id);
@@ -612,8 +646,12 @@ function CanvasImpl() {
             }
           }}
           attributionPosition="top-right"
-          maxZoom={10}
+          maxZoom={2}
           minZoom={0.1}
+          fitView={true}
+          fitViewOptions={{
+            maxZoom: 1,
+          }}
           onPaneContextMenu={onPaneContextMenu}
           onNodeContextMenu={onNodeContextMenu}
           nodeTypes={nodeTypes}
@@ -701,44 +739,40 @@ function CanvasImpl() {
           onChange={(e) => handleFileInputChange(e)}
         />
         {showContextMenu && (
-          <CanvasContextMenu
-            x={points.x}
-            y={points.y}
-            addCode={() => {
-              addNode(
-                "CODE",
-                project({ x: client.x, y: client.y }),
-                parentNode
-              );
-              setShowContextMenu(false);
+          <Box
+            sx={{
+              left: `${points.x}px`,
+              top: `${points.y}px`,
+              zIndex: 100,
+              position: "absolute",
+              boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
+              // width: '200px',
+              backgroundColor: "#fff",
+              borderRadius: "5px",
+              boxSizing: "border-box",
             }}
-            addScope={() => {
-              addNode(
-                "SCOPE",
-                project({ x: client.x, y: client.y }),
-                parentNode
-              );
-              setShowContextMenu(false);
-            }}
-            addRich={() => {
-              addNode(
-                "RICH",
-                project({ x: client.x, y: client.y }),
-                parentNode
-              );
-              setShowContextMenu(false);
-            }}
-            handleImportClick={() => {
-              // handle CanvasContextMenu "import Jupyter notebook" click
-              handleItemClick();
-              setShowContextMenu(false);
-            }}
-            onShareClick={() => {
-              setShareOpen(true);
-              setShowContextMenu(false);
-            }}
-            parentNode={null}
-          />
+          >
+            <MenuList className="paneContextMenu">
+              <MenuItem
+                onClick={() => {
+                  // handle CanvasContextMenu "import Jupyter notebook" click
+                  handleItemClick();
+                  setShowContextMenu(false);
+                }}
+                sx={{
+                  "&:hover": {
+                    background: "#f1f3f7",
+                    color: "#4b00ff",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit" }}>
+                  <FileUploadTwoToneIcon />
+                </ListItemIcon>
+                <ListItemText>Import Code</ListItemText>
+              </MenuItem>
+            </MenuList>
+          </Box>
         )}
         {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
       </Box>

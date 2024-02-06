@@ -64,12 +64,17 @@ function getParams(nodeA, nodeB) {
   let position;
 
   // when the horizontal difference between the nodes is bigger, we use Position.Left or Position.Right for the handle
-  if (horizontalDiff > verticalDiff) {
-    position = centerA.x > centerB.x ? Position.Left : Position.Right;
-  } else {
-    // here the vertical difference between the nodes is bigger, so we use Position.Top or Position.Bottom for the handle
-    position = centerA.y > centerB.y ? Position.Top : Position.Bottom;
-  }
+  // if (horizontalDiff > verticalDiff) {
+  //   position = centerA.x > centerB.x ? Position.Left : Position.Right;
+  // } else {
+  //   // here the vertical difference between the nodes is bigger, so we use Position.Top or Position.Bottom for the handle
+  //   position = centerA.y > centerB.y ? Position.Top : Position.Bottom;
+  // }
+
+  // UPDATE: In switching to mindmap/tidy-tree layout, we always use left/right.
+  // Do not use top-bottom.
+
+  position = centerA.x > centerB.x ? Position.Left : Position.Right;
 
   const [x, y] = getHandleCoordsByPosition(nodeA, position);
   return [x, y, position];
@@ -320,10 +325,11 @@ export function getHelperLines(
  * The 4 handles for connecting reactflow nodes, with pop-up buttons for adding
  * new nodes.
  */
-export const Handles = ({ xPos, yPos, width, height, parent }) => {
+export const Handles = ({ id, xPos, yPos, width, height, parent }) => {
   return (
     <>
       <MyHandle
+        id={id}
         position={Position.Top}
         width={width}
         height={height}
@@ -332,6 +338,7 @@ export const Handles = ({ xPos, yPos, width, height, parent }) => {
         yPos={yPos}
       />
       <MyHandle
+        id={id}
         position={Position.Bottom}
         width={width}
         height={height}
@@ -340,6 +347,7 @@ export const Handles = ({ xPos, yPos, width, height, parent }) => {
         yPos={yPos}
       />
       <MyHandle
+        id={id}
         position={Position.Left}
         width={width}
         height={height}
@@ -348,6 +356,7 @@ export const Handles = ({ xPos, yPos, width, height, parent }) => {
         yPos={yPos}
       />
       <MyHandle
+        id={id}
         position={Position.Right}
         width={width}
         height={height}
@@ -362,10 +371,11 @@ export const Handles = ({ xPos, yPos, width, height, parent }) => {
 /**
  * The Wrapped Hanlde with pop-up buttons.
  */
-const MyHandle = ({ position, width, height, parent, xPos, yPos }) => {
+const MyHandle = ({ id, position, width, height, parent, xPos, yPos }) => {
   return (
     <WrappedHandle position={position}>
       <HandleButton
+        id={id}
         position={position}
         width={width}
         height={height}
@@ -443,22 +453,36 @@ const WrappedHandle = ({ position, children }) => {
 /**
  * The two buttons.
  */
-const HandleButton = ({ position, width, height, parent, xPos, yPos }) => {
+const HandleButton = ({ id, position, width, height, parent, xPos, yPos }) => {
   const store = useContext(RepoContext)!;
   const addNode = useStore(store, (state) => state.addNode);
   const clickAway = useContext(ClickAwayContext);
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const node = nodesMap.get(id)!;
+  const parentId = node.data.parent;
+  const parentNode = nodesMap.get(parentId!);
+  const index = parentNode?.data.children?.indexOf(id)!;
+  let realParentId;
+  let realIndex;
   switch (position) {
     case Position.Top:
       yPos = yPos - height! - 50;
+      realParentId = parentId;
+      realIndex = index;
       break;
     case Position.Bottom:
       yPos = yPos + height! + 50;
+      realParentId = parentId;
+      realIndex = index + 1;
       break;
     case Position.Left:
       xPos = xPos - width! - 50;
+      // not valid
       break;
     case Position.Right:
       xPos = xPos + width! + 50;
+      realParentId = id;
+      realIndex = -1;
       break;
   }
   return (
@@ -466,7 +490,8 @@ const HandleButton = ({ position, width, height, parent, xPos, yPos }) => {
       <Button
         variant="contained"
         onClick={() => {
-          addNode("CODE", { x: xPos, y: yPos }, parent);
+          // addNode("CODE", { x: xPos, y: yPos }, parent);
+          addNode("CODE", realParentId, realIndex);
           clickAway();
         }}
       >
@@ -475,7 +500,8 @@ const HandleButton = ({ position, width, height, parent, xPos, yPos }) => {
       <Button
         variant="contained"
         onClick={() => {
-          addNode("RICH", { x: xPos, y: yPos }, parent);
+          // addNode("RICH", { x: xPos, y: yPos }, parent);
+          addNode("RICH", realParentId, realIndex);
           clickAway();
         }}
       >
