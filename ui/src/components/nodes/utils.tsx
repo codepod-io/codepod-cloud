@@ -30,6 +30,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import React from "react";
 import { ChevronLeft } from "lucide-react";
+import { match, P } from "ts-pattern";
 
 export function ResizeIcon() {
   return (
@@ -330,6 +331,44 @@ export const Handles = ({ id, hover }) => {
 
   const node = nodesMap.get(id);
   if (!node) return null;
+
+  let status: "DEFAULT" | "FOLDED" | "EMPTY" = "DEFAULT";
+
+  if (node.data.children.length > 0 && node.data.folded) status = "FOLDED";
+  if (node.data.children.length === 0) status = "EMPTY";
+  const variants = match({ status, hover })
+    // case 1: the subtree is non-empty and folded. Show the count of children.
+    .with({ status: "FOLDED" }, () => ({
+      content: node.data.children.length,
+      style: {
+        borderColor: "red",
+        backgroundColor: "white",
+      },
+    }))
+    // case 2: the subtree is empty. No visual effect no matter the mouse is hovering or not.
+    .with({ status: "EMPTY" }, () => ({
+      content: "",
+      style: {
+        borderColor: "lightgray",
+        backgroundColor: "white",
+      },
+    }))
+    // case 3: the subtree is unfolded, and the mouse is hovering over the pod. Add some visual highlight.
+    .with({ status: "DEFAULT", hover: true }, () => ({
+      content: <ChevronLeft />,
+      style: {
+        borderColor: "red",
+        backgroundColor: "white",
+      },
+    }))
+    // case 4: the mouse is not hovering, no special visual effect.
+    .otherwise(() => ({
+      content: "",
+      style: {
+        borderColor: "lightgray",
+        backgroundColor: "white",
+      },
+    }));
   return (
     <>
       <Handle id="left" type="source" position={Position.Left} />
@@ -347,25 +386,7 @@ export const Handles = ({ id, hover }) => {
           height: "20px",
           right: "-10px",
           color: "red",
-          ...(node.data.children.length > 0
-            ? node.data.folded
-              ? {
-                  borderColor: "red",
-                  backgroundColor: "white",
-                }
-              : hover
-                ? {
-                    borderColor: "red",
-                    backgroundColor: "white",
-                  }
-                : {
-                    borderColor: "lightgray",
-                    backgroundColor: "white",
-                  }
-            : {
-                borderColor: "lightgray",
-                backgroundColor: "white",
-              }),
+          ...variants.style,
         }}
         onClick={() => {
           if (node.data.children.length > 0) {
@@ -373,13 +394,7 @@ export const Handles = ({ id, hover }) => {
           }
         }}
       >
-        {node.data.folded ? (
-          node.data.children.length
-        ) : hover ? (
-          <ChevronLeft />
-        ) : (
-          ""
-        )}
+        {variants.content}
       </Handle>
     </>
   );
