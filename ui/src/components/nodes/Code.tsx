@@ -37,7 +37,7 @@ import { RepoContext } from "@/lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 
-import { Handles } from "./utils";
+import { Handles, useAnchorStyle } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
@@ -422,30 +422,10 @@ export const CodeNode = function ({
 
   const [hover, setHover] = useState(false);
 
-  const isAddingNode = useStore(store, (state) => state.isAddingNode);
-  const anchorNode = useStore(store, (state) => state.anchorNode);
+  const anchorStyle = useAnchorStyle(id);
 
   const node = nodesMap.get(id);
   if (!node) return null;
-
-  const anchorStyle = {};
-  if (isAddingNode && anchorNode && anchorNode.id === id) {
-    const border = `solid 3px ${anchorNode.isValid ? "green" : "red"}`;
-    match(anchorNode.position)
-      .with("TOP", () => {
-        anchorStyle["borderTop"] = border;
-      })
-      .with("BOTTOM", () => {
-        anchorStyle["borderBottom"] = border;
-      })
-      .with("RIGHT", () => {
-        anchorStyle["borderRight"] = border;
-      })
-      .with("LEFT", () => {
-        anchorStyle["borderLeft"] = border;
-      })
-      .exhaustive();
-  }
 
   return (
     <div
