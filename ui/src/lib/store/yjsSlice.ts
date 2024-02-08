@@ -189,7 +189,6 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
         richMap.set("ROOT", new Y.XmlFragment());
       }
 
-      get().adjustLevel();
       get().updateView();
       // Trigger initial results rendering.
       const resultMap = get().getResultMap();

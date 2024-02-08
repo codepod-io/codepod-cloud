@@ -54,6 +54,7 @@ import {
   X,
 } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
+import { match } from "ts-pattern";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -421,8 +422,30 @@ export const CodeNode = function ({
 
   const [hover, setHover] = useState(false);
 
+  const isAddingNode = useStore(store, (state) => state.isAddingNode);
+  const anchorNode = useStore(store, (state) => state.anchorNode);
+
   const node = nodesMap.get(id);
   if (!node) return null;
+
+  const anchorStyle = {};
+  if (isAddingNode && anchorNode && anchorNode.id === id) {
+    const border = `solid 3px ${anchorNode.isValid ? "green" : "red"}`;
+    match(anchorNode.position)
+      .with("TOP", () => {
+        anchorStyle["borderTop"] = border;
+      })
+      .with("BOTTOM", () => {
+        anchorStyle["borderBottom"] = border;
+      })
+      .with("RIGHT", () => {
+        anchorStyle["borderRight"] = border;
+      })
+      .with("LEFT", () => {
+        anchorStyle["borderLeft"] = border;
+      })
+      .exhaustive();
+  }
 
   return (
     <div
@@ -430,69 +453,77 @@ export const CodeNode = function ({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        display: "flex",
-        flexDirection: "column",
+        ...anchorStyle,
         width: "100%",
         minWidth: "300px",
         // This is the key to let the node auto-resize w.r.t. the content.
         height: "auto",
         // minHeight: "50px",
-        // border: "solid 1px black",
-        backgroundColor: "white",
-        border: "solid 1px var(--gray-12)",
-        // NOTE: monaco editor has a overflow-guard that doesn't have border
-        // radius on the bottom. So we don't apply the border-radius on the
-        // bottom to avoid inconsistent looking.
-        borderRadius: "4px 4px 0 0",
       }}
     >
-      <HeaderBar id={id} />
       <div
         style={{
-          paddingTop: "5px",
-          cursor: "auto",
+          display: "flex",
+          flexDirection: "column",
+
+          // border: "solid 1px black",
+          backgroundColor: "white",
+          border: "solid 1px var(--gray-12)",
+
+          // NOTE: monaco editor has a overflow-guard that doesn't have border
+          // radius on the bottom. So we don't apply the border-radius on the
+          // bottom to avoid inconsistent looking.
+          borderRadius: "4px 4px 0 0",
         }}
       >
-        <MyMonaco id={id} />
-      </div>
-      <ResultBlock id={id} />
-
-      <Handles id={id} hover={hover} />
-
-      <NodeResizeControl
-        style={{
-          background: "transparent",
-          border: "none",
-          // make it above the pod
-          zIndex: 100,
-          // put it to the right-bottom corner, instead of right-middle.
-          top: "100%",
-          color: "red",
-        }}
-        minWidth={300}
-        minHeight={50}
-        // this allows the resize happens in X-axis only.
-        position="right"
-        onResizeEnd={() => {
-          // remove style.height so that the node auto-resizes.
-          const node = nodesMap.get(id);
-          if (node) {
-            nodesMap.set(id, {
-              ...node,
-              style: { ...node.style, height: undefined },
-            });
-          }
-        }}
-      >
-        <HeightIcon
-          sx={{
-            transform: "rotate(90deg)",
-            position: "absolute",
-            right: 5,
-            bottom: 5,
+        <HeaderBar id={id} />
+        <div
+          style={{
+            paddingTop: "5px",
+            cursor: "auto",
           }}
-        />
-      </NodeResizeControl>
+        >
+          <MyMonaco id={id} />
+        </div>
+        <ResultBlock id={id} />
+
+        <Handles id={id} hover={hover} />
+
+        <NodeResizeControl
+          style={{
+            background: "transparent",
+            border: "none",
+            // make it above the pod
+            zIndex: 100,
+            // put it to the right-bottom corner, instead of right-middle.
+            top: "100%",
+            color: "red",
+          }}
+          minWidth={300}
+          minHeight={50}
+          // this allows the resize happens in X-axis only.
+          position="right"
+          onResizeEnd={() => {
+            // remove style.height so that the node auto-resizes.
+            const node = nodesMap.get(id);
+            if (node) {
+              nodesMap.set(id, {
+                ...node,
+                style: { ...node.style, height: undefined },
+              });
+            }
+          }}
+        >
+          <HeightIcon
+            sx={{
+              transform: "rotate(90deg)",
+              position: "absolute",
+              right: 5,
+              bottom: 5,
+            }}
+          />
+        </NodeResizeControl>
+      </div>
     </div>
   );
 };

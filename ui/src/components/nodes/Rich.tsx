@@ -155,6 +155,7 @@ import {
   MoreHorizontal,
   Pencil,
 } from "lucide-react";
+import { match } from "ts-pattern";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -612,6 +613,28 @@ export const RichNode = memo<Props>(function ({
     }
   }, [data.name, setPodName, id]);
 
+  const isAddingNode = useStore(store, (state) => state.isAddingNode);
+  const anchorNode = useStore(store, (state) => state.anchorNode);
+
+  const anchorStyle = {};
+  if (isAddingNode && anchorNode && anchorNode.id === id) {
+    const border = `solid 3px ${anchorNode.isValid ? "green" : "red"}`;
+    match(anchorNode.position)
+      .with("TOP", () => {
+        anchorStyle["borderTop"] = border;
+      })
+      .with("BOTTOM", () => {
+        anchorStyle["borderBottom"] = border;
+      })
+      .with("RIGHT", () => {
+        anchorStyle["borderRight"] = border;
+      })
+      .with("LEFT", () => {
+        anchorStyle["borderLeft"] = border;
+      })
+      .exhaustive();
+  }
+
   const [hover, setHover] = useState(false);
 
   const node = nodesMap.get(id);
@@ -623,63 +646,69 @@ export const RichNode = memo<Props>(function ({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        display: "flex",
-        flexDirection: "column",
+        ...anchorStyle,
         width: "100%",
         minWidth: "300px",
         // This is the key to let the node auto-resize w.r.t. the content.
         height: "auto",
-        backgroundColor: "white",
-        cursor: "auto",
-        border: "solid 1px var(--gray-12)",
-        borderRadius: "4px",
       }}
     >
-      <HeaderBar id={id} />
-
-      {/* Two alternative editors */}
-
-      {/* <MyLexical id={id} /> */}
-      <MyRemirror id={id} />
-
-      <Handles id={id} hover={hover} />
-
-      <NodeResizeControl
+      <div
         style={{
-          background: "transparent",
-          border: "none",
-          zIndex: 100,
-          // put it to the right-bottom corner, instead of right-middle.
-          top: "100%",
-          color: "red",
-        }}
-        minWidth={300}
-        minHeight={50}
-        // this allows the resize happens in X-axis only.
-        position="right"
-        onResizeEnd={() => {
-          // remove style.height so that the node auto-resizes.
-          const node = nodesMap.get(id);
-          if (node) {
-            nodesMap.set(id, {
-              ...node,
-              style: { ...node.style, height: undefined },
-            });
-          }
-          if (autoRunLayout) {
-            autoLayoutROOT();
-          }
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "white",
+          cursor: "auto",
+          border: "solid 1px var(--gray-12)",
+          borderRadius: "4px",
         }}
       >
-        <HeightIcon
-          sx={{
-            transform: "rotate(90deg)",
-            position: "absolute",
-            right: 5,
-            bottom: 5,
+        <HeaderBar id={id} />
+
+        {/* Two alternative editors */}
+
+        {/* <MyLexical id={id} /> */}
+        <MyRemirror id={id} />
+
+        <Handles id={id} hover={hover} />
+
+        <NodeResizeControl
+          style={{
+            background: "transparent",
+            border: "none",
+            zIndex: 100,
+            // put it to the right-bottom corner, instead of right-middle.
+            top: "100%",
+            color: "red",
           }}
-        />
-      </NodeResizeControl>
+          minWidth={300}
+          minHeight={50}
+          // this allows the resize happens in X-axis only.
+          position="right"
+          onResizeEnd={() => {
+            // remove style.height so that the node auto-resizes.
+            const node = nodesMap.get(id);
+            if (node) {
+              nodesMap.set(id, {
+                ...node,
+                style: { ...node.style, height: undefined },
+              });
+            }
+            if (autoRunLayout) {
+              autoLayoutROOT();
+            }
+          }}
+        >
+          <HeightIcon
+            sx={{
+              transform: "rotate(90deg)",
+              position: "absolute",
+              right: 5,
+              bottom: 5,
+            }}
+          />
+        </NodeResizeControl>
+      </div>
     </div>
   );
 });
