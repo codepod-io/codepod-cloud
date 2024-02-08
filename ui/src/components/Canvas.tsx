@@ -844,6 +844,7 @@ function CanvasImpl() {
 function ContextMenu({ setShowContextMenu, handleItemClick }) {
   const store = useContext(RepoContext)!;
   const setIsAddingNode = useStore(store, (state) => state.setIsAddingNode);
+  const setAddNodeType = useStore(store, (state) => state.setAddNodeType);
   return (
     <DropdownMenu.Root
       open={true}
@@ -868,12 +869,21 @@ function ContextMenu({ setShowContextMenu, handleItemClick }) {
         <DropdownMenu.Item
           shortcut="⌘ E"
           onClick={() => {
+            setAddNodeType("CODE");
             setIsAddingNode(true);
           }}
         >
           + Code
         </DropdownMenu.Item>
-        <DropdownMenu.Item shortcut="⌘ D">+ Doc</DropdownMenu.Item>
+        <DropdownMenu.Item
+          shortcut="⌘ D"
+          onClick={() => {
+            setAddNodeType("RICH");
+            setIsAddingNode(true);
+          }}
+        >
+          + Doc
+        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           shortcut="⌘ N"

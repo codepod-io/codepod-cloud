@@ -9,6 +9,8 @@ export interface AddNodeSlice {
 
   isAddingNode: boolean;
   setIsAddingNode: (b: boolean) => void;
+  addNodeType: "CODE" | "RICH";
+  setAddNodeType: (type: "CODE" | "RICH") => void;
   mousePosition: XYPosition;
   setMousePosition: (pos: XYPosition) => void;
 
@@ -29,6 +31,10 @@ export const createAddNodeSlice: StateCreator<MyState, [], [], AddNodeSlice> = (
 ) => ({
   isAddingNode: false,
   setIsAddingNode: (b: boolean) => set({ isAddingNode: b }),
+
+  addNodeType: "CODE",
+  setAddNodeType: (type: "CODE" | "RICH") => set({ addNodeType: type }),
+
   mousePosition: { x: 0, y: 0 },
   setMousePosition: ({ x, y }) => set({ mousePosition: { x, y } }),
 
@@ -124,7 +130,7 @@ export const createAddNodeSlice: StateCreator<MyState, [], [], AddNodeSlice> = (
     // TODO insert a placeholder in the position, and insert the actual node when user clicks.
   },
   anchorNode: undefined,
-  addNodeAtAnchor: (type: "CODE" | "RICH") => {
+  addNodeAtAnchor: () => {
     const anchor = get().anchorNode;
     if (!anchor) return;
     const nodesMap = get().getNodesMap();
@@ -135,13 +141,13 @@ export const createAddNodeSlice: StateCreator<MyState, [], [], AddNodeSlice> = (
     if (anchor.isValid) {
       match(anchor.position)
         .with("TOP", () => {
-          get().addNode(type, parentId, index);
+          get().addNode(get().addNodeType, parentId, index);
         })
         .with("BOTTOM", () => {
-          get().addNode(type, parentId, index + 1);
+          get().addNode(get().addNodeType, parentId, index + 1);
         })
         .with("RIGHT", () => {
-          get().addNode(type, anchor.id, 0);
+          get().addNode(get().addNodeType, anchor.id, 0);
         })
         .otherwise(() => {
           throw new Error("Should not reach here.");
