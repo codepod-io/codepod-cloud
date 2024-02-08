@@ -268,10 +268,6 @@ export interface CanvasSlice {
     cellList: any[]
   ) => void;
 
-  adjustLevel: () => void;
-  getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
-  moveIntoScope: (nodeIds: string[], scopeId?: string) => void;
-
   helperLineHorizontal: number | undefined;
   helperLineVertical: number | undefined;
   setHelperLineHorizontal: (line: number | undefined) => void;
@@ -409,7 +405,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     function generateEdge(nodes: Node[]) {
       const edges: any[] = [];
       nodes.forEach((node) => {
-        node.data.children.map((id: string) => {
+        node.data?.children?.map((id: string) => {
           edges.push({
             id: `${node.id}-${id}`,
             source: node.id,
@@ -420,6 +416,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       return edges;
     }
     set({ edges: generateEdge(nodes) });
+    get().updateView_addNode();
   },
 
   toggleFold: (id: string) => {
@@ -586,7 +583,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         });
       }
     }
-    get().adjustLevel();
     // FIXME updateView() reset the pod width to 300, scope width to 400.
     get().updateView();
   },
@@ -759,82 +755,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   getScopeAtPos: ({ x, y }, exclude) => {
     const nodesMap = get().getNodesMap();
     return getScopeAt(x, y, [exclude], get().nodes, nodesMap);
-  },
-
-  adjustLevel: () => {
-    // adjust the levels of all nodes, using topoSort
-    let nodesMap = get().getNodesMap();
-    let nodes = Array.from<Node>(nodesMap.values());
-    nodes = topologicalSort(nodes, nodesMap);
-    // update nodes' level
-    nodes.forEach((node) => {
-      let newLevel = node.parentNode
-        ? nodesMap.get(node.parentNode!)!.data.level + 1
-        : 0;
-      if (node.data.level !== newLevel) {
-        nodesMap.set(node.id, {
-          ...node,
-          data: {
-            ...node.data,
-            level: newLevel,
-          },
-        });
-      }
-    });
-  },
-  moveIntoScope: (nodeIds: string[], scopeId?: string) => {
-    // move a node into a scope.
-    // 1. update the node's parentNode & position
-    let nodesMap = get().getNodesMap();
-    for (const nodeId of nodeIds) {
-      let node = nodesMap.get(nodeId);
-      if (!node) {
-        console.warn("Node not found", node);
-        return;
-      }
-      if (node.parentNode === scopeId) {
-        console.warn("Node already in scope", node);
-        return;
-      }
-      console.log(`Moving ${nodeId} into scope ${scopeId}`);
-      let fromLevel = node?.data.level;
-      let toLevel: number;
-      let position: XYPosition;
-      if (!scopeId) {
-        toLevel = 0;
-        position = getAbsPos(node, nodesMap);
-      } else {
-        let scope = nodesMap.get(scopeId);
-        if (!node || !scope) {
-          console.warn("Scope not found", scope);
-          return;
-        }
-        toLevel = scope.data.level + 1;
-        // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
-        const nodeHeight = nodesMap.get(nodeId)?.height || 0;
-        position = getNodePositionInsideScope(
-          node,
-          scope,
-          nodesMap,
-          nodeHeight
-        );
-      }
-      // create the new node
-      let newNode: Node = {
-        ...node,
-        position,
-        parentNode: scopeId,
-        data: {
-          ...node.data,
-          level: toLevel,
-        },
-      };
-      // update peer
-      nodesMap.set(node.id, newNode);
-    }
-    get().adjustLevel();
-    // update view
-    get().updateView();
   },
 
   helperLineHorizontal: undefined,
@@ -1112,7 +1032,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let nodes = Array.from<Node>(nodesMap.values());
     nodes
       // sort the children so that the inner scope gets processed first.
-      .sort((a: Node, b: Node) => b.data.level - a.data.level)
+      // .sort((a: Node, b: Node) => b.data.level - a.data.level)
       .forEach((node) => {
         if (node.type === "SCOPE") {
           get().autoLayout(node.id);

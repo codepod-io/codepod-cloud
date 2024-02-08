@@ -52,8 +52,31 @@ import { getAbsPos, newNodeShapeConfig } from "@/lib/store/canvasSlice";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 import { ListItemIcon, ListItemText, MenuItem, MenuList } from "@mui/material";
 import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
+import { debounce } from "lodash";
+import { Button, DropdownMenu } from "@radix-ui/themes";
 
-const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
+const TempNode = () => {
+  return (
+    <div
+      style={{
+        width: "100px",
+        height: "100px",
+        borderRadius: "50%",
+        transform: "translate(-50%, -50%)",
+        backgroundColor: "orange",
+        opacity: 0.5,
+      }}
+    ></div>
+  );
+};
+
+const nodeTypes = {
+  SCOPE: ScopeNode,
+  CODE: CodeNode,
+  RICH: RichNode,
+  TEMP: TempNode,
+};
+
 const edgeTypes = {
   floating: FloatingEdge,
 };
@@ -287,6 +310,71 @@ function useJump() {
   }, [selectedPods]);
 }
 
+function useAddNode(reactFlowWrapper) {
+  const store = useContext(RepoContext)!;
+  const isAddingNode = useStore(store, (state) => state.isAddingNode);
+  const setIsAddingNode = useStore(store, (state) => state.setIsAddingNode);
+  const updateView = useStore(store, (state) => state.updateView);
+  const updateView_addNode = useStore(
+    store,
+    (state) => state.updateView_addNode
+  );
+  const setMousePosition = useStore(store, (state) => state.setMousePosition);
+  const getInsertPosition = useStore(store, (state) => state.getInsertPosition);
+
+  const reactFlowInstance = useReactFlow();
+  const addNodeAtAnchor = useStore(store, (state) => state.addNodeAtAnchor);
+
+  // cancel when ESC is pressed
+  const escapePressed = useKeyPress("Escape");
+  useEffect(() => {
+    if (escapePressed) {
+      console.log("escape pressed");
+      setIsAddingNode(false);
+      updateView();
+    }
+  }, [escapePressed]);
+
+  // when add node mode activated
+  // 1. there is a node moving with the mouse.
+  // 2. We calculate the desired position to insert the node in the tree
+  //    hierarchy, and show it on the canvas.
+  // 3. when the user clicks, we insert the node in the tree hierarchy.
+
+  useEffect(() => {
+    if (!reactFlowWrapper) return;
+    if (!isAddingNode) return;
+    const mouseMove = (event) => {
+      const bounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+      // show the node on the canvas
+      setMousePosition(position);
+      getInsertPosition();
+      updateView_addNode();
+    };
+    const debouncedMouseMove = debounce(mouseMove, 1);
+    const mouseClick = (event) => {
+      // insert the node in the tree hierarchy
+      addNodeAtAnchor("CODE");
+      setIsAddingNode(false);
+      updateView();
+    };
+
+    reactFlowWrapper.current.addEventListener("mousemove", debouncedMouseMove);
+    reactFlowWrapper.current.addEventListener("click", mouseClick);
+    return () => {
+      reactFlowWrapper.current.removeEventListener(
+        "mousemove",
+        debouncedMouseMove
+      );
+      reactFlowWrapper.current.removeEventListener("click", mouseClick);
+    };
+  }, [isAddingNode, reactFlowWrapper]);
+}
+
 export function useCopyPaste() {
   const store = useContext(RepoContext)!;
   const rfDomNode = useRfStore((state) => state.domNode);
@@ -374,15 +462,14 @@ function ViewportInfo() {
 /**
  * Animate nodes and edges when their positions change.
  */
-type UseAnimatedNodeOptions = {
-  animationDuration?: number;
-};
-
-function useAnimatedNodes(
-  nodes: Node[],
-  { animationDuration = 300 }: UseAnimatedNodeOptions = {}
-) {
+function useAnimatedNodes(nodes: Node[]) {
   const [tmpNodes, setTmpNodes] = useState(nodes);
+
+  const store = useContext(RepoContext)!;
+  // When adding node, set the animation duration to 0 so that the temp node follows mouse.
+  const isAddingNode = useStore(store, (state) => state.isAddingNode);
+  const animationDuration = isAddingNode ? 0 : 100;
+
   const { getNode } = useReactFlow();
 
   useEffect(() => {
@@ -429,11 +516,11 @@ function CanvasImpl() {
   const reactFlowWrapper = useRef<any>(null);
 
   const store = useContext(RepoContext)!;
+  useAddNode(reactFlowWrapper);
 
   const nodes = useStore(store, (state) => state.nodes);
-  const { nodes: animatedNodes } = useAnimatedNodes(nodes, {
-    animationDuration: 100,
-  });
+
+  const { nodes: animatedNodes } = useAnimatedNodes(nodes);
   const edges = useStore(store, (state) => state.edges);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const onNodesChange = useStore(store, (state) => state.onNodesChange);
@@ -532,7 +619,6 @@ function CanvasImpl() {
     setClient({ x: event.clientX, y: event.clientY });
   };
 
-  const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoLayoutOnce = useStore(store, (state) => state.setAutoLayoutOnce);
   const autoLayoutOnce = useStore(store, (state) => state.autoLayoutOnce);
@@ -634,16 +720,6 @@ function CanvasImpl() {
           }}
           onNodeClick={() => {
             toggleNodeClicked();
-          }}
-          onNodeDrag={(event, node) => {
-            let mousePos = project({ x: event.clientX, y: event.clientY });
-            let scope = getScopeAtPos(mousePos, node.id);
-            if (scope) {
-              // The view is updated at the node position change.
-              setDragHighlight(scope.id);
-            } else {
-              removeDragHighlight();
-            }
           }}
           attributionPosition="top-right"
           maxZoom={2}
@@ -752,31 +828,86 @@ function CanvasImpl() {
               boxSizing: "border-box",
             }}
           >
-            <MenuList className="paneContextMenu">
-              <MenuItem
-                onClick={() => {
-                  // handle CanvasContextMenu "import Jupyter notebook" click
-                  handleItemClick();
-                  setShowContextMenu(false);
-                }}
-                sx={{
-                  "&:hover": {
-                    background: "#f1f3f7",
-                    color: "#4b00ff",
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: "inherit" }}>
-                  <FileUploadTwoToneIcon />
-                </ListItemIcon>
-                <ListItemText>Import Code</ListItemText>
-              </MenuItem>
-            </MenuList>
+            <ContextMenu
+              setShowContextMenu={setShowContextMenu}
+              handleItemClick={handleItemClick}
+            />
           </Box>
         )}
+
         {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
       </Box>
     </Box>
+  );
+}
+
+function ContextMenu({ setShowContextMenu, handleItemClick }) {
+  const store = useContext(RepoContext)!;
+  const setIsAddingNode = useStore(store, (state) => state.setIsAddingNode);
+  const setAddNodeType = useStore(store, (state) => state.setAddNodeType);
+  return (
+    <DropdownMenu.Root
+      open={true}
+      onOpenChange={(open) => {
+        console.log("onOpenChange");
+        setShowContextMenu(false);
+      }}
+    >
+      <DropdownMenu.Trigger>
+        <Button
+          variant="ghost"
+          style={{
+            width: 0,
+            height: 0,
+            opacity: 0,
+          }}
+        >
+          Options
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            setAddNodeType("CODE");
+            setIsAddingNode(true);
+          }}
+        >
+          + Code
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          shortcut="⌘ D"
+          onClick={() => {
+            setAddNodeType("RICH");
+            setIsAddingNode(true);
+          }}
+        >
+          + Doc
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          shortcut="⌘ N"
+          onClick={() => {
+            // handle CanvasContextMenu "import Jupyter notebook" click
+            handleItemClick();
+          }}
+        >
+          <FileUploadTwoToneIcon />
+          Import
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent>
+            <DropdownMenu.Item>Move to project…</DropdownMenu.Item>
+            <DropdownMenu.Item>Move to folder…</DropdownMenu.Item>
+
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item>Advanced options…</DropdownMenu.Item>
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   );
 }
 
