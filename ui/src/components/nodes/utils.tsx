@@ -670,3 +670,29 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
 
   return fileContent;
 }
+
+export function useAnchorStyle(id: string) {
+  const store = useContext(RepoContext)!;
+  const isAddingNode = useStore(store, (state) => state.isAddingNode);
+  const anchorNode = useStore(store, (state) => state.anchorNode);
+
+  const anchorStyle = {};
+  if (isAddingNode && anchorNode && anchorNode.id === id) {
+    const border = `solid 3px ${anchorNode.isValid ? "green" : "red"}`;
+    match(anchorNode.position)
+      .with("TOP", () => {
+        anchorStyle["borderTop"] = border;
+      })
+      .with("BOTTOM", () => {
+        anchorStyle["borderBottom"] = border;
+      })
+      .with("RIGHT", () => {
+        anchorStyle["borderRight"] = border;
+      })
+      .with("LEFT", () => {
+        anchorStyle["borderLeft"] = border;
+      })
+      .exhaustive();
+  }
+  return anchorStyle;
+}

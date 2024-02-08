@@ -156,6 +156,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { match } from "ts-pattern";
+import { useAnchorStyle } from "./utils";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -613,27 +614,7 @@ export const RichNode = memo<Props>(function ({
     }
   }, [data.name, setPodName, id]);
 
-  const isAddingNode = useStore(store, (state) => state.isAddingNode);
-  const anchorNode = useStore(store, (state) => state.anchorNode);
-
-  const anchorStyle = {};
-  if (isAddingNode && anchorNode && anchorNode.id === id) {
-    const border = `solid 3px ${anchorNode.isValid ? "green" : "red"}`;
-    match(anchorNode.position)
-      .with("TOP", () => {
-        anchorStyle["borderTop"] = border;
-      })
-      .with("BOTTOM", () => {
-        anchorStyle["borderBottom"] = border;
-      })
-      .with("RIGHT", () => {
-        anchorStyle["borderRight"] = border;
-      })
-      .with("LEFT", () => {
-        anchorStyle["borderLeft"] = border;
-      })
-      .exhaustive();
-  }
+  const anchorStyle = useAnchorStyle(id);
 
   const [hover, setHover] = useState(false);
 
