@@ -34,14 +34,13 @@ import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
 
-import { useStore } from "zustand";
 import * as Y from "yjs";
 
 import { timer } from "d3-timer";
 
-import { RepoContext } from "@/lib/store";
-
 import { runtimeTrpc, trpc } from "@/lib/trpc";
+import { ATOM_isAddingNode } from "@/lib/store/canvasSlice";
+import { useAtom } from "jotai";
 
 /**
  * Animate nodes and edges when their positions change.
@@ -49,9 +48,8 @@ import { runtimeTrpc, trpc } from "@/lib/trpc";
 export function useAnimatedNodes(nodes: Node[]) {
   const [tmpNodes, setTmpNodes] = useState(nodes);
 
-  const store = useContext(RepoContext)!;
   // When adding node, set the animation duration to 0 so that the temp node follows mouse.
-  const isAddingNode = useStore(store, (state) => state.isAddingNode);
+  const [isAddingNode] = useAtom(ATOM_isAddingNode);
   const animationDuration = isAddingNode ? 0 : 100;
 
   const { getNode } = useReactFlow();
@@ -93,11 +91,10 @@ export function useAnimatedNodes(nodes: Node[]) {
 }
 
 export function useCopyPaste() {
-  const store = useContext(RepoContext)!;
   const rfDomNode = useRfStore((state) => state.domNode);
   const reactFlowInstance = useReactFlow();
-  const handleCopy = useStore(store, (state) => state.handleCopy);
-  const handlePaste = useStore(store, (state) => state.handlePaste);
+  // const handleCopy = useStore(store, (state) => state.handleCopy);
+  // const handlePaste = useStore(store, (state) => state.handlePaste);
 
   const posRef = useRef<XYPosition>({ x: 0, y: 0 });
   useEffect(() => {
@@ -119,22 +116,22 @@ export function useCopyPaste() {
     }
   }, [rfDomNode]);
 
-  const paste = useCallback(
-    (event) => {
-      handlePaste(event, posRef.current);
-    },
-    [handlePaste, posRef]
-  );
+  // const paste = useCallback(
+  //   (event) => {
+  //     handlePaste(event, posRef.current);
+  //   },
+  //   [handlePaste, posRef]
+  // );
 
-  // bind copy/paste events
-  useEffect(() => {
-    if (!rfDomNode) return;
-    document.addEventListener("copy", handleCopy);
-    document.addEventListener("paste", paste);
+  // // bind copy/paste events
+  // useEffect(() => {
+  //   if (!rfDomNode) return;
+  //   document.addEventListener("copy", handleCopy);
+  //   document.addEventListener("paste", paste);
 
-    return () => {
-      document.removeEventListener("copy", handleCopy);
-      document.removeEventListener("paste", paste);
-    };
-  }, [handleCopy, handlePaste, rfDomNode]);
+  //   return () => {
+  //     document.removeEventListener("copy", handleCopy);
+  //     document.removeEventListener("paste", paste);
+  //   };
+  // }, [handleCopy, handlePaste, rfDomNode]);
 }

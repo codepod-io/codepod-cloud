@@ -8,8 +8,6 @@ import {
 } from "react";
 import * as React from "react";
 
-import { useStore } from "zustand";
-
 import {
   LinkExtension as RemirrorLinkExtension,
   ShortcutHandlerProps,
@@ -31,7 +29,7 @@ import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { InputRule } from "@remirror/pm";
 import { markInputRule } from "@remirror/core-utils";
 
-import { RepoContext } from "@/lib/store";
+import { useAtom } from "jotai";
 
 export class LinkExtension extends RemirrorLinkExtension {
   createInputRules(): InputRule[] {
@@ -179,22 +177,6 @@ const DelayAutoFocusInput = ({
   return <input ref={inputRef} {...rest} />;
 };
 
-function useUpdatePositionerOnMove() {
-  // Update (all) the positioners whenever there's a move (pane) on reactflow,
-  // so that the toolbar moves with the Rich pod and content.
-  const { forceUpdatePositioners, emptySelection } = useCommands();
-  const store = useContext(RepoContext)!;
-  const moved = useStore(store, (state) => state.moved);
-  const paneClicked = useStore(store, (state) => state.paneClicked);
-  useEffect(() => {
-    forceUpdatePositioners();
-  }, [moved]);
-  useEffect(() => {
-    emptySelection();
-  }, [paneClicked]);
-  return;
-}
-
 /**
  * This is a two-buttons toolbar when user click on a link. The first button
  * edits the link, the second button opens the link.
@@ -210,7 +192,6 @@ export const LinkToolbar = () => {
     setHref,
     cancelHref,
   } = useFloatingLinkState();
-  useUpdatePositionerOnMove();
   const { empty } = useCurrentSelection();
 
   const handleClickEdit = useCallback(() => {

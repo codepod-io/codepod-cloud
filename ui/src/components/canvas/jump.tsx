@@ -34,14 +34,23 @@ import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
 
-import { useStore } from "zustand";
 import * as Y from "yjs";
 
 import { timer } from "d3-timer";
 
-import { RepoContext } from "@/lib/store";
-
 import { runtimeTrpc, trpc } from "@/lib/trpc";
+import {
+  ATOM_centerSelection,
+  ATOM_focusedEditor,
+  ATOM_selectedPods,
+} from "@/lib/store/canvasSlice";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import {
+  ATOM_activeRuntime,
+  ATOM_getScopeChain,
+  ATOM_preprocessChain,
+} from "@/lib/store/runtimeSlice";
 
 function getBestNode(
   nodes: Node[],
@@ -126,26 +135,19 @@ function isInputDOMNode(event: KeyboardEvent): boolean {
 }
 
 export function useJump() {
-  const store = useContext(RepoContext)!;
+  const setFocusedEditor = useSetAtom(ATOM_focusedEditor);
 
-  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
 
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const [selectedPods, setSelectedPods] = useAtom(ATOM_selectedPods);
 
-  const selectedPods = useStore(store, (state) => state.selectedPods);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-  const selectPod = useStore(store, (state) => state.selectPod);
-
-  const preprocessChain = useStore(store, (state) => state.preprocessChain);
-  const getScopeChain = useStore(store, (state) => state.getScopeChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const getScopeChain = useSetAtom(ATOM_getScopeChain);
 
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const [activeRuntime] = useAtom(ATOM_activeRuntime);
 
-  const setCenterSelection = useStore(
-    store,
-    (state) => state.setCenterSelection
-  );
+  const setCenterSelection = useSetAtom(ATOM_centerSelection);
 
   const handleKeyDown = (event) => {
     // This is a hack to address the extra propagation of "Esc" pressed in Rich node, https://github.com/codepod-io/codepod/pull/398#issuecomment-1655153696
@@ -257,8 +259,7 @@ export function useJump() {
     }
 
     if (to) {
-      resetSelection();
-      selectPod(to.id, true);
+      setSelectedPods(new Set([to.id]));
       setCenterSelection(true);
     }
 

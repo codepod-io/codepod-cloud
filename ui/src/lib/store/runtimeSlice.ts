@@ -1,23 +1,20 @@
+import { Getter, Setter, atom } from "jotai";
+import { Annotation, analyzeCode } from "../parser";
+import {
+  ATOM_codeMap,
+  ATOM_edgesMap,
+  ATOM_nodesMap,
+  ATOM_resultMap,
+  ATOM_runtimeMap,
+} from "./yjsSlice";
 import { produce } from "immer";
-import { createStore, StateCreator, StoreApi } from "zustand";
-
+import { ATOM_edges, ATOM_nodes } from "./canvasSlice";
 import { Edge, Node } from "reactflow";
-import * as Y from "yjs";
 
-// FIXME cyclic import
-import { MyState } from ".";
-import { analyzeCode, analyzeCodeViaQuery, Annotation } from "../parser";
-
-/**
- * Collect symbol tables from all the pods in scope.
- */
-function collectSymbolTables(
-  id: string,
-  get: () => MyState
-): Record<string, string> {
-  const nodesMap = get().getNodesMap();
+function collectSymbolTables(get: Getter, id: string): Record<string, string> {
+  const nodesMap = get(ATOM_nodesMap);
   const nodes = Array.from<Node>(nodesMap.values());
-  const parseResult = get().parseResult;
+  const parseResult = get(ATOM_parseResult);
   const node = nodesMap.get(id);
   if (!node) return {};
   const isbridge = parseResult[id].isbridge;
@@ -59,7 +56,7 @@ function collectSymbolTables(
   }
   // collect from all ancestor scopes.
   // Collect from scopes by Arrows.
-  const edges = get().edges;
+  const edges = get(ATOM_edges);
   edges.forEach(({ source, target }) => {
     if (target === node.parentNode) {
       if (nodesMap.get(source)?.type === "CODE") {
@@ -90,11 +87,11 @@ function collectSymbolTables(
  * @param symbolTable
  * @returns
  */
-function rewriteCode(id: string, get: () => MyState): string | null {
-  const nodesMap = get().getNodesMap();
+function rewriteCode(id: string, get: Getter): string | null {
+  const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  const codeMap = get().getCodeMap();
-  const parseResult = get().parseResult;
+  const codeMap = get(ATOM_codeMap);
+  const parseResult = get(ATOM_parseResult);
   if (!node) return null;
   if (!codeMap.has(id)) return null;
   let code = codeMap.get(id)!.toString();
@@ -152,233 +149,189 @@ function rewriteCode(id: string, get: () => MyState): string | null {
   return newcode;
 }
 
-export type RuntimeInfo = {
-  status?: string;
-  wsStatus?: string;
-};
+export const ATOM_activeRuntime = atom<string | undefined>(undefined);
 
-type PodResult = {
-  exec_count?: number;
-  data: {
-    type: string;
-    html?: string;
-    text?: string;
-    image?: string;
-  }[];
-  running?: boolean;
-  lastExecutedAt?: number;
-  error?: { ename: string; evalue: string; stacktrace: string[] } | null;
-};
+type ParseResult = Record<
+  string,
+  {
+    ispublic: boolean;
+    isbridge: boolean;
+    symbolTable: { [key: string]: string };
+    annotations: Annotation[];
+  }
+>;
 
-export interface RuntimeSlice {
-  parsePod: (id: string) => void;
-  parseAllPods: () => void;
-  resolvePod: (id) => void;
-  resolveAllPods: () => void;
-  getScopeChain: (id: string) => string[];
-  getEdgeChain: (id: string) => string[];
-  clearResults: (id) => void;
-  setRunning: (id) => void;
-  parseResult: Record<
-    string,
-    {
-      ispublic: boolean;
-      isbridge: boolean;
-      symbolTable: { [key: string]: string };
-      annotations: Annotation[];
-    }
-  >;
-  getRuntimeMap(): Y.Map<RuntimeInfo>;
-  getResultMap(): Y.Map<PodResult>;
-  activeRuntime?: string;
-  setActiveRuntime(id?: string): void;
-  preprocessChain(ids: string[]): { podId: string; code: string }[];
-  isRuntimeReady(): boolean;
+export const ATOM_parseResult = atom<ParseResult>({});
+
+/**
+ * Parse the code for defined variables and functions.
+ * @param id paod
+ */
+function parsePod(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const codeMap = get(ATOM_codeMap);
+  set(
+    ATOM_parseResult,
+    produce((parseResult: ParseResult) => {
+      const analyze = analyzeCode;
+      let { ispublic, isbridge, annotations } = analyze(
+        codeMap.get(id)?.toString() || ""
+      );
+      parseResult[id] = {
+        ispublic: false,
+        isbridge: false,
+        symbolTable: {},
+        annotations: [],
+      };
+      parseResult[id].ispublic = ispublic;
+      if (isbridge) parseResult[id].isbridge = isbridge;
+
+      parseResult[id].symbolTable = Object.assign(
+        {},
+        ...annotations
+          .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+          .map(({ name }) => ({
+            [name]: id,
+          }))
+      );
+
+      parseResult[id].annotations = annotations;
+    })
+  );
 }
 
-export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
-  set,
-  get
-) => ({
-  parseResult: {},
+function parseAllPods(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  nodesMap.forEach((node) => {
+    if (node.type === "CODE") parsePod(get, set, node.id);
+  });
+}
 
-  // new yjs-based runtime
-  getRuntimeMap() {
-    return get().ydoc.getMap("rootMap").get("runtimeMap") as Y.Map<RuntimeInfo>;
-  },
-  getResultMap() {
-    return get().ydoc.getMap("rootMap").get("resultMap") as Y.Map<PodResult>;
-  },
-  activeRuntime: undefined,
-  setActiveRuntime(id?: string) {
-    set({ activeRuntime: id });
-  },
-  /**
-   * Parse the code for defined variables and functions.
-   * @param id paod
-   */
-  parsePod: (id) => {
-    const nodesMap = get().getNodesMap();
-    const codeMap = get().getCodeMap();
-    set(
-      produce((state: MyState) => {
-        let analyze = get().scopedVars ? analyzeCode : analyzeCodeViaQuery;
-        let { ispublic, isbridge, annotations } = analyze(
-          codeMap.get(id)?.toString() || ""
-        );
-        state.parseResult[id] = {
-          ispublic: false,
-          isbridge: false,
-          symbolTable: {},
-          annotations: [],
-        };
-        state.parseResult[id].ispublic = ispublic;
-        if (isbridge) state.parseResult[id].isbridge = isbridge;
+export const ATOM_parseAllPods = atom(null, parseAllPods);
 
-        state.parseResult[id].symbolTable = Object.assign(
-          {},
-          ...annotations
-            .filter(({ type }) =>
-              ["function", "vardef", "bridge"].includes(type)
-            )
-            .map(({ name }) => ({
-              [name]: id,
-            }))
-        );
-
-        state.parseResult[id].annotations = annotations;
-      })
-    );
-  },
-  parseAllPods: () => {
-    const nodesMap = get().getNodesMap();
-    nodesMap.forEach((node) => {
-      if (node.type === "CODE") get().parsePod(node.id);
-    });
-  },
-  resolvePod: (id) => {
-    // 1. collect symbol table
-    let st = collectSymbolTables(id, get);
-    // 2. resolve symbols
-    set(
-      produce((state: MyState) => {
-        // update the origin field of the annotations
-        state.parseResult[id].annotations.forEach((annotation) => {
-          let { name } = annotation;
-          if (st[name]) {
-            annotation.origin = st[name];
-          } else {
-            annotation.origin = undefined;
-          }
-        });
-      })
-    );
-  },
-  resolveAllPods: () => {
-    const nodesMap = get().getNodesMap();
-    nodesMap.forEach((node) => {
-      if (node.type === "CODE") get().resolvePod(node.id);
-    });
-  },
-  isRuntimeReady() {
-    const runtimeMap = get().getRuntimeMap();
-    const activeRuntime = get().activeRuntime;
-    if (!activeRuntime) {
-      get().addError({
-        type: "error",
-        msg: "No active runtime",
+function resolvePod(get: Getter, set: Setter, id: string) {
+  let st = collectSymbolTables(get, id);
+  // 2. resolve symbols
+  const parseResult = get(ATOM_parseResult);
+  set(
+    ATOM_parseResult,
+    produce((parseResult) => {
+      // update the origin field of the annotations
+      parseResult[id].annotations.forEach((annotation) => {
+        let { name } = annotation;
+        if (st[name]) {
+          annotation.origin = st[name];
+        } else {
+          annotation.origin = undefined;
+        }
       });
-      return false;
-    }
-    const runtime = runtimeMap.get(activeRuntime);
-    if (runtime?.wsStatus !== "connected") {
-      get().addError({
-        type: "error",
-        msg: "Runtime not connected",
-      });
-      return false;
-    }
-    return true;
-  },
-  preprocessChain(ids) {
-    let specs = ids.map((id) => {
-      // Actually send the run request.
-      // Analyze code and set symbol table
-      get().parsePod(id);
-      // update anontations according to st
-      get().resolvePod(id);
-      const newcode = rewriteCode(id, get);
-      return { podId: id, code: newcode || "" };
-    });
-    // FIXME there's no control over duplicate runnings. This causes two
-    // problems:
-    // 1. if you click fast enough, you will see multiple results.
-    // 2. if a pod takes time to run, it will be shown completed after first run
-    //    finishes, but second run results could keep come after that.
+    })
+  );
+}
 
-    // const resultMap = get().getResultMap();
-    // if (resultMap.get(id)?.running) {
-    //   console.warn(`Pod ${id} is already running.`);
-    //   return;
-    // }
-    return specs.filter(({ podId, code }) => {
-      if (code.length > 0) {
-        get().clearResults(podId);
-        get().setRunning(podId);
-        return true;
-      }
-      return false;
-    });
-  },
-  getScopeChain: (id) => {
-    if (!get().isRuntimeReady()) return [];
-    const nodesMap = get().getNodesMap();
-    const nodes = Array.from<Node>(nodesMap.values());
-    const node = nodesMap.get(id);
-    if (!node) return [];
-    const chain = getDescendants(node, nodes);
-    return chain;
-  },
-  /**
-   * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
-   * @param id the id of the pod to start the chain
-   * @returns
-   */
-  getEdgeChain: (id) => {
-    if (!get().isRuntimeReady()) return [];
-    // Get the chain: get the edges, and then get the pods
-    const edgesMap = get().getEdgesMap();
-    let edges = Array.from<Edge>(edgesMap.values());
-    // build a node2target map
-    let node2target = {};
-    edges.forEach(({ source, target }) => {
-      // TODO support multiple targets
-      node2target[source] = target;
-    });
-    // Get the chain
-    let chain: string[] = [];
-    let nodeid = id;
-    while (nodeid) {
-      // if the nodeid is already in the chain, then there is a loop
-      if (chain.includes(nodeid)) break;
-      chain.push(nodeid);
-      nodeid = node2target[nodeid];
-    }
-    return chain;
-  },
-  clearResults: (id) => {
-    const resultMap = get().getResultMap();
-    resultMap.delete(id);
-  },
-  setRunning: (id) => {
-    set(
-      produce((state: MyState) => {
-        const resultMap = get().getResultMap();
-        resultMap.set(id, { running: true, data: [] });
-      })
-    );
-  },
+export const ATOM_resolveAllPods = atom(null, (get, set) => {
+  const nodesMap = get(ATOM_nodesMap);
+  nodesMap.forEach((node) => {
+    if (node.type === "CODE") resolvePod(get, set, node.id);
+  });
 });
+
+function clearResults(get: Getter, set: Setter, podId: string) {
+  const resultMap = get(ATOM_resultMap);
+  resultMap.delete(podId);
+}
+
+export const ATOM_clearResults = atom(null, clearResults);
+
+function setRunning(get: Getter, set: Setter, podId: string) {
+  const resultMap = get(ATOM_resultMap);
+  resultMap.set(podId, { running: true, data: [] });
+}
+
+function preprocessChain(get: Getter, set: Setter, ids: string[]) {
+  let specs = ids.map((id) => {
+    // Actually send the run request.
+    // Analyze code and set symbol table
+    parsePod(get, set, id);
+    // update anontations according to st
+    resolvePod(get, set, id);
+    const newcode = rewriteCode(id, get);
+    return { podId: id, code: newcode || "" };
+  });
+  return specs.filter(({ podId, code }) => {
+    if (code.length > 0) {
+      clearResults(get, set, podId);
+      setRunning(get, set, podId);
+      return true;
+    }
+    return false;
+  });
+}
+
+export const ATOM_preprocessChain = atom(null, preprocessChain);
+
+function isRuntimeReady(get: Getter) {
+  const runtimeMap = get(ATOM_runtimeMap);
+  const activeRuntime = get(ATOM_activeRuntime);
+  if (!activeRuntime) {
+    console.log({
+      type: "error",
+      msg: "No active runtime",
+    });
+    return false;
+  }
+  const runtime = runtimeMap.get(activeRuntime);
+  if (runtime?.wsStatus !== "connected") {
+    console.log({
+      type: "error",
+      msg: "Runtime not connected",
+    });
+    return false;
+  }
+  return true;
+}
+
+function getScopeChain(get: Getter, set: Setter, id: string) {
+  if (!isRuntimeReady(get)) return [];
+  const nodesMap = get(ATOM_nodesMap);
+  const nodes = Array.from<Node>(nodesMap.values());
+  const node = nodesMap.get(id);
+  if (!node) return [];
+  const chain = getDescendants(node, nodes);
+  return chain;
+}
+
+export const ATOM_getScopeChain = atom(null, getScopeChain);
+
+/**
+ * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
+ * @param id the id of the pod to start the chain
+ * @returns
+ */
+function getEdgeChain(get: Getter, set: Setter, id: string) {
+  if (!isRuntimeReady(get)) return [];
+  // Get the chain: get the edges, and then get the pods
+  const edgesMap = get(ATOM_edgesMap);
+  let edges = Array.from<Edge>(edgesMap.values());
+  // build a node2target map
+  let node2target = {};
+  edges.forEach(({ source, target }) => {
+    // TODO support multiple targets
+    node2target[source] = target;
+  });
+  // Get the chain
+  let chain: string[] = [];
+  let nodeid = id;
+  while (nodeid) {
+    // if the nodeid is already in the chain, then there is a loop
+    if (chain.includes(nodeid)) break;
+    chain.push(nodeid);
+    nodeid = node2target[nodeid];
+  }
+  return chain;
+}
+
+export const ATOM_getEdgeChain = atom(null, getEdgeChain);
 
 /**
  * Get all code pods inside a scope by geographical order.

@@ -11,29 +11,31 @@ import * as React from "react";
 import { useReactFlow, useStore as useRfStore, useKeyPress } from "reactflow";
 import "reactflow/dist/style.css";
 
-import { useStore } from "zustand";
-
-import { RepoContext } from "@/lib/store";
-
-import { getAbsPos, newNodeShapeConfig } from "@/lib/store/canvasSlice";
 import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
 import { debounce } from "lodash";
 import { Button, DropdownMenu } from "@radix-ui/themes";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  ATOM_addNodeAtAnchor,
+  ATOM_addNodeType,
+  ATOM_autoLayoutTree,
+  ATOM_getInsertPosition,
+  ATOM_isAddingNode,
+  ATOM_mousePosition,
+  ATOM_nodes,
+  ATOM_updateView,
+  ATOM_updateView_addNode,
+} from "@/lib/store/canvasSlice";
 
 export function useAddNode(reactFlowWrapper) {
-  const store = useContext(RepoContext)!;
-  const isAddingNode = useStore(store, (state) => state.isAddingNode);
-  const setIsAddingNode = useStore(store, (state) => state.setIsAddingNode);
-  const updateView = useStore(store, (state) => state.updateView);
-  const updateView_addNode = useStore(
-    store,
-    (state) => state.updateView_addNode
-  );
-  const setMousePosition = useStore(store, (state) => state.setMousePosition);
-  const getInsertPosition = useStore(store, (state) => state.getInsertPosition);
+  const [isAddingNode, setIsAddingNode] = useAtom(ATOM_isAddingNode);
+  const updateView = useSetAtom(ATOM_updateView);
+  const updateView_addNode = useSetAtom(ATOM_updateView_addNode);
+  const [mousePosition, setMousePosition] = useAtom(ATOM_mousePosition);
+  const getInsertPosition = useSetAtom(ATOM_getInsertPosition);
 
   const reactFlowInstance = useReactFlow();
-  const addNodeAtAnchor = useStore(store, (state) => state.addNodeAtAnchor);
+  const addNodeAtAnchor = useSetAtom(ATOM_addNodeAtAnchor);
 
   // cancel when ESC is pressed
   const escapePressed = useKeyPress("Escape");
@@ -50,6 +52,8 @@ export function useAddNode(reactFlowWrapper) {
   // 2. We calculate the desired position to insert the node in the tree
   //    hierarchy, and show it on the canvas.
   // 3. when the user clicks, we insert the node in the tree hierarchy.
+
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   useEffect(() => {
     if (!reactFlowWrapper) return;
@@ -68,8 +72,9 @@ export function useAddNode(reactFlowWrapper) {
     const debouncedMouseMove = debounce(mouseMove, 1);
     const mouseClick = (event) => {
       // insert the node in the tree hierarchy
-      addNodeAtAnchor("CODE");
+      addNodeAtAnchor();
       setIsAddingNode(false);
+      autoLayoutTree();
       updateView();
     };
 
@@ -86,20 +91,11 @@ export function useAddNode(reactFlowWrapper) {
 }
 
 export function useContextMenu() {
-  const store = useContext(RepoContext)!;
-
-  const moved = useStore(store, (state) => state.moved);
-  const paneClicked = useStore(store, (state) => state.paneClicked);
-  const nodeClicked = useStore(store, (state) => state.nodeClicked);
-
   const [showContextMenu, setShowContextMenu] = useState(false);
 
   const [points, setPoints] = useState({ x: 0, y: 0 });
   // const [client, setClient] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    setShowContextMenu(false);
-  }, [moved, paneClicked, nodeClicked]);
   const escapePressed = useKeyPress("Escape");
   useEffect(() => {
     if (escapePressed) {
@@ -133,13 +129,7 @@ export function useContextMenu() {
 }
 
 export function useUpload() {
-  const store = useContext(RepoContext)!;
-
-  const nodes = useStore(store, (state) => state.nodes);
-
-  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
-
-  const importLocalCode = useStore(store, (state) => state.importLocalCode);
+  const nodes = useAtom(ATOM_nodes);
 
   const handleFileInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -170,39 +160,22 @@ export function useUpload() {
           return;
       }
 
+      // TODO enable this on new Tree layout.
       // importLocalCode(
       //   project({ x: client.x, y: client.y }),
       //   importScopeName,
       //   cellList
       // );
-      setAutoLayoutOnce(true);
     };
     fileReader.readAsText(e.target.files[0], "UTF-8");
   };
 
-  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
-  const setAutoLayoutOnce = useStore(store, (state) => state.setAutoLayoutOnce);
-  const autoLayoutOnce = useStore(store, (state) => state.autoLayoutOnce);
-
-  useEffect(() => {
-    // A BIG HACK: we run autolayout once at SOME point after ImportLocalCode to
-    // let reactflow calculate the height of pods, then layout them properly.
-    if (
-      autoLayoutOnce &&
-      nodes.filter((node) => node.height === newNodeShapeConfig.height)
-        .length == 0
-    ) {
-      autoLayoutROOT();
-      setAutoLayoutOnce(false);
-    }
-  }, [autoLayoutOnce, nodes]);
   return { handleFileInputChange };
 }
 
 export function ContextMenu({ setShowContextMenu, handleItemClick }) {
-  const store = useContext(RepoContext)!;
-  const setIsAddingNode = useStore(store, (state) => state.setIsAddingNode);
-  const setAddNodeType = useStore(store, (state) => state.setAddNodeType);
+  const setIsAddingNode = useSetAtom(ATOM_isAddingNode);
+  const setAddNodeType = useSetAtom(ATOM_addNodeType);
   return (
     <DropdownMenu.Root
       open={true}

@@ -18,11 +18,7 @@ import {
   useCallback,
 } from "react";
 
-import { useStore } from "zustand";
-
 import debounce from "lodash/debounce";
-
-import { createRepoStore, RepoContext } from "@/lib/store";
 
 import { Canvas } from "@/components/Canvas";
 import { Header, UserProfile } from "@/components/Header";
@@ -39,13 +35,31 @@ import {
 import { initParser } from "@/lib/parser";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
+import { Provider, atom, useAtom, useSetAtom } from "jotai";
+import {
+  ATOM_connectYjs,
+  ATOM_disconnectYjs,
+  ATOM_providerSynced,
+} from "@/lib/store/yjsSlice";
+import {
+  ATOM_collaborators,
+  ATOM_editMode,
+  ATOM_isPublic,
+  ATOM_repoId,
+  ATOM_repoName,
+  ATOM_shareOpen,
+} from "@/lib/store/atom";
+import {
+  ATOM_parseAllPods,
+  ATOM_resolveAllPods,
+} from "@/lib/store/runtimeSlice";
+import { MyKBar } from "@/components/MyKBar";
 
-const HeaderItem = memo<any>(() => {
-  const store = useContext(RepoContext)!;
-  const repoName = useStore(store, (state) => state.repoName);
-  const setRepoName = useStore(store, (state) => state.setRepoName);
-  const editMode = useStore(store, (state) => state.editMode);
-  const repoId = useStore(store, (state) => state.repoId)!;
+const HeaderItem = () => {
+  const [repoName, setRepoName] = useAtom(ATOM_repoName);
+  const [editMode, setEditMode] = useAtom(ATOM_editMode);
+  const [repoId] = useAtom(ATOM_repoId);
+  if (!repoId) return null;
 
   const utils = trpc.useUtils();
   const updateRepo = trpc.repo.updateRepo.useMutation({
@@ -143,12 +157,10 @@ const HeaderItem = memo<any>(() => {
       )}
     </Stack>
   );
-});
+};
 
 function RepoHeader({ id }) {
-  const store = useContext(RepoContext)!;
-
-  const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const setShareOpen = useSetAtom(ATOM_shareOpen);
   const copyRepo = trpc.repo.copyRepo.useMutation();
   useEffect(() => {
     if (copyRepo.isSuccess) {
@@ -230,15 +242,24 @@ function RepoLoader({ id, children }) {
   // load the repo
   // FIXME this should be a mutation as it changes the last access time.
   const repoQuery = trpc.repo.repo.useQuery({ id });
-  const store = useContext(RepoContext)!;
-  const setRepoData = useStore(store, (state) => state.setRepoData);
+  const setRepoName = useSetAtom(ATOM_repoName);
 
   const me = trpc.user.me.useQuery();
-  const setEditMode = useStore(store, (state) => state.setEditMode);
+  const setEditMode = useSetAtom(ATOM_editMode);
+  const setRepoId = useSetAtom(ATOM_repoId);
+  const setIsPublic = useSetAtom(ATOM_isPublic);
+  const setCollaborators = useSetAtom(ATOM_collaborators);
+
+  // console.log("load store", useRef(createRepoStore()));
+  useEffect(() => {
+    setRepoId(id!);
+  }, []);
 
   useEffect(() => {
     if (repoQuery.data && me.data) {
-      setRepoData(repoQuery.data);
+      setRepoName(repoQuery.data.name);
+      setIsPublic(repoQuery.data.public);
+      setCollaborators(repoQuery.data.collaborators);
       if (
         me.data?.id === repoQuery.data.userId ||
         repoQuery.data.collaborators.map(({ id }) => id).includes(me.data?.id)
@@ -259,11 +280,10 @@ function RepoLoader({ id, children }) {
  * This loads repo metadata.
  */
 function ParserWrapper({ children }) {
-  const store = useContext(RepoContext)!;
-  const parseAllPods = useStore(store, (state) => state.parseAllPods);
-  const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
+  const parseAllPods = useSetAtom(ATOM_parseAllPods);
+  // const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
+  const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
   const [parserLoaded, setParserLoaded] = useState(false);
-  const scopedVars = useStore(store, (state) => state.scopedVars);
 
   useEffect(() => {
     initParser("/", () => {
@@ -276,19 +296,18 @@ function ParserWrapper({ children }) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, parserLoaded, resolveAllPods, scopedVars]);
+  }, [parseAllPods, parserLoaded, resolveAllPods]);
 
   return children;
 }
 
 function WaitForProvider({ children }) {
-  const store = useContext(RepoContext)!;
-  const providerSynced = useStore(store, (state) => state.providerSynced);
-  const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
-  const connectYjs = useStore(store, (state) => state.connectYjs);
+  const [providerSynced] = useAtom(ATOM_providerSynced);
+  const disconnectYjs = useSetAtom(ATOM_disconnectYjs);
+  const connectYjs = useSetAtom(ATOM_connectYjs);
   const me = trpc.user.me.useQuery();
   useEffect(() => {
-    connectYjs({ name: me.data?.firstname || "Anonymous" });
+    connectYjs(me.data?.firstname || "Anonymous");
     return () => {
       disconnectYjs();
     };
@@ -310,15 +329,9 @@ function UserWrapper({ children }) {
 
 export function Repo() {
   let { id } = useParams();
-  const store = useRef(createRepoStore()).current;
 
-  const setRepo = useStore(store, (state) => state.setRepo);
-  // console.log("load store", useRef(createRepoStore()));
-  useEffect(() => {
-    setRepo(id!);
-  }, []);
   return (
-    <RepoContext.Provider value={store}>
+    <Provider>
       <UserWrapper>
         <RepoLoader id={id}>
           <WaitForProvider>
@@ -339,6 +352,7 @@ export function Repo() {
                   <RepoHeader id={id} />
                 </div>
 
+                <MyKBar />
                 <TabSidebar />
 
                 {/* The Canvas */}
@@ -355,6 +369,6 @@ export function Repo() {
           </WaitForProvider>
         </RepoLoader>
       </UserWrapper>
-    </RepoContext.Provider>
+    </Provider>
   );
 }

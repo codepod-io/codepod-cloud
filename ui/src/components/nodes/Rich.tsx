@@ -11,7 +11,6 @@ import * as React from "react";
 
 import { ResizableBox } from "react-resizable";
 
-import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
 
 import * as Y from "yjs";
@@ -141,7 +140,6 @@ import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
 import { Handles } from "./utils";
-import { RepoContext } from "@/lib/store";
 
 import { MyLexical } from "./rich/MyLexical";
 
@@ -157,6 +155,14 @@ import {
 } from "lucide-react";
 import { match } from "ts-pattern";
 import { useAnchorStyle } from "./utils";
+import { ATOM_editMode } from "@/lib/store/atom";
+import {
+  ATOM_nodesMap,
+  ATOM_provider,
+  ATOM_richMap,
+} from "@/lib/store/yjsSlice";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -274,12 +280,11 @@ const MyRemirror = ({
   id: string;
 }) => {
   // FIXME this is re-rendered all the time.
-  const store = useContext(RepoContext)!;
-  const editMode = useStore(store, (state) => state.editMode);
+  const [editMode] = useAtom(ATOM_editMode);
   // the Yjs extension for Remirror
-  const provider = useStore(store, (state) => state.provider)!;
+  const [provider] = useAtom(ATOM_provider);
 
-  const richMap = useStore(store, (state) => state.getRichMap());
+  const [richMap] = useAtom(ATOM_richMap);
   if (!richMap.has(id)) {
     throw new Error("richMap does not have id" + id);
   }
@@ -430,10 +435,9 @@ const MyRemirror = ({
 };
 
 function HeaderBar({ id }) {
-  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
-  const addNode = useStore(store, (state) => state.addNode);
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const addNode = useSetAtom(ATOM_addNode);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
   const node = nodesMap.get(id)!;
   const parentId = node.data.parent;
   let index = 0;
@@ -481,7 +485,7 @@ function HeaderBar({ id }) {
               <DropdownMenu.SubContent>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("CODE", parentId, index);
+                    addNode({ type: "CODE", parentId, index });
                   }}
                 >
                   <FunctionSquare />
@@ -489,7 +493,7 @@ function HeaderBar({ id }) {
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("RICH", parentId, index);
+                    addNode({ type: "RICH", parentId, index });
                   }}
                 >
                   <Pencil /> Note…
@@ -504,7 +508,7 @@ function HeaderBar({ id }) {
             <DropdownMenu.SubContent>
               <DropdownMenu.Item
                 onClick={() => {
-                  addNode("CODE", id, -1);
+                  addNode({ type: "CODE", parentId: id, index: -1 });
                 }}
               >
                 <FunctionSquare />
@@ -512,7 +516,7 @@ function HeaderBar({ id }) {
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 onClick={() => {
-                  addNode("RICH", id, -1);
+                  addNode({ type: "RICH", parentId: id, index: -1 });
                 }}
               >
                 <Pencil />
@@ -529,7 +533,7 @@ function HeaderBar({ id }) {
               <DropdownMenu.SubContent>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("CODE", parentId, index + 1);
+                    addNode({ type: "CODE", parentId, index: index + 1 });
                   }}
                 >
                   <FunctionSquare />
@@ -537,7 +541,7 @@ function HeaderBar({ id }) {
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("RICH", parentId, index + 1);
+                    addNode({ type: "RICH", parentId, index: index + 1 });
                   }}
                 >
                   <Pencil /> Note…
@@ -586,33 +590,18 @@ export const RichNode = memo<Props>(function ({
   xPos,
   yPos,
 }) {
-  const store = useContext(RepoContext)!;
-  // const pod = useStore(store, (state) => state.pods[id]);
-  const setPodName = useStore(store, (state) => state.setPodName);
-
   // A helper state to allow single-click a selected pod and enter edit mode.
   const [singleClickEdit, setSingleClickEdit] = useState(false);
   useEffect(() => {
     if (!selected) setSingleClickEdit(false);
   }, [selected, setSingleClickEdit]);
 
-  const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const updateView = useStore(store, (state) => state.updateView);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
   const reactFlowInstance = useReactFlow();
 
   const [showToolbar, setShowToolbar] = useState(false);
-  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
-  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
-
-  useEffect(() => {
-    if (!data.name) return;
-    setPodName({ id, name: data.name });
-    if (inputRef?.current) {
-      inputRef.current.value = data.name || "";
-    }
-  }, [data.name, setPodName, id]);
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   const anchorStyle = useAnchorStyle(id);
 
@@ -674,9 +663,7 @@ export const RichNode = memo<Props>(function ({
                 ...node,
                 style: { ...node.style, height: undefined },
               });
-            }
-            if (autoRunLayout) {
-              autoLayoutROOT();
+              autoLayoutTree();
             }
           }}
         >

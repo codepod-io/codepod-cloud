@@ -1,18 +1,37 @@
 import { Position } from "monaco-editor";
-import { useState, useContext, memo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useContext,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { Node } from "reactflow";
-import { useStore } from "zustand";
 import * as Y from "yjs";
 
-import { RepoContext } from "@/lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "@/lib/parser";
 import { runtimeTrpc, trpc, copilotTrpc } from "@/lib/trpc";
 
 import { llamaInlineCompletionProvider } from "@/lib/llamaCompletionProvider";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import {
+  ATOM_copilotManualMode,
+  ATOM_scopedVars,
+  ATOM_showAnnotations,
+  ATOM_showLineNumbers,
+} from "@/lib/store/settingSlice";
+import {
+  ATOM_activeRuntime,
+  ATOM_parseResult,
+  ATOM_preprocessChain,
+} from "@/lib/store/runtimeSlice";
+import { ATOM_codeMap, ATOM_provider } from "@/lib/store/yjsSlice";
+import { selectAtom } from "jotai/utils";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -387,21 +406,20 @@ interface MyMonacoProps {
 export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
   // there's no racket language support
   console.debug("[perf] rendering MyMonaco", id);
-  const store = useContext(RepoContext)!;
-  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const preprocessChain = useStore(store, (state) => state.preprocessChain);
+  const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
 
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const [activeRuntime] = useAtom(ATOM_activeRuntime);
 
-  const annotations = useStore(
-    store,
-    (state) => state.parseResult[id]?.annotations
+  const [annotations] = useAtom(
+    useMemo(() => selectAtom(ATOM_parseResult, (v) => v[id]?.annotations), [id])
   );
-  const showAnnotations = useStore(store, (state) => state.showAnnotations);
-  const scopedVars = useStore(store, (state) => state.scopedVars);
 
-  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
+  const [showAnnotations] = useAtom(ATOM_showAnnotations);
+  const [scopedVars] = useAtom(ATOM_scopedVars);
+
+  const [copilotManualMode] = useAtom(ATOM_copilotManualMode);
 
   // TODO support other languages.
   let lang = "python";
@@ -421,8 +439,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
     lang = "scheme";
   }
 
-  const provider = useStore(store, (state) => state.provider);
-  const codeMap = useStore(store, (state) => state.getCodeMap());
+  const provider = useAtomValue(ATOM_provider);
+  const codeMap = useAtomValue(ATOM_codeMap);
 
   const { client } = copilotTrpc.useUtils();
 

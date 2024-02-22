@@ -24,9 +24,14 @@ import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import React, { useContext, useReducer } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { useStore } from "zustand";
-import { RepoContext } from "@/lib/store";
 import { trpc } from "@/lib/trpc";
+import {
+  ATOM_collaborators,
+  ATOM_isPublic,
+  ATOM_repoName,
+  ATOM_shareOpen,
+} from "@/lib/store/atom";
+import { useAtom, useAtomValue } from "jotai";
 
 const initialState = { showInfo: false, status: "info", message: "wait..." };
 
@@ -219,13 +224,12 @@ export function ShareProjDialog({
   open = false,
   id = "",
 }: ShareProjDialogProps) {
-  const store = useContext(RepoContext)!;
   const [showHelp, setShowHelp] = useState(false);
   const [feedback, dispatch] = useReducer(reducer, initialState);
-  const isPublic = useStore(store, (state) => state.isPublic);
-  const collaborators = useStore(store, (state) => state.collaborators);
-  const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const title = useStore(store, (state) => state.repoName || "Untitled");
+  const [isPublic] = useAtom(ATOM_isPublic);
+  const [collaborators] = useAtom(ATOM_collaborators);
+  const [shareOpen, setShareOpen] = useAtom(ATOM_shareOpen);
+  const title = useAtomValue(ATOM_repoName);
   const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
   const inputRef = React.useRef<HTMLInputElement>(null);
   const updateVisibility = useUpdateVisibility({ dispatch });
