@@ -89,6 +89,24 @@
   z-index: 9999 !important;
 }
 
+.global-drag-handle {
+  position: absolute;
+
+  &::after {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1.25rem;
+    content: "⠿";
+    font-weight: 700;
+    cursor: grab;
+    background: #0d0d0d10;
+    color: #0d0d0d50;
+    border-radius: 0.25rem;
+  }
+}
+
 /* Force display the vertical scrollbar. Ref:
 https://codepen.io/stevenlewis/pen/jOKvMx */
 .result-content::-webkit-scrollbar {
