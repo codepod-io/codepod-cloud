@@ -102,6 +102,22 @@ export class BlockHandleExtension extends PlainExtension {
         dropElement = element;
         document.body.appendChild(dropElement);
 
+        // Hide the drag handle when the mouse leaves the editor.
+        editorView.dom.addEventListener("mouseleave", () => {
+          element.classList.add("opacity-0");
+        });
+        editorView.dom.addEventListener("mouseenter", () => {
+          element.classList.remove("opacity-0");
+        });
+        // Since the drag handle is not a child of the editor, we need to add
+        // hide/show logic to the drag handle itself.
+        element.addEventListener("mouseenter", () => {
+          element.classList.remove("opacity-0");
+        });
+        element.addEventListener("mouseleave", () => {
+          element.classList.add("opacity-0");
+        });
+
         return {
           destroy() {
             removeNode(dropElement);
@@ -130,6 +146,12 @@ export class BlockHandleExtension extends PlainExtension {
                 // Locate the actual node instead of a <mark>.
                 while (node.tagName === "MARK") {
                   node = node.parentNode;
+                }
+
+                // the node is the root node of the editor, ignore it.
+                if (node.classList.contains("ProseMirror")) {
+                  dropElement.style.display = "none";
+                  return;
                 }
 
                 if (node instanceof Element) {
