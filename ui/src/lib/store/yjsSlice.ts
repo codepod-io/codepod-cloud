@@ -1,109 +1,133 @@
-import { createStore, StateCreator, StoreApi } from "zustand";
-import { produce } from "immer";
-
-// import { IndexeddbPersistence } from "y-indexeddb";
-
-import { Doc, Transaction } from "yjs";
+import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Doc } from "yjs";
 import * as Y from "yjs";
 import { WebsocketProvider } from "@codepod/yjs/src/y-websocket";
-import { addAwarenessStyle } from "../utils/utils";
-import { MyState, Pod } from ".";
+import { Edge, Node, NodeChange, applyNodeChanges } from "reactflow";
+import { getHelperLines } from "@/components/nodes/utils";
+import { NodeData } from "./canvasSlice";
+import { produce } from "immer";
+import { useCallback } from "react";
+import { updateView } from "./canvasSlice";
+import { ATOM_repoId, buildNode2Children } from "./atom";
+import { ATOM_activeRuntime } from "./runtimeSlice";
 
-export interface YjsSlice {
-  addError: (error: { type: string; msg: string }) => void;
-  clearError: () => void;
-  error: { type: string; msg: string } | null;
-  provider?: WebsocketProvider | null;
-  clients: Map<string, any>;
-  ydoc: Doc;
-  addClient: (clientId: any, name, color) => void;
-  deleteClient: (clientId: any) => void;
-  // A variable to avoid duplicate connection requests.
-  yjsConnecting: boolean;
-  // The status of yjs connection.
-  yjsStatus?: string;
-  connectYjs: ({ name }: { name: string }) => void;
-  disconnectYjs: () => void;
-  // The status of the uploading and syncing of actual Y.Doc.
-  yjsSyncStatus?: string;
-  setYjsSyncStatus: (status: string) => void;
-  providerSynced: boolean;
-  setProviderSynced: (synced: boolean) => void;
-  runtimeChanged: boolean;
-  toggleRuntimeChanged: () => void;
-  resultChanged: Record<string, boolean>;
-  toggleResultChanged: (id: string) => void;
+export type RuntimeInfo = {
+  status?: string;
+  wsStatus?: string;
+};
+
+type PodResult = {
+  exec_count?: number;
+  data: {
+    type: string;
+    html?: string;
+    text?: string;
+    image?: string;
+  }[];
+  running?: boolean;
+  lastExecutedAt?: number;
+  error?: { ename: string; evalue: string; stacktrace: string[] } | null;
+};
+
+// The atoms
+
+export const ATOM_ydoc = atom(new Doc());
+export const ATOM_provider = atom<WebsocketProvider | null>(null);
+
+export const ATOM_yjsConnecting = atom(false);
+export const ATOM_yjsStatus = atom<string | undefined>(undefined);
+export const ATOM_yjsSyncStatus = atom<string | undefined>(undefined);
+export const ATOM_providerSynced = atom(false);
+export const ATOM_setProviderSynced = atom(
+  null,
+  (get, set, synced: boolean) => {
+    set(ATOM_providerSynced, synced);
+  }
+);
+
+export const ATOM_runtimeChanged = atom(false);
+
+export const ATOM_resultChanged = atom<Record<string, boolean>>({});
+function toggleResultChanged(get: Getter, set: Setter, id: string) {
+  console.log("toggleResultChanged", id);
+  set(
+    ATOM_resultChanged,
+    produce((resultChanged: Record<string, boolean>) => {
+      resultChanged[id] = !resultChanged[id];
+    })
+  );
 }
 
-export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
-  set,
-  get
-) => ({
-  error: null,
+/**
+ * Yjs Map getters
+ */
+function getNodesMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  const rootMap = ydoc.getMap<Y.Map<Node<NodeData>>>("rootMap");
+  if (!rootMap) {
+    throw new Error("rootMap not found");
+  }
+  const nodesMap = rootMap.get("nodesMap");
+  if (!nodesMap) {
+    throw new Error("nodesMap not found");
+  }
+  return nodesMap;
+}
+const ATOM_nodesMap = atom(getNodesMap);
+function getEdgesMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  return ydoc.getMap("rootMap").get("edgesMap") as Y.Map<Edge>;
+}
+const ATOM_edgesMap = atom(getEdgesMap);
+function getCodeMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  return ydoc.getMap("rootMap").get("codeMap") as Y.Map<Y.Text>;
+}
+const ATOM_codeMap = atom(getCodeMap);
+function getRichMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  return ydoc.getMap("rootMap").get("richMap") as Y.Map<Y.XmlFragment>;
+}
+const ATOM_richMap = atom(getRichMap);
+function getRuntimeMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  return ydoc.getMap("rootMap").get("runtimeMap") as Y.Map<RuntimeInfo>;
+}
+const ATOM_runtimeMap = atom(getRuntimeMap);
+function getResultMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  return ydoc.getMap("rootMap").get("resultMap") as Y.Map<PodResult>;
+}
+const ATOM_resultMap = atom(getResultMap);
 
-  ydoc: new Doc(),
-  provider: null,
-  // keep different seletced info on each user themselves
-  //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
-  clients: new Map(),
-  addError: (error) => set({ error }),
-  clearError: () => set({ error: null }),
+export {
+  ATOM_nodesMap,
+  ATOM_edgesMap,
+  ATOM_codeMap,
+  ATOM_richMap,
+  ATOM_runtimeMap,
+  ATOM_resultMap,
+};
 
-  addClient: (clientID, name, color) =>
-    set((state) => {
-      if (!state.clients.has(clientID)) {
-        addAwarenessStyle(clientID, color, name);
-        return {
-          clients: new Map(state.clients).set(clientID, {
-            name: name,
-            color: color,
-          }),
-        };
-      }
-      return { clients: state.clients };
-    }),
-  deleteClient: (clientID) =>
-    set((state) => {
-      const clients = new Map(state.clients);
-      clients.delete(clientID);
-      return { clients: clients };
-    }),
+const ATOM_clients = atom(new Map<string, any>());
 
-  yjsConnecting: false,
-  yjsStatus: undefined,
-  yjsSyncStatus: undefined,
-  providerSynced: false,
-  setProviderSynced: (synced) => set({ providerSynced: synced }),
-  setYjsSyncStatus: (status) => set({ yjsSyncStatus: status }),
-  runtimeChanged: false,
-  toggleRuntimeChanged: () =>
-    set((state) => ({ runtimeChanged: !state.runtimeChanged })),
-  resultChanged: {},
-  toggleResultChanged: (id) =>
-    set(
-      produce((state: MyState) => {
-        state.resultChanged[id] = !state.resultChanged[id];
-      })
-    ),
-  connectYjs: ({ name }) => {
-    if (get().yjsConnecting) return;
-    if (get().provider) return;
-    set({ yjsConnecting: true });
-    // construct yjs url from current window url, as ws://host:port/yjs
-    const yjsWsUrl = `${
-      window.location.protocol === "https:" ? "wss" : "ws"
-    }://${window.location.host}/yjs`;
-    console.log(`connecting yjs socket ${yjsWsUrl} ..`);
-    const ydoc = new Doc();
-
-    // TODO offline support
-    // const persistence = new IndexeddbPersistence(get().repoId!, ydoc);
-    // persistence.once("synced", () => {
-    //   console.log("=== initial content loaded from indexedDB");
-    // });
-
-    // connect to primary database
-    const provider = new WebsocketProvider(yjsWsUrl, get().repoId!, ydoc, {
+/**
+ * Connect to Yjs websocket server.
+ */
+export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
+  if (get(ATOM_yjsConnecting)) return;
+  if (get(ATOM_provider)) return;
+  set(ATOM_yjsConnecting, true);
+  const yjsWsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${
+    window.location.host
+  }/yjs`;
+  console.log(`connecting yjs socket ${yjsWsUrl} ..`);
+  const ydoc = new Doc();
+  const provider: WebsocketProvider = new WebsocketProvider(
+    yjsWsUrl,
+    get(ATOM_repoId),
+    ydoc,
+    {
       // resyncInterval: 2000,
       //
       // BC is more complex to track our custom Uploading status and SyncDone events.
@@ -111,167 +135,143 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
       params: {
         token: localStorage.getItem("token") || "",
       },
-    });
-    const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
-    provider.awareness.setLocalStateField("user", {
-      name,
-      color,
-    });
-    provider.awareness.on("update", (change) => {
-      const states = provider.awareness.getStates();
-      const nodes = change.added.concat(change.updated);
-      nodes.forEach((clientID) => {
-        const user = states.get(clientID)?.user;
-        if (user) {
-          get().addClient(clientID, user.name, user.color);
-        }
-      });
-      change.removed.forEach((clientID) => {
-        get().deleteClient(clientID);
-      });
-    });
-    provider.on("status", ({ status }) => {
-      set({ yjsStatus: status });
-      // FIXME need to show an visual indicator about this, e.g., prevent user
-      // from editing if WS is not connected.
-      //
-      // FIXME do I need a hard disconnect to ensure the doc is always reloaded
-      // from server when WS is re-connected?
-      //
-      // if (status === "disconnected") { // get().disconnectYjs(); //
-      //   get().connectYjs();
-      // }
-    });
-    provider.on("mySync", (status: "uploading" | "synced") => {
-      set({ yjsSyncStatus: status });
-    });
-    // provider.on("connection-close", () => {
-    //   console.log("connection-close");
-    //   // set({ yjsStatus: "connection-close" });
-    // });
-    // provider.on("connection-error", () => {
-    //   console.log("connection-error");
-    //   set({ yjsStatus: "connection-error" });
-    // });
-    // provider.on("sync", (isSynced) => {
-    //   console.log("=== syncing", isSynced);
-    //   // set({ yjsStatus: "syncing" });
-    // });
-    // provider.on("synced", () => {
-    //   console.log("=== synced");
-    //   // set({ yjsStatus: "synced" });
-    // });
-    // max retry time: 10s
-    provider.maxBackoffTime = 10000;
-    provider.once("synced", () => {
-      console.log("Provider synced, setting initial content ...");
-      // load initial nodes
-      const nodesMap = get().getNodesMap();
-      const edgesMap = get().getEdgesMap();
-      const codeMap = get().getCodeMap();
-      const richMap = get().getRichMap();
-      // init nodesMap
-      if (nodesMap.size == 0) {
-        nodesMap.set("ROOT", {
-          id: "ROOT",
-          type: "RICH",
-          position: { x: 0, y: 0 },
-          data: {
-            level: 0,
-            children: [],
-            folded: false,
-          },
-          style: {
-            width: 300,
-            // height: 100,
-          },
-        });
-        richMap.set("ROOT", new Y.XmlFragment());
+    }
+  );
+  const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+  provider.awareness.setLocalStateField("user", {
+    name,
+    color,
+  });
+  provider.awareness.on("update", (change) => {
+    const states = provider.awareness.getStates();
+    const nodes = change.added.concat(change.updated);
+    nodes.forEach((clientID) => {
+      const user = states.get(clientID)?.user;
+      if (user) {
+        // add client
+        set(
+          ATOM_clients,
+          produce((clients: Map<string, any>) => {
+            clients.set(clientID, { name, color });
+          })
+        );
       }
+    });
+    change.removed.forEach((clientID) => {
+      // delete client
+      set(
+        ATOM_clients,
+        produce((clients: Map<string, any>) => {
+          clients.delete(clientID);
+        })
+      );
+    });
+  });
+  provider.on("status", ({ status }) => {
+    set(ATOM_yjsStatus, status);
+  });
+  provider.on("mySync", (status: "uploading" | "synced") => {
+    set(ATOM_yjsSyncStatus, status);
+  });
+  // max retry time: 10s
+  provider.maxBackoffTime = 10000;
+  provider.once("synced", () => {
+    console.log("Provider synced, setting initial content ...");
+    // load initial nodes
+    const nodesMap = getNodesMap(get);
+    const edgesMap = getEdgesMap(get);
+    const codeMap = getCodeMap(get);
+    const richMap = getRichMap(get);
+    // init nodesMap
+    if (nodesMap.size == 0) {
+      nodesMap.set("ROOT", {
+        id: "ROOT",
+        type: "RICH",
+        position: { x: 0, y: 0 },
+        data: {
+          level: 0,
+          children: [],
+          folded: false,
+        },
+        style: {
+          width: 300,
+          // height: 100,
+        },
+      });
+      richMap.set("ROOT", new Y.XmlFragment());
+    }
 
-      get().updateView();
-      // Trigger initial results rendering.
-      const resultMap = get().getResultMap();
-      // Initialize node2children
-      get().buildNode2Children();
-      Array.from(resultMap.keys()).forEach((key) => {
-        get().toggleResultChanged(key);
-      });
-      // Set observers to trigger future results rendering.
-      resultMap.observe(
-        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
-          // clearResults and setRunning is local change.
-          // if (transaction.local) return;
-          YMapEvent.changes.keys.forEach((change, key) => {
-            // refresh result for pod key
-            // FIXME performance on re-rendering: would it trigger re-rendering for all pods?
-            get().toggleResultChanged(key);
-          });
-        }
-      );
-      // FIXME do I need to unobserve it when disconnecting?
-      nodesMap.observe(
-        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
-          if (transaction.local) return;
-          get().updateView();
-        }
-      );
-      edgesMap.observe(
-        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
-          if (transaction.local) return;
-          get().updateView();
-        }
-      );
-      // Set active runtime to the first one.
-      const runtimeMap = get().getRuntimeMap();
-      if (runtimeMap.size > 0) {
-        get().setActiveRuntime(Array.from(runtimeMap.keys())[0]);
-      }
-      // Set up observers to trigger future runtime status changes.
-      runtimeMap.observe(
-        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
-          if (transaction.local) return;
-          YMapEvent.changes.keys.forEach((change, key) => {
-            if (change.action === "add") {
-            } else if (change.action === "update") {
-            } else if (change.action === "delete") {
-              // If it was the active runtime, reset it.
-              if (get().activeRuntime === key) {
-                get().setActiveRuntime(undefined);
-              }
-            }
-          });
-          // Set active runtime if it is not set
-          if (runtimeMap.size > 0 && !get().activeRuntime) {
-            get().setActiveRuntime(Array.from(runtimeMap.keys())[0]);
-          }
-          get().toggleRuntimeChanged();
-        }
-      );
-      // Set synced flag to be used to ensure canvas rendering after yjs synced.
-      get().setProviderSynced(true);
+    updateView(get, set);
+    // Trigger initial results rendering.
+    const resultMap = getResultMap(get);
+    // Initialize node2children
+    buildNode2Children(get, set);
+    Array.from(resultMap.keys()).forEach((key) => {
+      toggleResultChanged(get, set, key);
     });
-    provider.connect();
-    set(
-      produce((state: MyState) => {
-        state.ydoc = ydoc;
-        state.provider = provider;
-        state.yjsConnecting = false;
-      })
+    // Set observers to trigger future results rendering.
+    resultMap.observe(
+      (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+        // clearResults and setRunning is local change.
+        // if (transaction.local) return;
+        YMapEvent.changes.keys.forEach((change, key) => {
+          // refresh result for pod key
+          // FIXME performance on re-rendering: would it trigger re-rendering for all pods?
+          toggleResultChanged(get, set, key);
+        });
+      }
     );
-  },
-  disconnectYjs: () =>
-    set(
-      // clean up the connected provider after exiting the page
-      produce((state: MyState) => {
-        console.log("disconnecting yjs socket ..");
-        if (state.provider) {
-          state.provider.destroy();
-          // just for debug usage, remove it later
-          state.provider = null;
+    // FIXME do I need to unobserve it when disconnecting?
+    nodesMap.observe((YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+      if (transaction.local) return;
+      updateView(get, set);
+    });
+    edgesMap.observe((YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+      if (transaction.local) return;
+      updateView(get, set);
+    });
+    // Set active runtime to the first one.
+    const runtimeMap = getRuntimeMap(get);
+    if (runtimeMap.size > 0) {
+      set(ATOM_activeRuntime, Array.from(runtimeMap.keys())[0]);
+    }
+    // Set up observers to trigger future runtime status changes.
+    runtimeMap.observe(
+      (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+        if (transaction.local) return;
+        YMapEvent.changes.keys.forEach((change, key) => {
+          if (change.action === "add") {
+          } else if (change.action === "update") {
+          } else if (change.action === "delete") {
+            // If it was the active runtime, reset it.
+            if (get(ATOM_activeRuntime) === key) {
+              set(ATOM_activeRuntime, undefined);
+            }
+          }
+        });
+        // Set active runtime if it is not set
+        if (runtimeMap.size > 0 && !get(ATOM_activeRuntime)) {
+          set(ATOM_activeRuntime, Array.from(runtimeMap.keys())[0]);
         }
-        state.ydoc.destroy();
-        state.providerSynced = false;
-      })
-    ),
+        set(ATOM_runtimeChanged, !get(ATOM_runtimeChanged));
+      }
+    );
+    // Set synced flag to be used to ensure canvas rendering after yjs synced.
+    set(ATOM_providerSynced, true);
+  });
+  provider.connect();
+  set(ATOM_ydoc, ydoc);
+  set(ATOM_provider, provider);
+  set(ATOM_yjsConnecting, false);
+});
+
+export const ATOM_disconnectYjs = atom(null, (get, set) => {
+  const provider = get(ATOM_provider);
+  if (provider) {
+    provider.destroy();
+    set(ATOM_provider, null);
+  }
+  const ydoc = get(ATOM_ydoc);
+  ydoc.destroy();
+  set(ATOM_providerSynced, false);
 });

@@ -34,9 +34,7 @@ import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
 
-import { useStore } from "zustand";
-
-import { RepoContext } from "@/lib/store";
+import { useAtom, useSetAtom } from "jotai";
 
 import { ShareProjDialog } from "./ShareProjDialog";
 import { RichNode } from "./nodes/Rich";
@@ -45,7 +43,6 @@ import { ScopeNode } from "./nodes/Scope";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
-import { getAbsPos, newNodeShapeConfig } from "@/lib/store/canvasSlice";
 
 import {
   ContextMenu,
@@ -55,6 +52,18 @@ import {
 } from "./canvas/ContextMenu";
 import { useAnimatedNodes, useCopyPaste } from "./canvas/helpers";
 import { useJump } from "./canvas/jump";
+import {
+  ATOM_edges,
+  ATOM_helperLineHorizontal,
+  ATOM_helperLineVertical,
+  ATOM_nodes,
+  ATOM_selectedPods,
+  ATOM_onNodesChange,
+  ATOM_centerSelection,
+  getAbsPos,
+} from "@/lib/store/canvasSlice";
+import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { ATOM_editMode, ATOM_repoId, ATOM_shareOpen } from "@/lib/store/atom";
 
 const TempNode = () => {
   return (
@@ -98,7 +107,6 @@ function CanvasImplWrap() {
 }
 
 function ViewportInfo() {
-  const store = useContext(RepoContext)!;
   const { x, y, zoom } = useViewport();
   return (
     <Box
@@ -126,33 +134,28 @@ function ViewportInfo() {
 function CanvasImpl() {
   const reactFlowWrapper = useRef<any>(null);
 
-  const store = useContext(RepoContext)!;
   useAddNode(reactFlowWrapper);
 
-  const nodes = useStore(store, (state) => state.nodes);
+  const [nodes] = useAtom(ATOM_nodes);
 
   const { nodes: animatedNodes } = useAnimatedNodes(nodes);
-  const edges = useStore(store, (state) => state.edges);
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const onNodesChange = useStore(store, (state) => state.onNodesChange);
+  const [edges] = useAtom(ATOM_edges);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const onNodesChange = useSetAtom(ATOM_onNodesChange);
 
-  const selectedPods = useStore(store, (state) => state.selectedPods);
+  const [selectedPods] = useAtom(ATOM_selectedPods);
 
   const reactFlowInstance = useReactFlow();
 
-  const repoId = useStore(store, (state) => state.repoId);
+  // const repoId = useStore(store, (state) => state.repoId);
+  const [repoId] = useAtom(ATOM_repoId);
 
-  const editMode = useStore(store, (state) => state.editMode);
+  const [editMode] = useAtom(ATOM_editMode);
 
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-  const shareOpen = useStore(store, (state) => state.shareOpen);
-  const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const [shareOpen, setShareOpen] = useAtom(ATOM_shareOpen);
 
-  const centerSelection = useStore(store, (state) => state.centerSelection);
-  const setCenterSelection = useStore(
-    store,
-    (state) => state.setCenterSelection
-  );
+  const [centerSelection, setCenterSelection] = useAtom(ATOM_centerSelection);
 
   useEffect(() => {
     // move the viewport to the to node
@@ -173,18 +176,8 @@ function CanvasImpl() {
     }
   }, [centerSelection, setCenterSelection]);
 
-  const helperLineHorizontal = useStore(
-    store,
-    (state) => state.helperLineHorizontal
-  );
-  const helperLineVertical = useStore(
-    store,
-    (state) => state.helperLineVertical
-  );
-  const toggleMoved = useStore(store, (state) => state.toggleMoved);
-  const togglePaneClicked = useStore(store, (state) => state.togglePaneClicked);
-  const toggleNodeClicked = useStore(store, (state) => state.toggleNodeClicked);
-
+  const [helperLineHorizontal] = useAtom(ATOM_helperLineHorizontal);
+  const [helperLineVertical] = useAtom(ATOM_helperLineVertical);
   const {
     points,
     showContextMenu,
@@ -214,20 +207,6 @@ function CanvasImpl() {
           nodes={animatedNodes}
           edges={edges}
           onNodesChange={onNodesChange}
-          onMove={() => {
-            toggleMoved();
-            // Hide the Rich node drag handle when moving.
-            const elems = document.getElementsByClassName("global-drag-handle");
-            Array.from(elems).forEach((elem) => {
-              (elem as HTMLElement).style.display = "none";
-            });
-          }}
-          onPaneClick={() => {
-            togglePaneClicked();
-          }}
-          onNodeClick={() => {
-            toggleNodeClicked();
-          }}
           attributionPosition="top-right"
           maxZoom={2}
           minZoom={0.1}

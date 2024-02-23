@@ -13,9 +13,6 @@ import Button from "@mui/material/Button";
 import CodeIcon from "@mui/icons-material/Code";
 import NoteIcon from "@mui/icons-material/Note";
 
-import { useStore } from "zustand";
-
-import { RepoContext } from "@/lib/store";
 import {
   Box,
   ClickAwayListener,
@@ -31,6 +28,13 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import React from "react";
 import { ChevronLeft } from "lucide-react";
 import { match, P } from "ts-pattern";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  ATOM_anchorNode,
+  ATOM_isAddingNode,
+  ATOM_toggleFold,
+} from "@/lib/store/canvasSlice";
+import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
 export function ResizeIcon() {
   return (
@@ -324,10 +328,8 @@ export function getHelperLines(
 }
 
 export const Handles = ({ id, hover }) => {
-  const store = useContext(RepoContext)!;
-  const toggleFold = useStore(store, (state) => state.toggleFold);
-
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const toggleFold = useSetAtom(ATOM_toggleFold);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
 
   const node = nodesMap.get(id);
   if (!node) return null;
@@ -672,9 +674,8 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
 }
 
 export function useAnchorStyle(id: string) {
-  const store = useContext(RepoContext)!;
-  const isAddingNode = useStore(store, (state) => state.isAddingNode);
-  const anchorNode = useStore(store, (state) => state.anchorNode);
+  const [isAddingNode] = useAtom(ATOM_isAddingNode);
+  const [anchorNode] = useAtom(ATOM_anchorNode);
 
   const anchorStyle = {};
   if (isAddingNode && anchorNode && anchorNode.id === id) {

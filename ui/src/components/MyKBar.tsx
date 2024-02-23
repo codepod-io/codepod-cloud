@@ -1,3 +1,5 @@
+import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { useSetAtom } from "jotai";
 import {
   KBarProvider,
   KBarPortal,
@@ -8,10 +10,6 @@ import {
   useMatches,
   NO_GROUP,
 } from "kbar";
-
-import { useStore } from "zustand";
-import { RepoContext } from "@/lib/store";
-import { useContext } from "react";
 
 function RenderResults() {
   const { results } = useMatches();
@@ -25,7 +23,13 @@ function RenderResults() {
         ) : (
           <div
             style={{
-              background: active ? "#eee" : "transparent",
+              background: active ? "#eee" : "white",
+              padding: "12px 16px",
+              borderLeft: `2px solid ${active ? "red" : "transparent"}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer",
             }}
           >
             {item.name}
@@ -37,38 +41,55 @@ function RenderResults() {
 }
 
 export function MyKBar() {
-  const store = useContext(RepoContext)!;
-  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
   const actions = [
     {
-      id: "auto-force",
-      name: "Auto Force",
-      keywords: "auto force",
+      id: "auto-layout",
+      name: "Auto Layout",
+      keywords: "auto layout",
       perform: () => {
-        autoLayoutROOT();
+        autoLayoutTree();
       },
     },
-    // {
-    //   id: "blog",
-    //   name: "Blog",
-    //   shortcut: ["b"],
-    //   keywords: "writing words",
-    //   perform: () => (window.location.pathname = "blog"),
-    // },
-    // {
-    //   id: "contact",
-    //   name: "Contact",
-    //   shortcut: ["c"],
-    //   keywords: "email",
-    //   perform: () => (window.location.pathname = "contact"),
-    // },
+    {
+      id: "blog",
+      name: "Blog",
+      shortcut: ["b"],
+      keywords: "writing words",
+      perform: () => {
+        console.log("TODO");
+      },
+    },
+    {
+      id: "contact",
+      name: "Contact",
+      shortcut: ["c"],
+      keywords: "email",
+      perform: () => (window.location.pathname = "contact"),
+    },
   ];
   return (
     <KBarProvider actions={actions}>
       <KBarPortal>
         <KBarPositioner>
-          <KBarAnimator>
-            <KBarSearch />
+          <KBarAnimator
+            style={{
+              maxWidth: "600px",
+              width: "100%",
+              borderRadius: "8px",
+              overflow: "hidden",
+              boxShadow: "var(--shadow)",
+            }}
+          >
+            <KBarSearch
+              style={{
+                padding: "12px 16px",
+                fontSize: "16px",
+                width: "100%",
+                outline: "none",
+                border: "none",
+              }}
+            />
             <RenderResults />
           </KBarAnimator>
         </KBarPositioner>

@@ -27,8 +27,6 @@ import TreeItem from "@mui/lab/TreeItem";
 
 import { useSnackbar, VariantType } from "notistack";
 
-import { useStore } from "zustand";
-
 import {
   Text,
   Tabs,
@@ -42,10 +40,6 @@ import { gray, mauve, violet } from "@radix-ui/colors";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Files, Search, ListTree, Cpu, Settings } from "lucide-react";
-
-import { MyKBar } from "./MyKBar";
-
-import { RepoContext } from "@/lib/store";
 
 import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
@@ -65,32 +59,47 @@ import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
+import {
+  ATOM_copilotManualMode,
+  ATOM_devMode,
+  ATOM_scopedVars,
+  ATOM_showAnnotations,
+  ATOM_showLineNumbers,
+} from "@/lib/store/settingSlice";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  ATOM_autoLayoutTree,
+  ATOM_centerSelection,
+  ATOM_messUp,
+  ATOM_selectedPods,
+  ATOM_selectPod,
+} from "@/lib/store/canvasSlice";
+import { ATOM_activeRuntime } from "@/lib/store/runtimeSlice";
+import {
+  ATOM_codeMap,
+  ATOM_nodesMap,
+  ATOM_resultMap,
+  ATOM_runtimeChanged,
+  ATOM_runtimeMap,
+  ATOM_yjsStatus,
+  ATOM_yjsSyncStatus,
+} from "@/lib/store/yjsSlice";
+import {
+  ATOM_error,
+  ATOM_node2children,
+  ATOM_repoId,
+  ATOM_repoName,
+} from "@/lib/store/atom";
 
 function SidebarSettings() {
-  const store = useContext(RepoContext)!;
-  const scopedVars = useStore(store, (state) => state.scopedVars);
-  const setScopedVars = useStore(store, (state) => state.setScopedVars);
-  const showAnnotations = useStore(store, (state) => state.showAnnotations);
-  const setShowAnnotations = useStore(
-    store,
-    (state) => state.setShowAnnotations
+  const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
+  const [showAnnotations, setShowAnnotations] = useAtom(ATOM_showAnnotations);
+  const [devMode, setDevMode] = useAtom(ATOM_devMode);
+  const [showLineNumbers, setShowLineNumbers] = useAtom(ATOM_showLineNumbers);
+  const [copilotManualMode, setCopilotManualMode] = useAtom(
+    ATOM_copilotManualMode
   );
-  const devMode = useStore(store, (state) => state.devMode);
-  const setDevMode = useStore(store, (state) => state.setDevMode);
-  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const setShowLineNumbers = useStore(
-    store,
-    (state) => state.setShowLineNumbers
-  );
-  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
-  const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
-  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
-  const setCopilotManualMode = useStore(
-    store,
-    (state) => state.setCopilotManualMode
-  );
-
-  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   return (
     <Box>
@@ -129,29 +138,6 @@ function SidebarSettings() {
                 />
               }
               label="Debug Mode"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip
-          title={"Automatically run auto-layout at the end of node dragging."}
-          disableInteractive
-        >
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={autoRunLayout}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setAutoRunLayout(event.target.checked);
-                    if (event.target.checked) {
-                      autoLayoutROOT();
-                    }
-                  }}
-                />
-              }
-              label="Auto Run Layout"
             />
           </FormGroup>
         </Tooltip>
@@ -235,11 +221,8 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
     setAnchorEl(null);
   };
   // codepod logic
-  const store = useContext(RepoContext)!;
-  const setActiveRuntime = useStore(store, (state) => state.setActiveRuntime);
-  const activeRuntime = useStore(store, (state) => state.activeRuntime);
-  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
-  const repoId = useStore(store, (state) => state.repoId);
+  const [activeRuntime, setActiveRuntime] = useAtom(ATOM_activeRuntime);
+  const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
 
   const deleteKernel = runtimeTrpc.kernel.delete.useMutation();
@@ -297,15 +280,14 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
 };
 
 const RuntimeItem = ({ runtimeId }) => {
-  const store = useContext(RepoContext)!;
-  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  const [runtimeMap] = useAtom(ATOM_runtimeMap);
   // Observe runtime change
-  const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
+  const [runtimeChanged] = useAtom(ATOM_runtimeChanged);
   // A dummy useEffect to indicate that runtimeChanged is used.
   useEffect(() => {}, [runtimeChanged]);
-  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const [activeRuntime] = useAtom(ATOM_activeRuntime);
   const runtime = runtimeMap.get(runtimeId)!;
-  const repoId = useStore(store, (state) => state.repoId);
+  const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
 
   const connect = runtimeTrpc.kernel.connect.useMutation();
@@ -404,12 +386,11 @@ const RuntimeItem = ({ runtimeId }) => {
 };
 
 const RuntimeStatus = () => {
-  const store = useContext(RepoContext)!;
-  const repoId = useStore(store, (state) => state.repoId);
+  const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
-  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  const [runtimeMap] = useAtom(ATOM_runtimeMap);
   // Observe runtime change
-  const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
+  useAtom(ATOM_runtimeChanged);
   const ids = Array.from<string>(runtimeMap.keys());
   const createKernel = runtimeTrpc.kernel.create.useMutation();
 
@@ -433,10 +414,9 @@ const RuntimeStatus = () => {
 };
 
 function YjsSyncStatus() {
-  const store = useContext(RepoContext)!;
   // FIXME performance issue
-  const yjsStatus = useStore(store, (state) => state.yjsStatus);
-  const yjsSyncStatus = useStore(store, (state) => state.yjsSyncStatus);
+  const [yjsStatus] = useAtom(ATOM_yjsStatus);
+  const [yjsSyncStatus] = useAtom(ATOM_yjsSyncStatus);
   return (
     <Box>
       <Stack
@@ -468,29 +448,26 @@ function YjsSyncStatus() {
 }
 
 function ToastError() {
-  const store = useContext(RepoContext)!;
   const { enqueueSnackbar } = useSnackbar();
-  const error = useStore(store, (state) => state.error);
-  const clearError = useStore(store, (state) => state.clearError);
+  const [error, setError] = useAtom(ATOM_error);
   useEffect(() => {
     if (error) {
       enqueueSnackbar(`ERROR: ${error.msg}`, {
         variant: error.type as VariantType,
       });
       // I'll need to clear this msg once it is displayed
-      clearError();
+      setError(null);
     }
-  }, [error, enqueueSnackbar, clearError]);
+  }, [enqueueSnackbar, error, setError]);
   return <Box></Box>;
 }
 
 function ExportJupyterNB() {
   const { id: repoId } = useParams();
-  const store = useContext(RepoContext)!;
-  const repoName = useStore(store, (state) => state.repoName);
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const resultMap = useStore(store, (state) => state.getResultMap());
-  const codeMap = useStore(store, (state) => state.getCodeMap());
+  const [repoName] = useAtom(ATOM_repoName);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const [resultMap] = useAtom(ATOM_resultMap);
+  const [codeMap] = useAtom(ATOM_codeMap);
   const [loading, setLoading] = useState(false);
 
   const onClick = () => {
@@ -528,8 +505,7 @@ function ExportJupyterNB() {
 function ExportSVG() {
   // The name should contain the name of the repo, the ID of the repo, and the current date
   const { id: repoId } = useParams();
-  const store = useContext(RepoContext)!;
-  const repoName = useStore(store, (state) => state.repoName);
+  const [repoName] = useAtom(ATOM_repoName);
   const filename = `${repoName?.replaceAll(
     " ",
     "-"
@@ -581,13 +557,9 @@ function ExportButtons() {
 }
 
 function PodTreeItem({ id, node2children }) {
-  const store = useContext(RepoContext)!;
-  const selectPod = useStore(store, (state) => state.selectPod);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-  const setCenterSelection = useStore(
-    store,
-    (state) => state.setCenterSelection
-  );
+  const selectPod = useSetAtom(ATOM_selectPod);
+  const setSelectedPods = useSetAtom(ATOM_selectedPods);
+  const setCenterSelection = useSetAtom(ATOM_centerSelection);
 
   if (!node2children.has(id)) return null;
   const children = node2children.get(id);
@@ -597,8 +569,8 @@ function PodTreeItem({ id, node2children }) {
       nodeId={id}
       label={id.substring(0, 8)}
       onClick={() => {
-        resetSelection();
-        selectPod(id, true);
+        setSelectedPods(new Set<string>());
+        selectPod({ id, selected: true });
         setCenterSelection(true);
       }}
     >
@@ -611,8 +583,7 @@ function PodTreeItem({ id, node2children }) {
 }
 
 function TableofPods() {
-  const store = useContext(RepoContext)!;
-  const node2children = useStore(store, (state) => state.node2children);
+  const [node2children] = useAtom(ATOM_node2children);
   // Set all nodes to expanded. Disable the collapse/expand for now.
   const allIds = Array.from(node2children.keys());
 
@@ -637,10 +608,8 @@ function TableofPods() {
 export const Sidebar = () => {
   // never render saving status / runtime module for a guest
   // FIXME: improve the implementation logic
-  const store = useContext(RepoContext)!;
   return (
     <>
-      <MyKBar />
       <Box
         sx={{
           padding: "8px 16px",
@@ -775,9 +744,8 @@ function MyTabs({
 }
 
 export function TabSidebar() {
-  const store = useContext(RepoContext)!;
-  const autoLayoutTree = useStore(store, (state) => state.autoLayoutTree);
-  const messUp = useStore(store, (state) => state.messUp);
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
+  const messUp = useSetAtom(ATOM_messUp);
   return (
     <div
       style={{

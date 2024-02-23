@@ -1,54 +1,20 @@
-/**
- * See this PR for how the Canvas data is maintained:
- * https://github.com/codepod-io/codepod/pull/205
- */
-
-import { createStore, StateCreator, StoreApi } from "zustand";
-import { MyState, Pod } from ".";
-
-import { produce } from "immer";
-
-import { match, P } from "ts-pattern";
-
-import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceCollide,
-  forceCenter,
-  forceX,
-  forceY,
-  SimulationNodeDatum,
-  SimulationLinkDatum,
-} from "d3-force";
-
-import { flextree } from "d3-flextree";
-
+import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Doc } from "yjs";
 import * as Y from "yjs";
-
-import { myNanoId, level2color } from "../utils/utils";
-
 import {
-  Connection,
   Edge,
-  EdgeChange,
   Node,
   NodeChange,
-  addEdge,
-  OnNodesChange,
-  OnEdgesChange,
-  OnConnect,
-  applyNodeChanges,
-  applyEdgeChanges,
   XYPosition,
-  MarkerType,
-  NodeDragHandler,
-  ReactFlowInstance,
-  getConnectedEdges,
+  applyNodeChanges,
 } from "reactflow";
-import { quadtree } from "d3-quadtree";
 import { getHelperLines, sortNodes } from "@/components/nodes/utils";
-import { json2yxml, yxml2json } from "../utils/y-utils";
+import { produce } from "immer";
+import { useCallback } from "react";
+import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
+import { match } from "ts-pattern";
+import { flextree } from "d3-flextree";
+import { level2color, myNanoId } from "../utils/utils";
 
 // TODO add node's data typing.
 export type NodeData = {
@@ -142,1097 +108,493 @@ export function getAbsPos(node: Node, nodesMap: Y.Map<Node>): XYPosition {
   return { x, y };
 }
 
-function getScopeAt(
-  x: number,
-  y: number,
-  excludes: string[],
-  nodes,
-  nodesMap
-): Node {
-  const scope = nodes.findLast((node) => {
-    let { x: x1, y: y1 } = getAbsPos(node, nodesMap);
-    return (
-      node.type === "SCOPE" &&
-      x >= x1 &&
-      !excludes.includes(node.id) &&
-      x <= x1 + node.width &&
-      y >= y1 &&
-      y <= y1 + node.height
-    );
-  });
-  return scope;
-}
+export const ATOM_nodes = atom<Node[]>([]);
+export const ATOM_edges = atom<Edge[]>([]);
 
-function getNodePositionInsideScope(
-  node: Node,
-  scope: Node,
-  nodesMap,
-  nodeHeight: number = 0
-): XYPosition {
-  // compute the actual position
-  let { x, y } = getAbsPos(node, nodesMap);
-  let { x: dx, y: dy } = getAbsPos(scope, nodesMap);
-  x -= dx;
-  y -= dy;
-  return { x, y };
-}
+export const ATOM_helperLineHorizontal = atom<number | undefined>(undefined);
+export const ATOM_helperLineVertical = atom<number | undefined>(undefined);
 
-/**
- * Sort the nodes. The parent nodes will appear before the child nodes. This
- * function is used to adjust node levels (adjustLevel).
- * @param nodes
- * @param nodesMap
- * @returns
- */
-function topologicalSort(nodes: Node[], nodesMap) {
-  // sort according to the topological order
-  let indegree = new Map();
-  nodes.forEach((node) => {
-    indegree[node.id] = 0;
-  });
-  nodes.forEach((node) => {
-    if (node.parentNode) {
-      // actually the max indegree is 1
-      indegree[node.parentNode] += 1;
-    }
-  });
-  let queue: Node[] = [];
-  nodes.forEach((node) => {
-    if (!indegree[node.id]) {
-      // push all 0 indegree nodes
-      queue.push(node);
-    }
-  });
-  let sorted: Node[] = [];
-  while (queue.length > 0) {
-    let node = queue.shift()!;
-    sorted.push(node);
-    if (node.parentNode) {
-      indegree[node.parentNode]--;
-      if (!indegree[node.parentNode]) {
-        queue.push(nodesMap.get(node.parentNode));
-      }
-    }
+export const ATOM_focusedEditor = atom<string | null>(null);
+
+export const ATOM_selectedPods = atom<Set<string>>(new Set<string>());
+export const ATOM_centerSelection = atom<boolean>(false);
+
+function selectPod(
+  get: Getter,
+  set: Setter,
+  { id, selected }: { id: string; selected: boolean }
+) {
+  const selectedPods = get(ATOM_selectedPods);
+  if (selected) {
+    selectedPods.add(id);
+  } else {
+    selectedPods.delete(id);
   }
-  sorted.reverse();
-  return sorted;
+  set(ATOM_selectedPods, selectedPods);
 }
+
+export const ATOM_selectPod = atom(null, selectPod);
 
 /**
- * The Zustand store slice.
+ * This function handles the real updates to the reactflow nodes to render.
  */
-export interface CanvasSlice {
-  nodes: Node[];
-  edges: Edge[];
-
-  getNodesMap: () => Y.Map<Node<NodeData>>;
-  getEdgesMap: () => Y.Map<Edge>;
-  getCodeMap: () => Y.Map<Y.Text>;
-  getRichMap: () => Y.Map<Y.XmlFragment>;
-
-  dragHighlight?: string;
-  setDragHighlight: (dropHighlight: string) => void;
-  removeDragHighlight: () => void;
-
-  toggleFold: (id: string) => void;
-
-  selectedPods: Set<string>;
-  selectionParent: string | undefined;
-  selectPod: (id: string, selected: boolean) => void;
-  resetSelection: () => boolean;
-  centerSelection: boolean;
-  setCenterSelection: (b: boolean) => void;
-
-  handlePaste(event: ClipboardEvent, position: XYPosition): void;
-  handleCopy(event: ClipboardEvent): void;
-
-  focusedEditor: string | undefined;
-  setFocusedEditor: (id?: string) => void;
-
-  updateView: () => void;
-
-  // onMove indicator
-  moved: boolean;
-  toggleMoved: () => void;
-  // clicked-on-canvas indicator
-  paneClicked: boolean;
-  togglePaneClicked: () => void;
-  nodeClicked: boolean;
-  toggleNodeClicked: () => void;
-
-  addNode: (type: "CODE" | "RICH", parentId: string, index: number) => void;
-
-  importLocalCode: (
-    position: XYPosition,
-    importScopeName: string,
-    cellList: any[]
-  ) => void;
-
-  helperLineHorizontal: number | undefined;
-  helperLineVertical: number | undefined;
-  setHelperLineHorizontal: (line: number | undefined) => void;
-  setHelperLineVertical: (line: number | undefined) => void;
-
-  onNodesChange: OnNodesChange;
-
-  node2children: Map<string, string[]>;
-  buildNode2Children: () => void;
-
-  autoLayout: (scopeId?: string) => void;
-  autoLayoutROOT: () => void;
-  autoLayoutOnce: boolean;
-  setAutoLayoutOnce: (b: boolean) => void;
-  autoLayoutTree: () => void;
-  messUp: () => void;
-}
-
-export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
-  set,
-  get
-) => ({
-  nodes: [],
-  edges: [],
-
-  setDragHighlight: (dragHighlight) => set({ dragHighlight }),
-  removeDragHighlight: () => set({ dragHighlight: undefined }),
-
-  selectedPods: new Set(),
-  selectionParent: undefined,
-  selectPod: (id, selected) => {
-    const nodesMap = get().getNodesMap();
-    set(
-      produce((state: MyState) => {
-        if (selected) {
-          const p = nodesMap.get(id)?.parentNode;
-          // if you select a node that has a different parent, clear all previous selections
-          if (
-            state.selectionParent !== undefined &&
-            state.selectionParent !== p
-          ) {
-            state.selectedPods.clear();
-          }
-          state.selectionParent = p;
-          state.selectedPods.add(id);
-        } else {
-          if (!state.selectedPods.delete(id)) return;
-          if (state.selectedPods.size === 0) state.selectionParent = undefined;
-        }
-      })
-    );
-    get().updateView();
-  },
-  // clear all selections
-  resetSelection: () => {
-    if (get().selectedPods.size === 0) return false;
-    set(
-      produce((state: MyState) => {
-        state.selectedPods.clear();
-        state.selectionParent = undefined;
-      })
-    );
-    return true;
-  },
-  centerSelection: false,
-  setCenterSelection(b: boolean) {
-    set({ centerSelection: b });
-  },
-
-  focusedEditor: undefined,
-  setFocusedEditor: (id?: string) =>
-    set(
-      produce((state: MyState) => {
-        state.focusedEditor = id;
-      })
-    ),
-
-  getNodesMap() {
-    const rootMap = get().ydoc.getMap<Y.Map<Node<NodeData>>>("rootMap");
-    if (!rootMap) {
-      throw new Error("rootMap not found");
-    }
-    const nodesMap = rootMap.get("nodesMap");
-    if (!nodesMap) {
-      throw new Error("nodesMap not found");
-    }
-    return nodesMap;
-  },
-  getEdgesMap() {
-    return get().ydoc.getMap("rootMap").get("edgesMap") as Y.Map<Edge>;
-  },
-  getCodeMap() {
-    return get().ydoc.getMap("rootMap").get("codeMap") as Y.Map<Y.Text>;
-  },
-  getRichMap() {
-    return get().ydoc.getMap("rootMap").get("richMap") as Y.Map<Y.XmlFragment>;
-  },
-  /**
-   * This function handles the real updates to the reactflow nodes to render.
-   */
-  updateView: () => {
-    const nodesMap = get().getNodesMap();
-    let selectedPods = get().selectedPods;
-    // let nodes = Array.from<Node>(nodesMap.values());
-    // follow the tree order, skip folded nodes
-    function dfs(node: Node) {
-      if (node.data.folded) return [node];
-      let children = node.data.children
-        .map((id) => nodesMap.get(id))
-        .filter((n) => n);
-      return [node, ...children.flatMap(dfs)];
-    }
-    let nodes = dfs(nodesMap.get("ROOT")!);
-
-    // nodes = nodes
-    //   .sort((a: Node, b: Node) => a.data.level - b.data.level)
-    //   .map((node) => ({
-    //     ...node,
-    //     style: {
-    //       ...node.style,
-    //       backgroundColor:
-    //         node.type === "SCOPE" ? level2color[node.data.level] : undefined,
-    //     },
-    //     selected: selectedPods.has(node.id),
-    //     // className: get().dragHighlight === node.id ? "active" : "",
-    //     className: match(node.id)
-    //       .with(get().dragHighlight || "", () => "active")
-    //       .otherwise(() => undefined),
-    //   }));
-
-    set({ nodes });
-    // edges view
-    // const edgesMap = get().getEdgesMap();
-    // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
-    function generateEdge(nodes: Node[]) {
-      const edges: any[] = [];
-      nodes.forEach((node) => {
-        node.data?.children?.map((id: string) => {
-          edges.push({
-            id: `${node.id}-${id}`,
-            source: node.id,
-            target: id,
-          });
+export function updateView(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  let selectedPods = get(ATOM_selectedPods);
+  // let nodes = Array.from<Node>(nodesMap.values());
+  // follow the tree order, skip folded nodes
+  function dfs(node: Node) {
+    if (node.data.folded) return [node];
+    let children = node.data.children
+      .map((id) => nodesMap.get(id))
+      .filter((n) => n);
+    return [node, ...children.flatMap(dfs)];
+  }
+  let nodes = dfs(nodesMap.get("ROOT")!);
+  set(ATOM_nodes, nodes);
+  // edges view
+  // const edgesMap = get().getEdgesMap();
+  // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
+  function generateEdge(nodes: Node[]) {
+    const edges: any[] = [];
+    nodes.forEach((node) => {
+      node.data?.children?.map((id: string) => {
+        edges.push({
+          id: `${node.id}-${id}`,
+          source: node.id,
+          target: id,
         });
       });
-      return edges;
-    }
-    set({ edges: generateEdge(nodes) });
-    get().updateView_addNode();
-  },
+    });
+    return edges;
+  }
+  set(ATOM_edges, generateEdge(nodes));
+  updateView_addNode(get, set);
+}
 
-  toggleFold: (id: string) => {
-    const nodesMap = get().getNodesMap();
+export const ATOM_updateView = atom(null, updateView);
+
+/**
+ * Add node
+ */
+
+export const ATOM_isAddingNode = atom(false);
+export const ATOM_addNodeType = atom<"CODE" | "RICH">("CODE");
+export const ATOM_mousePosition = atom({ x: 0, y: 0 });
+type AnchorNode = {
+  id: string;
+  position: "TOP" | "BOTTOM" | "RIGHT" | "LEFT";
+  isValid: boolean;
+};
+export const ATOM_anchorNode = atom<AnchorNode | undefined>(undefined);
+
+function updateView_addNode(get: Getter, set: Setter) {
+  if (get(ATOM_isAddingNode)) {
+    const newNode = {
+      id: "tempNode",
+      type: "TEMP",
+      position: get(ATOM_mousePosition),
+      width: 300,
+      height: 100,
+      data: {},
+    };
+    set(ATOM_nodes, [...get(ATOM_nodes), newNode]);
+  }
+}
+
+export const ATOM_updateView_addNode = atom(null, updateView_addNode);
+
+function getInsertPosition(get: Getter, set: Setter) {
+  // 1. given the mouse position, find the nearest node as anchor
+  // - if the mouse position is to the right of the anchor, insert to the right
+  // - if the mouse position is to the top or bottom of the anchor, insert to the top or bottom
+  // - otherwise, no position is identified
+
+  // get all the nodes
+  const nodes = get(ATOM_nodes).filter((n) => n.type !== "TEMP");
+  // get the mouse position
+  const mouse = get(ATOM_mousePosition);
+  // get the nearest node, defined by the bounding box of the node: x, y, x+width, y+height
+  const nearest = nodes.reduce<{
+    node: Node | undefined;
+    distance: number;
+  }>(
+    (acc, node) => {
+      const width = node.width!;
+      const height = node.height!;
+      const { x, y } = node.position;
+      const top = { x: x + width / 2, y };
+      const bottom = { x: x + width / 2, y: y + height };
+      const left = { x, y: y + height / 2 };
+      const right = { x: x + width, y: y + height / 2 };
+      const distance = Math.min(
+        Math.pow(mouse.x - top.x, 2) + Math.pow(mouse.y - top.y, 2),
+        Math.pow(mouse.x - bottom.x, 2) + Math.pow(mouse.y - bottom.y, 2),
+        Math.pow(mouse.x - left.x, 2) + Math.pow(mouse.y - left.y, 2),
+        Math.pow(mouse.x - right.x, 2) + Math.pow(mouse.y - right.y, 2)
+      );
+      if (distance < acc.distance) {
+        return { node, distance };
+      }
+      return acc;
+    },
+    { node: undefined, distance: Infinity }
+  );
+
+  // check the relative direction of the mouse to the nearest node
+  const node = nearest.node;
+  if (!node) return;
+
+  const width = node.width!;
+  const height = node.height!;
+  const { x, y } = node.position;
+  const top = { x: x + width / 2, y };
+  const bottom = { x: x + width / 2, y: y + height };
+  const left = { x, y: y + height / 2 };
+  const right = { x: x + width, y: y + height / 2 };
+  const topDistance =
+    Math.pow(mouse.x - top.x, 2) + Math.pow(mouse.y - top.y, 2);
+  const bottomDistance =
+    Math.pow(mouse.x - bottom.x, 2) + Math.pow(mouse.y - bottom.y, 2);
+  const leftDistance =
+    Math.pow(mouse.x - left.x, 2) + Math.pow(mouse.y - left.y, 2);
+  const rightDistance =
+    Math.pow(mouse.x - right.x, 2) + Math.pow(mouse.y - right.y, 2);
+  const minDistance = Math.min(
+    topDistance,
+    bottomDistance,
+    leftDistance,
+    rightDistance
+  );
+  if (minDistance === topDistance) {
+    set(ATOM_anchorNode, {
+      id: node.id,
+      position: "TOP",
+      isValid: node.id !== "ROOT",
+    });
+  } else if (minDistance === bottomDistance) {
+    set(ATOM_anchorNode, {
+      id: node.id,
+      position: "BOTTOM",
+      isValid: node.id !== "ROOT",
+    });
+  } else if (minDistance === leftDistance) {
+    set(ATOM_anchorNode, { id: node.id, position: "LEFT", isValid: false });
+  } else if (minDistance === rightDistance) {
+    set(ATOM_anchorNode, {
+      id: node.id,
+      position: "RIGHT",
+      isValid: node.data.children.length === 0,
+    });
+  }
+}
+
+export const ATOM_getInsertPosition = atom(null, getInsertPosition);
+
+function addNode(get: Getter, set: Setter, { type, parentId, index }) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = createNewNode(type, { x: 0, y: 0 });
+  switch (type) {
+    case "CODE":
+      get(ATOM_codeMap).set(node.id, new Y.Text());
+      break;
+    case "RICH":
+      get(ATOM_richMap).set(node.id, new Y.XmlFragment());
+      break;
+  }
+  nodesMap.set(node.id, {
+    ...node,
+    data: {
+      ...node.data,
+      parent: parentId,
+    },
+  });
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent node not found");
+  // add the node to the children field at index
+  const children = [...parent.data.children];
+  if (index === -1) {
+    children.push(node.id);
+  } else {
+    children.splice(index, 0, node.id);
+  }
+  // update the parent node
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children,
+    },
+  });
+}
+
+export const ATOM_addNode = atom(null, addNode);
+
+function addNodeAtAnchor(get: Getter, set: Setter) {
+  const anchor = get(ATOM_anchorNode);
+  if (!anchor) return;
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(anchor.id)!;
+  const parentId = node.data.parent!;
+  const parentNode = nodesMap.get(parentId)!;
+  const index = parentNode?.data.children.indexOf(anchor.id);
+  if (anchor.isValid) {
+    match(anchor.position)
+      .with("TOP", () => {
+        addNode(get, set, { type: get(ATOM_addNodeType), parentId, index });
+      })
+      .with("BOTTOM", () => {
+        addNode(get, set, {
+          type: get(ATOM_addNodeType),
+          parentId,
+          index: index + 1,
+        });
+      })
+      .with("RIGHT", () => {
+        addNode(get, set, {
+          type: get(ATOM_addNodeType),
+          parentId: anchor.id,
+          index: 0,
+        });
+      })
+      .otherwise(() => {
+        throw new Error("Should not reach here.");
+      });
+  }
+}
+
+export const ATOM_addNodeAtAnchor = atom(null, addNodeAtAnchor);
+
+function toggleFold(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      folded: !node.data.folded,
+    },
+  });
+  updateView(get, set);
+}
+
+export const ATOM_toggleFold = atom(null, toggleFold);
+
+function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
+  // compute the helper lines
+  // get(setHelperLineHorizontal)(undefined);
+  set(ATOM_helperLineHorizontal, undefined);
+  set(ATOM_helperLineVertical, undefined);
+
+  const nodesMap = get(ATOM_nodesMap);
+  const nodes = get(ATOM_nodes);
+
+  // this will be true if it's a single node being dragged
+  // inside we calculate the helper lines and snap position for the position where the node is being moved to
+  if (
+    changes.length === 1 &&
+    changes[0].type === "position" &&
+    changes[0].dragging &&
+    changes[0].position
+  ) {
+    // For hierarchical pods, we only get helper lines within the same scope.
+    const change = changes[0];
+    const movingNode = nodesMap.get(change.id)!;
+
+    // distance is the sensitivity for snapping to helper lines.
+    const distance = 10;
+    const helperLines = getHelperLines(
+      changes[0],
+      nodes.filter((n) => n.parentNode === movingNode.parentNode),
+      distance
+    );
+
+    // adjust the position into absolute position
+    if (movingNode.parentNode) {
+      const parent = nodesMap.get(movingNode.parentNode)!;
+      // const offset = parent?.positionAbsolute;
+      // const offset = parent?.position;
+      const offset = getAbsPos(parent, nodesMap);
+      helperLines.vertical && (helperLines.vertical += offset?.x || 0);
+      helperLines.horizontal && (helperLines.horizontal += offset?.y || 0);
+    }
+
+    // if we have a helper line, we snap the node to the helper line position
+    // this is being done by manipulating the node position inside the change object
+    changes[0].position.x = helperLines.snapPosition.x ?? changes[0].position.x;
+    changes[0].position.y = helperLines.snapPosition.y ?? changes[0].position.y;
+
+    // if helper lines are returned, we set them so that they can be displayed
+    set(ATOM_helperLineHorizontal, helperLines.horizontal);
+    set(ATOM_helperLineVertical, helperLines.vertical);
+  }
+
+  // I think this place update the node's width/height
+  const nextNodes = applyNodeChanges(changes, nodes);
+
+  changes.forEach((change) => {
+    switch (change.type) {
+      case "reset":
+        break;
+      case "add":
+        throw new Error("Add node should not be handled here");
+      case "select":
+        selectPod(get, set, { id: change.id, selected: change.selected });
+        break;
+      case "dimensions":
+        {
+          // There's a weird dimencion change event fired at the end of
+          // resizing a node.
+          if (!change.dimensions) return;
+
+          // Since CodeNode doesn't have a height, this dimension change will
+          // be filed for CodeNode at the beginning or anytime the node height
+          // is changed due to content height changes.
+          const node = nextNodes.find((n) => n.id === change.id);
+          if (!node) throw new Error(`Node not found: ${change.id}`);
+          nodesMap.set(change.id, node);
+        }
+        break;
+      case "position":
+        {
+          const node = nextNodes.find((n) => n.id === change.id);
+          if (!node) throw new Error(`Node not found: ${change.id}`);
+          nodesMap.set(change.id, node);
+        }
+
+        break;
+      case "remove":
+        // FIXME Would reactflow fire multiple remove for all nodes? If so,
+        // do they have a proper order? Seems yes.
+        // remove from yjs
+        //
+        // TODO remove from codeMap and richMap?
+        const node = nodesMap.get(change.id);
+        if (!node) throw new Error("Node not found");
+        // remove all descendants
+        const removeDescendants = (id) => {
+          const node = nodesMap.get(id);
+          if (!node) throw new Error("Node not found");
+          node.data.children.forEach((childId) => {
+            removeDescendants(childId);
+            nodesMap.delete(childId);
+          });
+        };
+        removeDescendants(change.id);
+        // remove the node itself
+        nodesMap.delete(change.id);
+        // update parent node's children field.
+        const parentId = node.data.parent;
+        if (!parentId) break;
+        const parent = nodesMap.get(parentId);
+        if (!parent) break;
+        nodesMap.set(
+          parentId,
+          produce(parent, (draft) => {
+            draft.data.children.splice(
+              draft.data.children.indexOf(change.id),
+              1
+            );
+          })
+        );
+
+        // remove from selected pods
+        selectPod(get, set, { id: change.id, selected: false });
+        break;
+      default:
+        // should not reach here.
+        throw new Error("Unknown change type");
+    }
+  });
+  updateView(get, set);
+}
+
+export const ATOM_onNodesChange = atom(null, onNodesChange);
+
+/**
+ * Auto layout.
+ */
+function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
+  // const data = subtree("1");
+  const rootNode = nodesMap.get(id);
+  // console.log("RootNode", rootNode);
+  if (!rootNode) throw new Error("Root node not found");
+  console.log("getting subtree");
+  function subtree(id: string) {
+    console.log("subtree", id);
     const node = nodesMap.get(id);
     if (!node) throw new Error("Node not found");
-    nodesMap.set(id, {
-      ...node,
-      data: {
-        ...node.data,
-        folded: !node.data.folded,
-      },
-    });
-    get().updateView();
-  },
-
-  addNode: (type, parentId, index) => {
-    const nodesMap = get().getNodesMap();
-    const node = createNewNode(type, { x: 0, y: 0 });
-    switch (type) {
-      case "CODE":
-        get().getCodeMap().set(node.id, new Y.Text());
-        break;
-      case "RICH":
-        get().getRichMap().set(node.id, new Y.XmlFragment());
-        break;
-    }
-    nodesMap.set(node.id, {
-      ...node,
-      data: {
-        ...node.data,
-        parent: parentId,
-      },
-    });
-    const parent = nodesMap.get(parentId);
-    if (!parent) throw new Error("Parent node not found");
-    // add the node to the children field at index
-    const children = [...parent.data.children];
-    if (index === -1) {
-      children.push(node.id);
-    } else {
-      children.splice(index, 0, node.id);
-    }
-    // update the parent node
-    nodesMap.set(parentId, {
-      ...parent,
-      data: {
-        ...parent.data,
-        children,
-      },
-    });
-    // console.log("new node added, all nodes", Array.from(nodesMap.values()));
-    if (get().autoRunLayout) {
-      get().autoLayoutTree();
-    }
-  },
-
-  importLocalCode: (position, importScopeName, cellList) => {
-    console.log("Sync imported Jupyter notebook or Python scripts");
-    let nodesMap = get().getNodesMap();
-    let codeMap = get().getCodeMap();
-    let resultMap = get().getResultMap();
-    let scopeNode = createNewNode("SCOPE", position);
-    // parent could be "ROOT" or a SCOPE node
-    let parent = getScopeAt(
-      position.x,
-      position.y,
-      [scopeNode.id],
-      get().nodes,
-      nodesMap
-    );
-    let podParent: any = undefined;
-    if (parent !== undefined) {
-      // update scopeNode
-      scopeNode.parentNode = parent.id;
-      scopeNode.data.level = parent.data.level + 1;
-      podParent = parent.id;
-    }
-
-    scopeNode.data.name = importScopeName;
-    nodesMap.set(scopeNode.id, scopeNode);
-
-    let maxLineLength = 0;
-    if (cellList.length > 0) {
-      for (let i = 0; i < cellList.length; i++) {
-        const cell = cellList[i];
-        let newPos = {
-          x: position.x + 50,
-          y: position.y + 100 + i * 150,
-        };
-
-        let node = createNewNode(
-          cell.cellType == "code" ? "CODE" : "RICH",
-          newPos
-        );
-        let podContent = cell.cellType == "code" ? cell.cellSource : "";
-
-        maxLineLength = Math.max(
-          maxLineLength,
-          Math.max(...podContent.split(/\r?\n/).map((line) => line.length))
-        );
-
-        let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
-        let execution_count = cell.execution_count || null;
-        let podResults: {
-          type: string;
-          html?: string;
-          text?: string;
-          image?: string;
-        }[] = [];
-        let podError = { ename: "", evalue: "", stacktrace: [] };
-        for (const cellOutput of cell.cellOutputs) {
-          switch (cellOutput["output_type"]) {
-            case "stream":
-              podResults.push({
-                // "stream_stdout" or "stream_stderr"
-                type: `${cellOutput["output_type"]}_${cellOutput["name"]}`,
-                text: cellOutput["text"].join(""),
-              });
-              break;
-            case "execute_result":
-              podResults.push({
-                type: cellOutput["output_type"],
-                html: cellOutput["data"]["text/html"].join(""),
-                text: cellOutput["data"]["text/plain"].join(""),
-              });
-              break;
-            case "display_data":
-              podResults.push({
-                type: cellOutput["output_type"],
-                text: cellOutput["data"]["text/plain"].join(""),
-                html: cellOutput["data"]["text/html"].join(""),
-                image: cellOutput["data"]["image/png"],
-              });
-              break;
-            case "error":
-              podError.ename = cellOutput["ename"];
-              podError.evalue = cellOutput["evalue"];
-              podError.stacktrace = cellOutput["traceback"];
-              break;
-            default:
-              break;
-          }
-        }
-        // move the created node to scope and configure the necessary node attributes
-        const posInsideScope = getNodePositionInsideScope(
-          node,
-          scopeNode,
-          nodesMap,
-          node.height!
-        );
-
-        node.data.level = scopeNode.data.level + 1;
-        node.position = posInsideScope;
-        node.parentNode = scopeNode.id;
-
-        // update peer
-        nodesMap.set(node.id, node);
-        codeMap.set(node.id, new Y.Text(podContent));
-        resultMap.set(node.id, {
-          data: podResults,
-          exec_count: execution_count,
-          error: podError,
-        });
-      }
-    }
-    // FIXME updateView() reset the pod width to 300, scope width to 400.
-    get().updateView();
-  },
-  autoLayoutOnce: false,
-  setAutoLayoutOnce: (b) => set({ autoLayoutOnce: b }),
-
-  handleCopy(event) {
-    // TODO get selected nodes recursively
-    const nodesMap = get().getNodesMap();
-    let nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id)!);
-    if (nodes.length === 0) return;
-    // If a scope is selected, select all its children
-    if (nodes.some((n) => n.type === "SCOPE")) {
-      const allnodes = Array.from<Node>(nodesMap.values());
-      const dp: Record<string, boolean> = {};
-      Array.from(get().selectedPods).forEach((id) => (dp[id] = true));
-      // dp algorithm for collecting all descendants
-      const recur = (node: Node): boolean => {
-        // return true if node is a descendant of any scope in scopes
-        if (node.id in dp) return dp[node.id];
-        if (!node.parentNode) return false;
-        if (node.parentNode in dp) {
-          dp[node.id] = dp[node.parentNode];
-          return dp[node.id];
-        }
-        dp[node.id] = recur(nodesMap.get(node.parentNode)!);
-        return dp[node.id];
-      };
-      const allDescendants = allnodes.filter((n) => recur(n));
-      nodes = allDescendants;
-    }
-    // edges
-    const selectedEdges = getConnectedEdges(nodes, get().edges).filter(
-      (edge) => {
-        const isExternalSource = nodes.every((n) => n.id !== edge.source);
-        const isExternalTarget = nodes.every((n) => n.id !== edge.target);
-
-        return !(isExternalSource || isExternalTarget);
-      }
-    );
-    // content
-    const codeMap = get().getCodeMap();
-    const richMap = get().getRichMap();
-    const contentMap: Record<string, string> = {};
-    nodes.forEach((node) => {
-      switch (node.type) {
-        case "CODE":
-          contentMap[node.id] = codeMap.get(node.id)!.toString();
-          break;
-        case "RICH":
-          contentMap[node.id] = JSON.stringify(
-            yxml2json(richMap.get(node.id)!)
-          );
-          break;
-      }
-    });
-    // TODO get edges
-    // set to clipboard
-    // console.log("set clipboard", nodes[0]);
-    event.clipboardData!.setData(
-      "application/json",
-      JSON.stringify({
-        type: "pod",
-        nodes: nodes,
-        edges: selectedEdges,
-        contentMap: contentMap,
-      })
-    );
-    event.preventDefault();
-  },
-  handlePaste(event, position) {
-    // 2. get clipboard data
-    if (!event.clipboardData) return;
-    const payload = event.clipboardData.getData("application/json");
-    if (!payload) {
-      console.warn("No payload");
-      return;
-    }
-    const data = JSON.parse(payload);
-    if (data.type !== "pod") return;
-    const oldnodes = data.nodes as Node[];
-    const oldedges = data.edges as Edge[];
-    const contentMap = data.contentMap as Record<string, string>;
-
-    // 3. construct new nodes
-    const nodesMap = get().getNodesMap();
-    const edgesMap = get().getEdgesMap();
-    const codeMap = get().getCodeMap();
-    const richMap = get().getRichMap();
-
-    // 1. create new ids
-    const old2newIdMap = new Map<string, string>();
-    oldnodes.forEach((n) => {
-      const id = myNanoId();
-      old2newIdMap.set(n.id, id);
-    });
-
-    // utility functions
-    const testInScope = (n: Node) =>
-      n.parentNode && old2newIdMap.has(n.parentNode);
-    const testNotInScope = (n) => !testInScope(n);
-
-    // Only calculate the min for pods that is not in a scope.
-    const minX = Math.min(
-      ...oldnodes.filter(testNotInScope).map((s) => s.position.x)
-    );
-    const minY = Math.min(
-      ...oldnodes.filter(testNotInScope).map((s) => s.position.y)
-    );
-
-    // 2. create new nodes
-    const newnodes = oldnodes.map((n) => {
-      const id = old2newIdMap.get(n.id)!;
-      switch (n.type) {
-        case "CODE":
-          const ytext = new Y.Text(contentMap[n.id]);
-          codeMap.set(id, ytext);
-          break;
-        case "RICH":
-          // const yxml = richMap.get(n.id)!.clone();
-          const yxml = json2yxml(JSON.parse(contentMap[n.id]));
-          richMap.set(id, yxml);
-          break;
-        default:
-          break;
-      }
-
-      const isInScope = testInScope(n);
-
-      const newNode = {
-        ...n,
-        id,
-        position: isInScope
-          ? n.position
-          : {
-              x: n.position.x - minX + position.x,
-              y: n.position.y - minY + position.y,
-            },
-        parentNode: isInScope ? old2newIdMap.get(n.parentNode!) : undefined,
-      };
-      return newNode;
-    });
-
-    const newedges = oldedges.map((e) => {
-      const newSource = old2newIdMap.get(e.source)!;
-      const newTarget = old2newIdMap.get(e.target)!;
-      return {
-        ...e,
-        source: newSource,
-        target: newTarget,
-        id: `${newSource}_${newTarget}`,
-      };
-    });
-
-    get().resetSelection();
-    newnodes.forEach((n) => {
-      nodesMap.set(n.id, n);
-      // Don't select nodes that are in a scope.
-      if (!n.parentNode) {
-        get().selectPod(n.id, true);
-      }
-    });
-    newedges.forEach((e) => {
-      edgesMap.set(e.id, e);
-    });
-    get().updateView();
-  },
-
-  // NOTE: this does not mutate.
-  getScopeAtPos: ({ x, y }, exclude) => {
-    const nodesMap = get().getNodesMap();
-    return getScopeAt(x, y, [exclude], get().nodes, nodesMap);
-  },
-
-  helperLineHorizontal: undefined,
-  helperLineVertical: undefined,
-  setHelperLineHorizontal: (line) => set({ helperLineHorizontal: line }),
-  setHelperLineVertical: (line) => set({ helperLineVertical: line }),
-
-  // I should modify nodesMap here
-  onNodesChange: (changes: NodeChange[]) => {
-    let nodesMap = get().getNodesMap();
-    const nodes = get().nodes;
-
-    // compute the helper lines
-    get().setHelperLineHorizontal(undefined);
-    get().setHelperLineVertical(undefined);
-
-    // this will be true if it's a single node being dragged
-    // inside we calculate the helper lines and snap position for the position where the node is being moved to
-    if (
-      changes.length === 1 &&
-      changes[0].type === "position" &&
-      changes[0].dragging &&
-      changes[0].position
-    ) {
-      // For hierarchical pods, we only get helper lines within the same scope.
-      const change = changes[0];
-      const movingNode = nodesMap.get(change.id)!;
-
-      // distance is the sensitivity for snapping to helper lines.
-      const distance = 10;
-      const helperLines = getHelperLines(
-        changes[0],
-        nodes.filter((n) => n.parentNode === movingNode.parentNode),
-        distance
-      );
-
-      // adjust the position into absolute position
-      if (movingNode.parentNode) {
-        const parent = nodesMap.get(movingNode.parentNode)!;
-        // const offset = parent?.positionAbsolute;
-        // const offset = parent?.position;
-        const offset = getAbsPos(parent, nodesMap);
-        helperLines.vertical && (helperLines.vertical += offset?.x || 0);
-        helperLines.horizontal && (helperLines.horizontal += offset?.y || 0);
-      }
-
-      // if we have a helper line, we snap the node to the helper line position
-      // this is being done by manipulating the node position inside the change object
-      changes[0].position.x =
-        helperLines.snapPosition.x ?? changes[0].position.x;
-      changes[0].position.y =
-        helperLines.snapPosition.y ?? changes[0].position.y;
-
-      // if helper lines are returned, we set them so that they can be displayed
-      get().setHelperLineHorizontal(helperLines.horizontal);
-      get().setHelperLineVertical(helperLines.vertical);
-    }
-
-    // I think this place update the node's width/height
-    const nextNodes = applyNodeChanges(changes, nodes);
-
-    changes.forEach((change) => {
-      switch (change.type) {
-        case "reset":
-          break;
-        case "add":
-          throw new Error("Add node should not be handled here");
-        case "select":
-          get().selectPod(change.id, change.selected);
-          break;
-        case "dimensions":
-          {
-            // There's a weird dimencion change event fired at the end of
-            // resizing a node.
-            if (!change.dimensions) return;
-
-            // Since CodeNode doesn't have a height, this dimension change will
-            // be filed for CodeNode at the beginning or anytime the node height
-            // is changed due to content height changes.
-            const node = nextNodes.find((n) => n.id === change.id);
-            if (!node) throw new Error("Node not found");
-            nodesMap.set(change.id, node);
-          }
-          break;
-        case "position":
-          {
-            const node = nextNodes.find((n) => n.id === change.id);
-            if (!node) throw new Error("Node not found");
-            nodesMap.set(change.id, node);
-          }
-
-          break;
-        case "remove":
-          // FIXME Would reactflow fire multiple remove for all nodes? If so,
-          // do they have a proper order? Seems yes.
-          // remove from yjs
-          //
-          // TODO remove from codeMap and richMap?
-          const node = nodesMap.get(change.id);
-          if (!node) throw new Error("Node not found");
-          // remove all descendants
-          const removeDescendants = (id) => {
-            const node = nodesMap.get(id);
-            if (!node) throw new Error("Node not found");
-            node.data.children.forEach((childId) => {
-              removeDescendants(childId);
-              nodesMap.delete(childId);
-            });
-          };
-          removeDescendants(change.id);
-          // remove the node itself
-          nodesMap.delete(change.id);
-          // update parent node's children field.
-          const parentId = node.data.parent;
-          if (!parentId) break;
-          const parent = nodesMap.get(parentId);
-          if (!parent) break;
-          nodesMap.set(
-            parentId,
-            produce(parent, (draft) => {
-              draft.data.children.splice(
-                draft.data.children.indexOf(change.id),
-                1
-              );
-            })
-          );
-
-          // remove from selected pods
-          get().selectPod(change.id, false);
-          // run auto-layout
-          if (get().autoRunLayout) {
-            get().autoLayoutROOT();
-          }
-          break;
-        default:
-          // should not reach here.
-          throw new Error("Unknown change type");
-      }
-    });
-    get().updateView();
-  },
-
-  moved: false,
-  toggleMoved: () => set({ moved: !get().moved }),
-  paneClicked: false,
-  togglePaneClicked: () => set({ paneClicked: !get().paneClicked }),
-  nodeClicked: false,
-  toggleNodeClicked: () => set({ nodeClicked: !get().nodeClicked }),
-
-  /**
-   * This node2children is maintained with the canvas reactflow states and
-   * this mapping may be used by other components, e.g. the runtime.
-   *
-   * TODO we should optimize the performance of this function, maybe only update
-   * the mapping when the structure is changed.
-   */
-  node2children: new Map<string, string[]>(),
-  buildNode2Children: () => {
-    console.debug("Building node2children..");
-    // build a map from node to its children
-    let nodesMap = get().getNodesMap();
-    let nodes: Node[] = Array.from(nodesMap.values());
-    let node2children = new Map<string, string[]>();
-    node2children.set("ROOT", []);
-    nodes.forEach((node) => {
-      if (!node2children.has(node.id)) {
-        node2children.set(node.id, []);
-      }
-      if (node.parentNode) {
-        if (!node2children.has(node.parentNode)) {
-          node2children.set(node.parentNode, []);
-        }
-        node2children.get(node.parentNode)?.push(node.id);
-      } else {
-        node2children.get("ROOT")?.push(node.id);
-      }
-    });
-    for (const value of Array.from(node2children.values())) {
-      if (value.length > 1) {
-        sortNodes(value, nodesMap);
-      }
-    }
-    set({ node2children });
-  },
-
-  /**
-   * This is only for testing layout algorithm. Move all pods to left & up by 100.
-   */
-  messUp: () => {
-    //
-    const nodesMap = get().getNodesMap();
-    const nodes = Array.from(nodesMap.values());
-    nodes.forEach((node) => {
-      if (node.type === "SCOPE") return;
-      if (node.id === "ROOT") return;
-      const pos = getAbsPos(node, nodesMap);
-      node.position = { x: pos.x - 100, y: pos.y - 100 };
-      nodesMap.set(node.id, node);
-    });
-    get().updateView();
-  },
-
-  autoLayoutTree: () => {
-    // tree-based auto-layout
-    // construct the nodes to be used in layouting
-    const nodesMap = get().getNodesMap();
-
-    function subtree(id) {
-      const node = nodesMap.get(id);
-      if (!node) throw new Error("Node not found");
-      const children = node.data.children;
-      return {
-        id: node.id,
-        width: node.width!,
-        height: node.height!,
-        children: node.data.folded ? [] : children ? children.map(subtree) : [],
-      };
-    }
-    // get all root nodes
-
-    function layoutOneTree(id) {
-      // const data = subtree("1");
-      const rootNode = nodesMap.get(id);
-      // console.log("RootNode", rootNode);
-      if (!rootNode) throw new Error("Root node not found");
-      const data = subtree(id);
-      // console.log("Data", data);
-      const paddingX = 100;
-      const paddingY = 100;
-      // const paddingX = 0;
-      // const paddingY = 0;
-
-      const layout = flextree({
-        children: (data) => data.children,
-        // horizontal
-        nodeSize: (node) => [
-          node.data.height + paddingY,
-          node.data.width + paddingX,
-        ],
-        // spacing: 100,
-      });
-      const tree = layout.hierarchy(data);
-      layout(tree);
-      // console.log("Layout Result", layout.dump(tree)); //=> prints the results
-      // console.log("Tree", tree);
-      // tree.each((node) => console.log(`(${node.x}, ${node.y})`));
-      // update the nodesMap
-      tree.each((node) => {
-        const n = nodesMap.get(node.data.id)!;
-        // horizontal
-        nodesMap.set(node.data.id, {
-          ...n,
-          position: {
-            x: rootNode.position.x + node.y,
-            // center the node
-            y:
-              rootNode.position.y +
-              rootNode.height! / 2 +
-              node.x -
-              node.data.height / 2,
-            // y: node.x,
-          },
-        });
-      });
-    }
-
-    layoutOneTree("ROOT");
-
-    get().updateView();
-  },
-  autoLayoutROOT: () => {
-    // get all scopes,
-    console.debug("autoLayoutROOT");
-    let nodesMap = get().getNodesMap();
-    let nodes = Array.from<Node>(nodesMap.values());
-    nodes
-      // sort the children so that the inner scope gets processed first.
-      // .sort((a: Node, b: Node) => b.data.level - a.data.level)
-      .forEach((node) => {
-        if (node.type === "SCOPE") {
-          get().autoLayout(node.id);
-        }
-      });
-    // Build node2Children
-    get().buildNode2Children();
-    // Applying on ROOT scope is not ideal.
-    get().autoLayout();
-  },
-  /**
-   * Use d3-force to auto layout the nodes.
-   */
-  autoLayout: (scopeId) => {
-    // 1. get all the nodes and edges in the scope
-    let nodesMap = get().getNodesMap();
-    const nodes = get().nodes.filter((node) => node.parentNode === scopeId);
-    if (nodes.length == 0) return;
-    const edges = get().edges;
-    // consider the output box
-
-    // Save initial minimum offset of the nodes.
-    let initOffX = Math.min(...nodes.map((node) => node.position.x));
-    let initOffY = Math.min(...nodes.map((node) => node.position.y));
-
-    const tmpNodes: NodeType[] = nodes.map((node) => ({
+    const children = node.data.children;
+    return {
       id: node.id,
-      x: node.position.x + node.width! / 2,
-      y: node.position.y + node.height! / 2,
       width: node.width!,
       height: node.height!,
-    }));
-    const tmpEdges = edges.map((edge) => ({
-      source: edge.source,
-      source0: 0,
-      target: edge.target,
-      target0: 1,
-    }));
-    // 2. construct a D3 tree for the nodes and their connections
-    // initialize the tree layout (see https://observablehq.com/@d3/tree for examples)
-    // const hierarchy = stratify<Node>()
-    //   .id((d) => d.id)
-    //   // get the id of each node by searching through the edges
-    //   // this only works if every node has one connection
-    //   .parentId((d: Node) => edges.find((e: Edge) => e.target === d.id)?.source)(
-    //   nodes
-    // );
-    const simulation = forceSimulation<NodeType>(tmpNodes)
-      // .force(
-      //   "link",
-      //   forceLink(tmpEdges)
-      //     .id((d: any) => d.id)
-      //     .distance(20)
-      //     .strength(0.5)
-      // )
-      // .force("charge", forceManyBody().strength(-1000))
-      // .force("x", forceX())
-      // .force("y", forceY())
-      .force("collide", forceCollideRect())
-      // .force("link", d3.forceLink(edges).id(d => d.id))
-      // .force("charge", d3.forceManyBody())
-      // .force("center", forceCenter(0, 0))
-      .stop();
-    simulation.tick(10);
-    tmpNodes.forEach((node) => {
-      node.x -= node.width! / 2;
-      node.y -= node.height! / 2;
-    });
-
-    if (!scopeId) {
-      // reset the node positions
-      tmpNodes.forEach(({ id, x, y }) => {
-        // FIXME I should assert here.
-        if (nodesMap.has(id)) {
-          nodesMap.set(id, {
-            ...nodesMap.get(id)!,
-            position: { x, y },
-          });
-        }
-      });
-    } else {
-      // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
-      // get the min x and y
-      let x1s = tmpNodes.map((node) => node.x);
-      let minx = Math.min(...x1s);
-      let y1s = tmpNodes.map((node) => node.y);
-      let miny = Math.min(...y1s);
-      // calculate the offset, leave 50 padding for the scope.
-      // Leave some room at the top of the scope for inner pod toolbars.
-      const paddingTop = 70;
-      const paddingBottom = 50;
-      const paddingLeft = 50;
-      const paddingRight = 50;
-      const offsetx = paddingLeft - minx;
-      const offsety = paddingTop - miny;
-      // move the nodes
-      tmpNodes.forEach((node) => {
-        node.x += offsetx;
-        node.y += offsety;
-      });
-      // Apply the new positions
-      // TODO need to transform the nodes to the center of the scope.
-      tmpNodes.forEach(({ id, x, y }) => {
-        // FIXME I should assert here.
-        if (nodesMap.has(id)) {
-          nodesMap.set(id, {
-            ...nodesMap.get(id)!,
-            // position: { x: x + scope!.position!.x, y: y + scope!.position!.y },
-            position: { x, y },
-          });
-        }
-      });
-      // update the scope's size to enclose all the nodes
-      x1s = tmpNodes.map((node) => node.x);
-      minx = Math.min(...x1s);
-      y1s = tmpNodes.map((node) => node.y);
-      miny = Math.min(...y1s);
-      const x2s = tmpNodes.map((node) => node.x + node.width);
-      const maxx = Math.max(...x2s);
-      const y2s = tmpNodes.map((node) => node.y + node.height);
-      const maxy = Math.max(...y2s);
-      const scope = nodesMap.get(scopeId)!;
-      nodesMap.set(scopeId, {
-        ...scope,
-        position: {
-          x: scope.position.x + initOffX - paddingLeft,
-          y: scope.position.y + initOffY - paddingTop,
-        },
-        width: maxx - minx + paddingLeft + paddingRight,
-        height: maxy - miny + paddingTop + paddingBottom,
-        style: {
-          ...scope!.style,
-          width: maxx - minx + paddingLeft + paddingRight,
-          height: maxy - miny + paddingTop + paddingBottom,
-        },
-      });
-    }
-
-    get().updateView();
-  },
-});
-
-type NodeType = {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-function forceCollideRect() {
-  let nodes;
-
-  function force(alpha) {
-    const padding = 5;
-    const quad = quadtree(
-      nodes,
-      (d: NodeType) => d.x,
-      (d) => d.y
-    );
-    for (const d of nodes) {
-      quad.visit((q: any, x1, y1, x2, y2) => {
-        let updated = false;
-        if (q.data && q.data !== d) {
-          let x = d.x - q.data.x,
-            y = d.y - q.data.y,
-            xSpacing = padding + (q.data.width + d.width) / 2,
-            ySpacing = padding + (q.data.height + d.height) / 2,
-            absX = Math.abs(x),
-            absY = Math.abs(y),
-            l,
-            lx,
-            ly;
-
-          if (absX < xSpacing && absY < ySpacing) {
-            l = Math.sqrt(x * x + y * y);
-
-            lx = (absX - xSpacing) / l;
-            ly = (absY - ySpacing) / l;
-
-            // the one that's barely within the bounds probably triggered the collision
-            if (Math.abs(lx) > Math.abs(ly)) {
-              lx = 0;
-            } else {
-              ly = 0;
-            }
-            d.x -= x *= lx;
-            d.y -= y *= ly;
-            q.data.x += x;
-            q.data.y += y;
-
-            updated = true;
-          }
-        }
-        return updated;
-      });
-    }
+      children: node.data.folded ? [] : children ? children.map(subtree) : [],
+    };
   }
+  const data = subtree(id);
+  console.log("subtree data", data);
+  // console.log("Data", data);
+  const paddingX = 100;
+  const paddingY = 100;
+  // const paddingX = 0;
+  // const paddingY = 0;
 
-  force.initialize = (_) => (nodes = _);
-
-  return force;
+  const layout = flextree({
+    children: (data) => data.children,
+    // horizontal
+    nodeSize: (node) => [
+      node.data.height + paddingY,
+      node.data.width + paddingX,
+    ],
+    // spacing: 100,
+  });
+  const tree = layout.hierarchy(data);
+  layout(tree);
+  // console.log("Layout Result", layout.dump(tree)); //=> prints the results
+  // console.log("Tree", tree);
+  // tree.each((node) => console.log(`(${node.x}, ${node.y})`));
+  // update the nodesMap
+  tree.each((node) => {
+    const n = nodesMap.get(node.data.id)!;
+    // horizontal
+    nodesMap.set(node.data.id, {
+      ...n,
+      position: {
+        x: rootNode.position.x + node.y,
+        // center the node
+        y:
+          rootNode.position.y +
+          rootNode.height! / 2 +
+          node.x -
+          node.data.height / 2,
+        // y: node.x,
+      },
+    });
+  });
 }
+
+function autoLayoutTree(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  console.log("autoLayoutTree", nodesMap);
+  layoutSubTree(nodesMap, "ROOT");
+  updateView(get, set);
+}
+
+export const ATOM_autoLayoutTree = atom(null, autoLayoutTree);
+
+function messUp(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  const nodes = Array.from(nodesMap.values());
+  nodes.forEach((node) => {
+    if (node.type === "SCOPE") return;
+    if (node.id === "ROOT") return;
+    const pos = getAbsPos(node, nodesMap);
+    node.position = { x: pos.x - 100, y: pos.y - 100 };
+    nodesMap.set(node.id, node);
+  });
+  updateView(get, set);
+}
+
+export const ATOM_messUp = atom(null, messUp);

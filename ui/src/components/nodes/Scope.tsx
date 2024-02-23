@@ -37,27 +37,33 @@ import ViewTimelineOutlinedIcon from "@mui/icons-material/ViewTimelineOutlined";
 import CompressIcon from "@mui/icons-material/Compress";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
-import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
-
-import { RepoContext } from "@/lib/store";
 
 import { NodeResizer, NodeResizeControl } from "reactflow";
 import { ConfirmDeleteButton, ResizeIcon } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
+import { ATOM_editMode } from "@/lib/store/atom";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  ATOM_activeRuntime,
+  ATOM_getScopeChain,
+  ATOM_preprocessChain,
+} from "@/lib/store/runtimeSlice";
+import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { ATOM_devMode } from "@/lib/store/settingSlice";
 
 function MyFloatingToolbar({ id }: { id: string }) {
-  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
-  const editMode = useStore(store, (state) => state.editMode);
-  const preprocessChain = useStore(store, (state) => state.preprocessChain);
-  const getScopeChain = useStore(store, (state) => state.getScopeChain);
+  const [editMode] = useAtom(ATOM_editMode);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const getScopeChain = useSetAtom(ATOM_getScopeChain);
 
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const [activeRuntime] = useAtom(ATOM_activeRuntime);
 
-  const autoLayout = useStore(store, (state) => state.autoLayout);
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   return (
     <Box
@@ -86,7 +92,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         <Tooltip title="force layout">
           <IconButton
             onClick={() => {
-              autoLayout(id);
+              autoLayoutTree();
             }}
           >
             <ViewTimelineOutlinedIcon />
@@ -122,21 +128,11 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
 }) {
   // add resize to the node
   const ref = useRef(null);
-  const store = useContext(RepoContext)!;
-  const setPodName = useStore(store, (state) => state.setPodName);
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const editMode = useStore(store, (state) => state.editMode);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const [editMode] = useAtom(ATOM_editMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const devMode = useStore(store, (state) => state.devMode);
-
-  useEffect(() => {
-    if (!data.name) return;
-    setPodName({ id, name: data.name || "" });
-    if (inputRef?.current) {
-      inputRef.current.value = data.name;
-    }
-  }, [data.name, id, setPodName]);
+  const [devMode] = useAtom(ATOM_devMode);
 
   const [showToolbar, setShowToolbar] = useState(false);
 

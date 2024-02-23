@@ -31,10 +31,6 @@ import HeightIcon from "@mui/icons-material/Height";
 
 import Ansi from "ansi-to-react";
 
-import { useStore } from "zustand";
-
-import { RepoContext } from "@/lib/store";
-
 import { MyMonaco } from "../MyMonaco";
 
 import { Handles, useAnchorStyle } from "./utils";
@@ -55,6 +51,20 @@ import {
 } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
+import { useAtom, useSetAtom } from "jotai";
+import { selectAtom } from "jotai/utils";
+import {
+  ATOM_activeRuntime,
+  ATOM_clearResults,
+  ATOM_getEdgeChain,
+  ATOM_preprocessChain,
+} from "@/lib/store/runtimeSlice";
+import {
+  ATOM_nodesMap,
+  ATOM_resultChanged,
+  ATOM_resultMap,
+} from "@/lib/store/yjsSlice";
+import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -70,14 +80,13 @@ function Timer({ lastExecutedAt }) {
 export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const [resultScroll, setResultScroll] = useState(false);
 
-  const store = useContext(RepoContext)!;
-  const clearResults = useStore(store, (state) => state.clearResults);
+  const clearResults = useSetAtom(ATOM_clearResults);
   // monitor result change
-  // FIXME performance: would this trigger re-render of all pods?
-  const resultChanged = useStore(store, (state) => state.resultChanged[id]);
-  // This is a dummy useEffect to indicate resultChanged is used.
-  useEffect(() => {}, [resultChanged]);
-  const resultMap = useStore(store, (state) => state.getResultMap());
+  useAtom(
+    React.useMemo(() => selectAtom(ATOM_resultChanged, (v) => v[id]), [id])
+  );
+
+  const [resultMap] = useAtom(ATOM_resultMap);
   const result = resultMap.get(id);
   if (!result) {
     return null;
@@ -230,14 +239,14 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
 });
 
 function HeaderBar({ id }: { id: string }) {
-  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
-  const preprocessChain = useStore(store, (state) => state.preprocessChain);
-  const getEdgeChain = useStore(store, (state) => state.getEdgeChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
+
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const activeRuntime = useStore(store, (state) => state.activeRuntime);
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const addNode = useStore(store, (state) => state.addNode);
+  const [activeRuntime] = useAtom(ATOM_activeRuntime);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const addNode = useSetAtom(ATOM_addNode);
   const node = nodesMap.get(id)!;
   const parentId = node.data.parent;
   let index = 0;
@@ -318,7 +327,7 @@ function HeaderBar({ id }: { id: string }) {
               <DropdownMenu.SubContent>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("CODE", parentId, index);
+                    addNode({ type: "CODE", parentId, index });
                   }}
                 >
                   <FunctionSquare />
@@ -326,7 +335,7 @@ function HeaderBar({ id }: { id: string }) {
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("RICH", parentId, index);
+                    addNode({ type: "RICH", parentId, index });
                   }}
                 >
                   <Pencil /> Note…
@@ -341,7 +350,7 @@ function HeaderBar({ id }: { id: string }) {
             <DropdownMenu.SubContent>
               <DropdownMenu.Item
                 onClick={() => {
-                  addNode("CODE", id, -1);
+                  addNode({ type: "CODE", parentId: id, index: -1 });
                 }}
               >
                 <FunctionSquare />
@@ -349,7 +358,7 @@ function HeaderBar({ id }: { id: string }) {
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 onClick={() => {
-                  addNode("RICH", id, -1);
+                  addNode({ type: "RICH", parentId: id, index: -1 });
                 }}
               >
                 <Pencil />
@@ -366,7 +375,7 @@ function HeaderBar({ id }: { id: string }) {
               <DropdownMenu.SubContent>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("CODE", parentId, index + 1);
+                    addNode({ type: "CODE", parentId, index: index + 1 });
                   }}
                 >
                   <FunctionSquare />
@@ -374,7 +383,7 @@ function HeaderBar({ id }: { id: string }) {
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => {
-                    addNode("RICH", parentId, index + 1);
+                    addNode({ type: "RICH", parentId, index: index + 1 });
                   }}
                 >
                   <Pencil /> Note…
@@ -407,18 +416,9 @@ export const CodeNode = function ({
   xPos,
   yPos,
 }) {
-  const store = useContext(RepoContext)!;
-  const setPodName = useStore(store, (state) => state.setPodName);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [nodesMap] = useAtom(ATOM_nodesMap);
 
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  useEffect(() => {
-    if (!data.name) return;
-    setPodName({ id, name: data.name });
-    if (inputRef?.current) {
-      inputRef.current.value = data.name || "";
-    }
-  }, [data.name, setPodName, id]);
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   const [hover, setHover] = useState(false);
 
@@ -491,6 +491,7 @@ export const CodeNode = function ({
                 ...node,
                 style: { ...node.style, height: undefined },
               });
+              autoLayoutTree();
             }
           }}
         >
