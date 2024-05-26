@@ -23,6 +23,7 @@ export type NodeData = {
   children: string[];
   parent?: string;
   folded: boolean;
+  lang?: string;
 };
 
 const newScopeNodeShapeConfig = {
@@ -88,6 +89,7 @@ function createNewNode(
       level: 0,
       children: [],
       folded: false,
+      lang: "python",
     },
     dragHandle: ".custom-drag-handle",
   };
@@ -179,6 +181,9 @@ export const ATOM_updateView = atom(null, updateView);
  */
 
 export const ATOM_isAddingNode = atom(false);
+export const ATOM_addNodeLanguage = atom<"python" | "julia" | "dockerfile">(
+  "python"
+);
 export const ATOM_addNodeType = atom<"CODE" | "RICH">("CODE");
 export const ATOM_mousePosition = atom({ x: 0, y: 0 });
 type AnchorNode = {
@@ -520,9 +525,7 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
   const rootNode = nodesMap.get(id);
   // console.log("RootNode", rootNode);
   if (!rootNode) throw new Error("Root node not found");
-  console.log("getting subtree");
   function subtree(id: string) {
-    console.log("subtree", id);
     const node = nodesMap.get(id);
     if (!node) throw new Error("Node not found");
     const children = node.data.children;
@@ -534,7 +537,6 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
     };
   }
   const data = subtree(id);
-  console.log("subtree data", data);
   // console.log("Data", data);
   const paddingX = 100;
   const paddingY = 100;
@@ -577,7 +579,6 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
 
 function autoLayoutTree(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
-  console.log("autoLayoutTree", nodesMap);
   layoutSubTree(nodesMap, "ROOT");
   updateView(get, set);
 }

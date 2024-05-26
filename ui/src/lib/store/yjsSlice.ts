@@ -59,6 +59,38 @@ function toggleResultChanged(get: Getter, set: Setter, id: string) {
 }
 
 /**
+ * This ATOM is used to trigger re-rendering of the pod.
+ */
+export const ATOM_podUpdated = atom<Record<string, boolean>>({});
+
+function triggerPodUpdate(get: Getter, set: Setter, id: string) {
+  set(
+    ATOM_podUpdated,
+    produce((podChanged: Record<string, boolean>) => {
+      podChanged[id] = !podChanged[id];
+    })
+  );
+}
+
+/**
+ * Change the pod's language will trigger (1) the change of yjs data and (2) the
+ * re-rendering of the pod.
+ */
+export const ATOM_changeLang = atom(
+  null,
+  (get, set, id: string, lang: string) => {
+    const nodesMap = getNodesMap(get);
+    const node = nodesMap.get(id);
+    if (node) {
+      // set the yjs data
+      nodesMap.set(id, { ...node, data: { ...node.data, lang } });
+      // trigger re-rendering
+      triggerPodUpdate(get, set, id);
+    }
+  }
+);
+
+/**
  * Yjs Map getters
  */
 function getNodesMap(get: Getter) {
@@ -224,7 +256,22 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     // FIXME do I need to unobserve it when disconnecting?
     nodesMap.observe((YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
       if (transaction.local) return;
-      updateView(get, set);
+      // whether the meta data of a node is changed.
+      YMapEvent.changes.keys.forEach((change, key) => {
+        // switch
+        switch (change.action) {
+          case "add":
+          case "delete":
+            updateView(get, set);
+            break;
+          case "update":
+            triggerPodUpdate(get, set, key);
+            break;
+          default:
+            console.warn("unhandled change action", change.action);
+            break;
+        }
+      });
     });
     edgesMap.observe((YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
       if (transaction.local) return;

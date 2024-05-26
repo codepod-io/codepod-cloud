@@ -203,7 +203,9 @@ function parsePod(get: Getter, set: Setter, id: string) {
 function parseAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
-    if (node.type === "CODE") parsePod(get, set, node.id);
+    if (node.type === "CODE" && node.data.lang === "python") {
+      parsePod(get, set, node.id);
+    }
   });
 }
 
@@ -232,7 +234,9 @@ function resolvePod(get: Getter, set: Setter, id: string) {
 export const ATOM_resolveAllPods = atom(null, (get, set) => {
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
-    if (node.type === "CODE") resolvePod(get, set, node.id);
+    if (node.type === "CODE" && node.data.lang === "python") {
+      resolvePod(get, set, node.id);
+    }
   });
 });
 

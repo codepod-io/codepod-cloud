@@ -30,7 +30,11 @@ import {
   ATOM_parseResult,
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
-import { ATOM_codeMap, ATOM_provider } from "@/lib/store/yjsSlice";
+import {
+  ATOM_codeMap,
+  ATOM_nodesMap,
+  ATOM_provider,
+} from "@/lib/store/yjsSlice";
 import { selectAtom } from "jotai/utils";
 
 const theme: monaco.editor.IStandaloneThemeData = {
@@ -394,18 +398,8 @@ async function updateGitGutter(editor) {
   );
 }
 
-// This is very weired. This component will re-render, but the Monaco instance will
-// not, and the instance will only be mounted once. All variables, even a object
-// like the pod object will be fixed at original state: changing pod.staged
-// won't be visible in the editorDidMount callback.
-
-interface MyMonacoProps {
-  id: string;
-}
-
-export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
+export const MyMonaco = function MyMonaco({ id = "0" }) {
   // there's no racket language support
-  console.debug("[perf] rendering MyMonaco", id);
   const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
 
@@ -422,7 +416,9 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
   const [copilotManualMode] = useAtom(ATOM_copilotManualMode);
 
   // TODO support other languages.
-  let lang = "python";
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  let lang = node?.data.lang || "python";
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -550,4 +546,4 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({ id = "0" }) {
       editorDidMount={onEditorDidMount}
     />
   );
-});
+};
