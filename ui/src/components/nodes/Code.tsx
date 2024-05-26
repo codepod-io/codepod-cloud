@@ -286,7 +286,11 @@ function HeaderBar({ id }: { id: string }) {
         }}
       >
         <Select.Trigger variant="ghost" />
-        <Select.Content>
+        <Select.Content
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+          }}
+        >
           <Select.Group>
             <Select.Label>Languages</Select.Label>
             <Select.Item value="python">Python</Select.Item>
