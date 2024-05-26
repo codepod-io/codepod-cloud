@@ -37,7 +37,12 @@ import { Handles, useAnchorStyle } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
-import { DropdownMenu, Flex, Button as RadixButton } from "@radix-ui/themes";
+import {
+  DropdownMenu,
+  Flex,
+  Button as RadixButton,
+  Select,
+} from "@radix-ui/themes";
 import {
   ArrowDown,
   ArrowRight,
@@ -60,7 +65,9 @@ import {
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
 import {
+  ATOM_changeLang,
   ATOM_nodesMap,
+  ATOM_podUpdated,
   ATOM_resultChanged,
   ATOM_resultMap,
 } from "@/lib/store/yjsSlice";
@@ -242,6 +249,7 @@ function HeaderBar({ id }: { id: string }) {
   const reactFlowInstance = useReactFlow();
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
+  const changeLang = useSetAtom(ATOM_changeLang);
 
   const runChain = runtimeTrpc.kernel.runChain.useMutation();
   const [activeRuntime] = useAtom(ATOM_activeRuntime);
@@ -269,6 +277,28 @@ function HeaderBar({ id }: { id: string }) {
       }}
     >
       <div className="flex-grow"></div>
+
+      {/* Language selector */}
+      <Select.Root
+        value={node.data.lang}
+        onValueChange={(value) => {
+          changeLang(id, value);
+        }}
+      >
+        <Select.Trigger variant="ghost" />
+        <Select.Content>
+          <Select.Group>
+            <Select.Label>Languages</Select.Label>
+            <Select.Item value="python">Python</Select.Item>
+            <Select.Item value="markdown">Markdown</Select.Item>
+          </Select.Group>
+          <Select.Separator />
+          <Select.Group>
+            <Select.Label>Configs</Select.Label>
+            <Select.Item value="dockerfile">Dockerfile</Select.Item>
+          </Select.Group>
+        </Select.Content>
+      </Select.Root>
       <RadixButton
         variant="ghost"
         style={{
@@ -318,79 +348,6 @@ function HeaderBar({ id }: { id: string }) {
             Run Chain
           </DropdownMenu.Item>
 
-          {parentId && (
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>
-                <ArrowUp />
-                Up
-              </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                <DropdownMenu.Item
-                  onClick={() => {
-                    addNode({ type: "CODE", parentId, index });
-                  }}
-                >
-                  <FunctionSquare />
-                  Code…
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => {
-                    addNode({ type: "RICH", parentId, index });
-                  }}
-                >
-                  <Pencil /> Note…
-                </DropdownMenu.Item>
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-          )}
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger>
-              <ArrowRight /> Right
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent>
-              <DropdownMenu.Item
-                onClick={() => {
-                  addNode({ type: "CODE", parentId: id, index: -1 });
-                }}
-              >
-                <FunctionSquare />
-                Code…
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => {
-                  addNode({ type: "RICH", parentId: id, index: -1 });
-                }}
-              >
-                <Pencil />
-                Note…
-              </DropdownMenu.Item>
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-          {parentId && (
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>
-                <ArrowDown />
-                Down
-              </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                <DropdownMenu.Item
-                  onClick={() => {
-                    addNode({ type: "CODE", parentId, index: index + 1 });
-                  }}
-                >
-                  <FunctionSquare />
-                  Code…
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => {
-                    addNode({ type: "RICH", parentId, index: index + 1 });
-                  }}
-                >
-                  <Pencil /> Note…
-                </DropdownMenu.Item>
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-          )}
           <DropdownMenu.Separator />
           <DropdownMenu.Item
             shortcut="⌘ ⌫"
@@ -408,19 +365,27 @@ function HeaderBar({ id }: { id: string }) {
   );
 }
 
-export const CodeNode = function ({
-  data,
-  id,
-  selected,
-  // note that xPos and yPos are the absolute position of the node
-  xPos,
-  yPos,
-}) {
+/**
+ * Hover on the handle and show different variants.
+ */
+function HandleWithHover({ id }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <Handles id={id} hover={hover} />
+    </div>
+  );
+}
+
+export const CodeNode = memo<{ id: string }>(function ({ id }) {
+  // Re-render the editor when the pod is updated (e.g., language changed).
+  useAtom(React.useMemo(() => selectAtom(ATOM_podUpdated, (v) => v[id]), [id]));
   const [nodesMap] = useAtom(ATOM_nodesMap);
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
-
-  const [hover, setHover] = useState(false);
 
   const anchorStyle = useAnchorStyle(id);
 
@@ -430,8 +395,6 @@ export const CodeNode = function ({
   return (
     <div
       // className="nodrag"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         ...anchorStyle,
         width: "100%",
@@ -467,7 +430,7 @@ export const CodeNode = function ({
         </div>
         <ResultBlock id={id} />
 
-        <Handles id={id} hover={hover} />
+        <HandleWithHover id={id} />
 
         <NodeResizeControl
           style={{
@@ -507,4 +470,4 @@ export const CodeNode = function ({
       </div>
     </div>
   );
-};
+});
