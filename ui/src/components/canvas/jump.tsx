@@ -32,13 +32,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import Box from "@mui/material/Box";
-
-import * as Y from "yjs";
-
-import { timer } from "d3-timer";
-
-import { runtimeTrpc, trpc } from "@/lib/trpc";
 import {
   ATOM_centerSelection,
   ATOM_focusedEditor,
@@ -47,7 +40,6 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
-  ATOM_activeRuntime,
   ATOM_getScopeChain,
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
@@ -144,9 +136,6 @@ export function useJump() {
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getScopeChain = useSetAtom(ATOM_getScopeChain);
 
-  const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const [activeRuntime] = useAtom(ATOM_activeRuntime);
-
   const setCenterSelection = useSetAtom(ATOM_centerSelection);
 
   const handleKeyDown = (event) => {
@@ -232,10 +221,7 @@ export function useJump() {
         if (pod.type == "CODE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" will run the code pod
-            if (activeRuntime) {
-              const specs = preprocessChain([id]);
-              if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-            }
+            console.warn("DEPRECATED");
           } else {
             // Hitting "Enter" on a Code pod will go to "Edit" mode.
             setFocusedEditor(id);
@@ -243,11 +229,7 @@ export function useJump() {
         } else if (pod.type === "SCOPE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" on a Scope will run the scope.
-            if (activeRuntime) {
-              const chain = getScopeChain(id);
-              const specs = preprocessChain(chain);
-              if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-            }
+            console.warn("DEPRECATED");
           }
         } else if (pod.type === "RICH") {
           // Hitting "Enter" on a Rich pod will go to "Edit" mode.

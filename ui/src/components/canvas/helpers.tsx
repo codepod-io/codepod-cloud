@@ -38,7 +38,6 @@ import * as Y from "yjs";
 
 import { timer } from "d3-timer";
 
-import { runtimeTrpc, trpc } from "@/lib/trpc";
 import { ATOM_isAddingNode } from "@/lib/store/canvasSlice";
 import { useAtom } from "jotai";
 

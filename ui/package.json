@@ -83,6 +83,7 @@
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^4.0.12",
+    "react-hotkeys-hook": "^4.5.0",
     "react-monaco-editor": "^0.50.1",
     "react-resizable": "^3.0.4",
     "react-router-dom": "^6.4.2",
@@ -121,5 +122,6 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vite-plugin-checker": "^0.6.2"
-  }
+  },
+  "packageManager": "pnpm@9.1.0+sha512.67f5879916a9293e5cf059c23853d571beaf4f753c707f40cb22bed5fb1578c6aad3b6c4107ccb3ba0b35be003eb621a16471ac836c87beb53f9d54bb4612724"
 }

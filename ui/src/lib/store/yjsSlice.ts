@@ -9,7 +9,6 @@ import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
 import { ATOM_repoId, buildNode2Children } from "./atom";
-import { ATOM_activeRuntime } from "./runtimeSlice";
 
 export type RuntimeInfo = {
   status?: string;
@@ -49,7 +48,6 @@ export const ATOM_runtimeChanged = atom(false);
 
 export const ATOM_resultChanged = atom<Record<string, boolean>>({});
 function toggleResultChanged(get: Getter, set: Setter, id: string) {
-  console.log("toggleResultChanged", id);
   set(
     ATOM_resultChanged,
     produce((resultChanged: Record<string, boolean>) => {
@@ -140,6 +138,8 @@ export {
   ATOM_runtimeMap,
   ATOM_resultMap,
 };
+
+export const ATOM_runtimeReady = atom(false);
 
 const ATOM_clients = atom(new Map<string, any>());
 
@@ -279,28 +279,23 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     });
     // Set active runtime to the first one.
     const runtimeMap = getRuntimeMap(get);
-    if (runtimeMap.size > 0) {
-      set(ATOM_activeRuntime, Array.from(runtimeMap.keys())[0]);
+    function setRuntimeReady(runtimeMap: Y.Map<RuntimeInfo>) {
+      const runtime = runtimeMap.get("python");
+      if (["idle", "busy"].includes(runtime?.status || "")) {
+        set(ATOM_runtimeReady, true);
+      } else {
+        set(ATOM_runtimeReady, false);
+      }
     }
+    // initial setup for runtimeReady
+    setRuntimeReady(runtimeMap);
     // Set up observers to trigger future runtime status changes.
     runtimeMap.observe(
       (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
         if (transaction.local) return;
-        YMapEvent.changes.keys.forEach((change, key) => {
-          if (change.action === "add") {
-          } else if (change.action === "update") {
-          } else if (change.action === "delete") {
-            // If it was the active runtime, reset it.
-            if (get(ATOM_activeRuntime) === key) {
-              set(ATOM_activeRuntime, undefined);
-            }
-          }
-        });
-        // Set active runtime if it is not set
-        if (runtimeMap.size > 0 && !get(ATOM_activeRuntime)) {
-          set(ATOM_activeRuntime, Array.from(runtimeMap.keys())[0]);
-        }
         set(ATOM_runtimeChanged, !get(ATOM_runtimeChanged));
+        // set runtimeReady
+        setRuntimeReady(runtimeMap);
       }
     );
     // Set synced flag to be used to ensure canvas rendering after yjs synced.

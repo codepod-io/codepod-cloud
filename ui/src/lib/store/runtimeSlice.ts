@@ -145,11 +145,9 @@ function rewriteCode(id: string, get: Getter): string | null {
     index = annotation.endIndex;
   });
   newcode += code.slice(index);
-  console.debug("newcode", newcode);
+  // console.debug("newcode", newcode);
   return newcode;
 }
-
-export const ATOM_activeRuntime = atom<string | undefined>(undefined);
 
 type ParseResult = Record<
   string,
@@ -274,29 +272,7 @@ function preprocessChain(get: Getter, set: Setter, ids: string[]) {
 
 export const ATOM_preprocessChain = atom(null, preprocessChain);
 
-function isRuntimeReady(get: Getter) {
-  const runtimeMap = get(ATOM_runtimeMap);
-  const activeRuntime = get(ATOM_activeRuntime);
-  if (!activeRuntime) {
-    console.log({
-      type: "error",
-      msg: "No active runtime",
-    });
-    return false;
-  }
-  const runtime = runtimeMap.get(activeRuntime);
-  if (runtime?.wsStatus !== "connected") {
-    console.log({
-      type: "error",
-      msg: "Runtime not connected",
-    });
-    return false;
-  }
-  return true;
-}
-
 function getScopeChain(get: Getter, set: Setter, id: string) {
-  if (!isRuntimeReady(get)) return [];
   const nodesMap = get(ATOM_nodesMap);
   const nodes = Array.from<Node>(nodesMap.values());
   const node = nodesMap.get(id);
@@ -313,7 +289,6 @@ export const ATOM_getScopeChain = atom(null, getScopeChain);
  * @returns
  */
 function getEdgeChain(get: Getter, set: Setter, id: string) {
-  if (!isRuntimeReady(get)) return [];
   // Get the chain: get the edges, and then get the pods
   const edgesMap = get(ATOM_edgesMap);
   let edges = Array.from<Edge>(edgesMap.values());

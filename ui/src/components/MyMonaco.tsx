@@ -15,7 +15,7 @@ import * as Y from "yjs";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "@/lib/parser";
-import { runtimeTrpc, trpc, copilotTrpc } from "@/lib/trpc";
+import { copilotTrpc } from "@/lib/trpc";
 
 import { llamaInlineCompletionProvider } from "@/lib/llamaCompletionProvider";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -26,7 +26,6 @@ import {
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import {
-  ATOM_activeRuntime,
   ATOM_parseResult,
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
@@ -401,10 +400,6 @@ async function updateGitGutter(editor) {
 export const MyMonaco = function MyMonaco({ id = "0" }) {
   // there's no racket language support
   const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
-  const preprocessChain = useSetAtom(ATOM_preprocessChain);
-
-  const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const [activeRuntime] = useAtom(ATOM_activeRuntime);
 
   const [annotations] = useAtom(
     useMemo(() => selectAtom(ATOM_parseResult, (v) => v[id]?.annotations), [id])
@@ -457,20 +452,6 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
       editor.layout();
     };
     editor.onDidContentSizeChange(updateHeight);
-    // Note: must use addAction instead of addCommand. The addCommand is not
-    // working because it is bound to only the latest Monaco instance. This is a
-    // known bug: https://github.com/microsoft/monaco-editor/issues/2947
-    editor.addAction({
-      id: "Run",
-      label: "Run",
-      keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-      run: () => {
-        if (activeRuntime) {
-          const specs = preprocessChain([id]);
-          if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-        }
-      },
-    });
     editor.addAction({
       id: "trigger-inline-suggest",
       label: "Trigger Suggest",
