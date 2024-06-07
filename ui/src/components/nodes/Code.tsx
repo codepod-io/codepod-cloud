@@ -411,7 +411,7 @@ function useRunKey({ id }: { id: string }) {
     },
     {
       enableOnContentEditable: true,
-      enabled: runtimeReady,
+      enabled: true,
       // So that it works on the code editor.
       enableOnFormTags: ["INPUT", "TEXTAREA"],
       // Prevent inserting in the code editor.
