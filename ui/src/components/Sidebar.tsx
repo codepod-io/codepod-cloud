@@ -563,6 +563,7 @@ function MyTabs({
         initial={{ opacity: 0, x: -100 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -100 }}
+        transition={{ duration: 0.1 }}
         className="px-4 pt-3 pb-2"
         style={{
           originX: 0,
@@ -582,6 +583,7 @@ function MyTabs({
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -10, opacity: 0 }}
+                transition={{ duration: 0.1 }}
               >
                 <Text size="2">{content}</Text>
               </motion.div>
@@ -616,6 +618,8 @@ export function TabSidebar() {
                 <YjsSyncStatus />
                 <Typography variant="h6">Export to ..</Typography>
                 <ExportButtons />
+                <Separator my="3" size="4" />
+                <Runtime />
                 <Separator my="3" size="4" />
                 <Heading mb="2" size="4">
                   Experimental
