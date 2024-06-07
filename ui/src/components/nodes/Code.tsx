@@ -76,6 +76,7 @@ import {
 } from "@/lib/store/yjsSlice";
 import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 import { ATOM_repoId } from "@/lib/store/atom";
+import { useSnackbar } from "notistack";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -398,12 +399,13 @@ function useRunKey({ id }: { id: string }) {
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const runtimeReady = useAtomValue(ATOM_runtimeReady);
   const repoId = useAtomValue(ATOM_repoId)!;
+  const { enqueueSnackbar } = useSnackbar();
   // call useHotKeys library
   return useHotkeys<HTMLDivElement>(
     "shift+enter",
     () => {
       if (!runtimeReady) {
-        console.warn("Runtime is not ready.");
+        enqueueSnackbar("Runtime is not ready.", { variant: "error" });
       } else {
         const specs = preprocessChain([id]);
         if (specs) runChain.mutate({ repoId, specs });
