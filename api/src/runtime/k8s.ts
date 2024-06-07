@@ -3,7 +3,7 @@ import * as k8s from "@kubernetes/client-node";
 import { z } from "zod";
 
 import { protectedProcedure, router } from "./trpc";
-import { ZmqWire2 } from "./k8s-zmq";
+import { ZmqWire } from "./k8s-zmq";
 
 import * as Y from "yjs";
 import WebSocket from "ws";
@@ -242,7 +242,7 @@ async function wairForServiceReady(url) {
   }
 }
 
-const repoId2wire = new Map<string, ZmqWire2>();
+const repoId2wire = new Map<string, ZmqWire>();
 const repoId2ydoc = new Map<string, Y.Doc>();
 
 export const k8sRouter = router({
@@ -285,7 +285,7 @@ export const k8sRouter = router({
       // 2. connect ZMQ socket
       // FIXME do I need to close the ZMQ sockets?
       console.log("creating zmq wire");
-      const wire = new ZmqWire2(url);
+      const wire = new ZmqWire(url);
 
       console.log("binding zmq and yjs");
       bindZmqYjs(wire, ydoc);

@@ -149,7 +149,7 @@ const spec = {
   key: "412d24d7-baca5d46b674d910851edd2f",
 };
 
-export class ZmqWire2 {
+export class ZmqWire {
   shell: zmq.Dealer;
   control: zmq.Dealer;
   iopub: zmq.Subscriber;
