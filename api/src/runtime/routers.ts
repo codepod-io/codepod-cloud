@@ -6,7 +6,7 @@ export const appRouter = router({
   hello: publicProcedure.query(() => {
     return "world";
   }),
-  container: k8sRouter,
+  k8s: k8sRouter,
 });
 
 export type RuntimeRouter = typeof appRouter;

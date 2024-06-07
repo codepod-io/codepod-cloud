@@ -253,10 +253,10 @@ function KernelStatus() {
 const Runtime = () => {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
-  const start = runtimeTrpc.container.start.useMutation();
-  const stop = runtimeTrpc.container.stop.useMutation();
-  const status = runtimeTrpc.container.status.useMutation();
-  const interrupt = runtimeTrpc.container.interrupt.useMutation();
+  const start = runtimeTrpc.k8s.start.useMutation();
+  const stop = runtimeTrpc.k8s.stop.useMutation();
+  const status = runtimeTrpc.k8s.status.useMutation();
+  const interrupt = runtimeTrpc.k8s.interrupt.useMutation();
 
   return (
     <>

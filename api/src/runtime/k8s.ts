@@ -425,7 +425,7 @@ export async function getYDoc({ repoId, token }): Promise<Y.Doc> {
 /**
  * Listen on ZMQ wire, and send results to Yjs document.
  */
-function bindZmqYjs(wire, ydoc) {
+function bindZmqYjs(wire: ZmqWire, ydoc: Y.Doc) {
   const rootMap = ydoc.getMap("rootMap");
   const runtimeMap = rootMap.get("runtimeMap") as any;
   const resultMap = rootMap.get("resultMap") as any;

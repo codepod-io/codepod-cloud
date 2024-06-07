@@ -255,7 +255,7 @@ function HeaderBar({ id }: { id: string }) {
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
   const changeLang = useSetAtom(ATOM_changeLang);
 
-  const runChain = runtimeTrpc.container.runChain.useMutation();
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const runtimeReady = useAtomValue(ATOM_runtimeReady);
   const repoId = useAtomValue(ATOM_repoId)!;
   const [nodesMap] = useAtom(ATOM_nodesMap);
@@ -394,7 +394,7 @@ function HandleWithHover({ id }) {
  */
 function useRunKey({ id }: { id: string }) {
   // The runtime ATOMs and trpc APIs.
-  const runChain = runtimeTrpc.container.runChain.useMutation();
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const runtimeReady = useAtomValue(ATOM_runtimeReady);
   const repoId = useAtomValue(ATOM_repoId)!;

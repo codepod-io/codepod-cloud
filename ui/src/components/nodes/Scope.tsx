@@ -60,7 +60,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const getScopeChain = useSetAtom(ATOM_getScopeChain);
 
   const repoId = useAtomValue(ATOM_repoId)!;
-  const runChain = runtimeTrpc.container.runChain.useMutation();
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const runtimeReady = useAtomValue(ATOM_runtimeReady);
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
