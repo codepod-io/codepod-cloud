@@ -74,7 +74,6 @@ import {
   ATOM_selectedPods,
   ATOM_selectPod,
 } from "@/lib/store/canvasSlice";
-import { ATOM_activeRuntime } from "@/lib/store/runtimeSlice";
 import {
   ATOM_codeMap,
   ATOM_nodesMap,
@@ -210,205 +209,90 @@ function SidebarSettings() {
   );
 }
 
-const RuntimeMoreMenu = ({ runtimeId }) => {
-  // menu logic
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  // codepod logic
-  const [activeRuntime, setActiveRuntime] = useAtom(ATOM_activeRuntime);
+function KernelStatus() {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
-
-  const deleteKernel = runtimeTrpc.kernel.delete.useMutation();
-  const disconnectKernel = runtimeTrpc.kernel.disconnect.useMutation();
-
-  return (
-    <Box component="span">
-      <IconButton
-        aria-label="more"
-        id="long-button"
-        aria-controls={open ? "basic-menu" : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        id="basic-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          "aria-labelledby": "basic-button",
-        }}
-      >
-        <MenuItem
-          onClick={() => {
-            setActiveRuntime(runtimeId);
-            handleClose();
-          }}
-          disabled={activeRuntime === runtimeId}
-        >
-          Activate
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            disconnectKernel.mutate({ runtimeId, repoId });
-            handleClose();
-          }}
-        >
-          Disconnect
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            deleteKernel.mutate({ runtimeId, repoId: repoId });
-            handleClose();
-          }}
-        >
-          Delete
-        </MenuItem>
-      </Menu>
-    </Box>
-  );
-};
-
-const RuntimeItem = ({ runtimeId }) => {
-  const [runtimeMap] = useAtom(ATOM_runtimeMap);
   // Observe runtime change
   const [runtimeChanged] = useAtom(ATOM_runtimeChanged);
   // A dummy useEffect to indicate that runtimeChanged is used.
   useEffect(() => {}, [runtimeChanged]);
-  const [activeRuntime] = useAtom(ATOM_activeRuntime);
-  const runtime = runtimeMap.get(runtimeId)!;
-  const [repoId] = useAtom(ATOM_repoId);
-  if (!repoId) throw new Error("repoId is null");
-
-  const connect = runtimeTrpc.kernel.connect.useMutation();
-  const requestKernelStatus = runtimeTrpc.kernel.status.useMutation();
-  const interruptKernel = runtimeTrpc.kernel.interrupt.useMutation();
-
-  useEffect(() => {
-    // if the runtime is disconnected, keep trying to connect.
-    if (runtime.wsStatus !== "connected") {
-      const interval = setInterval(
-        () => {
-          console.log("try connecting to runtime", runtimeId);
-          connect.mutate({
-            runtimeId,
-            repoId,
-          });
-        },
-        // ping every 3 seconds
-        3000
-      );
-      return () => clearInterval(interval);
-    }
-  }, [runtime]);
+  // the status
+  const [runtimeMap] = useAtom(ATOM_runtimeMap);
+  // FIXME there're too many keys in runtimeMap, old keys should be removed.
+  // console.log("runtimeMap", runtimeMap);
+  // runtimeMap.forEach((value, key) => {
+  //   console.log("key", key);
+  //   console.log("value", value);
+  // });
+  const runtime = runtimeMap.get("python");
 
   return (
-    <Box
-      sx={{
-        opacity: activeRuntime === runtimeId ? 1 : 0.3,
-      }}
-    >
-      <Paper>
-        <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-          ID: {runtimeId.substring(0, 8)}
-        </Typography>
-
-        <Typography variant="body1">
-          Conn:{" "}
-          {match(runtime.wsStatus)
-            .with("connected", () => (
-              <Box color="green" component="span">
-                connected
-              </Box>
-            ))
-            .with("connecting", () => (
-              <Box color="yellow" component="span">
-                connecting
-              </Box>
-            ))
-            .otherwise(() => (
-              <Box color="red" component="span">
-                Disconnected{" "}
-              </Box>
-            ))}
-          <RuntimeMoreMenu runtimeId={runtimeId} />
-        </Typography>
-        <Typography variant="body1">
-          Status:{" "}
-          {match(runtime.status)
-            .with("idle", () => (
-              <Box color="green" component="span">
-                idle
-              </Box>
-            ))
-            .with("busy", () => (
-              <Box color="yellow" component="span">
-                busy
-              </Box>
-            ))
-            .otherwise(() => runtime.status)}
-          <IconButton
-            size="small"
-            onClick={() => {
-              requestKernelStatus.mutate({
-                runtimeId,
-              });
-            }}
-          >
-            <RefreshIcon fontSize="inherit" />
-          </IconButton>
-          <Tooltip title="interrupt">
-            <IconButton
-              size="small"
-              onClick={() => {
-                interruptKernel.mutate({
-                  runtimeId,
-                });
-              }}
-            >
-              <StopIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        </Typography>
-      </Paper>
-    </Box>
+    <p>
+      status:{" "}
+      {match(runtime?.status)
+        .with("idle", () => (
+          <Box color="green" component="span">
+            idle
+          </Box>
+        ))
+        .with("busy", () => (
+          <Box color="yellow" component="span">
+            busy
+          </Box>
+        ))
+        .with(undefined, () => (
+          <Box color="red" component="span">
+            Powered Off
+          </Box>
+        ))
+        .otherwise(() => runtime?.status)}{" "}
+    </p>
   );
-};
+}
 
-const RuntimeStatus = () => {
+const Runtime = () => {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
-  const [runtimeMap] = useAtom(ATOM_runtimeMap);
-  // Observe runtime change
-  useAtom(ATOM_runtimeChanged);
-  const ids = Array.from<string>(runtimeMap.keys());
-  const createKernel = runtimeTrpc.kernel.create.useMutation();
+  const start = runtimeTrpc.k8s.start.useMutation();
+  const stop = runtimeTrpc.k8s.stop.useMutation();
+  const status = runtimeTrpc.k8s.status.useMutation();
+  const interrupt = runtimeTrpc.k8s.interrupt.useMutation();
 
   return (
     <>
-      <Typography variant="h6">Runtime</Typography>
+      <Typography variant="h6">runtime</Typography>
+      <KernelStatus />
       <Button
         onClick={() => {
-          const id = myNanoId();
-          createKernel.mutate({ runtimeId: id, repoId: repoId });
+          start.mutate({ repoId });
         }}
       >
-        Create New Runtime
+        Start
       </Button>
 
-      {ids.map((runtimeId) => (
-        <RuntimeItem key={runtimeId} runtimeId={runtimeId} />
-      ))}
+      <Button
+        onClick={() => {
+          stop.mutate({ repoId });
+        }}
+      >
+        Stop
+      </Button>
+
+      <Button
+        onClick={() => {
+          status.mutate({ repoId });
+        }}
+      >
+        Kernel Status Refresh
+      </Button>
+
+      <Button
+        onClick={() => {
+          interrupt.mutate({ repoId });
+        }}
+      >
+        Interrupt
+      </Button>
     </>
   );
 };
@@ -605,40 +489,6 @@ function TableofPods() {
   );
 }
 
-export const Sidebar = () => {
-  // never render saving status / runtime module for a guest
-  // FIXME: improve the implementation logic
-  return (
-    <>
-      <Box
-        sx={{
-          padding: "8px 16px",
-        }}
-      >
-        <Stack>
-          <Box>
-            <YjsSyncStatus />
-            <Divider />
-            <RuntimeStatus />
-          </Box>
-          <Divider />
-          <Typography variant="h6">Export to ..</Typography>
-          <ExportButtons />
-
-          <Divider />
-          <Typography variant="h6">Site Settings</Typography>
-          <SidebarSettings />
-          <ToastError />
-
-          <Divider />
-          <Typography variant="h6">Table of Pods</Typography>
-          <TableofPods />
-        </Stack>
-      </Box>
-    </>
-  );
-};
-
 const MyTabsRoot = ({
   tabs,
   children,
@@ -808,7 +658,7 @@ export function TabSidebar() {
             icon: <Cpu />,
             content: (
               <>
-                <RuntimeStatus />
+                <Runtime />
               </>
             ),
           },

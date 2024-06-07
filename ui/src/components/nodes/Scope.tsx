@@ -43,15 +43,14 @@ import { NodeResizer, NodeResizeControl } from "reactflow";
 import { ConfirmDeleteButton, ResizeIcon } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
-import { ATOM_editMode } from "@/lib/store/atom";
-import { useAtom, useSetAtom } from "jotai";
+import { ATOM_editMode, ATOM_repoId } from "@/lib/store/atom";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  ATOM_activeRuntime,
   ATOM_getScopeChain,
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
 import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
-import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { ATOM_nodesMap, ATOM_runtimeReady } from "@/lib/store/yjsSlice";
 import { ATOM_devMode } from "@/lib/store/settingSlice";
 
 function MyFloatingToolbar({ id }: { id: string }) {
@@ -60,8 +59,9 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getScopeChain = useSetAtom(ATOM_getScopeChain);
 
-  const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const [activeRuntime] = useAtom(ATOM_activeRuntime);
+  const repoId = useAtomValue(ATOM_repoId)!;
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const runtimeReady = useAtomValue(ATOM_runtimeReady);
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
@@ -75,12 +75,11 @@ function MyFloatingToolbar({ id }: { id: string }) {
       {editMode === "edit" && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
+            disabled={!runtimeReady}
             onClick={() => {
-              if (activeRuntime) {
-                const chain = getScopeChain(id);
-                const specs = preprocessChain(chain);
-                if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-              }
+              const chain = getScopeChain(id);
+              const specs = preprocessChain(chain);
+              if (specs) runChain.mutate({ repoId, specs });
             }}
           >
             <PlayCircleOutlineIcon />

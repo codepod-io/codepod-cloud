@@ -25,6 +25,8 @@ import ReactFlow, {
   NodeResizeControl,
 } from "reactflow";
 
+import { useHotkeys } from "react-hotkeys-hook";
+
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import HeightIcon from "@mui/icons-material/Height";
@@ -56,10 +58,9 @@ import {
 } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { selectAtom } from "jotai/utils";
 import {
-  ATOM_activeRuntime,
   ATOM_clearResults,
   ATOM_getEdgeChain,
   ATOM_preprocessChain,
@@ -70,8 +71,12 @@ import {
   ATOM_podUpdated,
   ATOM_resultChanged,
   ATOM_resultMap,
+  ATOM_runtimeChanged,
+  ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { ATOM_repoId } from "@/lib/store/atom";
+import { useSnackbar } from "notistack";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -251,8 +256,9 @@ function HeaderBar({ id }: { id: string }) {
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
   const changeLang = useSetAtom(ATOM_changeLang);
 
-  const runChain = runtimeTrpc.kernel.runChain.useMutation();
-  const [activeRuntime] = useAtom(ATOM_activeRuntime);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const runtimeReady = useAtomValue(ATOM_runtimeReady);
+  const repoId = useAtomValue(ATOM_repoId)!;
   const [nodesMap] = useAtom(ATOM_nodesMap);
   const addNode = useSetAtom(ATOM_addNode);
   const node = nodesMap.get(id)!;
@@ -308,11 +314,10 @@ function HeaderBar({ id }: { id: string }) {
         style={{
           margin: 0,
         }}
+        disabled={!runtimeReady}
         onClick={() => {
-          if (activeRuntime) {
-            const specs = preprocessChain([id]);
-            if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-          }
+          const specs = preprocessChain([id]);
+          if (specs) runChain.mutate({ repoId, specs });
         }}
       >
         <Play size={15} />
@@ -332,21 +337,19 @@ function HeaderBar({ id }: { id: string }) {
           <DropdownMenu.Item
             shortcut="⇧ ⏎"
             onClick={() => {
-              if (activeRuntime) {
-                const specs = preprocessChain([id]);
-                if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-              }
+              const specs = preprocessChain([id]);
+              if (specs) runChain.mutate({ repoId, specs });
             }}
+            disabled={!runtimeReady}
           >
             Run
           </DropdownMenu.Item>
           <DropdownMenu.Item
+            disabled={!runtimeReady}
             onClick={() => {
-              if (activeRuntime) {
-                const chain = getEdgeChain(id);
-                const specs = preprocessChain(chain);
-                if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
-              }
+              const chain = getEdgeChain(id);
+              const specs = preprocessChain(chain);
+              if (specs) runChain.mutate({ repoId, specs });
             }}
           >
             Run Chain
@@ -384,6 +387,42 @@ function HandleWithHover({ id }) {
   );
 }
 
+/**
+ * Listen to Shift+Enter key press and run the code.
+ * @param id the ID of the pod.
+ * @returns a ref to be attached to a React component so that the hotkey is
+ * bound to that pod.
+ */
+function useRunKey({ id }: { id: string }) {
+  // The runtime ATOMs and trpc APIs.
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const runtimeReady = useAtomValue(ATOM_runtimeReady);
+  const repoId = useAtomValue(ATOM_repoId)!;
+  const { enqueueSnackbar } = useSnackbar();
+  // call useHotKeys library
+  return useHotkeys<HTMLDivElement>(
+    "shift+enter",
+    () => {
+      if (!runtimeReady) {
+        enqueueSnackbar("Runtime is not ready.", { variant: "error" });
+      } else {
+        const specs = preprocessChain([id]);
+        if (specs) runChain.mutate({ repoId, specs });
+      }
+    },
+    {
+      enableOnContentEditable: true,
+      enabled: true,
+      // So that it works on the code editor.
+      enableOnFormTags: ["INPUT", "TEXTAREA"],
+      // Prevent inserting in the code editor.
+      preventDefault: true,
+    },
+    [runtimeReady]
+  );
+}
+
 export const CodeNode = memo<{ id: string }>(function ({ id }) {
   // Re-render the editor when the pod is updated (e.g., language changed).
   useAtom(React.useMemo(() => selectAtom(ATOM_podUpdated, (v) => v[id]), [id]));
@@ -392,6 +431,7 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   const anchorStyle = useAnchorStyle(id);
+  let ref = useRunKey({ id })!;
 
   const node = nodesMap.get(id);
   if (!node) return null;
@@ -407,6 +447,7 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         height: "auto",
         // minHeight: "50px",
       }}
+      ref={ref}
     >
       <div
         style={{

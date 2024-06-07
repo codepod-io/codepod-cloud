@@ -476,8 +476,6 @@ function HeaderBar({ id }) {
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
-          <DropdownMenu.Item onClick={() => {}}>Run Chain</DropdownMenu.Item>
-          <DropdownMenu.Separator />
           <DropdownMenu.Item
             shortcut="⌘ ⌫"
             color="red"

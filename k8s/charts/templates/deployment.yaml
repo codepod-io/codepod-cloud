@@ -18,8 +18,7 @@ spec:
     spec:
       containers:
         - name: codepod-ui
-          image: codepod-cloud:latest
-          imagePullPolicy: Never
+          image: node:20
           workingDir: /app/ui
           # command: ["tail", "-f", "/dev/null"]
           command: ["/bin/sh"]
@@ -38,8 +37,8 @@ spec:
           ports:
             - containerPort: 3000
           volumeMounts:
-            - mountPath: /app/ui/src
-              name: uisrc
+            - mountPath: /app
+              name: src
               readOnly: false
           resources:
             limits:
@@ -49,9 +48,9 @@ spec:
               memory: 1024Mi
               cpu: "1"
       volumes:
-        - name: uisrc
+        - name: src
           hostPath:
-            path: {{ .Values.srcDir }}/ui/src
+            path: {{ .Values.srcDir }}
 
 ---
 apiVersion: v1
@@ -87,8 +86,7 @@ spec:
       # serviceAccountName: api-account
       containers:
         - name: codepod-api
-          image: codepod-cloud:latest
-          imagePullPolicy: Never
+          image: node:20
           workingDir: /app/api
           # command: ["pnpm", "run", "dev:main"]
           # command: ["tail", "-f", "/dev/null"]
@@ -101,8 +99,8 @@ spec:
           ports:
             - containerPort: 4000
           volumeMounts:
-            - mountPath: /app/api/src
-              name: apisrc
+            - mountPath: /app
+              name: src
               readOnly: false
           env:
             - name: DATABASE_URL
@@ -129,9 +127,9 @@ spec:
               memory: 256Mi
               cpu: "0.2"
       volumes:
-        - name: apisrc
+        - name: src
           hostPath:
-            path: {{ .Values.srcDir }}/api/src
+            path: {{ .Values.srcDir }}
 ---
 apiVersion: v1
 kind: Service
@@ -165,9 +163,7 @@ spec:
     spec:
       containers:
         - name: codepod-yjs
-          # image: node:20
-          image: codepod-cloud:latest
-          imagePullPolicy: Never
+          image: node:20
           workingDir: /app/api
           # command: ["pnpm", "run", "dev:yjs"]
           # command: ["tail", "-f", "/dev/null"]
@@ -180,8 +176,8 @@ spec:
           ports:
             - containerPort: 4233
           volumeMounts:
-            - mountPath: /app/api/src
-              name: apisrc
+            - mountPath: /app
+              name: src
               readOnly: false
           env:
             - name: DATABASE_URL
@@ -202,9 +198,9 @@ spec:
               memory: 256Mi
               cpu: "0.2"
       volumes:
-        - name: apisrc
+        - name: src
           hostPath:
-            path: {{ .Values.srcDir }}/api/src
+            path: {{ .Values.srcDir }}
 
 ---
 apiVersion: v1
@@ -237,10 +233,10 @@ spec:
       labels:
         app: codepod-runtime
     spec:
+      serviceAccountName: api-account
       containers:
         - name: codepod-runtime
-          image: codepod-cloud-runtime:latest
-          imagePullPolicy: Never
+          image: node:20
           workingDir: /app/api
           # command: ["pnpm", "run", "dev:runtime"]
           # command: ["tail", "-f", "/dev/null"]
@@ -253,12 +249,14 @@ spec:
           ports:
             - containerPort: 4001
           volumeMounts:
-            - mountPath: /app/api/src
-              name: apisrc
+            - mountPath: /app
+              name: src
               readOnly: false
           env:
             - name: YJS_WS_URL
               value: "ws://codepod-yjs-service:4233/yjs"
+            - name: RUNTIME_NS
+              value: {{ .Release.Namespace }}-runtime
           resources:
             limits:
               memory: 512Mi
@@ -267,9 +265,9 @@ spec:
               memory: 256Mi
               cpu: "0.2"
       volumes:
-        - name: apisrc
+        - name: src
           hostPath:
-            path: {{ .Values.srcDir }}/api/src
+            path: {{ .Values.srcDir }}
 
 ---
 apiVersion: v1
