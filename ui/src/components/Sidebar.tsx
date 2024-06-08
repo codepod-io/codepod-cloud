@@ -209,13 +209,11 @@ function SidebarSettings() {
   );
 }
 
-function KernelStatus() {
+function KernelStatus({ kernelName }: { kernelName: string }) {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
   // Observe runtime change
-  const [runtimeChanged] = useAtom(ATOM_runtimeChanged);
-  // A dummy useEffect to indicate that runtimeChanged is used.
-  useEffect(() => {}, [runtimeChanged]);
+  useAtom(ATOM_runtimeChanged);
   // the status
   const [runtimeMap] = useAtom(ATOM_runtimeMap);
   // FIXME there're too many keys in runtimeMap, old keys should be removed.
@@ -224,11 +222,14 @@ function KernelStatus() {
   //   console.log("key", key);
   //   console.log("value", value);
   // });
-  const runtime = runtimeMap.get("python");
+  const runtime = runtimeMap.get(kernelName);
+  const status = runtimeTrpc.k8s.status.useMutation();
+  const interrupt = runtimeTrpc.k8s.interrupt.useMutation();
 
   return (
-    <p>
-      status:{" "}
+    <div>
+      <Box>Test {runtime?.status}</Box>
+      {kernelName}:{" "}
       {match(runtime?.status)
         .with("idle", () => (
           <Box color="green" component="span">
@@ -246,7 +247,21 @@ function KernelStatus() {
           </Box>
         ))
         .otherwise(() => runtime?.status)}{" "}
-    </p>
+      <Button
+        onClick={() => {
+          status.mutate({ repoId, kernelName });
+        }}
+      >
+        Kernel Status Refresh
+      </Button>
+      <Button
+        onClick={() => {
+          interrupt.mutate({ repoId, kernelName });
+        }}
+      >
+        Interrupt
+      </Button>
+    </div>
   );
 }
 
@@ -255,19 +270,17 @@ const Runtime = () => {
   if (!repoId) throw new Error("repoId is null");
   const start = runtimeTrpc.k8s.start.useMutation();
   const stop = runtimeTrpc.k8s.stop.useMutation();
-  const status = runtimeTrpc.k8s.status.useMutation();
-  const interrupt = runtimeTrpc.k8s.interrupt.useMutation();
 
   return (
     <>
       <Typography variant="h6">runtime</Typography>
-      <KernelStatus />
+
       <Button
         onClick={() => {
           start.mutate({ repoId });
         }}
       >
-        Start
+        Start Machine
       </Button>
 
       <Button
@@ -275,24 +288,10 @@ const Runtime = () => {
           stop.mutate({ repoId });
         }}
       >
-        Stop
+        Stop Machine
       </Button>
-
-      <Button
-        onClick={() => {
-          status.mutate({ repoId });
-        }}
-      >
-        Kernel Status Refresh
-      </Button>
-
-      <Button
-        onClick={() => {
-          interrupt.mutate({ repoId });
-        }}
-      >
-        Interrupt
-      </Button>
+      <KernelStatus kernelName="python" />
+      <KernelStatus kernelName="julia" />
     </>
   );
 };

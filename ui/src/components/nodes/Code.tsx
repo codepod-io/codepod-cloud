@@ -71,7 +71,6 @@ import {
   ATOM_podUpdated,
   ATOM_resultChanged,
   ATOM_resultMap,
-  ATOM_runtimeChanged,
   ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
@@ -257,7 +256,12 @@ function HeaderBar({ id }: { id: string }) {
   const changeLang = useSetAtom(ATOM_changeLang);
 
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
-  const runtimeReady = useAtomValue(ATOM_runtimeReady);
+  const lang = useAtomValue(ATOM_nodesMap).get(id)?.data.lang;
+  const runtimeReady =
+    lang &&
+    useAtomValue(
+      React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
+    );
   const repoId = useAtomValue(ATOM_repoId)!;
   const [nodesMap] = useAtom(ATOM_nodesMap);
   const addNode = useSetAtom(ATOM_addNode);
@@ -300,6 +304,7 @@ function HeaderBar({ id }: { id: string }) {
           <Select.Group>
             <Select.Label>Languages</Select.Label>
             <Select.Item value="python">Python</Select.Item>
+            <Select.Item value="julia">Julia</Select.Item>
             <Select.Item value="markdown">Markdown</Select.Item>
           </Select.Group>
           <Select.Separator />
@@ -397,7 +402,12 @@ function useRunKey({ id }: { id: string }) {
   // The runtime ATOMs and trpc APIs.
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
-  const runtimeReady = useAtomValue(ATOM_runtimeReady);
+  const lang = useAtomValue(ATOM_nodesMap).get(id)?.data.lang;
+  const runtimeReady =
+    lang &&
+    useAtom(
+      React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
+    );
   const repoId = useAtomValue(ATOM_repoId)!;
   const { enqueueSnackbar } = useSnackbar();
   // call useHotKeys library

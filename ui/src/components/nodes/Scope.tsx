@@ -61,7 +61,8 @@ function MyFloatingToolbar({ id }: { id: string }) {
 
   const repoId = useAtomValue(ATOM_repoId)!;
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
-  const runtimeReady = useAtomValue(ATOM_runtimeReady);
+  // TODO runtimeReady is disabled for scope.
+  // const runtimeReady = useAtomValue(ATOM_runtimeReady);
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
@@ -75,7 +76,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
       {editMode === "edit" && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
-            disabled={!runtimeReady}
+            // disabled={!runtimeReady}
             onClick={() => {
               const chain = getScopeChain(id);
               const specs = preprocessChain(chain);

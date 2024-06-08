@@ -258,7 +258,10 @@ function preprocessChain(get: Getter, set: Setter, ids: string[]) {
     // update anontations according to st
     resolvePod(get, set, id);
     const newcode = rewriteCode(id, get);
-    return { podId: id, code: newcode || "" };
+    const nodesMap = get(ATOM_nodesMap);
+    const node = nodesMap.get(id);
+    const lang = node?.data.lang;
+    return { podId: id, code: newcode || "", kernelName: lang || "python" };
   });
   return specs.filter(({ podId, code }) => {
     if (code.length > 0) {
