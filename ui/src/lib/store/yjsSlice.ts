@@ -44,14 +44,14 @@ export const ATOM_setProviderSynced = atom(
   }
 );
 
-export const ATOM_runtimeChanged = atom(false);
+export const ATOM_runtimeChanged = atom(0);
 
-export const ATOM_resultChanged = atom<Record<string, boolean>>({});
-function toggleResultChanged(get: Getter, set: Setter, id: string) {
+export const ATOM_resultChanged = atom<Record<string, number>>({});
+function triggerResultChanged(get: Getter, set: Setter, id: string) {
   set(
     ATOM_resultChanged,
-    produce((resultChanged: Record<string, boolean>) => {
-      resultChanged[id] = !resultChanged[id];
+    produce((resultChanged: Record<string, number>) => {
+      resultChanged[id] = (resultChanged[id] || 0) + 1;
     })
   );
 }
@@ -59,13 +59,13 @@ function toggleResultChanged(get: Getter, set: Setter, id: string) {
 /**
  * This ATOM is used to trigger re-rendering of the pod.
  */
-export const ATOM_podUpdated = atom<Record<string, boolean>>({});
+export const ATOM_podUpdated = atom<Record<string, number>>({});
 
 function triggerPodUpdate(get: Getter, set: Setter, id: string) {
   set(
     ATOM_podUpdated,
-    produce((podChanged: Record<string, boolean>) => {
-      podChanged[id] = !podChanged[id];
+    produce((podChanged: Record<string, number>) => {
+      podChanged[id] = (podChanged[id] || 0) + 1;
     })
   );
 }
@@ -139,7 +139,30 @@ export {
   ATOM_resultMap,
 };
 
-export const ATOM_runtimeReady = atom(false);
+export const ATOM_runtimeReady = atom<Record<string, boolean>>({});
+function setRuntimeReady(
+  get: Getter,
+  set: Setter,
+  runtimeMap: Y.Map<RuntimeInfo>
+) {
+  runtimeMap.forEach((value, kernelName) => {
+    if (["idle", "busy"].includes(value.status || "")) {
+      set(
+        ATOM_runtimeReady,
+        produce((runtimeReady: Record<string, boolean>) => {
+          runtimeReady[kernelName] = true;
+        })
+      );
+    } else {
+      set(
+        ATOM_runtimeReady,
+        produce((runtimeReady: Record<string, boolean>) => {
+          runtimeReady[kernelName] = false;
+        })
+      );
+    }
+  });
+}
 
 const ATOM_clients = atom(new Map<string, any>());
 
@@ -239,7 +262,7 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     // Initialize node2children
     buildNode2Children(get, set);
     Array.from(resultMap.keys()).forEach((key) => {
-      toggleResultChanged(get, set, key);
+      triggerResultChanged(get, set, key);
     });
     // Set observers to trigger future results rendering.
     resultMap.observe(
@@ -249,7 +272,7 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
         YMapEvent.changes.keys.forEach((change, key) => {
           // refresh result for pod key
           // FIXME performance on re-rendering: would it trigger re-rendering for all pods?
-          toggleResultChanged(get, set, key);
+          triggerResultChanged(get, set, key);
         });
       }
     );
@@ -279,23 +302,16 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     });
     // Set active runtime to the first one.
     const runtimeMap = getRuntimeMap(get);
-    function setRuntimeReady(runtimeMap: Y.Map<RuntimeInfo>) {
-      const runtime = runtimeMap.get("python");
-      if (["idle", "busy"].includes(runtime?.status || "")) {
-        set(ATOM_runtimeReady, true);
-      } else {
-        set(ATOM_runtimeReady, false);
-      }
-    }
+
     // initial setup for runtimeReady
-    setRuntimeReady(runtimeMap);
+    setRuntimeReady(get, set, runtimeMap);
     // Set up observers to trigger future runtime status changes.
     runtimeMap.observe(
       (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
         if (transaction.local) return;
-        set(ATOM_runtimeChanged, !get(ATOM_runtimeChanged));
+        set(ATOM_runtimeChanged, get(ATOM_runtimeChanged) + 1);
         // set runtimeReady
-        setRuntimeReady(runtimeMap);
+        setRuntimeReady(get, set, runtimeMap);
       }
     );
     // Set synced flag to be used to ensure canvas rendering after yjs synced.
