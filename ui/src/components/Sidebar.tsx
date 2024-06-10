@@ -4,7 +4,6 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Popover from "@mui/material/Popover";
 import StopIcon from "@mui/icons-material/Stop";
@@ -34,12 +33,23 @@ import {
   Separator,
   Heading,
   Flex,
+  IconButton,
 } from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { Files, Search, ListTree, Cpu, Settings } from "lucide-react";
+import {
+  Files,
+  Search,
+  ListTree,
+  Cpu,
+  Settings,
+  Power,
+  Play,
+  RefreshCcw,
+  PauseCircle,
+} from "lucide-react";
 
 import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
@@ -209,7 +219,7 @@ function SidebarSettings() {
   );
 }
 
-function KernelStatus({ kernelName }: { kernelName: string }) {
+function KernelStatus({ kernelName }: { kernelName: "julia" | "python" }) {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
   // Observe runtime change
@@ -225,10 +235,11 @@ function KernelStatus({ kernelName }: { kernelName: string }) {
   const runtime = runtimeMap.get(kernelName);
   const status = runtimeTrpc.k8s.status.useMutation();
   const interrupt = runtimeTrpc.k8s.interrupt.useMutation();
+  const start = runtimeTrpc.k8s.start.useMutation();
+  const stop = runtimeTrpc.k8s.stop.useMutation();
 
   return (
-    <div>
-      <Box>Test {runtime?.status}</Box>
+    <Flex>
       {kernelName}:{" "}
       {match(runtime?.status)
         .with("idle", () => (
@@ -243,53 +254,73 @@ function KernelStatus({ kernelName }: { kernelName: string }) {
         ))
         .with(undefined, () => (
           <Box color="red" component="span">
-            Powered Off
+            Off
           </Box>
         ))
+        // FIXME the long text will stretch to the second line.
         .otherwise(() => runtime?.status)}{" "}
-      <Button
-        onClick={() => {
-          status.mutate({ repoId, kernelName });
-        }}
-      >
-        Kernel Status Refresh
-      </Button>
-      <Button
-        onClick={() => {
-          interrupt.mutate({ repoId, kernelName });
-        }}
-      >
-        Interrupt
-      </Button>
-    </div>
+      {/* a dummy box to align the next item to the end */}
+      <Box sx={{ flexGrow: 1 }}></Box>
+      <Flex gap="1">
+        {runtime === undefined ? (
+          <IconButton
+            onClick={() => {
+              start.mutate({ repoId, kernelName });
+            }}
+            color="green"
+            size="1"
+            variant="ghost"
+          >
+            <Play />
+          </IconButton>
+        ) : (
+          <IconButton
+            onClick={() => {
+              stop.mutate({ repoId, kernelName });
+            }}
+            color="red"
+            size="1"
+            variant="ghost"
+          >
+            <Power />
+          </IconButton>
+        )}
+        <RadixTooltip content="Refresh Status">
+          <IconButton
+            onClick={() => {
+              status.mutate({ repoId, kernelName });
+            }}
+            size="1"
+            variant="ghost"
+          >
+            <RefreshCcw />
+          </IconButton>
+        </RadixTooltip>
+
+        <RadixTooltip content="Interrupt Kernel">
+          <IconButton
+            onClick={() => {
+              interrupt.mutate({ repoId, kernelName });
+            }}
+            size="1"
+            variant="ghost"
+          >
+            <PauseCircle />
+          </IconButton>
+        </RadixTooltip>
+      </Flex>
+    </Flex>
   );
 }
 
 const Runtime = () => {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
-  const start = runtimeTrpc.k8s.start.useMutation();
-  const stop = runtimeTrpc.k8s.stop.useMutation();
 
   return (
     <>
       <Typography variant="h6">runtime</Typography>
 
-      <Button
-        onClick={() => {
-          start.mutate({ repoId });
-        }}
-      >
-        Start Machine
-      </Button>
-
-      <Button
-        onClick={() => {
-          stop.mutate({ repoId });
-        }}
-      >
-        Stop Machine
-      </Button>
       <KernelStatus kernelName="python" />
       <KernelStatus kernelName="julia" />
     </>

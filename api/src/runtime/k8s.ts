@@ -1,6 +1,9 @@
 import * as k8s from "@kubernetes/client-node";
 
 import { z } from "zod";
+import { match, P } from "ts-pattern";
+import net from "net";
+import assert from "assert";
 
 import { protectedProcedure, router } from "./trpc";
 import { ZmqWire } from "./k8s-zmq";
@@ -201,7 +204,6 @@ export async function createService(ns: string, service_spec) {
   }
 }
 
-import net from "net";
 // check whether the ZMQ service is ready
 function checkTcpService(host, port, timeout = 1000) {
   return new Promise((resolve, reject) => {
@@ -242,12 +244,8 @@ async function wairForServiceReady(url) {
   }
 }
 
-type RuntimeResource = {
-  kernelName2wire: Map<string, ZmqWire>;
-  ydoc: Y.Doc;
-};
-
-const repoId2runtime = new Map<string, RuntimeResource>();
+const repoId2ydoc = new Map<string, Y.Doc>();
+const repoId2wireMap = new Map<string, Map<string, ZmqWire>>();
 
 async function createKernel({
   repoId,
@@ -280,113 +278,145 @@ async function createKernel({
   return wire;
 }
 
+/**
+ * ensure the ydoc for the repo is created and connected.
+ * @returns the ydoc
+ */
+async function ensureYDoc({ repoId, token }) {
+  // create Y doc if not exists
+  let ydoc = repoId2ydoc.get(repoId);
+  if (!ydoc) {
+    console.log("creating new ydoc ..");
+    ydoc = await getYDoc({ repoId, token });
+    // trying to handle race condition
+    if (repoId2ydoc.has(repoId)) {
+      console.warn("WARN: race condition. This should rarely occur.");
+      ydoc.destroy();
+      ydoc = repoId2ydoc.get(repoId);
+    } else {
+      console.log("setting ydoc");
+      repoId2ydoc.set(repoId, ydoc);
+    }
+  }
+
+  assert(ydoc);
+  return ydoc;
+}
+
 export const k8sRouter = router({
   // Start the runtime containr for a repo if not already started.
   start: protectedProcedure
-    .input(z.object({ repoId: z.string() }))
-    .mutation(async ({ input: { repoId }, ctx: { token } }) => {
-      console.log("create container for repo", repoId);
-      if (repoId2runtime.has(repoId)) {
-        console.error("RuntimeResource already exists for repo", repoId);
+    .input(
+      z.object({ repoId: z.string(), kernelName: z.enum(["python", "julia"]) })
+    )
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+      console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
+      if (!repoId2wireMap.has(repoId)) {
+        repoId2wireMap.set(repoId, new Map());
+      }
+      const wireMap = repoId2wireMap.get(repoId)!;
+      if (wireMap.has(kernelName)) {
+        console.log("kernel already exists");
         return false;
       }
+
+      const ydoc = await ensureYDoc({ repoId, token });
+
       // set the runtime status to "starting"
-      const ydoc = await getYDoc({ repoId, token });
       const runtimeMap = ydoc.getMap("rootMap").get("runtimeMap") as any;
-      runtimeMap.set("python", { status: "starting" });
-      runtimeMap.set("julia", { status: "starting" });
+      console.log("setting runtime status to starting");
+      runtimeMap.set(kernelName, { status: "starting" });
 
       // call k8s api to create a container
       let ns = z.string().parse(process.env.RUNTIME_NS);
       console.log("Using k8s ns:", ns);
 
       // python kernel
-      const pythonWirePromise = createKernel({
+      const wire = await createKernel({
         repoId,
-        kernelName: "python",
-        // image: "lihebi/codepod-kernel-python:0.4.13-alpha.49",
-        image: "lihebi/codepod-kernel-python:0.5.1-alpha.2",
+        kernelName,
+        image: match(kernelName)
+          .with("python", () => "lihebi/codepod-kernel-python:0.5.1-alpha.2")
+          .with("julia", () => "lihebi/codepod-kernel-julia:0.5.1-alpha.2")
+          .exhaustive(),
         ns,
       });
-      // julia kernel
-      const juliaWirePromise = createKernel({
-        repoId,
-        kernelName: "julia",
-        image: "lihebi/codepod-kernel-julia:0.5.1-alpha.2",
-        ns,
-      });
-      const [pythonWire, juliaWire] = await Promise.all([
-        pythonWirePromise,
-        juliaWirePromise,
-      ]);
 
       console.log("binding zmq and yjs");
-      bindZmqYjs({ wire: pythonWire, ydoc, kernelName: "python" });
-      bindZmqYjs({ wire: juliaWire, ydoc, kernelName: "julia" });
+      bindZmqYjs({ wire, ydoc, kernelName });
 
       // 3. run some code to test
       console.log("requesting kernel status");
-      pythonWire.requestKernelStatus();
-      pythonWire.runCode({ code: "3+4", msg_id: "123" });
-      juliaWire.requestKernelStatus();
-      juliaWire.runCode({ code: "3+4", msg_id: "123" });
-
-      repoId2runtime.set(repoId, {
-        kernelName2wire: new Map([
-          ["python", pythonWire],
-          ["julia", juliaWire],
-        ]),
-        ydoc,
-      });
+      wire.requestKernelStatus();
+      wire.runCode({ code: "3+4", msg_id: "123" });
+      wireMap.set(kernelName, wire);
       return true;
     }),
   // Stop the runtime container for a repo.
   stop: protectedProcedure
-    .input(z.object({ repoId: z.string() }))
-    .mutation(async ({ input: { repoId }, ctx: { token } }) => {
+    .input(
+      z.object({ repoId: z.string(), kernelName: z.enum(["python", "julia"]) })
+    )
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+      // remove zmq wire and ydoc
+      console.log("deleting ZMQ wire ..");
+      const wireMap = repoId2wireMap.get(repoId);
+      const wire = wireMap?.get(kernelName);
+      wire?.shell.close();
+      wire?.control.close();
+      wire?.iopub.close();
+      wireMap?.delete(kernelName);
+
+      const ydoc = await ensureYDoc({ repoId, token });
+      // set the runtime status to "starting"
+      const runtimeMap = ydoc.getMap("rootMap").get("runtimeMap") as any;
+      console.log("runtimemap", runtimeMap?.has(kernelName));
+      runtimeMap?.delete(kernelName);
+
+      if (wireMap?.size === 0) {
+        // FIXME race condition
+        console.log("destroying ydoc");
+        ydoc.destroy();
+        repoId2ydoc.delete(repoId);
+      }
+
+      // remove k8s resources
       let ns = z.string().parse(process.env.RUNTIME_NS);
+      // FIXME safe guard to make sure the pods exist.
+      //
       // FIXME the container is deleted. But the status is not reset. There are
       // something wrong with yjs server handling runtime role.
-      ["python", "julia"].forEach(async (kernelName) => {
-        console.log("Deleting deployment");
-        await k8sAppsApi.deleteNamespacedDeployment(
-          `rt-${repoId}-${kernelName}`,
-          ns
-        );
-        console.log("Deleting service");
-        await k8sApi.deleteNamespacedService(`svc-${repoId}-${kernelName}`, ns);
-
-        // remove zmq wire and ydoc
-        console.log("deleting ZMQ wire ..");
-        const wire = repoId2runtime
-          .get(repoId)
-          ?.kernelName2wire.get(kernelName);
-        wire?.shell.close();
-        wire?.control.close();
-        wire?.iopub.close();
-      });
-
-      console.log("deleting ydoc ..");
-
-      const ydoc = repoId2runtime.get(repoId)?.ydoc;
-      // ydoc?.provider?.disconnect();
-      ydoc?.destroy();
-      repoId2runtime.delete(repoId);
+      console.log("Deleting deployment");
+      await k8sAppsApi.deleteNamespacedDeployment(
+        `rt-${repoId}-${kernelName}`,
+        ns
+      );
+      console.log("Deleting service");
+      await k8sApi.deleteNamespacedService(`svc-${repoId}-${kernelName}`, ns);
     }),
 
   status: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
-    .mutation(async ({ input: { repoId, kernelName } }) => {
-      console.log("requestKernelStatus", repoId);
-      const wire = repoId2runtime.get(repoId)?.kernelName2wire.get(kernelName);
-      if (!wire) return false;
-      wire.requestKernelStatus();
-      return true;
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+      const ydoc = await ensureYDoc({ repoId, token });
+      const runtimeMap = ydoc?.getMap("rootMap").get("runtimeMap") as any;
+      const wireMap = repoId2wireMap.get(repoId);
+      const wire = wireMap?.get(kernelName);
+      if (!wire) {
+        runtimeMap.delete(kernelName);
+        return false;
+      } else {
+        runtimeMap.set(kernelName, { status: "refreshing" });
+        console.log("requestKernelStatus", repoId);
+        wire.requestKernelStatus();
+        return true;
+      }
     }),
   interrupt: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName } }) => {
-      const wire = repoId2runtime.get(repoId)?.kernelName2wire.get(kernelName);
+      console.log("interrupt", repoId);
+      const wire = repoId2wireMap.get(repoId)?.get(kernelName);
       if (!wire) return false;
       wire.interrupt();
       return true;
@@ -407,11 +437,14 @@ export const k8sRouter = router({
     )
     .mutation(async ({ input: { repoId, specs }, ctx: { token } }) => {
       console.log("runChain", repoId);
+      const wireMap = repoId2wireMap.get(repoId);
+      if (!wireMap) {
+        console.error("wireMap not found for repo", repoId);
+        return false;
+      }
 
       specs.forEach(({ code, podId, kernelName }) => {
-        const wire = repoId2runtime
-          .get(repoId)
-          ?.kernelName2wire.get(kernelName);
+        const wire = wireMap.get(kernelName);
         if (!wire) {
           console.error("Wire not found for kernel", kernelName);
           return false;
