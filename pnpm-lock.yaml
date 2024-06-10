@@ -89,6 +89,9 @@ importers:
       prosemirror-view:
         specifier: ^1.31.7
         version: 1.31.7
+      ts-pattern:
+        specifier: ^4.0.6
+        version: 4.0.6
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
