@@ -21,16 +21,15 @@ import { Profile } from "@/pages/profile";
 import { SignIn } from "@/pages/login";
 import { SignUp } from "@/pages/signup";
 
-import { Header, Footer, UserProfile } from "@/components/Header";
+import { Footer, UserProfile } from "@/components/Header";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
 
-import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
 
-import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 import { Alert, Button, Typography } from "@mui/material";
+import { Container, Flex, Link as RadixLink, Box } from "@radix-ui/themes";
 
 const theme = createTheme({
   typography: {
@@ -40,38 +39,11 @@ const theme = createTheme({
   },
 });
 
-const NormalLayout = ({ children }) => {
-  return (
-    <Box>
-      <Header>
-        <Box
-          sx={{
-            alignItems: "baseline",
-            display: "flex",
-            flexGrow: 1,
-          }}
-        >
-          <Link component={ReactLink} underline="hover" to="/">
-            <Typography noWrap>CodePod</Typography>
-          </Link>
-        </Box>
-        <UserProfile />
-      </Header>
-      <Box pt="50px">{children}</Box>
-      {/* <Footer /> */}
-    </Box>
-  );
-};
-
 function NoLogginErrorAlert() {
   return (
-    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+    <Box style={{ maxWidth: "sm", alignItems: "center", margin: "auto" }}>
       <Alert severity="error">
-        Please{" "}
-        <Link component={ReactLink} to="/login">
-          login
-        </Link>{" "}
-        to view your dashboard.
+        Please <ReactLink to="/login">login</ReactLink> to view your dashboard.
       </Alert>
     </Box>
   );
@@ -85,40 +57,76 @@ const RequireSignIn = ({ children }) => {
   return children;
 };
 
+function Header() {
+  return (
+    <Box>
+      {/* maxWidth container */}
+      <Container
+        size="4"
+        style={{
+          border: "2px solid lightgray",
+          backgroundColor: "white",
+        }}
+      >
+        {/* The header items */}
+        <Flex align="center" my="2">
+          <RadixLink asChild>
+            <ReactLink to="/">
+              <Typography noWrap>CodePod</Typography>
+            </ReactLink>
+          </RadixLink>
+          <Box flexGrow="1" />
+          <UserProfile />
+        </Flex>
+      </Container>
+    </Box>
+  );
+}
+
 const router = createBrowserRouter([
   {
     path: "repo/:id",
-    element: (
-      // Not wrapperd with NormalLayout (header + padding) because:
-      // 1. Need to use vh to make the Canvas exact full screen
-      // 2. Need to populate more buttons to header.
-      <Box height="100vh" width="100%" boxSizing={"border-box"}>
-        <Repo />
-      </Box>
-    ),
+    element: <Repo />,
   },
   {
     path: "login",
     element: (
-      <NormalLayout>
-        <SignIn />
-      </NormalLayout>
+      <Box>
+        <Box position="fixed" width="100%">
+          <Header />
+        </Box>
+        <Box pt="50px">
+          <SignIn />
+        </Box>
+      </Box>
     ),
   },
   {
     path: "signup",
     element: (
-      <NormalLayout>
-        <SignUp />
-      </NormalLayout>
+      <Box>
+        <Box position="fixed" width="100%">
+          <Header />
+        </Box>
+        <Box pt="50px">
+          <SignUp />
+        </Box>
+      </Box>
     ),
   },
   {
     path: "profile",
     element: (
-      <NormalLayout>
-        <Profile />
-      </NormalLayout>
+      <RequireSignIn>
+        <Box>
+          <Box position="fixed" width="100%">
+            <Header />
+          </Box>
+          <Box pt="50px">
+            <Profile />
+          </Box>
+        </Box>
+      </RequireSignIn>
     ),
   },
   {
@@ -128,11 +136,19 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <NormalLayout>
-        <RequireSignIn>
-          <Dashboard />
-        </RequireSignIn>
-      </NormalLayout>
+      <RequireSignIn>
+        <Box>
+          <Box position="fixed" width="100%">
+            <Header />
+          </Box>
+          {/* The main content */}
+          <Container size="3">
+            <Box pt="50px">
+              <Dashboard />
+            </Box>
+          </Container>
+        </Box>
+      </RequireSignIn>
     ),
   },
 ]);

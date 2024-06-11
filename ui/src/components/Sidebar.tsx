@@ -521,13 +521,15 @@ function TableofPods() {
 
 const MyTabsRoot = ({
   tabs,
+  side,
   children,
 }: {
   tabs: { key: string; icon: any; content: any }[];
+  side: "left" | "right";
   children: any;
 }) => {
   const [value, setValue] = useState(tabs[0].key);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return (
     <Tabs.Root
       defaultValue={tabs[0].key}
@@ -538,19 +540,15 @@ const MyTabsRoot = ({
         flexDirection: "row",
       }}
     >
+      {open && side === "right" && children}
       <Tabs.List
         style={{
           flexDirection: "column",
-          // height: "300px",
-          height: "80vh",
           backgroundColor: "#eee",
           border: "1px solid black",
-          borderRadius: "10px",
           alignItems: "flex-start",
           zIndex: 2,
         }}
-        // make the tabs align left
-        // className="flex flex-col justify-start"
       >
         {tabs.map(({ key, icon }) => (
           <Tabs.Trigger
@@ -577,29 +575,24 @@ const MyTabsRoot = ({
           </Tabs.Trigger>
         ))}
       </Tabs.List>
-      <AnimatePresence>{open && children}</AnimatePresence>
+      {open && side === "left" && children}
     </Tabs.Root>
   );
 };
 
 function MyTabs({
   tabs,
+  side = "left",
 }: {
   tabs: { key: string; icon: any; content: any }[];
+  side: "left" | "right";
 }) {
   return (
-    <MyTabsRoot tabs={tabs}>
-      <motion.div
-        initial={{ opacity: 0, x: -100 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -100 }}
-        transition={{ duration: 0.1 }}
+    <MyTabsRoot tabs={tabs} side={side}>
+      <Box
         className="px-4 pt-3 pb-2"
         style={{
-          originX: 0,
-          originY: 0,
           border: "1px solid black",
-          borderRadius: "10px",
           width: "200px",
           backgroundColor: gray.gray1,
         }}
@@ -607,107 +600,169 @@ function MyTabs({
         <>
           {tabs.map(({ key, content }) => (
             <Tabs.Content key={key} value={key}>
-              <motion.div
-                layoutId="text"
-                layout="position"
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -10, opacity: 0 }}
-                transition={{ duration: 0.1 }}
-              >
-                <Text size="2">{content}</Text>
-              </motion.div>
+              <Text size="2">{content}</Text>
             </Tabs.Content>
           ))}
         </>
-      </motion.div>
+      </Box>
     </MyTabsRoot>
   );
 }
 
-export function TabSidebar() {
+export function SidebarLeft() {
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
   const messUp = useSetAtom(ATOM_messUp);
   return (
-    <div
-      style={{
-        position: "absolute",
-        zIndex: 100,
-        top: "10%",
-        left: "10px",
-      }}
-    >
-      <MyTabs
-        tabs={[
-          {
-            key: "Files",
-            icon: <Files />,
-            // content: "Make changes to your account.".repeat(10),
-            content: (
-              <Flex direction="column">
-                <YjsSyncStatus />
-                <Typography variant="h6">Export to ..</Typography>
-                <ExportButtons />
-                <Separator my="3" size="4" />
-                <Runtime />
-                <Separator my="3" size="4" />
-                <Heading mb="2" size="4">
-                  Experimental
-                </Heading>
+    <MyTabs
+      side="left"
+      tabs={[
+        {
+          key: "Files",
+          icon: <Files />,
+          // content: "Make changes to your account.".repeat(10),
+          content: (
+            <Flex direction="column">
+              <YjsSyncStatus />
+              <Typography variant="h6">Export to ..</Typography>
+              <ExportButtons />
+              <Separator my="3" size="4" />
+              <Runtime />
+              <Separator my="3" size="4" />
+              <Heading mb="2" size="4">
+                Experimental
+              </Heading>
 
-                <Button
-                  onClick={() => {
-                    console.log("autolayout tree");
-                    autoLayoutTree();
-                    console.log("done");
-                  }}
-                >
-                  Layout tree
-                </Button>
-                <Button
-                  onClick={() => {
-                    console.log("mess up");
-                    messUp();
-                    console.log("done");
-                  }}
-                >
-                  Mess Up
-                </Button>
-              </Flex>
-            ),
-          },
-          { key: "Search", icon: <Search />, content: "Search".repeat(10) },
-          {
-            key: "Outline",
-            icon: <ListTree />,
-            content: (
-              <>
-                <Typography variant="h6">Table of Pods</Typography>
-                {/* <TableofPods /> */}
-              </>
-            ),
-          },
-          {
-            key: "Runtime",
-            icon: <Cpu />,
-            content: (
-              <>
-                <Runtime />
-              </>
-            ),
-          },
-          {
-            key: "Settings",
-            icon: <Settings />,
-            content: (
-              <>
-                <Typography variant="h6">Site Settings</Typography>
-                <SidebarSettings />
-              </>
-            ),
-          },
-        ]}
-      />
-    </div>
+              <Button
+                onClick={() => {
+                  console.log("autolayout tree");
+                  autoLayoutTree();
+                  console.log("done");
+                }}
+              >
+                Layout tree
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log("mess up");
+                  messUp();
+                  console.log("done");
+                }}
+              >
+                Mess Up
+              </Button>
+            </Flex>
+          ),
+        },
+        { key: "Search", icon: <Search />, content: "Search".repeat(10) },
+        {
+          key: "Outline",
+          icon: <ListTree />,
+          content: (
+            <>
+              <Typography variant="h6">Table of Pods</Typography>
+              {/* <TableofPods /> */}
+            </>
+          ),
+        },
+        {
+          key: "Runtime",
+          icon: <Cpu />,
+          content: (
+            <>
+              <Runtime />
+            </>
+          ),
+        },
+        {
+          key: "Settings",
+          icon: <Settings />,
+          content: (
+            <>
+              <Typography variant="h6">Site Settings</Typography>
+              <SidebarSettings />
+            </>
+          ),
+        },
+      ]}
+    />
+  );
+}
+
+export function SidebarRight() {
+  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
+  const messUp = useSetAtom(ATOM_messUp);
+  return (
+    <MyTabs
+      side="right"
+      tabs={[
+        {
+          key: "Files",
+          icon: <Files />,
+          // content: "Make changes to your account.".repeat(10),
+          content: (
+            <Flex direction="column">
+              <YjsSyncStatus />
+              <Typography variant="h6">Export to ..</Typography>
+              <ExportButtons />
+              <Separator my="3" size="4" />
+              <Runtime />
+              <Separator my="3" size="4" />
+              <Heading mb="2" size="4">
+                Experimental
+              </Heading>
+
+              <Button
+                onClick={() => {
+                  console.log("autolayout tree");
+                  autoLayoutTree();
+                  console.log("done");
+                }}
+              >
+                Layout tree
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log("mess up");
+                  messUp();
+                  console.log("done");
+                }}
+              >
+                Mess Up
+              </Button>
+            </Flex>
+          ),
+        },
+        { key: "Search", icon: <Search />, content: "Search".repeat(10) },
+        {
+          key: "Outline",
+          icon: <ListTree />,
+          content: (
+            <>
+              <Typography variant="h6">Table of Pods</Typography>
+              {/* <TableofPods /> */}
+            </>
+          ),
+        },
+        {
+          key: "Runtime",
+          icon: <Cpu />,
+          content: (
+            <>
+              <Runtime />
+            </>
+          ),
+        },
+        {
+          key: "Settings",
+          icon: <Settings />,
+          content: (
+            <>
+              <Typography variant="h6">Site Settings</Typography>
+              <SidebarSettings />
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }
