@@ -4,9 +4,6 @@ import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
-import ShareIcon from "@mui/icons-material/Share";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import Button from "@mui/material/Button";
 
 import {
   useEffect,
@@ -21,17 +18,12 @@ import {
 import debounce from "lodash/debounce";
 
 import { Canvas } from "@/components/Canvas";
-import { Header, UserProfile } from "@/components/Header";
-import { TabSidebar } from "@/components/Sidebar";
-import {
-  Breadcrumbs,
-  Drawer,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { UserProfile } from "@/components/Header";
+import { SidebarLeft, SidebarRight } from "@/components/Sidebar";
+import { Typography } from "@mui/material";
+
+import { Link as RadixLink, TextField } from "@radix-ui/themes";
+
 import { initParser } from "@/lib/parser";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
@@ -54,174 +46,7 @@ import {
   ATOM_resolveAllPods,
 } from "@/lib/store/runtimeSlice";
 import { MyKBar } from "@/components/MyKBar";
-
-const HeaderItem = () => {
-  const [repoName, setRepoName] = useAtom(ATOM_repoName);
-  const [editMode, setEditMode] = useAtom(ATOM_editMode);
-  const [repoId] = useAtom(ATOM_repoId);
-  if (!repoId) return null;
-
-  const utils = trpc.useUtils();
-  const updateRepo = trpc.repo.updateRepo.useMutation({
-    onSuccess: () => {
-      utils.repo.getDashboardRepos.invalidate();
-    },
-  });
-  const debouncedUpdateRepo = useCallback(
-    debounce(
-      (name: string) => {
-        console.log("update repo", name);
-        updateRepo.mutate({ id: repoId, name });
-      },
-      1000,
-      { maxWait: 5000 }
-    ),
-    []
-  );
-
-  const [focus, setFocus] = useState(false);
-  const [enter, setEnter] = useState(false);
-
-  const textfield = (
-    <TextField
-      hiddenLabel
-      placeholder="Untitled"
-      value={repoName || ""}
-      size="small"
-      variant={focus ? undefined : "standard"}
-      onFocus={() => {
-        setFocus(true);
-      }}
-      onKeyDown={(e) => {
-        if (["Enter", "Escape"].includes(e.key)) {
-          e.preventDefault();
-          setFocus(false);
-        }
-      }}
-      onMouseEnter={() => {
-        setEnter(true);
-      }}
-      onMouseLeave={() => {
-        setEnter(false);
-      }}
-      autoFocus={focus ? true : false}
-      onBlur={() => {
-        setFocus(false);
-      }}
-      InputProps={{
-        ...(focus
-          ? {}
-          : {
-              disableUnderline: true,
-            }),
-      }}
-      sx={{
-        // Try to compute a correct width so that the textfield size changes
-        // according to content size.
-        width: `${((repoName?.length || 0) + 6) * 6}px`,
-        minWidth: "100px",
-        maxWidth: "500px",
-        border: "none",
-      }}
-      disabled={editMode === "view"}
-      onChange={(e) => {
-        const name = e.target.value;
-        setRepoName(name);
-        debouncedUpdateRepo(name);
-      }}
-    />
-  );
-
-  return (
-    <Stack
-      direction="row"
-      sx={{
-        alignItems: "center",
-      }}
-      spacing={1}
-    >
-      {!focus && enter ? (
-        <Tooltip
-          title="Edit"
-          sx={{
-            margin: 0,
-            padding: 0,
-          }}
-          // placement="right"
-          followCursor
-        >
-          {textfield}
-        </Tooltip>
-      ) : (
-        textfield
-      )}
-    </Stack>
-  );
-};
-
-function RepoHeader({ id }) {
-  const setShareOpen = useSetAtom(ATOM_shareOpen);
-  const copyRepo = trpc.repo.copyRepo.useMutation();
-  useEffect(() => {
-    if (copyRepo.isSuccess) {
-      const newRepoId = copyRepo.data;
-      window.open(`/repo/${newRepoId}`);
-    }
-  }, [copyRepo]);
-  return (
-    <Header
-      style={{
-        boxShadow: "0px 0px 10px 0px rgba(0,0,0,0.75)",
-        borderRadius: "10px",
-      }}
-    >
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        sx={{
-          alignItems: "baseline",
-          display: "flex",
-          flexGrow: 1,
-        }}
-      >
-        <Link component={ReactLink} underline="hover" to="/">
-          <Typography noWrap>CodePod</Typography>
-        </Link>
-        <HeaderItem />
-      </Breadcrumbs>
-      <Box
-        sx={{
-          display: { xs: "none", md: "flex" },
-          alignItems: "center",
-          paddingRight: "10px",
-        }}
-      >
-        <Button
-          endIcon={<ContentCopyIcon />}
-          onClick={() => copyRepo.mutate({ repoId: id })}
-          variant="outlined"
-        >
-          Make a copy
-        </Button>
-      </Box>
-      <Box
-        sx={{
-          display: { xs: "none", md: "flex" },
-          alignItems: "center",
-          paddingRight: "10px",
-        }}
-      >
-        <Button
-          endIcon={<ShareIcon />}
-          onClick={() => setShareOpen(true)}
-          variant="outlined"
-        >
-          Share
-        </Button>
-      </Box>
-      <UserProfile />
-    </Header>
-  );
-}
+import { Container, Flex } from "@radix-ui/themes";
 
 function NotFoundAlert({}) {
   return (
@@ -312,7 +137,14 @@ function WaitForProvider({ children }) {
       disconnectYjs();
     };
   }, [connectYjs, disconnectYjs]);
-  if (!providerSynced) return <Box>Loading Yjs Doc ..</Box>;
+  if (!providerSynced)
+    return (
+      <Box>
+        {/* Show the header while loading yjs doc. */}
+        <Header> </Header>
+        <Box>Loading Yjs Doc ..</Box>
+      </Box>
+    );
   return children;
 }
 
@@ -327,6 +159,73 @@ function UserWrapper({ children }) {
   return children;
 }
 
+/**
+ * A editable text field.
+ */
+function Title() {
+  const [repoName, setRepoName] = useAtom(ATOM_repoName);
+  const [repoId] = useAtom(ATOM_repoId);
+  if (!repoId) return null;
+
+  const utils = trpc.useUtils();
+  const updateRepo = trpc.repo.updateRepo.useMutation({
+    onSuccess: () => {
+      utils.repo.getDashboardRepos.invalidate();
+    },
+  });
+  const debouncedUpdateRepo = useCallback(
+    debounce(
+      (name: string) => {
+        console.log("update repo", name);
+        updateRepo.mutate({ id: repoId, name });
+      },
+      1000,
+      { maxWait: 5000 }
+    ),
+    []
+  );
+  return (
+    <TextField.Root
+      variant="surface"
+      value={repoName || ""}
+      placeholder="Untitled"
+      onChange={(e) => {
+        const name = e.target.value;
+        setRepoName(name);
+        debouncedUpdateRepo(name);
+      }}
+    />
+  );
+}
+
+function Header({ children }) {
+  return (
+    <Box>
+      {/* maxWidth container */}
+      <Container
+        size="4"
+        style={{
+          border: "2px solid lightgray",
+          backgroundColor: "white",
+        }}
+      >
+        {/* The header items */}
+        <Flex align="center" my="2" gap="3">
+          <RadixLink asChild>
+            <ReactLink to="/">
+              <Typography noWrap>CodePod</Typography>
+            </ReactLink>
+          </RadixLink>
+          {children}
+          {/* The right side */}
+          <Box flexGrow="1" />
+          <UserProfile />
+        </Flex>
+      </Container>
+    </Box>
+  );
+}
+
 export function Repo() {
   let { id } = useParams();
 
@@ -336,35 +235,31 @@ export function Repo() {
         <RepoLoader id={id}>
           <WaitForProvider>
             <ParserWrapper>
-              <Box
-                sx={{
-                  height: "100%",
-                }}
-              >
-                {/* The header. */}
-                <div
-                  style={{
-                    zIndex: 1300,
-                    boxShadow: "0px 0px 10px 0px rgba(0,0,0,0.75)",
-                    borderRadius: "10px",
-                  }}
-                >
-                  <RepoHeader id={id} />
-                </div>
-
-                <MyKBar />
-                <TabSidebar />
-
-                {/* The Canvas */}
-                <Box
-                  height="100%"
-                  border="solid 3px black"
-                  boxSizing={"border-box"}
-                  overflow="auto"
-                >
-                  <Canvas />
-                </Box>
-              </Box>
+              <Flex direction="column" height="100vh">
+                <Header>
+                  {/* The  left side*/}
+                  <Box>/</Box>
+                  {/* <HeaderItem /> */}
+                  <Title />
+                </Header>
+                <Flex height="100%">
+                  <MyKBar />
+                  {/* Left sidebar */}
+                  <SidebarLeft />
+                  {/* The Canvas */}
+                  <Box
+                    height="100%"
+                    width="100%"
+                    border="solid 3px black"
+                    boxSizing={"border-box"}
+                    overflow="auto"
+                  >
+                    <Canvas />
+                  </Box>
+                  {/* Right sidebar */}
+                  <SidebarRight />
+                </Flex>
+              </Flex>
             </ParserWrapper>
           </WaitForProvider>
         </RepoLoader>

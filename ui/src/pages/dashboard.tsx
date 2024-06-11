@@ -17,10 +17,8 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import PublicIcon from "@mui/icons-material/Public";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
 
 import {
-  Button,
   Card,
   CardActions,
   CardContent,
@@ -32,6 +30,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { AlertDialog, Button, Flex, IconButton } from "@radix-ui/themes";
 import { timeDifference } from "@/lib/utils/utils";
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";
@@ -49,7 +48,7 @@ function CreateRepoForm(props) {
   return (
     <Box>
       <Button
-        variant="contained"
+        variant="ghost"
         onClick={() => {
           createRepo.mutate();
         }}
@@ -79,7 +78,8 @@ const StarButton = ({ repo }) => {
       {isStarred ? (
         <Tooltip title="unstar">
           <IconButton
-            size="small"
+            size="1"
+            variant="ghost"
             onClick={() => {
               unstar.mutate({ repoId: repo.id });
             }}
@@ -97,7 +97,8 @@ const StarButton = ({ repo }) => {
       ) : (
         <Tooltip title="star">
           <IconButton
-            size="small"
+            size="1"
+            variant="ghost"
             onClick={() => {
               star.mutate({ repoId: repo.id });
             }}
@@ -127,19 +128,13 @@ const DeleteRepoButton = ({ repo }) => {
   });
   const theme = useTheme();
   return (
-    <Box>
-      <Tooltip title="Delete Repo">
+    <AlertDialog.Root>
+      <AlertDialog.Trigger>
         <IconButton
+          size="1"
+          color="red"
+          variant="ghost"
           disabled={deleteRepo.isLoading}
-          size="small"
-          sx={{
-            "&:hover": {
-              color: theme.palette.error.main,
-            },
-          }}
-          onClick={() => {
-            setOpen(true);
-          }}
         >
           {deleteRepo.isLoading ? (
             <CircularProgress size="14px" />
@@ -147,26 +142,35 @@ const DeleteRepoButton = ({ repo }) => {
             <DeleteIcon fontSize="inherit" />
           )}
         </IconButton>
-      </Tooltip>
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
-        <DialogTitle>{`Delete ${repo.name}`}</DialogTitle>
-        <DialogContent>Are you sure?</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              deleteRepo.mutate({
-                id: repo.id,
-              });
-              setOpen(false);
-            }}
-            autoFocus
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      </AlertDialog.Trigger>
+      <AlertDialog.Content maxWidth="450px">
+        <AlertDialog.Title>Revoke access</AlertDialog.Title>
+        <AlertDialog.Description size="2">
+          Are you sure? This project will no be deleted.
+        </AlertDialog.Description>
+
+        <Flex gap="3" mt="4" justify="end">
+          <AlertDialog.Cancel>
+            <Button variant="soft" color="gray">
+              Cancel
+            </Button>
+          </AlertDialog.Cancel>
+          <AlertDialog.Action>
+            <Button
+              variant="solid"
+              color="red"
+              onClick={() => {
+                deleteRepo.mutate({
+                  id: repo.id,
+                });
+              }}
+            >
+              Delete Project
+            </Button>
+          </AlertDialog.Action>
+        </Flex>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
   );
 };
 
@@ -241,7 +245,6 @@ const RepoCard = ({
             </Tooltip>
           )}
         </Box>
-
         <DeleteRepoButton repo={repo} />
       </CardActions>
     </Card>
@@ -336,7 +339,6 @@ export function Dashboard() {
           fontSize: "14px",
           paddingTop: "10px",
           color: "#6B87A2",
-          position: "relative",
         }}
       >
         Welcome! Please open or create a repository to get started.

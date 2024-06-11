@@ -10,8 +10,6 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
-import Link from "@mui/material/Link";
-import Button from "@mui/material/Button";
 
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
@@ -20,6 +18,9 @@ import Container from "@mui/material/Container";
 import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
+
+import { Button, Link as RadixLink } from "@radix-ui/themes";
+
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
 
@@ -27,9 +28,7 @@ const ProfileButton = () => {
   const me = trpc.user.me.useQuery();
   return (
     <Box sx={{ mr: 2 }}>
-      <Link component={ReactLink} to="/profile" underline="none">
-        {me.data?.firstname}
-      </Link>
+      <ReactLink to="/profile">{me.data?.firstname}</ReactLink>
     </Box>
   );
 };
@@ -53,15 +52,14 @@ export const UserProfile = () => {
               signOut();
               navigate("/login");
             }}
+            variant="ghost"
           >
             Logout
           </Button>
         </Box>
       ) : (
         <Box display="block">
-          <Link to="/login" component={ReactLink} underline="none">
-            Login
-          </Link>
+          <ReactLink to="/login">Login</ReactLink>
         </Box>
       )}
     </>
@@ -103,21 +101,19 @@ export const Header = ({ children, style = {} }) => {
               alignItems: "center",
             }}
           >
-            <Link
+            <RadixLink
               href="https://codepod.io"
               target="_blank"
               underline="none"
-              sx={{
-                mx: 2,
+              mx="2"
+              style={{
                 display: "flex",
+                alignItems: "center",
               }}
-              alignItems="center"
-              // alignContent="center"
-              // textAlign={"center"}
             >
               {/* <span>Docs</span> */}
               Docs <OpenInNewIcon fontSize="small" sx={{ ml: "1px" }} />
-            </Link>
+            </RadixLink>
           </Box>
         </Toolbar>
       </Container>
@@ -134,9 +130,7 @@ function Copyright(props: any) {
       {...props}
     >
       {"Copyright © "}
-      <Link color="inherit" href="https://mui.com/">
-        CodePod Inc.
-      </Link>{" "}
+      <RadixLink href="https://mui.com/">CodePod Inc.</RadixLink>{" "}
       {new Date().getFullYear()}
       {"."}
     </Typography>
@@ -158,9 +152,7 @@ export function Footer() {
       }}
     >
       <Box fontSize="lg" fontWeight="bold">
-        <Link component={ReactLink} to="/" underline="none">
-          CodePod
-        </Link>
+        <ReactLink to="/">CodePod</ReactLink>
       </Box>
 
       <Copyright />

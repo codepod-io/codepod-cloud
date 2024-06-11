@@ -144,7 +144,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           {error ? <X color="red" /> : <Check color="green" />}
           {lastExecutedAt && <Timer lastExecutedAt={lastExecutedAt} />}
           {running && <CircularProgress />}
-          <Flex grow="1" />
+          <Flex flexGrow="1" />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <RadixButton variant="ghost" size="1">
