@@ -157,7 +157,7 @@ import {
   ATOM_richMap,
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -435,7 +435,6 @@ const MyRemirror = ({
 
 function TopRightMenu({ id }) {
   const reactFlowInstance = useReactFlow();
-  const addNode = useSetAtom(ATOM_addNode);
   const [nodesMap] = useAtom(ATOM_nodesMap);
   const node = nodesMap.get(id)!;
   const parentId = node.data.parent;

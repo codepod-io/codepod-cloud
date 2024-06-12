@@ -1,33 +1,14 @@
-import {
-  useCallback,
-  useState,
-  useRef,
-  useContext,
-  useEffect,
-  memo,
-  ChangeEvent,
-} from "react";
-import * as React from "react";
+import { useRef, useEffect } from "react";
 import ReactFlow, {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
   Background,
   BackgroundVariant,
   MiniMap,
   Controls,
-  Handle,
   useReactFlow,
-  Position,
   ConnectionMode,
   MarkerType,
-  Node,
   ReactFlowProvider,
-  Edge,
   useViewport,
-  XYPosition,
-  useStore as useRfStore,
-  useKeyPress,
   SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
@@ -134,6 +115,7 @@ function ViewportInfo() {
 function CanvasImpl() {
   const reactFlowWrapper = useRef<any>(null);
 
+  // listen to add node event
   useAddNode(reactFlowWrapper);
 
   const [nodes] = useAtom(ATOM_nodes);
