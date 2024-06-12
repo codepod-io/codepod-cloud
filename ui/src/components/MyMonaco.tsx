@@ -7,10 +7,7 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
-import { monaco } from "react-monaco-editor";
-import { Node } from "reactflow";
-import * as Y from "yjs";
+import Editor, { DiffEditor } from "@monaco-editor/react";
 
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
@@ -35,6 +32,9 @@ import {
   ATOM_provider,
 } from "@/lib/store/yjsSlice";
 import { selectAtom } from "jotai/utils";
+
+// FIXME will this monaco instance be the same as the one in the loader?
+import * as monaco from "monaco-editor";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -178,12 +178,12 @@ monaco.languages.registerDocumentFormattingEditProvider("scheme", {
 
 export function MyMonacoDiff({ from, to }) {
   return (
-    <MonacoDiffEditor
+    <DiffEditor
       // width="800"
       // height="600"
       language="javascript"
       original={from || ""}
-      value={to || ""}
+      modified={to || ""}
       options={{
         selectOnLineNumbers: true,
         scrollBeyondLastLine: false,
@@ -201,7 +201,7 @@ export function MyMonacoDiff({ from, to }) {
         renderSideBySide: false,
         readOnly: true,
       }}
-      editorDidMount={(editor, monaco) => {
+      onMount={(editor, monaco) => {
         // const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight)
         // const lineCount = editor.getModel()?.getLineCount() || 1
         // const height = editor.getTopForLineNumber(lineCount + 1) + lineHeight
@@ -495,7 +495,7 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
   }
 
   return (
-    <MonacoEditor
+    <Editor
       language={lang}
       theme="codepod"
       options={{
@@ -523,8 +523,9 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
         },
+        renderLineHighlight: "none",
       }}
-      editorDidMount={onEditorDidMount}
+      onMount={onEditorDidMount}
     />
   );
 };

@@ -46,6 +46,8 @@ import { useSnackbar } from "notistack";
 
 import juliaLogo from "@/assets/julia.svg";
 import pythonLogo from "@/assets/python.svg";
+import javascriptLogo from "@/assets/javascript.svg";
+import racketLogo from "@/assets/racket.svg";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -196,9 +198,12 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
                       borderTop: "1px solid rgb(214, 222, 230)",
                     }}
                   >
-                    {res.text}
-                    {res.html && (
+                    {res.html ? (
                       <div dangerouslySetInnerHTML={{ __html: res.html }} />
+                    ) : (
+                      // sometimes (e.g., in racket), both text and html are
+                      // set. In this case, we just show the html.
+                      res.text
                     )}
                   </div>
                 );
@@ -431,35 +436,49 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
         <HandleWithHover id={id} />
 
-        {!hover && (
-          <Box
-            style={{
-              position: "fixed",
-              bottom: "8px",
-              right: "8px",
-            }}
-          >
-            {/* .py */}
-            {match(node.data.lang)
-              .with("python", () => (
-                <img
-                  src={pythonLogo}
-                  style={{
-                    height: "1em",
-                  }}
-                />
-              ))
-              .with("julia", () => (
-                <img
-                  src={juliaLogo}
-                  style={{
-                    height: "1em",
-                  }}
-                />
-              ))
-              .otherwise(() => "")}{" "}
-          </Box>
-        )}
+        <Box
+          style={{
+            position: "fixed",
+            bottom: "8px",
+            right: hover ? "30px" : "8px",
+          }}
+        >
+          {/* .py */}
+          {match(node.data.lang)
+            .with("python", () => (
+              <img
+                src={pythonLogo}
+                style={{
+                  height: "1em",
+                }}
+              />
+            ))
+            .with("julia", () => (
+              <img
+                src={juliaLogo}
+                style={{
+                  height: "1em",
+                }}
+              />
+            ))
+            .with("javascript", () => (
+              <img
+                src={javascriptLogo}
+                style={{
+                  height: "1em",
+                }}
+              />
+            ))
+            .with("racket", () => (
+              <img
+                src={racketLogo}
+                style={{
+                  height: "1em",
+                }}
+              />
+            ))
+            .otherwise(() => "??")}{" "}
+        </Box>
 
         {hover && (
           <NodeResizeControl

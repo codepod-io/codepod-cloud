@@ -298,6 +298,9 @@ importers:
       '@lexical/yjs':
         specifier: ^0.12.5
         version: 0.12.5(lexical@0.12.5)(yjs@13.6.7)
+      '@monaco-editor/react':
+        specifier: ^4.6.0
+        version: 4.6.0(monaco-editor@0.34.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@mui/icons-material':
         specifier: ^5.10.9
         version: 5.10.9(@mui/material@5.14.5(@emotion/react@11.11.1(@types/react@18.2.15)(react@18.2.0))(@emotion/styled@11.11.0(@emotion/react@11.11.1(@types/react@18.2.15)(react@18.2.0))(@types/react@18.2.15)(react@18.2.0))(@types/react@18.2.15)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(@types/react@18.2.15)(react@18.2.0)
@@ -457,9 +460,6 @@ importers:
       react-hotkeys-hook:
         specifier: ^4.5.0
         version: 4.5.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      react-monaco-editor:
-        specifier: ^0.50.1
-        version: 0.50.1(@types/react@18.2.15)(monaco-editor@0.34.1)(react@18.2.0)
       react-resizable:
         specifier: ^3.0.4
         version: 3.0.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1462,6 +1462,18 @@ packages:
 
   '@messageformat/parser@5.1.0':
     resolution: {integrity: sha512-jKlkls3Gewgw6qMjKZ9SFfHUpdzEVdovKFtW1qRhJ3WI4FW5R/NnGDqr8SDGz+krWDO3ki94boMmQvGke1HwUQ==}
+
+  '@monaco-editor/loader@1.4.0':
+    resolution: {integrity: sha512-00ioBig0x642hytVspPl7DbQyaSWRaolYie/UFNjoTdvoKPzo6xrXLhTk9ixgIKcLH5b5vDOjVNiGyY+uDCUlg==}
+    peerDependencies:
+      monaco-editor: '>= 0.21.0 < 1'
+
+  '@monaco-editor/react@4.6.0':
+    resolution: {integrity: sha512-RFkU9/i7cN2bsq/iTkurMWOEErmYcY6JiQI3Jn+WeR/FGISH8JbHERjpS9oRuSOPvDMJI0Z8nJeKkbOs9sBYQw==}
+    peerDependencies:
+      monaco-editor: '>= 0.25.0 < 1'
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
 
   '@mui/base@5.0.0-beta.11':
     resolution: {integrity: sha512-FdKZGPd8qmC3ZNke7CNhzcEgToc02M6WYZc9hcBsNQ17bgAd3s9F//1bDDYgMVBYxDM71V0sv/hBHlOY4I1ZVA==}
@@ -6346,13 +6358,6 @@ packages:
   react-is@18.2.0:
     resolution: {integrity: sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==}
 
-  react-monaco-editor@0.50.1:
-    resolution: {integrity: sha512-qvYdJhQdkPIrPDMxCrEl0T2x9TfBB+aUbrpFv69FwoTybeyfAjxgJ219MYSsgn3c/g06BgyLX4ENrXM4niZ9ag==}
-    peerDependencies:
-      '@types/react': '>=17 <= 18'
-      monaco-editor: ^0.34.0
-      react: '>=17 <= 18'
-
   react-remove-scroll-bar@2.3.4:
     resolution: {integrity: sha512-63C4YQBUt0m6ALadE9XV56hV8BgJWDmmTPY758iIJjfQKt2nYwoUrPk0LXRXcB/yIj82T1/Ixfdpdk68LwIB0A==}
     engines: {node: '>=10'}
@@ -6716,6 +6721,9 @@ packages:
   stack-utils@2.0.6:
     resolution: {integrity: sha512-XlkWvfIm6RmsWtNJx+uqtKLS8eqFbxUg0ZzLXqY0caEy9l7hruX8IpiDnjsLavoBgqCCR71TqWO8MaXYheJ3RQ==}
     engines: {node: '>=10'}
+
+  state-local@1.0.7:
+    resolution: {integrity: sha512-HTEHMNieakEnoe33shBYcZ7NX83ACUjCu8c40iOGEZsngj9zRnkqS9j1pqQPXwobB0ZcVTk27REb7COQ0UR59w==}
 
   statuses@2.0.1:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
@@ -8729,6 +8737,18 @@ snapshots:
   '@messageformat/parser@5.1.0':
     dependencies:
       moo: 0.5.2
+
+  '@monaco-editor/loader@1.4.0(monaco-editor@0.34.1)':
+    dependencies:
+      monaco-editor: 0.34.1
+      state-local: 1.0.7
+
+  '@monaco-editor/react@4.6.0(monaco-editor@0.34.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+    dependencies:
+      '@monaco-editor/loader': 1.4.0(monaco-editor@0.34.1)
+      monaco-editor: 0.34.1
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
 
   '@mui/base@5.0.0-beta.11(@types/react@18.2.15)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
@@ -15203,13 +15223,6 @@ snapshots:
 
   react-is@18.2.0: {}
 
-  react-monaco-editor@0.50.1(@types/react@18.2.15)(monaco-editor@0.34.1)(react@18.2.0):
-    dependencies:
-      '@types/react': 18.2.15
-      monaco-editor: 0.34.1
-      prop-types: 15.8.1
-      react: 18.2.0
-
   react-remove-scroll-bar@2.3.4(@types/react@18.2.15)(react@18.2.0):
     dependencies:
       react: 18.2.0
@@ -15703,6 +15716,8 @@ snapshots:
   stack-utils@2.0.6:
     dependencies:
       escape-string-regexp: 2.0.0
+
+  state-local@1.0.7: {}
 
   statuses@2.0.1: {}
 

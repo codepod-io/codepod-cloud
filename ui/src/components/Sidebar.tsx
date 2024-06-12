@@ -219,7 +219,11 @@ function SidebarSettings() {
   );
 }
 
-function KernelStatus({ kernelName }: { kernelName: "julia" | "python" }) {
+function KernelStatus({
+  kernelName,
+}: {
+  kernelName: "julia" | "python" | "javascript" | "racket";
+}) {
   const [repoId] = useAtom(ATOM_repoId);
   if (!repoId) throw new Error("repoId is null");
   // Observe runtime change
@@ -323,6 +327,8 @@ const Runtime = () => {
 
       <KernelStatus kernelName="python" />
       <KernelStatus kernelName="julia" />
+      <KernelStatus kernelName="javascript" />
+      <KernelStatus kernelName="racket" />
     </>
   );
 };
