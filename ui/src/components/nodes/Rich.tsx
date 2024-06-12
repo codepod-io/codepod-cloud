@@ -9,29 +9,7 @@ import {
 } from "react";
 import * as React from "react";
 
-import { ResizableBox } from "react-resizable";
-
-import { shallow } from "zustand/shallow";
-
-import * as Y from "yjs";
-
-import ReactFlow, {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  Background,
-  MiniMap,
-  Controls,
-  Handle,
-  useReactFlow,
-  Position,
-  ConnectionMode,
-  MarkerType,
-  Node,
-  useStore as useReactFlowStore,
-  NodeResizer,
-  NodeResizeControl,
-} from "reactflow";
+import { useReactFlow, NodeResizeControl } from "reactflow";
 import Ansi from "ansi-to-react";
 
 import jsx from "refractor/lang/jsx.js";
@@ -147,7 +125,7 @@ import { Handles } from "./utils";
 import { MyLexical } from "./rich/MyLexical";
 
 import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
-import { CircleEllipsis } from "lucide-react";
+import { Ellipsis } from "lucide-react";
 import { match } from "ts-pattern";
 import { useAnchorStyle } from "./utils";
 import { ATOM_editMode } from "@/lib/store/atom";
@@ -453,7 +431,7 @@ function TopRightMenu({ id }) {
             margin: 0,
           }}
         >
-          <CircleEllipsis />
+          <Ellipsis size="1.2em" />
         </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content>

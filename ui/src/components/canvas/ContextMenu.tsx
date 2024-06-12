@@ -27,6 +27,10 @@ import {
   ATOM_updateView_addNode,
 } from "@/lib/store/canvasSlice";
 
+import juliaLogo from "@/assets/julia.svg";
+import pythonLogo from "@/assets/python.svg";
+import { NotebookPen } from "lucide-react";
+
 export function useAddNode(reactFlowWrapper) {
   const [isAddingNode, setIsAddingNode] = useAtom(ATOM_isAddingNode);
   const updateView = useSetAtom(ATOM_updateView);
@@ -204,7 +208,7 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
             setIsAddingNode(true);
           }}
         >
-          + Doc
+          + <NotebookPen /> Doc
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
@@ -214,7 +218,14 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
             setIsAddingNode(true);
           }}
         >
-          + Python
+          +{" "}
+          <img
+            src={pythonLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          Python
         </DropdownMenu.Item>
         <DropdownMenu.Item
           shortcut="⌘ E"
@@ -223,7 +234,14 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
             setIsAddingNode(true);
           }}
         >
-          + Julia
+          +{" "}
+          <img
+            src={juliaLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          Julia
         </DropdownMenu.Item>
 
         <DropdownMenu.Separator />

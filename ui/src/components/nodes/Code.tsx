@@ -7,23 +7,7 @@ import {
   memo,
 } from "react";
 import * as React from "react";
-import ReactFlow, {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  Background,
-  MiniMap,
-  Controls,
-  Handle,
-  useReactFlow,
-  Position,
-  ConnectionMode,
-  MarkerType,
-  Node,
-  NodeProps,
-  useStore as useReactFlowStore,
-  NodeResizeControl,
-} from "reactflow";
+import { useReactFlow, NodeResizeControl } from "reactflow";
 
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -39,23 +23,8 @@ import { Handles, useAnchorStyle } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
-import {
-  DropdownMenu,
-  Flex,
-  Button as RadixButton,
-  Select,
-} from "@radix-ui/themes";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  Check,
-  FunctionSquare,
-  MoreHorizontal,
-  Pencil,
-  Play,
-  X,
-} from "lucide-react";
+import { DropdownMenu, Flex, IconButton, Select } from "@radix-ui/themes";
+import { Check, Ellipsis, Play, X } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -74,6 +43,9 @@ import {
 import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 import { ATOM_repoId } from "@/lib/store/atom";
 import { useSnackbar } from "notistack";
+
+import juliaLogo from "@/assets/julia.svg";
+import pythonLogo from "@/assets/python.svg";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -145,9 +117,9 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           <Flex flexGrow="1" />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <RadixButton variant="ghost" size="1">
+              <IconButton variant="ghost" size="1">
                 <CaretDownIcon />
-              </RadixButton>
+              </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               <DropdownMenu.Item
@@ -270,24 +242,10 @@ function HeaderBar({ id }: { id: string }) {
   }
 
   return (
-    <div
-      // className="custom-drag-handle"
-      style={{
-        height: "var(--space-6)",
-        backgroundColor: "var(--accent-3)",
-        borderRadius: "4px 4px 0 0",
-        cursor: "auto",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 10px",
-      }}
-    >
-      <div className="flex-grow"></div>
-
-      {/* Language indicator */}
-      <Box>{node.data.lang}</Box>
-      <RadixButton
+    <Flex>
+      <IconButton
         variant="ghost"
+        radius="full"
         style={{
           margin: 0,
         }}
@@ -297,18 +255,19 @@ function HeaderBar({ id }: { id: string }) {
           if (specs) runChain.mutate({ repoId, specs });
         }}
       >
-        <Play size={15} />
-      </RadixButton>
+        <Play size="1.2em" />
+      </IconButton>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <RadixButton
+          <IconButton
             variant="ghost"
+            radius="full"
             style={{
               margin: 0,
             }}
           >
-            <MoreHorizontal size={15} />
-          </RadixButton>
+            <Ellipsis size="1.2em" />
+          </IconButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
           <DropdownMenu.Item
@@ -345,7 +304,7 @@ function HeaderBar({ id }: { id: string }) {
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    </div>
+    </Flex>
   );
 }
 
@@ -410,6 +369,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
+  const [hover, setHover] = useState(false);
+
   const anchorStyle = useAnchorStyle(id);
   let ref = useRunKey({ id })!;
 
@@ -428,6 +389,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         // minHeight: "50px",
       }}
       ref={ref}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
       <div
         style={{
@@ -438,13 +401,24 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
           backgroundColor: "white",
           border: "solid 1px var(--gray-12)",
 
-          // NOTE: monaco editor has a overflow-guard that doesn't have border
-          // radius on the bottom. So we don't apply the border-radius on the
-          // bottom to avoid inconsistent looking.
-          borderRadius: "4px 4px 0 0",
+          // NOTE: monaco editor has a overflow-guard that needs to have border
+          // radius as well. See .overflow-guard and .monaco-editor in
+          // custom.css.
+          borderRadius: "4px",
         }}
       >
-        <HeaderBar id={id} />
+        {hover && (
+          <Box
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              zIndex: 100,
+            }}
+          >
+            <HeaderBar id={id} />
+          </Box>
+        )}
         <div
           style={{
             paddingTop: "5px",
@@ -457,41 +431,73 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
         <HandleWithHover id={id} />
 
-        <NodeResizeControl
-          style={{
-            background: "transparent",
-            border: "none",
-            // make it above the pod
-            zIndex: 100,
-            // put it to the right-bottom corner, instead of right-middle.
-            top: "100%",
-            color: "red",
-          }}
-          minWidth={300}
-          minHeight={50}
-          // this allows the resize happens in X-axis only.
-          position="right"
-          onResizeEnd={() => {
-            // remove style.height so that the node auto-resizes.
-            const node = nodesMap.get(id);
-            if (node) {
-              nodesMap.set(id, {
-                ...node,
-                style: { ...node.style, height: undefined },
-              });
-              autoLayoutTree();
-            }
-          }}
-        >
-          <HeightIcon
-            sx={{
-              transform: "rotate(90deg)",
-              position: "absolute",
-              right: 5,
-              bottom: 5,
+        {!hover && (
+          <Box
+            style={{
+              position: "fixed",
+              bottom: "8px",
+              right: "8px",
             }}
-          />
-        </NodeResizeControl>
+          >
+            {/* .py */}
+            {match(node.data.lang)
+              .with("python", () => (
+                <img
+                  src={pythonLogo}
+                  style={{
+                    height: "1em",
+                  }}
+                />
+              ))
+              .with("julia", () => (
+                <img
+                  src={juliaLogo}
+                  style={{
+                    height: "1em",
+                  }}
+                />
+              ))
+              .otherwise(() => "")}{" "}
+          </Box>
+        )}
+
+        {hover && (
+          <NodeResizeControl
+            style={{
+              background: "transparent",
+              border: "none",
+              // make it above the pod
+              zIndex: 100,
+              // put it to the right-bottom corner, instead of right-middle.
+              top: "100%",
+              color: "red",
+            }}
+            minWidth={300}
+            minHeight={50}
+            // this allows the resize happens in X-axis only.
+            position="right"
+            onResizeEnd={() => {
+              // remove style.height so that the node auto-resizes.
+              const node = nodesMap.get(id);
+              if (node) {
+                nodesMap.set(id, {
+                  ...node,
+                  style: { ...node.style, height: undefined },
+                });
+                autoLayoutTree();
+              }
+            }}
+          >
+            <HeightIcon
+              sx={{
+                transform: "rotate(90deg)",
+                position: "absolute",
+                right: 5,
+                bottom: 5,
+              }}
+            />
+          </NodeResizeControl>
+        )}
       </div>
     </div>
   );
