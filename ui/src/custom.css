@@ -120,3 +120,12 @@ https://codepen.io/stevenlewis/pen/jOKvMx */
   border: 2px solid white; /* should match background, can't be transparent */
   background-color: rgba(0, 0, 0, 0.5);
 }
+
+/* Set border radius for monaco-editor */
+.overflow-guard {
+  border-radius: 10px;
+}
+
+.monaco-editor {
+  border-radius: 10px;
+}
