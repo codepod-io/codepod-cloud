@@ -1,4 +1,4 @@
-import { monaco } from "react-monaco-editor";
+import * as monaco from "monaco-editor";
 
 export class llamaInlineCompletionProvider
   implements monaco.languages.InlineCompletionsProvider

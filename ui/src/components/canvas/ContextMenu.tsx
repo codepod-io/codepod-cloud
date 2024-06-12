@@ -29,6 +29,9 @@ import {
 
 import juliaLogo from "@/assets/julia.svg";
 import pythonLogo from "@/assets/python.svg";
+import javascriptLogo from "@/assets/javascript.svg";
+import racketLogo from "@/assets/racket.svg";
+
 import { NotebookPen } from "lucide-react";
 
 export function useAddNode(reactFlowWrapper) {
@@ -242,6 +245,40 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
             }}
           />{" "}
           Julia
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            setNewNodeSpec({ type: "CODE", lang: "javascript" });
+            setIsAddingNode(true);
+          }}
+        >
+          +{" "}
+          <img
+            src={javascriptLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          JavaScript
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            setNewNodeSpec({ type: "CODE", lang: "racket" });
+            setIsAddingNode(true);
+          }}
+        >
+          +{" "}
+          <img
+            src={racketLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          Racket
         </DropdownMenu.Item>
 
         <DropdownMenu.Separator />

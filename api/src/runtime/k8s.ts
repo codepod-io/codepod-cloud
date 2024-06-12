@@ -307,7 +307,10 @@ export const k8sRouter = router({
   // Start the runtime containr for a repo if not already started.
   start: protectedProcedure
     .input(
-      z.object({ repoId: z.string(), kernelName: z.enum(["python", "julia"]) })
+      z.object({
+        repoId: z.string(),
+        kernelName: z.enum(["python", "julia", "javascript", "racket"]),
+      })
     )
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
       console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
@@ -338,6 +341,11 @@ export const k8sRouter = router({
         image: match(kernelName)
           .with("python", () => "lihebi/codepod-kernel-python:0.5.1-alpha.2")
           .with("julia", () => "lihebi/codepod-kernel-julia:0.5.1-alpha.2")
+          .with(
+            "javascript",
+            () => "lihebi/codepod-kernel-javascript:0.5.1-alpha.2"
+          )
+          .with("racket", () => "lihebi/codepod-kernel-racket:0.5.1-alpha.2")
           .exhaustive(),
         ns,
       });
@@ -355,7 +363,10 @@ export const k8sRouter = router({
   // Stop the runtime container for a repo.
   stop: protectedProcedure
     .input(
-      z.object({ repoId: z.string(), kernelName: z.enum(["python", "julia"]) })
+      z.object({
+        repoId: z.string(),
+        kernelName: z.enum(["python", "julia", "javascript", "racket"]),
+      })
     )
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
       // remove zmq wire and ydoc
@@ -549,6 +560,12 @@ function bindZmqYjs({
         // FIXME old results contain too much data, should be cleaned out.
         // console.log("Old", oldresult.data);
         oldresult.data.push(newdata);
+        if (kernelName === "racket") {
+          // racket doesn't have execute_reply message, so handle it here.
+          oldresult.running = false;
+          oldresult.lastExecutedAt = Date.now();
+          oldresult.exec_count = msgs.content.execution_count;
+        }
         resultMap.set(podId, oldresult);
         break;
       case "stdout":

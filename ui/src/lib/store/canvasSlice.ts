@@ -184,7 +184,7 @@ export const ATOM_isAddingNode = atom(false);
 
 export const ATOM_newNodeSpec = atom<{
   type: "CODE" | "RICH";
-  lang?: "python" | "julia";
+  lang?: "python" | "julia" | "javascript" | "racket";
 }>({ type: "CODE" });
 export const ATOM_mousePosition = atom({ x: 0, y: 0 });
 type AnchorNode = {
