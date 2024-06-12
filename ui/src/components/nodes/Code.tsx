@@ -24,7 +24,7 @@ import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 import { DropdownMenu, Flex, IconButton, Select } from "@radix-ui/themes";
-import { Check, MoreHorizontal, Play, X } from "lucide-react";
+import { Check, Ellipsis, Play, X } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -255,7 +255,7 @@ function HeaderBar({ id }: { id: string }) {
           if (specs) runChain.mutate({ repoId, specs });
         }}
       >
-        <Play size={15} />
+        <Play size="1.2em" />
       </IconButton>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
@@ -266,7 +266,7 @@ function HeaderBar({ id }: { id: string }) {
               margin: 0,
             }}
           >
-            <MoreHorizontal size={15} />
+            <Ellipsis size="1.2em" />
           </IconButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
@@ -369,6 +369,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
+  const [hover, setHover] = useState(false);
+
   const anchorStyle = useAnchorStyle(id);
   let ref = useRunKey({ id })!;
 
@@ -387,6 +389,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         // minHeight: "50px",
       }}
       ref={ref}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
       <div
         style={{
@@ -403,16 +407,18 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
           borderRadius: "4px",
         }}
       >
-        <Box
-          style={{
-            position: "fixed",
-            top: 0,
-            right: 0,
-            zIndex: 100,
-          }}
-        >
-          <HeaderBar id={id} />
-        </Box>
+        {hover && (
+          <Box
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              zIndex: 100,
+            }}
+          >
+            <HeaderBar id={id} />
+          </Box>
+        )}
         <div
           style={{
             paddingTop: "5px",
@@ -425,69 +431,73 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
         <HandleWithHover id={id} />
 
-        <Box
-          style={{
-            position: "fixed",
-            bottom: "8px",
-            right: "30px",
-          }}
-        >
-          {/* .py */}
-          {match(node.data.lang)
-            .with("python", () => (
-              <img
-                src={pythonLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("julia", () => (
-              <img
-                src={juliaLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .otherwise(() => "")}{" "}
-        </Box>
-
-        <NodeResizeControl
-          style={{
-            background: "transparent",
-            border: "none",
-            // make it above the pod
-            zIndex: 100,
-            // put it to the right-bottom corner, instead of right-middle.
-            top: "100%",
-            color: "red",
-          }}
-          minWidth={300}
-          minHeight={50}
-          // this allows the resize happens in X-axis only.
-          position="right"
-          onResizeEnd={() => {
-            // remove style.height so that the node auto-resizes.
-            const node = nodesMap.get(id);
-            if (node) {
-              nodesMap.set(id, {
-                ...node,
-                style: { ...node.style, height: undefined },
-              });
-              autoLayoutTree();
-            }
-          }}
-        >
-          <HeightIcon
-            sx={{
-              transform: "rotate(90deg)",
-              position: "absolute",
-              right: 5,
-              bottom: 5,
+        {!hover && (
+          <Box
+            style={{
+              position: "fixed",
+              bottom: "8px",
+              right: "8px",
             }}
-          />
-        </NodeResizeControl>
+          >
+            {/* .py */}
+            {match(node.data.lang)
+              .with("python", () => (
+                <img
+                  src={pythonLogo}
+                  style={{
+                    height: "1em",
+                  }}
+                />
+              ))
+              .with("julia", () => (
+                <img
+                  src={juliaLogo}
+                  style={{
+                    height: "1em",
+                  }}
+                />
+              ))
+              .otherwise(() => "")}{" "}
+          </Box>
+        )}
+
+        {hover && (
+          <NodeResizeControl
+            style={{
+              background: "transparent",
+              border: "none",
+              // make it above the pod
+              zIndex: 100,
+              // put it to the right-bottom corner, instead of right-middle.
+              top: "100%",
+              color: "red",
+            }}
+            minWidth={300}
+            minHeight={50}
+            // this allows the resize happens in X-axis only.
+            position="right"
+            onResizeEnd={() => {
+              // remove style.height so that the node auto-resizes.
+              const node = nodesMap.get(id);
+              if (node) {
+                nodesMap.set(id, {
+                  ...node,
+                  style: { ...node.style, height: undefined },
+                });
+                autoLayoutTree();
+              }
+            }}
+          >
+            <HeightIcon
+              sx={{
+                transform: "rotate(90deg)",
+                position: "absolute",
+                right: 5,
+                bottom: 5,
+              }}
+            />
+          </NodeResizeControl>
+        )}
       </div>
     </div>
   );
