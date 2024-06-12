@@ -17,11 +17,11 @@ import { Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useSetAtom } from "jotai";
 import {
   ATOM_addNodeAtAnchor,
-  ATOM_addNodeType,
   ATOM_autoLayoutTree,
   ATOM_getInsertPosition,
   ATOM_isAddingNode,
   ATOM_mousePosition,
+  ATOM_newNodeSpec,
   ATOM_nodes,
   ATOM_updateView,
   ATOM_updateView_addNode,
@@ -175,7 +175,7 @@ export function useUpload() {
 
 export function ContextMenu({ setShowContextMenu, handleItemClick }) {
   const setIsAddingNode = useSetAtom(ATOM_isAddingNode);
-  const setAddNodeType = useSetAtom(ATOM_addNodeType);
+  const setNewNodeSpec = useSetAtom(ATOM_newNodeSpec);
   return (
     <DropdownMenu.Root
       open={true}
@@ -198,23 +198,34 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
       </DropdownMenu.Trigger>
       <DropdownMenu.Content>
         <DropdownMenu.Item
-          shortcut="⌘ E"
-          onClick={() => {
-            setAddNodeType("CODE");
-            setIsAddingNode(true);
-          }}
-        >
-          + Code
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
           shortcut="⌘ D"
           onClick={() => {
-            setAddNodeType("RICH");
+            setNewNodeSpec({ type: "RICH" });
             setIsAddingNode(true);
           }}
         >
           + Doc
         </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            setNewNodeSpec({ type: "CODE", lang: "python" });
+            setIsAddingNode(true);
+          }}
+        >
+          + Python
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            setNewNodeSpec({ type: "CODE", lang: "julia" });
+            setIsAddingNode(true);
+          }}
+        >
+          + Julia
+        </DropdownMenu.Item>
+
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           shortcut="⌘ N"

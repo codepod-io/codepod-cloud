@@ -57,38 +57,6 @@ function triggerResultChanged(get: Getter, set: Setter, id: string) {
 }
 
 /**
- * This ATOM is used to trigger re-rendering of the pod.
- */
-export const ATOM_podUpdated = atom<Record<string, number>>({});
-
-function triggerPodUpdate(get: Getter, set: Setter, id: string) {
-  set(
-    ATOM_podUpdated,
-    produce((podChanged: Record<string, number>) => {
-      podChanged[id] = (podChanged[id] || 0) + 1;
-    })
-  );
-}
-
-/**
- * Change the pod's language will trigger (1) the change of yjs data and (2) the
- * re-rendering of the pod.
- */
-export const ATOM_changeLang = atom(
-  null,
-  (get, set, id: string, lang: string) => {
-    const nodesMap = getNodesMap(get);
-    const node = nodesMap.get(id);
-    if (node) {
-      // set the yjs data
-      nodesMap.set(id, { ...node, data: { ...node.data, lang } });
-      // trigger re-rendering
-      triggerPodUpdate(get, set, id);
-    }
-  }
-);
-
-/**
  * Yjs Map getters
  */
 function getNodesMap(get: Getter) {
@@ -288,7 +256,6 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
             updateView(get, set);
             break;
           case "update":
-            triggerPodUpdate(get, set, key);
             break;
           default:
             console.warn("unhandled change action", change.action);

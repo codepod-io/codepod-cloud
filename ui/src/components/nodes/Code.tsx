@@ -66,14 +66,12 @@ import {
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
 import {
-  ATOM_changeLang,
   ATOM_nodesMap,
-  ATOM_podUpdated,
   ATOM_resultChanged,
   ATOM_resultMap,
   ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
-import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 import { ATOM_repoId } from "@/lib/store/atom";
 import { useSnackbar } from "notistack";
 
@@ -253,7 +251,6 @@ function HeaderBar({ id }: { id: string }) {
   const reactFlowInstance = useReactFlow();
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
-  const changeLang = useSetAtom(ATOM_changeLang);
 
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const lang = useAtomValue(ATOM_nodesMap).get(id)?.data.lang;
@@ -264,7 +261,6 @@ function HeaderBar({ id }: { id: string }) {
     );
   const repoId = useAtomValue(ATOM_repoId)!;
   const [nodesMap] = useAtom(ATOM_nodesMap);
-  const addNode = useSetAtom(ATOM_addNode);
   const node = nodesMap.get(id)!;
   const parentId = node.data.parent;
   let index = 0;
@@ -288,32 +284,8 @@ function HeaderBar({ id }: { id: string }) {
     >
       <div className="flex-grow"></div>
 
-      {/* Language selector */}
-      <Select.Root
-        value={node.data.lang}
-        onValueChange={(value) => {
-          changeLang(id, value);
-        }}
-      >
-        <Select.Trigger variant="ghost" />
-        <Select.Content
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-          }}
-        >
-          <Select.Group>
-            <Select.Label>Languages</Select.Label>
-            <Select.Item value="python">Python</Select.Item>
-            <Select.Item value="julia">Julia</Select.Item>
-            <Select.Item value="markdown">Markdown</Select.Item>
-          </Select.Group>
-          <Select.Separator />
-          <Select.Group>
-            <Select.Label>Configs</Select.Label>
-            <Select.Item value="dockerfile">Dockerfile</Select.Item>
-          </Select.Group>
-        </Select.Content>
-      </Select.Root>
+      {/* Language indicator */}
+      <Box>{node.data.lang}</Box>
       <RadixButton
         variant="ghost"
         style={{
@@ -434,8 +406,6 @@ function useRunKey({ id }: { id: string }) {
 }
 
 export const CodeNode = memo<{ id: string }>(function ({ id }) {
-  // Re-render the editor when the pod is updated (e.g., language changed).
-  useAtom(React.useMemo(() => selectAtom(ATOM_podUpdated, (v) => v[id]), [id]));
   const [nodesMap] = useAtom(ATOM_nodesMap);
 
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);

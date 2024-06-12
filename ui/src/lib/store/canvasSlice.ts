@@ -181,10 +181,11 @@ export const ATOM_updateView = atom(null, updateView);
  */
 
 export const ATOM_isAddingNode = atom(false);
-export const ATOM_addNodeLanguage = atom<"python" | "julia" | "dockerfile">(
-  "python"
-);
-export const ATOM_addNodeType = atom<"CODE" | "RICH">("CODE");
+
+export const ATOM_newNodeSpec = atom<{
+  type: "CODE" | "RICH";
+  lang?: "python" | "julia";
+}>({ type: "CODE" });
 export const ATOM_mousePosition = atom({ x: 0, y: 0 });
 type AnchorNode = {
   id: string;
@@ -296,7 +297,8 @@ function getInsertPosition(get: Getter, set: Setter) {
 
 export const ATOM_getInsertPosition = atom(null, getInsertPosition);
 
-function addNode(get: Getter, set: Setter, { type, parentId, index }) {
+function addNode(get: Getter, set: Setter, { parentId, index }) {
+  const { type, lang } = get(ATOM_newNodeSpec);
   const nodesMap = get(ATOM_nodesMap);
   const node = createNewNode(type, { x: 0, y: 0 });
   switch (type) {
@@ -312,6 +314,7 @@ function addNode(get: Getter, set: Setter, { type, parentId, index }) {
     data: {
       ...node.data,
       parent: parentId,
+      lang,
     },
   });
   const parent = nodesMap.get(parentId);
@@ -333,8 +336,6 @@ function addNode(get: Getter, set: Setter, { type, parentId, index }) {
   });
 }
 
-export const ATOM_addNode = atom(null, addNode);
-
 function addNodeAtAnchor(get: Getter, set: Setter) {
   const anchor = get(ATOM_anchorNode);
   if (!anchor) return;
@@ -343,21 +344,23 @@ function addNodeAtAnchor(get: Getter, set: Setter) {
   const parentId = node.data.parent!;
   const parentNode = nodesMap.get(parentId)!;
   const index = parentNode?.data.children.indexOf(anchor.id);
+
   if (anchor.isValid) {
     match(anchor.position)
       .with("TOP", () => {
-        addNode(get, set, { type: get(ATOM_addNodeType), parentId, index });
+        addNode(get, set, {
+          parentId,
+          index,
+        });
       })
       .with("BOTTOM", () => {
         addNode(get, set, {
-          type: get(ATOM_addNodeType),
           parentId,
           index: index + 1,
         });
       })
       .with("RIGHT", () => {
         addNode(get, set, {
-          type: get(ATOM_addNodeType),
           parentId: anchor.id,
           index: 0,
         });
