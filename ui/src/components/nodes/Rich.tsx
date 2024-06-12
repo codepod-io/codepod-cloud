@@ -34,10 +34,13 @@ import ReactFlow, {
 } from "reactflow";
 import Ansi from "ansi-to-react";
 
+import jsx from "refractor/lang/jsx.js";
+import typescript from "refractor/lang/typescript.js";
+import python from "refractor/lang/python.js";
+
 import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
 import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import FormatColorResetIcon from "@mui/icons-material/FormatColorReset";
 import HeightIcon from "@mui/icons-material/Height";
@@ -143,16 +146,8 @@ import { Handles } from "./utils";
 
 import { MyLexical } from "./rich/MyLexical";
 
-import "./remirror-size.css";
-import { Button, DropdownMenu } from "@radix-ui/themes";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  FunctionSquare,
-  MoreHorizontal,
-  Pencil,
-} from "lucide-react";
+import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
+import { CircleEllipsis } from "lucide-react";
 import { match } from "ts-pattern";
 import { useAnchorStyle } from "./utils";
 import { ATOM_editMode } from "@/lib/store/atom";
@@ -292,37 +287,21 @@ const MyRemirror = ({
 
   const { manager, state, setState } = useRemirror({
     extensions: () => [
-      new PlaceholderExtension({ placeholder }),
-      new ReactComponentExtension(),
-      new TableExtension(),
-      new TextHighlightExtension(),
-      new SupExtension(),
-      new SubExtension(),
-      new MarkdownExtension(),
-      new MyYjsExtension({ yXml, awareness: provider.awareness }),
+      // node extensions
       new MathInlineExtension(),
       new MathBlockExtension(),
-      // new CalloutExtension({ defaultType: "warn" }),
-      // Plain
-      new BidiExtension(),
-      new DropCursorExtension(),
-      new GapCursorExtension(),
-      new ShortcutsExtension(),
-      new TrailingNodeExtension(),
-      // Nodes
-      new HardBreakExtension(),
-      new ImageExtension({ enableResizing: true }),
-      new HorizontalRuleExtension(),
+      new HorizontalRuleExtension({}),
       new BlockquoteExtension(),
-      new CodeBlockExtension(),
-      new HeadingExtension(),
-      new IframeExtension(),
-      new BulletListExtension(),
+      new CodeBlockExtension({ supportedLanguages: [jsx, typescript, python] }),
+      new HeadingExtension({}),
+      new BulletListExtension({}),
       new OrderedListExtension(),
       new TaskListExtension(),
+      new EmojiExtension({ data: emojiData as any, plainText: true }),
 
-      // Marks
-      new BoldExtension(),
+      // mark extensions
+      new TextHighlightExtension({}),
+      new BoldExtension({}),
       new CodeExtension(),
       new StrikeExtension(),
       new ItalicExtension(),
@@ -331,14 +310,26 @@ const MyRemirror = ({
         autoLinkAllowedTLDs: ["dev", ...TOP_50_TLDS],
       }),
       new UnderlineExtension(),
-      new EmojiExtension({ data: emojiData as any, plainText: true }),
+
+      // plain extensions
+      new PlaceholderExtension({ placeholder }),
+      new ReactComponentExtension({}),
+      new MarkdownExtension({}),
+
+      new DropCursorExtension({}),
+      new GapCursorExtension(),
+      new ShortcutsExtension(),
+      new TrailingNodeExtension({}),
       new SlashExtension({
         extraAttributes: { type: "user" },
         matchers: [
           { name: "slash", char: "/", appendText: " ", matchOffset: 0 },
         ],
       }),
-      new BlockHandleExtension(),
+      // new BlockHandleExtension(),
+
+      // // Special extensions (plain)
+      new MyYjsExtension({ yXml, awareness: provider.awareness }),
     ],
     onError: ({ json, invalidContent, transformers }) => {
       // Automatically remove all invalid nodes and marks.
@@ -366,6 +357,8 @@ const MyRemirror = ({
     // FIXME handle markdown import/export when we migrate to Yjs for everything.
     stringHandler: "markdown",
   });
+
+  const [hover, setHover] = useState(false);
 
   // Printing the schema for backend JSON2YXML conversion. This is useful for
   // parsing the prosemirror JSON doc format in the backend (search `json2yxml`
@@ -398,10 +391,17 @@ const MyRemirror = ({
           listStyleType: "lower-roman",
         },
       }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       overflow="auto"
     >
       <ThemeProvider>
         <MyStyledWrapper>
+          {hover && (
+            <Box position={"fixed"} top="0" right="0" zIndex={1000}>
+              <TopRightMenu id={id} />
+            </Box>
+          )}
           <Remirror
             editable={editMode === "edit"}
             manager={manager}
@@ -420,7 +420,6 @@ const MyRemirror = ({
             {/* <WysiwygToolbar /> */}
             <EditorComponent />
 
-            <TableComponents />
             <SlashSuggestor />
 
             {editMode === "edit" && <EditorToolbar />}
@@ -434,7 +433,7 @@ const MyRemirror = ({
   );
 };
 
-function HeaderBar({ id }) {
+function TopRightMenu({ id }) {
   const reactFlowInstance = useReactFlow();
   const addNode = useSetAtom(ATOM_addNode);
   const [nodesMap] = useAtom(ATOM_nodesMap);
@@ -446,50 +445,32 @@ function HeaderBar({ id }) {
     index = parentNode?.data.children?.indexOf(id)!;
   }
   return (
-    <div
-      style={{
-        height: "var(--space-6)",
-        backgroundColor: "var(--accent-3)",
-        borderRadius: "4px 4px 0 0",
-        cursor: "auto",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 10px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexGrow: 1,
-        }}
-      ></div>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button
-            variant="ghost"
-            style={{
-              margin: 0,
-            }}
-          >
-            <MoreHorizontal size={15} />
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <DropdownMenu.Item
-            shortcut="⌘ ⌫"
-            color="red"
-            disabled={node.id === "ROOT"}
-            onClick={() => {
-              // Delete all edges connected to the node.
-              reactFlowInstance.deleteElements({ nodes: [{ id }] });
-            }}
-          >
-            Delete
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-    </div>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <IconButton
+          variant="ghost"
+          radius="full"
+          style={{
+            margin: 0,
+          }}
+        >
+          <CircleEllipsis />
+        </IconButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item
+          shortcut="⌘ ⌫"
+          color="red"
+          disabled={node.id === "ROOT"}
+          onClick={() => {
+            // Delete all edges connected to the node.
+            reactFlowInstance.deleteElements({ nodes: [{ id }] });
+          }}
+        >
+          Delete
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   );
 }
 
@@ -558,8 +539,6 @@ export const RichNode = memo<Props>(function ({
           borderRadius: "4px",
         }}
       >
-        <HeaderBar id={id} />
-
         {/* Two alternative editors */}
 
         {/* <MyLexical id={id} /> */}
@@ -567,40 +546,42 @@ export const RichNode = memo<Props>(function ({
 
         <Handles id={id} hover={hover} />
 
-        <NodeResizeControl
-          style={{
-            background: "transparent",
-            border: "none",
-            zIndex: 100,
-            // put it to the right-bottom corner, instead of right-middle.
-            top: "100%",
-            color: "red",
-          }}
-          minWidth={300}
-          minHeight={50}
-          // this allows the resize happens in X-axis only.
-          position="right"
-          onResizeEnd={() => {
-            // remove style.height so that the node auto-resizes.
-            const node = nodesMap.get(id);
-            if (node) {
-              nodesMap.set(id, {
-                ...node,
-                style: { ...node.style, height: undefined },
-              });
-              autoLayoutTree();
-            }
-          }}
-        >
-          <HeightIcon
-            sx={{
-              transform: "rotate(90deg)",
-              position: "absolute",
-              right: 5,
-              bottom: 5,
+        {hover && (
+          <NodeResizeControl
+            style={{
+              background: "transparent",
+              border: "none",
+              zIndex: 100,
+              // put it to the right-bottom corner, instead of right-middle.
+              top: "100%",
+              color: "red",
             }}
-          />
-        </NodeResizeControl>
+            minWidth={300}
+            minHeight={50}
+            // this allows the resize happens in X-axis only.
+            position="right"
+            onResizeEnd={() => {
+              // remove style.height so that the node auto-resizes.
+              const node = nodesMap.get(id);
+              if (node) {
+                nodesMap.set(id, {
+                  ...node,
+                  style: { ...node.style, height: undefined },
+                });
+                autoLayoutTree();
+              }
+            }}
+          >
+            <HeightIcon
+              sx={{
+                transform: "rotate(90deg)",
+                position: "absolute",
+                right: 5,
+                bottom: 5,
+              }}
+            />
+          </NodeResizeControl>
+        )}
       </div>
     </div>
   );
