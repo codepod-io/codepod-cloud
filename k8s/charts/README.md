@@ -16,15 +16,20 @@ create namespace
 
 ```sh
 kubectl create ns codepod-dev
+kubectl create ns codepod-dev-runtime
 ```
 
 edit configuration values and perform helm install:
 
 ```sh
-cp values.yaml myvalues.yaml
+cp values.yaml values.dev.yaml
 # edit the values
 # THEN:
-helm install codepod-dev . -n codepod-dev --values=./myvalues.yaml
-helm upgrade codepod-dev . -n codepod-dev --values=./myvalues.yaml
+helm install codepod-dev . -n codepod-dev --values=./values.dev.yaml
+helm upgrade codepod-dev . -n codepod-dev --values=./values.dev.yaml
 helm uninstall codepod-dev -n codepod-dev
 ```
+
+# First time DB setup
+
+Change api pod's startup command to `tail -f /dev/null`, then run `pnpm dlx prisma migrate dev` in the pod to apply the change, then change back the command.
