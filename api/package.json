@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/run.js",
-    "dev:main": "ts-node-dev src/main/run.ts",
+    "comment": "ts-node-dev throw error: Error: EMFILE: too many open files, watch '/tmp/.ts-nodeAsJQw9",
+    "dev:main": "node-dev src/main/run.ts",
     "dev:yjs": "ts-node-dev src/yjs/run.ts",
     "dev:copilot": "ts-node-dev src/copilot/run.ts",
     "dev:runtime": "ts-node-dev src/runtime/run.ts",
@@ -56,7 +57,9 @@
     "@types/lodash": "^4.14.200",
     "@types/node": "^18.11.2",
     "@types/ws": "^8.5.3",
+    "node-dev": "^8.0.0",
     "ts-jest": "^29.0.1",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.2"
   },
