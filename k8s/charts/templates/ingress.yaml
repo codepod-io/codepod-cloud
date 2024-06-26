@@ -35,3 +35,15 @@ spec:
                 name: codepod-yjs-service
                 port:
                   number: 4233
+    # Or use kubectl port forwarding
+    # kubectl port-forward svc/prisma-service 8080:80
+    - host: prisma.127.0.0.1.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prisma-service
+                port:
+                  number: 80

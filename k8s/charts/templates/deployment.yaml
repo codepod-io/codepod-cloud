@@ -103,12 +103,13 @@ spec:
               name: src
               readOnly: false
           env:
-            - name: DATABASE_URL
-              # value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=require"
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: DATABASE_URL
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -121,10 +122,10 @@ spec:
                   key: GOOGLE_CLIENT_ID
           resources:
             limits:
-              memory: 5120Mi
+              memory: 2560Mi
               cpu: "4"
             requests:
-              memory: 256Mi
+              memory: 1024Mi
               cpu: "0.2"
       volumes:
         - name: src
@@ -142,6 +143,100 @@ spec:
     - protocol: TCP
       port: 4000
       targetPort: 4000
+
+# prisma
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prisma-deployment
+  labels:
+    app: prisma
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prisma
+  template:
+    metadata:
+      labels:
+        app: prisma
+    spec:
+      volumes:
+        - name: src
+          hostPath:
+            path: {{ .Values.srcDir }}
+      containers:
+        - name: psql
+          image: postgres:10.1
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+        - name: prisma
+          image: node:20
+          workingDir: /app/api
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm dlx prisma studio
+          ports:
+            - containerPort: 5555
+          volumeMounts:
+            - mountPath: /app
+              name: src
+              readOnly: false
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_DB
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+          resources:
+            limits:
+              memory: 2048Mi
+              cpu: "1"
+            requests:
+              memory: 1024Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prisma-service
+spec:
+  selector:
+    app: prisma
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5555
+
 
 # Yjs server
 ---
@@ -180,11 +275,13 @@ spec:
               name: src
               readOnly: false
           env:
-            - name: DATABASE_URL
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: DATABASE_URL
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
