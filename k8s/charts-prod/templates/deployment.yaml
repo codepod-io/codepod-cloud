@@ -68,6 +68,8 @@ spec:
         app: codepod-api
     spec:
       # serviceAccountName: api-account
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: codepod-api
           image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
@@ -139,6 +141,8 @@ spec:
       labels:
         app: prisma
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: psql
           image: postgres:10.1
@@ -210,6 +214,8 @@ spec:
       labels:
         app: codepod-yjs
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: codepod-yjs
           image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
@@ -277,6 +283,8 @@ spec:
         app: codepod-runtime
     spec:
       serviceAccountName: api-account
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: codepod-runtime
           image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
