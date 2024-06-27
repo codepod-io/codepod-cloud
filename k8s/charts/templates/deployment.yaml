@@ -106,7 +106,7 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: db-secret
+                  name: database-superuser
                   key: password
             - name: DATABASE_URL
               value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
@@ -173,7 +173,7 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: db-secret
+                  name: database-superuser
                   key: password
             - name: DATABASE_URL
               value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
@@ -194,25 +194,10 @@ spec:
               name: src
               readOnly: false
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mysecret
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysecret
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: mysecret
-                  key: POSTGRES_DB
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: db-secret
+                  name: database-superuser
                   key: password
             - name: DATABASE_URL
               value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
@@ -278,7 +263,7 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: db-secret
+                  name: database-superuser
                   key: password
             - name: DATABASE_URL
               value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
