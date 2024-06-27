@@ -1,0 +1,32 @@
+FROM node:20 AS builder
+
+WORKDIR /app
+COPY pnpm-lock.yaml .
+COPY pnpm-workspace.yaml .
+COPY ui/package.json ./ui/package.json
+COPY api/package.json ./api/package.json
+
+RUN corepack enable
+RUN pnpm i
+
+COPY ui ui
+COPY api api
+
+WORKDIR /app/api
+RUN pnpm run build
+
+FROM node:20 AS server
+WORKDIR /app
+COPY pnpm-lock.yaml .
+COPY pnpm-workspace.yaml .
+COPY api/package.json ./api/package.json
+RUN corepack enable
+RUN pnpm i --prod
+
+COPY api api
+
+WORKDIR /app/api
+RUN pnpm dlx prisma generate
+
+COPY --from=builder /app/api/build /app/api/build
+

@@ -1,0 +1,318 @@
+# UI
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-ui-deployment
+  labels:
+    app: codepod-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-ui
+  template:
+    metadata:
+      labels:
+        app: codepod-ui
+    spec:
+      containers:
+        - name: codepod-ui
+          image: lihebi/codepod-cloud-ui:{{ .Chart.AppVersion }}
+
+          env:
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_ID
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              memory: 5120Mi
+              cpu: "4"
+            requests:
+              memory: 1024Mi
+              cpu: "1"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-ui-service
+spec:
+  selector:
+    app: codepod-ui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+# API
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-api-deployment
+  labels:
+    app: codepod-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-api
+  template:
+    metadata:
+      labels:
+        app: codepod-api
+    spec:
+      # serviceAccountName: api-account
+      containers:
+        - name: codepod-api
+          image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:main"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable && 
+              pnpm run start:main
+          ports:
+            - containerPort: 4000
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_ID
+          resources:
+            limits:
+              memory: 2560Mi
+              cpu: "4"
+            requests:
+              memory: 1024Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-api-service
+spec:
+  selector:
+    app: codepod-api
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
+
+# prisma
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prisma-deployment
+  labels:
+    app: prisma
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prisma
+  template:
+    metadata:
+      labels:
+        app: prisma
+    spec:
+      containers:
+        - name: psql
+          image: postgres:10.1
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+        - name: prisma
+          image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
+          workingDir: /app/api
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm dlx prisma studio
+          ports:
+            - containerPort: 5555
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+          resources:
+            limits:
+              memory: 2048Mi
+              cpu: "1"
+            requests:
+              memory: 1024Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prisma-service
+spec:
+  selector:
+    app: prisma
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5555
+
+
+# Yjs server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-yjs-deployment
+  labels:
+    app: codepod-yjs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-yjs
+  template:
+    metadata:
+      labels:
+        app: codepod-yjs
+    spec:
+      containers:
+        - name: codepod-yjs
+          image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
+          workingDir: /app/api
+          # command: ["node", "build/yjs/run.js"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run start:yjs
+          ports:
+            - containerPort: 4233
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-yjs-service
+spec:
+  selector:
+    app: codepod-yjs
+  ports:
+    - protocol: TCP
+      port: 4233
+      targetPort: 4233
+
+---
+# runtime server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-runtime-deployment
+  labels:
+    app: codepod-runtime
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-runtime
+  template:
+    metadata:
+      labels:
+        app: codepod-runtime
+    spec:
+      serviceAccountName: api-account
+      containers:
+        - name: codepod-runtime
+          image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:runtime"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable && 
+              pnpm run start:runtime
+          ports:
+            - containerPort: 4001
+          env:
+            - name: YJS_WS_URL
+              value: "ws://codepod-yjs-service:4233/yjs"
+            - name: RUNTIME_NS
+              value: {{ .Release.Namespace }}-runtime
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-runtime-service
+spec:
+  selector:
+    app: codepod-runtime
+  ports:
+    - protocol: TCP
+      port: 4001
+      targetPort: 4001
