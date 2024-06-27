@@ -17,17 +17,45 @@ create namespace
 ```sh
 kubectl create ns codepod-staging
 kubectl create ns codepod-staging-runtime
+# to cleanup run:
+# kubectl delete ns codepod-staging
+```
+
+Create docker regcred:
+
+1. first `docker login`, which generates `~/.docker/config.json` file.
+2. add regcred secret from the above creds file
+
+```sh
+kubectl create secret generic regcred -n codepod-staging \
+    --from-file=.dockerconfigjson=/home/hebi/.docker/config.json \
+    --type=kubernetes.io/dockerconfigjson
 ```
 
 edit configuration values and perform helm install:
 
 ```sh
-cp values.yaml values.staging.yaml
+mkdir .values
+cp values.yaml .values/staging.yaml
 # edit the values
+# ...
+```
+
+The `values.yaml` file:
+
+```yaml
+jwtSecret:
+googleClientId:
+dbPassword:
+awsAccessKeyId:
+awsSecretAccessKey:
+```
+
+```sh
 # THEN:
-helm install codepod-staging . -n codepod-staging --values=./values.staging.yaml
-helm upgrade codepod-staging . -n codepod-staging --values=./values.staging.yaml
-helm uninstall codepod-staging -n codepod-staging
+helm install codepod . -n codepod-staging --values=./.values/staging.yaml
+helm upgrade codepod . -n codepod-staging --values=./.values/staging.yaml
+helm uninstall codepod -n codepod-staging
 ```
 
 # First time DB setup
