@@ -7,9 +7,12 @@
     "start": "node build/run.js",
     "comment": "ts-node-dev throw error: Error: EMFILE: too many open files, watch '/tmp/.ts-nodeAsJQw9",
     "dev:main": "node-dev src/main/run.ts",
+    "start:main": "node build/main/run.js",
     "dev:yjs": "ts-node-dev src/yjs/run.ts",
+    "start:yjs": "node build/yjs/run.js",
     "dev:copilot": "ts-node-dev src/copilot/run.ts",
     "dev:runtime": "ts-node-dev src/runtime/run.ts",
+    "start:runtime": "node build/runtime/run.js",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {
