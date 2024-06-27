@@ -11,9 +11,6 @@ importers:
       '@apollo/client':
         specifier: ^3.7.1
         version: 3.8.3(graphql@16.6.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@codepod/yjs':
-        specifier: workspace:^
-        version: link:../packages/yjs
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1
@@ -151,102 +148,11 @@ importers:
         specifier: ^5.3.2
         version: 5.3.2
 
-  packages/yjs:
-    dependencies:
-      '@apollo/client':
-        specifier: ^3.7.1
-        version: 3.8.3(graphql@16.6.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@kubernetes/client-node':
-        specifier: ^0.17.1
-        version: 0.17.1
-      apollo-server:
-        specifier: ^3.5.0
-        version: 3.5.0(graphql@16.6.0)
-      apollo-server-core:
-        specifier: ^3.10.3
-        version: 3.10.3(graphql@16.6.0)
-      apollo-server-express:
-        specifier: 3.10.2
-        version: 3.10.2(express@4.18.2)(graphql@16.6.0)
-      dockerode:
-        specifier: ^3.3.1
-        version: 3.3.1
-      express:
-        specifier: ^4.18.2
-        version: 4.18.2
-      graphql:
-        specifier: 16.6.0
-        version: 16.6.0
-      jest:
-        specifier: ^29.0.3
-        version: 29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      jsdom:
-        specifier: ^22.1.0
-        version: 22.1.0
-      jsonwebtoken:
-        specifier: ^8.5.1
-        version: 8.5.1
-      lib0:
-        specifier: ^0.2.83
-        version: 0.2.83
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      prosemirror-model:
-        specifier: ^1.19.3
-        version: 1.19.3
-      prosemirror-view:
-        specifier: ^1.31.7
-        version: 1.31.7
-      reactflow:
-        specifier: ^11.7.4
-        version: 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      ws:
-        specifier: ^8.2.3
-        version: 8.2.3
-      y-prosemirror:
-        specifier: ^1.2.1
-        version: 1.2.1(prosemirror-model@1.19.3)(prosemirror-state@1.4.3)(prosemirror-view@1.31.7)(y-protocols@1.0.5)(yjs@13.6.7)
-      y-protocols:
-        specifier: ^1.0.5
-        version: 1.0.5
-      yjs:
-        specifier: ^13.6.7
-        version: 13.6.7
-    devDependencies:
-      '@types/dockerode':
-        specifier: ^3.3.11
-        version: 3.3.11
-      '@types/express':
-        specifier: ^4.17.14
-        version: 4.17.14
-      '@types/jsdom':
-        specifier: ^21.1.1
-        version: 21.1.1
-      '@types/jsonwebtoken':
-        specifier: ^8.5.9
-        version: 8.5.9
-      '@types/node':
-        specifier: ^18.11.2
-        version: 18.11.2
-      '@types/ws':
-        specifier: ^8.5.3
-        version: 8.5.3
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@swc/core@1.5.28)(@types/node@18.11.2)(node-notifier@8.0.2)(typescript@4.4.4)
-      typescript:
-        specifier: ^4.4.4
-        version: 4.4.4
-
   ui:
     dependencies:
       '@benrbray/prosemirror-math':
         specifier: ^0.2.2
         version: 0.2.2(katex@0.13.0)(prosemirror-commands@1.5.2)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.0)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.19.3)(prosemirror-state@1.4.3)(prosemirror-transform@1.9.0)(prosemirror-view@1.31.7)
-      '@codepod/yjs':
-        specifier: workspace:*
-        version: link:../packages/yjs
       '@emotion/react':
         specifier: ^11.11.1
         version: 11.11.1(@types/react@18.2.15)(react@18.2.0)
@@ -3276,12 +3182,6 @@ packages:
   '@types/direction@1.0.0':
     resolution: {integrity: sha512-et1wmqXm/5smJ8lTJfBnwD12/2Y7eVJLKbuaRT0h2xaKAoo1h8Dz2Io22GObDLFwxY1ddXRTLH3Gq5v44Fl/2w==}
 
-  '@types/docker-modem@3.0.5':
-    resolution: {integrity: sha512-LDkftannOJFknJDWDGbuBrT1Xu6TN28SKxsWIjbM/MHHJCO20mnuHnkkZl0YMSo7cTxvfV7V7mMkdd9ZziuSGA==}
-
-  '@types/dockerode@3.3.11':
-    resolution: {integrity: sha512-aokz8xlZoq+ShZ5UkDmVZFwOrzuxK2ufFxK8WcQ4PuCPlQmUWl7kyHAv6ahKI7furWAysLtQnO7xX0jNDJdQTw==}
-
   '@types/estree@1.0.4':
     resolution: {integrity: sha512-2JwWnHK9H+wUZNorf2Zr6ves96WHoWDJIftkcxPKsS7Djta6Zu519LarhRNljPXkpsZR2ZMwNCPeW7omW07BJw==}
 
@@ -3317,9 +3217,6 @@ packages:
 
   '@types/istanbul-reports@3.0.3':
     resolution: {integrity: sha512-1nESsePMBlf0RPRffLZi5ujYh7IH1BWL4y9pr+Bn3cJBdxz+RTP8bUFljLz9HvzhhOSWKdyBZ4DIivdL6rvgZg==}
-
-  '@types/jsdom@21.1.1':
-    resolution: {integrity: sha512-cZFuoVLtzKP3gmq9eNosUL1R50U+USkbLtUQ1bYVgl/lKp0FZM7Cq4aIHAL8oIvQ17uSHi7jXPtfDOdjPwBE7A==}
 
   '@types/json-schema@7.0.14':
     resolution: {integrity: sha512-U3PUjAudAdJBeC2pgN8uTIKgxrb4nlDF3SF0++EldXQvQBGkpFZMSnwQiIoDU77tv45VgNkl/L4ouD+rEomujw==}
@@ -3378,9 +3275,6 @@ packages:
   '@types/prop-types@15.7.11':
     resolution: {integrity: sha512-ga8y9v9uyeiLdpKddhxYQkxNDrfvuPrlFb0N1qnZZByvcElJaXthF1UhvCh9TLWJBEHeNtdnbysW7Y6Uq8CVng==}
 
-  '@types/prop-types@15.7.12':
-    resolution: {integrity: sha512-5zvhXYtRNRluoE/jAp4GVsSduVUzNWKkOZrCDBWYtE7biZywwdC2AcEzg+cSMLFRfVgeAFqpfNabiPjxFddV1Q==}
-
   '@types/prop-types@15.7.9':
     resolution: {integrity: sha512-n1yyPsugYNSmHgxDFjicaI2+gCNjsBck8UX9kuofAKlc0h1bL+20oSF72KeNaW2DUlesbEVCFgyV2dPGTiY42g==}
 
@@ -3405,9 +3299,6 @@ packages:
   '@types/react@18.2.15':
     resolution: {integrity: sha512-oEjE7TQt1fFTFSbf8kkNuc798ahTUzn3Le67/PWjE8MAfYAD/qB7O8hSTcromLFqHCt9bcdOg5GXMokzTjJ5SA==}
 
-  '@types/react@18.3.3':
-    resolution: {integrity: sha512-hti/R0pS0q1/xx+TsI73XIqk26eBsISZ2R0wUijXIngRK9R/e7Xw/cXVxQK7R5JjW+SV4zGcn5hXjudkN/pLIw==}
-
   '@types/reactcss@1.2.8':
     resolution: {integrity: sha512-IzxChTOxOFWZb1RhXoNZ7oEi3BtUdLQIFheoOurvu6iu0X9kwhoFe73DW9EVFxVFTKnd8bb8b1dKtO0tokM3eA==}
 
@@ -3425,9 +3316,6 @@ packages:
 
   '@types/serve-static@1.15.4':
     resolution: {integrity: sha512-aqqNfs1XTF0HDrFdlY//+SGUxmdSUbjeRXb5iaZc3x0/vMbYmdw9qvOgHWOyyLFxSSRnUuP5+724zBgfw8/WAw==}
-
-  '@types/ssh2@1.11.15':
-    resolution: {integrity: sha512-QFPpT9Gamh+oOKWH6uDUxe8izo8NaCJaN5HdYcbCIiS3hs7fB65KAfyGWBVXaXxXLj7IhFam5Q/ZxQ4eIPc/1Q==}
 
   '@types/stack-utils@2.0.2':
     resolution: {integrity: sha512-g7CK9nHdwjK2n0ymT2CW698FuWJRIx+RP6embAzZ2Qi8/ilIrA1Imt2LVSeHUzKvpoi7BhmmQcXz95eS0f2JXw==}
@@ -3449,9 +3337,6 @@ packages:
 
   '@types/throttle-debounce@2.1.0':
     resolution: {integrity: sha512-5eQEtSCoESnh2FsiLTxE121IiE60hnMqcb435fShf4bpLRjEu1Eoekht23y6zXS9Ts3l+Szu3TARnTsA0GkOkQ==}
-
-  '@types/tough-cookie@4.0.4':
-    resolution: {integrity: sha512-95Sfz4nvMAb0Nl9DTxN3j64adfwfbBPEYq14VN7zT5J5O2M9V6iZMIIQU1U+pJyl9agHYHNCqhCXgyEtIRRa5A==}
 
   '@types/turndown@5.0.3':
     resolution: {integrity: sha512-2PCZA9g/dkeHIGTf6ESMOD3Gz5RMpDzODtvlBbkLAdtKa/yTQDAFudDEVolHjaBUnu8ugd8BeTCWk4x0STnqkA==}
@@ -4187,9 +4072,6 @@ packages:
 
   csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
-
-  csstype@3.1.3:
-    resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
 
   d3-color@3.1.0:
     resolution: {integrity: sha512-zg/chbXyeBtMQ1LbD/WSoW2DpC3I0mpmPdW+ynRTj/x2DAWYrIY7qeZIHidozwV24m4iavr15lNwIwLxRmOxhA==}
@@ -5005,9 +4887,6 @@ packages:
 
   immer@10.0.2:
     resolution: {integrity: sha512-Rx3CqeqQ19sxUtYV9CU911Vhy8/721wRFnJv3REVGWUmoAcIwzifTsdmJte/MV+0/XpM35LZdQMBGkRIoLPwQA==}
-
-  immer@10.1.1:
-    resolution: {integrity: sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==}
 
   import-fresh@3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
@@ -7102,11 +6981,6 @@ packages:
   typed-array-length@1.0.4:
     resolution: {integrity: sha512-KjZypGq+I/H7HI5HlOoGHkWUUGq+Q0TPhQurLbyrVrvnKTBgzLhIJ7j6J/XTQOi0d1RjyZ0wdas8bKs2p0x3Ng==}
 
-  typescript@4.4.4:
-    resolution: {integrity: sha512-DqGhF5IKoBl8WNf8C1gu8q0xZSInh9j1kJJMqT3a94w1JzVaBU4EXOSMrz9yDqMT0xt3selp83fuFMQ0uzv6qA==}
-    engines: {node: '>=4.2.0'}
-    hasBin: true
-
   typescript@5.2.2:
     resolution: {integrity: sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w==}
     engines: {node: '>=14.17'}
@@ -8307,43 +8181,6 @@ snapshots:
       jest-message-util: 29.7.0
       jest-util: 29.7.0
       slash: 3.0.0
-
-  '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))':
-    dependencies:
-      '@jest/console': 29.7.0
-      '@jest/reporters': 29.7.0(node-notifier@8.0.2)
-      '@jest/test-result': 29.7.0
-      '@jest/transform': 29.7.0
-      '@jest/types': 29.6.3
-      '@types/node': 18.18.8
-      ansi-escapes: 4.3.2
-      chalk: 4.1.2
-      ci-info: 3.9.0
-      exit: 0.1.2
-      graceful-fs: 4.2.11
-      jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@18.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      jest-haste-map: 29.7.0
-      jest-message-util: 29.7.0
-      jest-regex-util: 29.6.3
-      jest-resolve: 29.7.0
-      jest-resolve-dependencies: 29.7.0
-      jest-runner: 29.7.0
-      jest-runtime: 29.7.0
-      jest-snapshot: 29.7.0
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      jest-watcher: 29.7.0
-      micromatch: 4.0.5
-      pretty-format: 29.7.0
-      slash: 3.0.0
-      strip-ansi: 6.0.1
-    optionalDependencies:
-      node-notifier: 8.0.2
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
 
   '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2))':
     dependencies:
@@ -9885,17 +9722,6 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reactflow/background@11.2.5(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
   '@reactflow/controls@11.1.16(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -9903,17 +9729,6 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/controls@11.1.16(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -9935,23 +9750,6 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reactflow/core@11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@types/d3': 7.4.2
-      '@types/d3-drag': 3.0.5
-      '@types/d3-selection': 3.0.8
-      '@types/d3-zoom': 3.0.6
-      classcat: 5.0.4
-      d3-drag: 3.0.0
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
   '@reactflow/minimap@11.6.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -9963,21 +9761,6 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/minimap@11.6.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/d3-selection': 3.0.8
-      '@types/d3-zoom': 3.0.6
-      classcat: 5.0.4
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -9995,19 +9778,6 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reactflow/node-resizer@2.1.2(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      d3-drag: 3.0.0
-      d3-selection: 3.0.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
   '@reactflow/node-toolbar@1.2.4(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -10015,17 +9785,6 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/node-toolbar@1.2.4(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -11451,16 +11210,6 @@ snapshots:
 
   '@types/direction@1.0.0': {}
 
-  '@types/docker-modem@3.0.5':
-    dependencies:
-      '@types/node': 18.18.8
-      '@types/ssh2': 1.11.15
-
-  '@types/dockerode@3.3.11':
-    dependencies:
-      '@types/docker-modem': 3.0.5
-      '@types/node': 18.18.8
-
   '@types/estree@1.0.4': {}
 
   '@types/express-serve-static-core@4.17.30':
@@ -11512,12 +11261,6 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-report': 3.0.2
 
-  '@types/jsdom@21.1.1':
-    dependencies:
-      '@types/node': 18.18.8
-      '@types/tough-cookie': 4.0.4
-      parse5: 7.1.2
-
   '@types/json-schema@7.0.14': {}
 
   '@types/jsonwebtoken@8.5.9':
@@ -11564,9 +11307,6 @@ snapshots:
 
   '@types/prop-types@15.7.11': {}
 
-  '@types/prop-types@15.7.12':
-    optional: true
-
   '@types/prop-types@15.7.9': {}
 
   '@types/qs@6.9.9': {}
@@ -11594,12 +11334,6 @@ snapshots:
       '@types/scheduler': 0.16.5
       csstype: 3.1.2
 
-  '@types/react@18.3.3':
-    dependencies:
-      '@types/prop-types': 15.7.12
-      csstype: 3.1.3
-    optional: true
-
   '@types/reactcss@1.2.8':
     dependencies:
       '@types/react': 18.2.15
@@ -11623,10 +11357,6 @@ snapshots:
       '@types/mime': 3.0.3
       '@types/node': 18.18.8
 
-  '@types/ssh2@1.11.15':
-    dependencies:
-      '@types/node': 18.18.8
-
   '@types/stack-utils@2.0.2': {}
 
   '@types/string.prototype.matchall@4.0.2': {}
@@ -11642,8 +11372,6 @@ snapshots:
       '@types/estree': 1.0.4
 
   '@types/throttle-debounce@2.1.0': {}
-
-  '@types/tough-cookie@4.0.4': {}
 
   '@types/turndown@5.0.3': {}
 
@@ -12086,7 +11814,7 @@ snapshots:
 
   babel-plugin-macros@3.1.0:
     dependencies:
-      '@babel/runtime': 7.23.2
+      '@babel/runtime': 7.24.7
       cosmiconfig: 7.1.0
       resolve: 1.22.8
 
@@ -12434,21 +12162,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.2.15
 
-  create-jest@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)):
-    dependencies:
-      '@jest/types': 29.6.3
-      chalk: 4.1.2
-      exit: 0.1.2
-      graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      jest-util: 29.7.0
-      prompts: 2.4.2
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
-
   create-jest@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
       '@jest/types': 29.6.3
@@ -12507,9 +12220,6 @@ snapshots:
     optional: true
 
   csstype@3.1.2: {}
-
-  csstype@3.1.3:
-    optional: true
 
   d3-color@3.1.0: {}
 
@@ -13462,9 +13172,6 @@ snapshots:
 
   immer@10.0.2: {}
 
-  immer@10.1.1:
-    optional: true
-
   import-fresh@3.3.0:
     dependencies:
       parent-module: 1.0.1
@@ -13733,27 +13440,6 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)):
-    dependencies:
-      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      '@jest/test-result': 29.7.0
-      '@jest/types': 29.6.3
-      chalk: 4.1.2
-      create-jest: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      exit: 0.1.2
-      import-local: 3.1.0
-      jest-config: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      yargs: 17.7.2
-    optionalDependencies:
-      node-notifier: 8.0.2
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
-
   jest-cli@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
       '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2))
@@ -13774,37 +13460,6 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
-
-  jest-config@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)):
-    dependencies:
-      '@babel/core': 7.23.2
-      '@jest/test-sequencer': 29.7.0
-      '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.23.2)
-      chalk: 4.1.2
-      ci-info: 3.9.0
-      deepmerge: 4.3.1
-      glob: 7.2.3
-      graceful-fs: 4.2.11
-      jest-circus: 29.7.0(babel-plugin-macros@3.1.0)
-      jest-environment-node: 29.7.0
-      jest-get-type: 29.6.3
-      jest-regex-util: 29.6.3
-      jest-resolve: 29.7.0
-      jest-runner: 29.7.0
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      micromatch: 4.0.5
-      parse-json: 5.2.0
-      pretty-format: 29.7.0
-      slash: 3.0.0
-      strip-json-comments: 3.1.1
-    optionalDependencies:
-      '@types/node': 18.11.2
-      ts-node: 10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
 
   jest-config@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
@@ -13833,37 +13488,6 @@ snapshots:
     optionalDependencies:
       '@types/node': 18.11.2
       ts-node: 10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2)
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
-
-  jest-config@29.7.0(@types/node@18.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)):
-    dependencies:
-      '@babel/core': 7.23.2
-      '@jest/test-sequencer': 29.7.0
-      '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.23.2)
-      chalk: 4.1.2
-      ci-info: 3.9.0
-      deepmerge: 4.3.1
-      glob: 7.2.3
-      graceful-fs: 4.2.11
-      jest-circus: 29.7.0(babel-plugin-macros@3.1.0)
-      jest-environment-node: 29.7.0
-      jest-get-type: 29.6.3
-      jest-regex-util: 29.6.3
-      jest-resolve: 29.7.0
-      jest-runner: 29.7.0
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      micromatch: 4.0.5
-      parse-json: 5.2.0
-      pretty-format: 29.7.0
-      slash: 3.0.0
-      strip-json-comments: 3.1.1
-    optionalDependencies:
-      '@types/node': 18.18.8
-      ts-node: 10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -14113,20 +13737,6 @@ snapshots:
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
-
-  jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)):
-    dependencies:
-      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-      '@jest/types': 29.6.3
-      import-local: 3.1.0
-      jest-cli: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4))
-    optionalDependencies:
-      node-notifier: 8.0.2
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
 
   jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@8.0.2)(ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
@@ -15258,6 +14868,7 @@ snapshots:
       loose-envify: 1.4.0
       react: 18.3.1
       scheduler: 0.23.2
+    optional: true
 
   react-draggable@4.4.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
@@ -15364,6 +14975,7 @@ snapshots:
   react@18.3.1:
     dependencies:
       loose-envify: 1.4.0
+    optional: true
 
   reactcss@1.2.3(react@18.2.0):
     dependencies:
@@ -15380,20 +14992,6 @@ snapshots:
       '@reactflow/node-toolbar': 1.2.4(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  reactflow@11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      '@reactflow/background': 11.2.5(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/controls': 11.1.16(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/minimap': 11.6.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/node-resizer': 2.1.2(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/node-toolbar': 1.2.4(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -15639,6 +15237,7 @@ snapshots:
   scheduler@0.23.2:
     dependencies:
       loose-envify: 1.4.0
+    optional: true
 
   semver@5.7.2: {}
 
@@ -16080,26 +15679,6 @@ snapshots:
       '@jest/types': 29.6.3
       babel-jest: 29.7.0(@babel/core@7.23.2)
 
-  ts-node-dev@2.0.0(@swc/core@1.5.28)(@types/node@18.11.2)(node-notifier@8.0.2)(typescript@4.4.4):
-    dependencies:
-      chokidar: 3.5.3
-      dynamic-dedupe: 0.3.0
-      minimist: 1.2.8
-      mkdirp: 1.0.4
-      resolve: 1.22.8
-      rimraf: 2.7.1
-      source-map-support: 0.5.21
-      tree-kill: 1.2.2
-      ts-node: 10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4)
-      tsconfig: 7.0.0
-      typescript: 4.4.4
-    optionalDependencies:
-      node-notifier: 8.0.2
-    transitivePeerDependencies:
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-
   ts-node-dev@2.0.0(@swc/core@1.5.28)(@types/node@18.11.2)(node-notifier@8.0.2)(typescript@5.3.2):
     dependencies:
       chokidar: 3.5.3
@@ -16119,26 +15698,6 @@ snapshots:
       - '@swc/core'
       - '@swc/wasm'
       - '@types/node'
-
-  ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@4.4.4):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 18.11.2
-      acorn: 8.11.3
-      acorn-walk: 8.3.2
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 4.4.4
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optionalDependencies:
-      '@swc/core': 1.5.28
 
   ts-node@10.9.2(@swc/core@1.5.28)(@types/node@18.11.2)(typescript@5.3.2):
     dependencies:
@@ -16254,8 +15813,6 @@ snapshots:
       for-each: 0.3.3
       is-typed-array: 1.1.12
 
-  typescript@4.4.4: {}
-
   typescript@5.2.2: {}
 
   typescript@5.3.2: {}
@@ -16334,10 +15891,6 @@ snapshots:
   use-sync-external-store@1.2.0(react@18.2.0):
     dependencies:
       react: 18.2.0
-
-  use-sync-external-store@1.2.0(react@18.3.1):
-    dependencies:
-      react: 18.3.1
 
   util-deprecate@1.0.2: {}
 
@@ -16659,11 +16212,3 @@ snapshots:
       '@types/react': 18.2.15
       immer: 10.0.2
       react: 18.2.0
-
-  zustand@4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1):
-    dependencies:
-      use-sync-external-store: 1.2.0(react@18.3.1)
-    optionalDependencies:
-      '@types/react': 18.3.3
-      immer: 10.1.1
-      react: 18.3.1

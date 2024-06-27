@@ -11,8 +11,7 @@ import { ZmqWire } from "./k8s-zmq";
 import * as Y from "yjs";
 import WebSocket from "ws";
 
-import { WebsocketProvider } from "@codepod/yjs/src/y-websocket";
-import { doc } from "lib0/dom";
+import { WebsocketProvider } from "./y-websocket";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();

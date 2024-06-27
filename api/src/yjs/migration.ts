@@ -1,7 +1,7 @@
 import * as Y from "yjs";
 
 import prisma from "../prisma";
-import { json2yxml } from "@codepod/yjs";
+import { json2yxml } from "./utils";
 
 /**
  * For historical reason, the backend DB schema pod.type are "CODE", "DECK",

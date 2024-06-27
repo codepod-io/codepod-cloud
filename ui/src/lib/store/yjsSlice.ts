@@ -1,7 +1,8 @@
 import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Doc } from "yjs";
 import * as Y from "yjs";
-import { WebsocketProvider } from "@codepod/yjs/src/y-websocket";
+// FIXME can I import from api/ folder?
+import { WebsocketProvider } from "@/../../api/src/runtime/y-websocket";
 import { Edge, Node, NodeChange, applyNodeChanges } from "reactflow";
 import { getHelperLines } from "@/components/nodes/utils";
 import { NodeData } from "./canvasSlice";
