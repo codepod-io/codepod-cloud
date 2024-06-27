@@ -338,7 +338,7 @@ spec:
             - name: YJS_WS_URL
               value: "ws://codepod-yjs-service:4233/yjs"
             - name: RUNTIME_NS
-              value: {{ .Release.Namespace }}-runtime
+              value: "{{ .Release.Namespace }}-runtime"
           resources:
             limits:
               memory: 512Mi
