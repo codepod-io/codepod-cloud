@@ -1,4 +1,4 @@
-name: ci
+name: Build CodePod Cloud Docker Image
 
 on:
   # push:
@@ -13,18 +13,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - context: ./ui
-            image: lihebi/codepod-ui
-          - context: ./api
-            image: lihebi/codepod-api
-          - context: ./proxy
-            image: lihebi/codepod-proxy
-          - context: ./runtime/kernel
-            image: lihebi/codepod-kernel-python
-          - context: ./runtime
-            image: lihebi/codepod-runtime
           - context: ./
-            image: lihebi/codepod-dev
+            image: lihebi/codepod-cloud-ui
+            dockerfile: Dockerfile_UI
+          - context: ./
+            image: lihebi/codepod-cloud-api
+            dockerfile: Dockerfile_API
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -45,6 +39,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+            type=raw,value={{branch}}-{{sha}}-{{date 'YYYYMMDD-HHmm' tz='America/Los_Angeles'}},enable=true
             type=raw,value=latest,enable=true
       -
         name: Set up QEMU
@@ -63,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
