@@ -15,16 +15,12 @@ jobs:
         include:
           - context: ./kernels/python
             image: lihebi/codepod-kernel-python
-            dockerfile: Dockerfile
           - context: ./kernels/julia
             image: lihebi/codepod-kernel-julia
-            dockerfile: Dockerfile
           - context: ./kernels/javascript
             image: lihebi/codepod-kernel-javascript
-            dockerfile: Dockerfile
           - context: ./kernels/racket
             image: lihebi/codepod-kernel-racket
-            dockerfile: Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -64,7 +60,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          file: ${{ matrix.context }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
