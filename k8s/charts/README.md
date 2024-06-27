@@ -10,6 +10,8 @@ This helm chart is used for development.
 
 Install Docker desktop and enable k8s in settings.
 
+Clone the codepod-cloud repository, into path `/path/to/codepod-cloud`.
+
 # Deploy
 
 create namespace
@@ -22,14 +24,37 @@ kubectl create ns codepod-dev-runtime
 edit configuration values and perform helm install:
 
 ```sh
-cp values.yaml values.dev.yaml
+# create a copy of values.yaml
+mkdir .values
+cp values.yaml .values/dev.yaml
 # edit the values
+# ...
+```
+
+The values:
+
+```yaml
+srcDir: "/path/to/codepod-cloud"
+jwtSecret:
+# you will also need to set the allowed origins in GCP console for this clientId.
+googleClientId:
+```
+
+```sh
 # THEN:
-helm install codepod-dev . -n codepod-dev --values=./values.dev.yaml
-helm upgrade codepod-dev . -n codepod-dev --values=./values.dev.yaml
-helm uninstall codepod-dev -n codepod-dev
+helm install codepod . -n codepod-dev --values=./.values/dev.yaml
+helm upgrade codepod . -n codepod-dev --values=./.values/dev.yaml
+helm uninstall codepod -n codepod-dev
 ```
 
 # First time DB setup
 
-Change api pod's startup command to `tail -f /dev/null`, then run `pnpm dlx prisma migrate dev` in the pod to apply the change, then change back the command.
+~~Change api pod's startup command to `tail -f /dev/null`, then run `pnpm dlx prisma migrate dev` in the pod to apply the change, then change back the command.~~
+
+Open a terminal in the `api` pod and run `pnpm dlx prisma db push` to sync the schema with DB.
+
+Here are the commands to work with Prisma schema:
+
+- During development, use `prisma db push`;
+- When commiting the schema changes to git, use `prisma migrate dev --name SOME_NAME`;
+- For deployment, use `prisma migrate deploy`.
