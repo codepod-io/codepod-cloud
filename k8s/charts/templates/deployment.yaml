@@ -1,3 +1,32 @@
+# Nginx conf
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  default.conf: |
+    server {
+      listen       80;
+      listen  [::]:80;
+      server_name  localhost;
+
+      # absolute_redirect off;
+      # port_in_redirect off;
+
+      location / {
+          root   /usr/share/nginx/html;
+          index  index.html;
+          # try_files $uri /index.html;
+          try_files $uri $uri/ /index.html;
+      }
+
+      error_page   500 502 503 504  /50x.html;
+      location = /50x.html {
+          root   /usr/share/nginx/html;
+      }
+    }
+
 # UI
 ---
 apiVersion: apps/v1
@@ -17,6 +46,19 @@ spec:
         app: codepod-ui
     spec:
       containers:
+        - name: nginx
+          image: nginx:1.21.1
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: src
+              # folder ui/dist
+              subPath: ui/dist
+              readOnly: false
+            - mountPath: /etc/nginx/conf.d
+              name: config-volume
+              readOnly: true
         - name: codepod-ui
           image: node:20
           workingDir: /app/ui
@@ -51,6 +93,9 @@ spec:
         - name: src
           hostPath:
             path: {{ .Values.srcDir }}
+        - name: config-volume
+          configMap:
+            name: nginx-config
 
 ---
 apiVersion: v1
@@ -61,9 +106,14 @@ spec:
   selector:
     app: codepod-ui
   ports:
-    - protocol: TCP
+    - name: dev
+      protocol: TCP
       port: 80
       targetPort: 3000
+    - name: nginx
+      protocol: TCP
+      port: 8080
+      targetPort: 80
 
 # API
 ---
