@@ -19,7 +19,10 @@ kc.loadFromDefault();
 const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
 
-export function getDeploymentSpec(name: string, image: string) {
+export function getDeploymentSpec(
+  name: string,
+  image: string
+): k8s.V1Deployment {
   return {
     apiVersion: "apps/v1",
     kind: "Deployment",
@@ -34,6 +37,19 @@ export function getDeploymentSpec(name: string, image: string) {
       template: {
         metadata: { labels: { app: `${name}` } },
         spec: {
+          // only schedule to runtime nodes
+          nodeSelector: {
+            runtime: "true",
+          },
+          // can tolerate runtime nodes taint
+          tolerations: [
+            {
+              key: "runtime",
+              operator: "Equal",
+              value: "true",
+              effect: "NoSchedule",
+            },
+          ],
           containers: [
             {
               name: `${name}-kernel`,
@@ -74,7 +90,7 @@ export function getDeploymentSpec(name: string, image: string) {
   };
 }
 
-export function getServiceSpec(name) {
+export function getServiceSpec(name: string): k8s.V1Service {
   return {
     apiVersion: "v1",
     kind: "Service",
