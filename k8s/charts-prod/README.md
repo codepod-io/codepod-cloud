@@ -46,7 +46,6 @@ The `values.yaml` file:
 ```yaml
 jwtSecret:
 googleClientId:
-dbPassword:
 awsAccessKeyId:
 awsSecretAccessKey:
 ```
