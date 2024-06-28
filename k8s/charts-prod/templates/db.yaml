@@ -1,24 +1,3 @@
-apiVersion: v1
-stringData:
-  # this user account is not used
-  username: user
-  password: "{{ .Values.dbPassword }}"
-kind: Secret
-metadata:
-  name: db-secret
-type: kubernetes.io/basic-auth
-
----
-apiVersion: v1
-stringData:
-  # the superuser username has to be "postgres"
-  username: postgres
-  password: "{{ .Values.dbPassword }}"
-kind: Secret
-metadata:
-  name: db-superuser
-type: kubernetes.io/basic-auth
-
 ---
 apiVersion: v1
 kind: Secret
@@ -38,9 +17,6 @@ spec:
 
   enableSuperuserAccess: true
 
-  superuserSecret:
-    name: db-superuser
-
   storage:
     size: 1Gi
 
@@ -53,17 +29,38 @@ spec:
       cpu: "2"
 
   # -------------------------
-  # Option 1: Init an empty DB
+  # Optional: Recover from a backup. Remove this to bootstrap an empty cluster.
   bootstrap:
-    initdb:
-      database: "app"
-      owner: "user"
-      secret:
-        name: db-secret
+    recovery:
+      source: backup-cluster
+      # Optional recovery target timestamp. If not specified, use the latest WAL.
+      # recoveryTarget:
+      #   # The timestamp expressed in RFC 3339 format.
+      #   #
+      #   # e.g., "2024-06-27T19:13:00-07:00" for 2024-06-27 19:13:00 in Pacific
+      #   # Time (UTC-7)
+      #   targetTime: "2024-06-27T19:13:00-07:00"
+  externalClusters:
+  - name: backup-cluster
+    barmanObjectStore:
+      destinationPath: s3://codepod-dev/staging-backups/
+      # specify the folder name
+      serverName: "backup-0627-1906"
+      s3Credentials:
+        accessKeyId:
+          name: aws-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: aws-creds
+          key: ACCESS_SECRET_KEY
 
   backup:
+    # It looks like the WAL backups are taken no matter whether the base backup
+    # is scheduled or not.
     barmanObjectStore:
-      destinationPath: s3://codepod-dev/db-backup/
+      destinationPath: s3://codepod-dev/staging-backups/
+      # NOTE: this should be a different folder than the recovery cluster.
+      serverName: "backup-0627-1938"
       s3Credentials:
         accessKeyId:
           name: aws-creds
@@ -73,41 +70,7 @@ spec:
           key: ACCESS_SECRET_KEY
       wal:
         compression: gzip
-    # retentionPolicy: "30d"
-    retentionPolicy: "1d"
-
-  # -------------------------
-  # Option 2: Recover from a backup
-  # bootstrap:
-  #   recovery:
-  #     source: backup-cluster
-  # externalClusters:
-  # - name: backup-cluster
-  #   barmanObjectStore:
-  #     destinationPath: s3://codepod-dev/db-backup/
-  #     s3Credentials:
-  #       accessKeyId:
-  #         name: aws-creds
-  #         key: ACCESS_KEY_ID
-  #       secretAccessKey:
-  #         name: aws-creds
-  #         key: ACCESS_SECRET_KEY
-  # backup:
-  #   barmanObjectStore:
-  #     destinationPath: s3://codepod-dev/db-backup/
-  #     # a different backup folder
-  #     serverName: "recoveredCluster"
-  #     s3Credentials:
-  #       accessKeyId:
-  #         name: aws-creds
-  #         key: ACCESS_KEY_ID
-  #       secretAccessKey:
-  #         name: aws-creds
-  #         key: ACCESS_SECRET_KEY
-  #     wal:
-  #       compression: gzip
-  #   # retentionPolicy: "30d"
-  #   retentionPolicy: "1d"
+    retentionPolicy: "7d"
 
 
 # On-demand backup
@@ -115,21 +78,22 @@ spec:
 # apiVersion: postgresql.cnpg.io/v1
 # kind: Backup
 # metadata:
-#   name: pg-backup-example
+#   name: manual-pg-backup
 # spec:
 #   cluster:
 #     name: database
 
 
-# ---
-# apiVersion: postgresql.cnpg.io/v1
-# kind: ScheduledBackup
-# metadata:
-#   name: scheduled-backup-example
-# spec:
-#   # every day at midnight
-#   schedule: "0 0 0 * * *"
-#   backupOwnerReference: self
-#   cluster:
-#     name: database
-#   # immediate: true
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: scheduled-backup-example
+spec:
+  # Every day at midnight. This is the base backup. WAL will be taken every 5
+  # minutes. This base backup set for every 5 day is more than enough.
+  schedule: "0 0 0 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: database
+  immediate: true
