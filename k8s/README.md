@@ -7,7 +7,7 @@ Minimum two nodes:
 
 ## Development Stack
 
-In `charts` folder.
+In `charts-dev` folder.
 
 ## Production Stack
 
