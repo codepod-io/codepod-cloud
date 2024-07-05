@@ -32,7 +32,7 @@ spec:
   # Optional: Recover from a backup. Remove this to bootstrap an empty cluster.
   bootstrap:
     recovery:
-      source: backup-cluster
+      source: recovery-cluster
       # Optional recovery target timestamp. If not specified, use the latest WAL.
       # recoveryTarget:
       #   # The timestamp expressed in RFC 3339 format.
@@ -41,18 +41,18 @@ spec:
       #   # Time (UTC-7)
       #   targetTime: "2024-06-27T19:13:00-07:00"
   externalClusters:
-  - name: backup-cluster
-    barmanObjectStore:
-      destinationPath: s3://codepod-dev/staging-backups/
-      # specify the folder name
-      serverName: "backup-0627-1906"
-      s3Credentials:
-        accessKeyId:
-          name: aws-creds
-          key: ACCESS_KEY_ID
-        secretAccessKey:
-          name: aws-creds
-          key: ACCESS_SECRET_KEY
+    - name: recovery-cluster
+      barmanObjectStore:
+        destinationPath: s3://codepod-dev/staging-backups/
+        # specify the folder name
+        serverName: "backup-0627-1906"
+        s3Credentials:
+          accessKeyId:
+            name: aws-creds
+            key: ACCESS_KEY_ID
+          secretAccessKey:
+            name: aws-creds
+            key: ACCESS_SECRET_KEY
 
   backup:
     # It looks like the WAL backups are taken no matter whether the base backup
@@ -60,7 +60,7 @@ spec:
     barmanObjectStore:
       destinationPath: s3://codepod-dev/staging-backups/
       # NOTE: this should be a different folder than the recovery cluster.
-      serverName: "backup-0627-1938"
+      serverName: "backup-0704-1725"
       s3Credentials:
         accessKeyId:
           name: aws-creds
@@ -72,7 +72,6 @@ spec:
         compression: gzip
     retentionPolicy: "7d"
 
-
 # On-demand backup
 # ---
 # apiVersion: postgresql.cnpg.io/v1
@@ -82,7 +81,6 @@ spec:
 # spec:
 #   cluster:
 #     name: database
-
 
 ---
 apiVersion: postgresql.cnpg.io/v1

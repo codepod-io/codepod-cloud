@@ -28,7 +28,7 @@ Create docker regcred:
 
 ```sh
 kubectl create secret generic regcred -n codepod-staging \
-    --from-file=.dockerconfigjson=/home/hebi/.docker/config.json \
+    --from-file=.dockerconfigjson=$HOME/.docker/config.json \
     --type=kubernetes.io/dockerconfigjson
 ```
 
@@ -60,3 +60,21 @@ helm uninstall codepod -n codepod-staging
 # First time DB setup
 
 Change api pod's startup command to `tail -f /dev/null`, then run `pnpm dlx prisma migrate deploy` in the pod to apply the change, then change back the command.
+
+# Cloudflare Tunnels
+
+```sh
+# 1. login
+cloudflared tunnel login
+# 2. create tunnel, so that there's a cred file
+cloudflared tunnel create codepod-staging-20240705
+# list tunnels
+cloudflared tunnel list
+# 3. upload the secret to k8s
+kubectl create secret generic tunnel-credentials -n codepod-staging\
+    --from-file=credentials.json=$HOME/.cloudflared/TUNNEL_ID.json
+
+# 4. route the dns to the tunnel
+cloudflared tunnel route dns codepod-staging-20240705 staging.codepod.io
+# 5. deploy the app wih tunnel. It should work.
+```

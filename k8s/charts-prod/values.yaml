@@ -1,4 +1,7 @@
+# App JWT auth
 jwtSecret:
+# Google OAuth client id
 googleClientId:
+# The AWS access key id and secret access key for S3
 awsAccessKeyId:
 awsSecretAccessKey:
