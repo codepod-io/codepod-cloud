@@ -3,6 +3,11 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: aws-creds
+  # DEBUG: This is to force CNPG to be reloaded when the secret is updated.
+  # https://cloudnative-pg.io/documentation/1.23/appendixes/object_stores/#aws-s3
+  #
+  # labels:
+  #   cnpg.io/reload: "true"
 stringData:
   ACCESS_KEY_ID: "{{ .Values.awsAccessKeyId }}"
   ACCESS_SECRET_KEY: "{{ .Values.awsSecretAccessKey }}"
@@ -58,9 +63,9 @@ spec:
     # It looks like the WAL backups are taken no matter whether the base backup
     # is scheduled or not.
     barmanObjectStore:
-      destinationPath: s3://codepod-dev/staging-backups/
+      destinationPath: s3://codepod-staging/backups/
       # NOTE: this should be a different folder than the recovery cluster.
-      serverName: "backup-0704-1725"
+      serverName: "backup-0705-1857"
       s3Credentials:
         accessKeyId:
           name: aws-creds

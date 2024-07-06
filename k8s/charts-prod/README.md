@@ -39,18 +39,6 @@ mkdir .values
 cp values.yaml .values/staging.yaml
 # edit the values
 # ...
-```
-
-The `values.yaml` file:
-
-```yaml
-jwtSecret:
-googleClientId:
-awsAccessKeyId:
-awsSecretAccessKey:
-```
-
-```sh
 # THEN:
 helm install codepod . -n codepod-staging --values=./.values/staging.yaml
 helm upgrade codepod . -n codepod-staging --values=./.values/staging.yaml

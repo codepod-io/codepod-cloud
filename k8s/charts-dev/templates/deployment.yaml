@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: mysecret
+stringData:
+  GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
+data:
+  # Use automatically generated secret.
+  JWT_SECRET: "{{ randAlphaNum 16 | b64enc }}"
+
 # UI
 ---
 apiVersion: apps/v1
@@ -50,7 +61,7 @@ spec:
       volumes:
         - name: src
           hostPath:
-            path: {{ .Values.srcDir }}
+            path: "{{ .Values.srcDir }}"
 
 ---
 apiVersion: v1
@@ -130,7 +141,7 @@ spec:
       volumes:
         - name: src
           hostPath:
-            path: {{ .Values.srcDir }}
+            path: "{{ .Values.srcDir }}"
 ---
 apiVersion: v1
 kind: Service
@@ -165,7 +176,7 @@ spec:
       volumes:
         - name: src
           hostPath:
-            path: {{ .Values.srcDir }}
+            path: "{{ .Values.srcDir }}"
       containers:
         - name: psql
           image: postgres:10.1
@@ -221,7 +232,6 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 5555
-
 
 # Yjs server
 ---
@@ -282,7 +292,7 @@ spec:
       volumes:
         - name: src
           hostPath:
-            path: {{ .Values.srcDir }}
+            path: "{{ .Values.srcDir }}"
 
 ---
 apiVersion: v1
@@ -349,7 +359,7 @@ spec:
       volumes:
         - name: src
           hostPath:
-            path: {{ .Values.srcDir }}
+            path: "{{ .Values.srcDir }}"
 
 ---
 apiVersion: v1

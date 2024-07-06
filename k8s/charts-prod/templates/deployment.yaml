@@ -4,8 +4,12 @@ type: Opaque
 metadata:
   name: mysecret
 stringData:
-  JWT_SECRET: "{{ .Values.jwtSecret }}"
   GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
+data:
+  # Use automatically generated secret. Ref:
+  # https://stackoverflow.com/questions/48496647/automatically-generated-strings-for-secrets-using-yaml-config
+  # JWT_SECRET: $(head -c 24 /dev/random | base64)
+  JWT_SECRET: "{{ randAlphaNum 16 | b64enc }}"
 
 # UI
 ---
