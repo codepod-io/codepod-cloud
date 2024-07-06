@@ -53,7 +53,6 @@ export function getDeploymentSpec(
           containers: [
             {
               name: `${name}-kernel`,
-              // image: process.env.ZMQ_KERNEL_IMAGE,
               image,
               ports: [
                 // These are pre-defined in kernel/conn.json
@@ -64,25 +63,6 @@ export function getDeploymentSpec(
                 { containerPort: 55696 },
               ],
             },
-            // {
-            //   name: `${name}-ws`,
-            //   // image: process.env.WS_RUNTIME_IMAGE,
-            //   image: "lihebi/codepod-runtime:0.4.13-alpha.49",
-            //   // The out-facing port for proxy to talk to.
-            //   ports: [{ containerPort: 4020 }],
-            //   // It will talk to the above kernel container.
-            //   env: [
-            //     {
-            //       name: "ZMQ_HOST",
-            //       // value: `${name}-kernel`
-            //       //
-            //       // In k8s, the sidecar container doesn't get a IP/hostname.
-            //       // Instead, I have to bind the port and use localhost for them
-            //       // to connect.
-            //       value: "localhost",
-            //     },
-            //   ],
-            // },
           ],
         },
       },
@@ -318,6 +298,17 @@ async function ensureYDoc({ repoId, token }) {
   return ydoc;
 }
 
+const env = z
+  .object({
+    KERNEL_IMAGE_PYTHON: z.string(),
+    KERNEL_IMAGE_JULIA: z.string(),
+    KERNEL_IMAGE_JAVASCRIPT: z.string(),
+    KERNEL_IMAGE_RACKET: z.string(),
+    RUNTIME_NS: z.string(),
+    YJS_WS_URL: z.string(),
+  })
+  .parse(process.env);
+
 export const k8sRouter = router({
   // Start the runtime containr for a repo if not already started.
   start: protectedProcedure
@@ -346,23 +337,19 @@ export const k8sRouter = router({
       runtimeMap.set(kernelName, { status: "starting" });
 
       // call k8s api to create a container
-      let ns = z.string().parse(process.env.RUNTIME_NS);
-      console.log("Using k8s ns:", ns);
+      console.log("Using k8s ns:", env.RUNTIME_NS);
 
       // python kernel
       const wire = await createKernel({
         repoId,
         kernelName,
         image: match(kernelName)
-          .with("python", () => "lihebi/codepod-kernel-python:0.5.1-alpha.2")
-          .with("julia", () => "lihebi/codepod-kernel-julia:0.5.1-alpha.2")
-          .with(
-            "javascript",
-            () => "lihebi/codepod-kernel-javascript:0.5.1-alpha.2"
-          )
-          .with("racket", () => "lihebi/codepod-kernel-racket:0.5.1-alpha.2")
+          .with("python", () => env.KERNEL_IMAGE_PYTHON)
+          .with("julia", () => env.KERNEL_IMAGE_JULIA)
+          .with("javascript", () => env.KERNEL_IMAGE_JAVASCRIPT)
+          .with("racket", () => env.KERNEL_IMAGE_RACKET)
           .exhaustive(),
-        ns,
+        ns: env.RUNTIME_NS,
       });
 
       console.log("binding zmq and yjs");
@@ -407,7 +394,7 @@ export const k8sRouter = router({
       }
 
       // remove k8s resources
-      let ns = z.string().parse(process.env.RUNTIME_NS);
+      //
       // FIXME safe guard to make sure the pods exist.
       //
       // FIXME the container is deleted. But the status is not reset. There are
@@ -415,10 +402,13 @@ export const k8sRouter = router({
       console.log("Deleting deployment");
       await k8sAppsApi.deleteNamespacedDeployment(
         `rt-${repoId}-${kernelName}`,
-        ns
+        env.RUNTIME_NS
       );
       console.log("Deleting service");
-      await k8sApi.deleteNamespacedService(`svc-${repoId}-${kernelName}`, ns);
+      await k8sApi.deleteNamespacedService(
+        `svc-${repoId}-${kernelName}`,
+        env.RUNTIME_NS
+      );
     }),
 
   status: protectedProcedure
@@ -481,15 +471,12 @@ export const k8sRouter = router({
     }),
 });
 
-const yjsServerUrl = z.string().parse(process.env.YJS_WS_URL);
-// const yjsServerUrl = "ws://codepod-yjs-service:4233/yjs";
-
 export async function getYDoc({ repoId, token }): Promise<Y.Doc> {
   return new Promise((resolve, reject) => {
     const ydoc = new Y.Doc();
     // connect to primary database
-    console.log("connecting to y-websocket provider", yjsServerUrl);
-    const provider = new WebsocketProvider(yjsServerUrl, repoId, ydoc, {
+    console.log("connecting to y-websocket provider", env.YJS_WS_URL);
+    const provider = new WebsocketProvider(env.YJS_WS_URL, repoId, ydoc, {
       // resyncInterval: 2000,
       //
       // BC is more complex to track our custom Uploading status and SyncDone events.
