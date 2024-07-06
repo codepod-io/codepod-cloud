@@ -35,7 +35,6 @@ The values:
 
 ```yaml
 srcDir: "/path/to/codepod-cloud"
-jwtSecret:
 # you will also need to set the allowed origins in GCP console for this clientId.
 googleClientId:
 ```
