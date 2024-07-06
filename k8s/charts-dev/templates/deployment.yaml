@@ -16,7 +16,7 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: codepod-init-deployment
+  name: zzz-codepod-init-deployment
   labels:
     app: codepod-init
 spec:

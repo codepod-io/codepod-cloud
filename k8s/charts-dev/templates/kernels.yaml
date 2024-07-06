@@ -6,6 +6,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-python-kernel-deployment
+  namespace: "{{ .Release.Namespace }}-runtime"
   labels:
     app: example-python-kernel
 spec:
@@ -36,6 +37,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-julia-kernel-deployment
+  namespace: "{{ .Release.Namespace }}-runtime"
   labels:
     app: example-julia-kernel
 spec:
@@ -66,6 +68,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-javascript-kernel-deployment
+  namespace: "{{ .Release.Namespace }}-runtime"
   labels:
     app: example-javascript-kernel
 spec:
@@ -96,6 +99,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-racket-kernel-deployment
+  namespace: "{{ .Release.Namespace }}-runtime"
   labels:
     app: example-racket-kernel
 spec:
