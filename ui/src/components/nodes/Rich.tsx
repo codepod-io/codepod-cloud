@@ -276,6 +276,7 @@ const MyRemirror = ({
       new OrderedListExtension(),
       new TaskListExtension(),
       new EmojiExtension({ data: emojiData as any, plainText: true }),
+      new ImageExtension({ enableResizing: true }),
 
       // mark extensions
       new TextHighlightExtension({}),
