@@ -27,7 +27,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: kernel
-          image: lihebi/codepod-kernel-python:0.5.1-alpha.2
+          image: "{{ .Values.kernelImages.python }}"
 
 
 ---
@@ -57,7 +57,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: kernel
-          image: lihebi/codepod-kernel-julia:0.5.1-alpha.2
+          image: "{{ .Values.kernelImages.julia }}"
 
 
 ---
@@ -87,7 +87,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: kernel
-          image: lihebi/codepod-kernel-javascript:0.5.1-alpha.2
+          image: "{{ .Values.kernelImages.javascript }}"
 
 
 ---
@@ -117,4 +117,4 @@ spec:
           effect: NoSchedule
       containers:
         - name: kernel
-          image: lihebi/codepod-kernel-racket:0.5.1-alpha.2
+          image: "{{ .Values.kernelImages.racket }}"
