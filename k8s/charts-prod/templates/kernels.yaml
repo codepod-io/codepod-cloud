@@ -1,0 +1,120 @@
+
+# These deployment is for pulling in the kernel images
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-python-kernel-deployment
+  labels:
+    app: example-python-kernel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-python-kernel
+  template:
+    metadata:
+      labels:
+        app: example-python-kernel
+    spec:
+      nodeSelector:
+        runtime: "true"
+      tolerations:
+        - key: runtime
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: kernel
+          image: "{{ .Values.kernelImages.python }}"
+
+
+---
+# this deployment is for pulling in the kernel images
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-julia-kernel-deployment
+  labels:
+    app: example-julia-kernel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-julia-kernel
+  template:
+    metadata:
+      labels:
+        app: example-julia-kernel
+    spec:
+      nodeSelector:
+        runtime: "true"
+      tolerations:
+        - key: runtime
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: kernel
+          image: "{{ .Values.kernelImages.julia }}"
+
+
+---
+# this deployment is for pulling in the kernel images
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-javascript-kernel-deployment
+  labels:
+    app: example-javascript-kernel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-javascript-kernel
+  template:
+    metadata:
+      labels:
+        app: example-javascript-kernel
+    spec:
+      nodeSelector:
+        runtime: "true"
+      tolerations:
+        - key: runtime
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: kernel
+          image: "{{ .Values.kernelImages.javascript }}"
+
+
+---
+# this deployment is for pulling in the kernel images
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-racket-kernel-deployment
+  labels:
+    app: example-racket-kernel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-racket-kernel
+  template:
+    metadata:
+      labels:
+        app: example-racket-kernel
+    spec:
+      nodeSelector:
+        runtime: "true"
+      tolerations:
+        - key: runtime
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: kernel
+          image: "{{ .Values.kernelImages.racket }}"

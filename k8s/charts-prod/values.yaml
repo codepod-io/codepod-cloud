@@ -3,3 +3,8 @@ googleClientId:
 # The AWS access key id and secret access key for S3
 awsAccessKeyId:
 awsSecretAccessKey:
+kernelImages:
+  python: lihebi/codepod-kernel-python:0.5.1-alpha.2
+  julia: lihebi/codepod-kernel-julia:0.5.1-alpha.2
+  javascript: lihebi/codepod-kernel-javascript:0.5.1-alpha.2
+  racket: lihebi/codepod-kernel-racket:0.5.1-alpha.2

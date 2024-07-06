@@ -316,6 +316,14 @@ spec:
               value: "ws://codepod-yjs-service:4233/yjs"
             - name: RUNTIME_NS
               value: "{{ .Release.Namespace }}-runtime"
+            - name: KERNEL_IMAGE_PYTHON
+              value: "{{ .Values.kernelImages.python }}"
+            - name: KERNEL_IMAGE_JULIA
+              value: "{{ .Values.kernelImages.julia }}"
+            - name: KERNEL_IMAGE_JAVASCRIPT
+              value: "{{ .Values.kernelImages.javascript }}"
+            - name: KERNEL_IMAGE_RACKET
+              value: "{{ .Values.kernelImages.racket }}"
           resources:
             limits:
               memory: 512Mi
