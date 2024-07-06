@@ -46,6 +46,14 @@ helm upgrade codepod . -n codepod-dev --values=./.values/dev.yaml
 helm uninstall codepod -n codepod-dev
 ```
 
+# First time pnpm package install
+
+Open a terminal in the `codepod-init` pod and run:
+
+```sh
+corepack enable && pnpm i
+```
+
 # First time DB setup
 
 ~~Change api pod's startup command to `tail -f /dev/null`, then run `pnpm dlx prisma migrate dev` in the pod to apply the change, then change back the command.~~

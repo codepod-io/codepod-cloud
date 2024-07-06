@@ -9,6 +9,40 @@ data:
   # Use automatically generated secret.
   JWT_SECRET: "{{ randAlphaNum 16 | b64enc }}"
 
+# init container
+# Manually run in this pod:
+#     corepack enable && pnpm i
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-init-deployment
+  labels:
+    app: codepod-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-init
+  template:
+    metadata:
+      labels:
+        app: codepod-init
+    spec:
+      containers:
+        - name: codepod-init
+          image: node:20
+          workingDir: /app
+          command: ["tail", "-f", "/dev/null"]
+          volumeMounts:
+            - mountPath: /app
+              name: src
+              readOnly: false
+      volumes:
+        - name: src
+          hostPath:
+            path: "{{ .Values.srcDir }}"
+
 # UI
 ---
 apiVersion: apps/v1
