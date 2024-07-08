@@ -6,12 +6,17 @@ import {
   yXmlFragmentToProsemirrorJSON,
 } from "y-prosemirror";
 
+import * as Y from "yjs";
+
 /**
  * From prosemirror json to Y.XmlFragment.
  * @param json Parsed json object.
  * @returns
  */
 export function json2yxml(json: Object) {
+  if (!json) {
+    return new Y.XmlFragment();
+  }
   const myschema = new Schema(myspec);
   const doc2 = PMNode.fromJSON(myschema, json);
   // console.log("PMDoc2", doc2);
