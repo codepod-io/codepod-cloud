@@ -1,10 +1,13 @@
-import myspec from "./rich-schema";
-import { Schema, Node as PMNode } from "prosemirror-model";
+import { Schema, Node as PMNode } from "@remirror/pm/model";
 import {
   prosemirrorToYDoc,
   prosemirrorToYXmlFragment,
   yXmlFragmentToProsemirrorJSON,
 } from "y-prosemirror";
+
+import * as Y from "yjs";
+
+import { schema } from "./remirrorSchema";
 
 /**
  * From prosemirror json to Y.XmlFragment.
@@ -12,8 +15,11 @@ import {
  * @returns
  */
 export function json2yxml(json: Object) {
-  const myschema = new Schema(myspec);
-  const doc2 = PMNode.fromJSON(myschema, json);
+  if (!json) {
+    return new Y.XmlFragment();
+  }
+  // const myschema = new Schema(myspec);
+  const doc2 = PMNode.fromJSON(schema, json);
   // console.log("PMDoc2", doc2);
   const yxml = prosemirrorToYXmlFragment(doc2);
   // console.log("Ydoc2", ydoc2.toJSON());

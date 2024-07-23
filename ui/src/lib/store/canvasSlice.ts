@@ -15,16 +15,7 @@ import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
 import { level2color, myNanoId } from "../utils/utils";
-
-// TODO add node's data typing.
-export type NodeData = {
-  level: number;
-  name?: string;
-  children: string[];
-  parent?: string;
-  folded: boolean;
-  lang?: string;
-};
+import { NodeData } from "./types";
 
 const newScopeNodeShapeConfig = {
   width: 600,

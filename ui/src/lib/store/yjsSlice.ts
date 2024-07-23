@@ -3,31 +3,14 @@ import { Doc } from "yjs";
 import * as Y from "yjs";
 // FIXME can I import from api/ folder?
 import { WebsocketProvider } from "@/../../api/src/runtime/y-websocket";
+import { PodResult, RuntimeInfo } from "@/../../api/src/yjs/types";
 import { Edge, Node, NodeChange, applyNodeChanges } from "reactflow";
 import { getHelperLines } from "@/components/nodes/utils";
-import { NodeData } from "./canvasSlice";
+import { NodeData } from "./types";
 import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
 import { ATOM_repoId, buildNode2Children } from "./atom";
-
-export type RuntimeInfo = {
-  status?: string;
-  wsStatus?: string;
-};
-
-type PodResult = {
-  exec_count?: number;
-  data: {
-    type: string;
-    html?: string;
-    text?: string;
-    image?: string;
-  }[];
-  running?: boolean;
-  lastExecutedAt?: number;
-  error?: { ename: string; evalue: string; stacktrace: string[] } | null;
-};
 
 // The atoms
 

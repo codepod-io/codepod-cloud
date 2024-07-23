@@ -188,7 +188,6 @@ const RepoCard = ({
       updatedAt: string;
     }[];
     name: string | null;
-    yDocBlob: any;
     accessedAt: string;
   };
 }) => {

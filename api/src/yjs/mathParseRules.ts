@@ -18,9 +18,9 @@
 
 import {
   Node as ProseNode,
-  TagParseRule,
   Fragment,
   ParseRule,
+  TagParseRule,
   Schema,
 } from "@remirror/pm/model";
 

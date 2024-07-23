@@ -2,6 +2,7 @@ import * as Y from "yjs";
 
 import prisma from "../prisma";
 import { json2yxml } from "./utils";
+import { PodResult } from "./types";
 
 /**
  * For historical reason, the backend DB schema pod.type are "CODE", "DECK",
@@ -39,7 +40,6 @@ function nodetype2dbtype(nodetype: string) {
  * // TODO run the migration script seprately.
  */
 async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
-  console.log("=== initialMigrate");
   // 1. query DB for repo.pods
   const repo = await prisma.repo.findFirst({
     where: { id: repoId },
@@ -68,10 +68,12 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
   const edgesMap = new Y.Map<any>();
   const codeMap = new Y.Map<Y.Text>();
   const richMap = new Y.Map<Y.XmlFragment>();
+  const resultMap = new Y.Map<PodResult>();
   rootMap.set("nodesMap", nodesMap);
   rootMap.set("edgesMap", edgesMap);
   rootMap.set("codeMap", codeMap);
   rootMap.set("richMap", richMap);
+  rootMap.set("resultMap", resultMap);
   const metaMap = new Y.Map();
   metaMap.set("version", "v0.0.1");
   rootMap.set("metaMap", metaMap);
@@ -113,6 +115,18 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
     if (pod.type === "CODE") {
       const content = new Y.Text(pod.content || undefined);
       codeMap.set(pod.id, content);
+      const data: any[] = [];
+      if (pod.result) {
+        data.push({ type: "execute_result", text: pod.result });
+      }
+      if (pod.stdout) {
+        data.push({
+          type: "stream_stdout",
+          text: pod.stdout,
+        });
+      }
+      // FIXME pod.error??
+      resultMap.set(pod.id, { data });
     } else if (pod.type === "WYSIWYG") {
       if (pod.content) {
         const yxml = json2yxml(JSON.parse(pod.content));
@@ -121,3 +135,40 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
     }
   });
 }
+
+async function main() {
+  await prisma.$transaction(
+    async (tx) => {
+      const repos = await tx.repo.findMany();
+      let count = 0;
+      for (const repo of repos) {
+        count++;
+        console.log("Migrating repo", repo.id, count);
+        const ydoc = new Y.Doc();
+        await migrate_v_0_0_1(ydoc, repo.id);
+        // now the ydoc should be populated with the content from the DB.
+        // save to the ydocblob field
+        const update = Y.encodeStateAsUpdate(ydoc);
+        await tx.repo.update({
+          where: { id: repo.id },
+          data: {
+            yDocBlob: Buffer.from(update),
+          },
+        });
+      }
+    },
+    {
+      timeout: 10000,
+    }
+  );
+}
+
+main()
+  .catch(async (e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    console.log("Finished. Disconnecting from the DB.");
+    await prisma.$disconnect();
+  });
