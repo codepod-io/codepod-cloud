@@ -1,5 +1,6 @@
 srcDir: "/path/to/codepod-cloud/src/dir"
 googleClientId:
+cloudflareDnsChallengeToken:
 kernelImages:
   python: lihebi/codepod-kernel-python:0.5.1-alpha.2
   julia: lihebi/codepod-kernel-julia:0.5.1-alpha.2

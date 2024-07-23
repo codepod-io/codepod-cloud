@@ -2,9 +2,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: codepod-ingress
+  annotations:
+    cert-manager.io/issuer: "letsencrypt-staging"
 spec:
+  tls:
+    - hosts:
+        - dev.127.0.0.1.codepod.io
+      secretName: letsencrypt-staging-tls
   rules:
-    - host: codepod.127.0.0.1.sslip.io
+    - host: dev.127.0.0.1.codepod.io
       http:
         paths:
           - path: /
