@@ -544,12 +544,13 @@ function bindZmqYjs({
   });
   wire.listenIOPub((topic, msgs) => {
     switch (msgs.header.msg_type) {
-      case "status":
+      case "status": {
         const status = msgs.content.execution_state;
         console.log("status", status);
         runtimeMap.set(kernelName, { status });
         break;
-      case "execute_result":
+      }
+      case "execute_result": {
         console.log("IOPub execute_result");
         let podId = msgs.parent_header.msg_id;
         // // let count = msgs.content.execution_count;
@@ -571,14 +572,49 @@ function bindZmqYjs({
         }
         resultMap.set(podId, oldresult);
         break;
+      }
+      // FIXME this should not exist.
       case "stdout":
+        console.log("TODO stdout");
+        assert(false);
         break;
-      case "error":
+      case "error": {
+        console.log("error message");
+        let podId = msgs.parent_header.msg_id;
+        const oldresult = resultMap.get(podId) || { data: [] };
+        oldresult.error = {
+          ename: msgs.content.ename,
+          evalue: msgs.content.evalue,
+          stacktrace: msgs.content.traceback,
+        };
+        resultMap.set(podId, oldresult);
         break;
-      case "stream":
+      }
+      case "stream": {
+        console.log("stream message");
+        let podId = msgs.parent_header.msg_id;
+        const oldresult = resultMap.get(podId) || { data: [] };
+        const newdata = {
+          type: "stream_" + msgs.content.name,
+          text: msgs.content.text,
+        };
+        oldresult.data.push(newdata);
+        resultMap.set(podId, oldresult);
         break;
-      case "display_data":
+      }
+      case "display_data": {
+        console.log("display_data message");
+        let podId = msgs.parent_header.msg_id;
+        const oldresult: PodResult = resultMap.get(podId) || { data: [] };
+        oldresult.data.push({
+          type: "display_data",
+          text: msgs.content.data["text/plain"],
+          image: msgs.content.data["image/png"],
+          html: msgs.content.data["text/html"],
+        });
+        resultMap.set(podId, oldresult);
         break;
+      }
       default:
         console.log(
           "Message Not handled",
