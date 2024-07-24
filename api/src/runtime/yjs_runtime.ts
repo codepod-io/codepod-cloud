@@ -1,24 +1,7 @@
 import * as Y from "yjs";
 import WebSocket from "ws";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
-
-export type PodResult = {
-  exec_count?: number;
-  data: {
-    type: string;
-    html?: string;
-    text?: string;
-    image?: string;
-  }[];
-  running?: boolean;
-  lastExecutedAt?: number;
-  error?: { ename: string; evalue: string; stacktrace: string[] } | null;
-};
-
-export type RuntimeInfo = {
-  status?: string;
-  wsStatus?: string;
-};
+import { PodResult, RuntimeInfo } from "../yjs/types";
 
 export const runtime2socket = new Map<string, WebSocket>();
 

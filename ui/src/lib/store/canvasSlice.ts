@@ -15,16 +15,7 @@ import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
 import { level2color, myNanoId } from "../utils/utils";
-
-// TODO add node's data typing.
-export type NodeData = {
-  level: number;
-  name?: string;
-  children: string[];
-  parent?: string;
-  folded: boolean;
-  lang?: string;
-};
+import { NodeData } from "./types";
 
 const newScopeNodeShapeConfig = {
   width: 600,
@@ -145,11 +136,9 @@ export function updateView(get: Getter, set: Setter) {
   let selectedPods = get(ATOM_selectedPods);
   // let nodes = Array.from<Node>(nodesMap.values());
   // follow the tree order, skip folded nodes
-  function dfs(node: Node) {
+  function dfs(node: Node<NodeData>) {
     if (node.data.folded) return [node];
-    let children = node.data.children
-      .map((id) => nodesMap.get(id))
-      .filter((n) => n);
+    let children = node.data.children.map((id) => nodesMap.get(id)!);
     return [node, ...children.flatMap(dfs)];
   }
   let nodes = dfs(nodesMap.get("ROOT")!);

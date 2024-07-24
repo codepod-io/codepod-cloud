@@ -23,6 +23,9 @@ import debounce from "lodash/debounce";
 
 import prisma from "../prisma";
 
+import { Node } from "reactflow";
+import { NodeData } from "@/../../ui/src/lib/store/types";
+
 const debounceRegistry = new Map<string, any>();
 /**
  * Invoke the callback that debounce w.r.t. the key. Also register the callback
@@ -50,11 +53,6 @@ function getDebouncedCallback(key) {
   // 2. call it
   return debounceRegistry.get(key);
 }
-
-type NodeData = {
-  level: number;
-  name?: string;
-};
 
 async function handleSaveBlob({ repoId, yDocBlob }) {
   console.log("save blob", repoId, yDocBlob.length);
@@ -134,15 +132,33 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
   } else {
     // init the ydoc
     const rootMap = ydoc.getMap("rootMap");
-    rootMap.set("nodesMap", new Y.Map<any>());
+    const nodesMap = new Y.Map<Node<NodeData>>();
+    const richMap = new Y.Map<Y.XmlFragment>();
+    rootMap.set("nodesMap", nodesMap);
     rootMap.set("edgesMap", new Y.Map<any>());
     rootMap.set("codeMap", new Y.Map<Y.Text>());
-    rootMap.set("richMap", new Y.Map<Y.XmlFragment>());
+    rootMap.set("richMap", richMap);
     rootMap.set("resultMap", new Y.Map<any>());
     rootMap.set("runtimeMap", new Y.Map<any>());
     const metaMap = new Y.Map();
     metaMap.set("version", "v0.0.1");
     rootMap.set("metaMap", metaMap);
+    // add ROOT node
+    nodesMap.set("ROOT", {
+      id: "ROOT",
+      type: "RICH",
+      position: { x: 0, y: 0 },
+      data: {
+        level: 0,
+        children: [],
+        folded: false,
+      },
+      style: {
+        width: 300,
+        // height: 100,
+      },
+    });
+    richMap.set("ROOT", new Y.XmlFragment());
   }
 }
 

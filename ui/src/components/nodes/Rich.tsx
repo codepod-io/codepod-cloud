@@ -259,7 +259,7 @@ const MyRemirror = ({
 
   const [richMap] = useAtom(ATOM_richMap);
   if (!richMap.has(id)) {
-    throw new Error("richMap does not have id" + id);
+    throw new Error("richMap does not have id " + id);
   }
   const yXml = richMap.get(id);
 

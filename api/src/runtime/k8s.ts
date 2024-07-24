@@ -12,6 +12,7 @@ import * as Y from "yjs";
 import WebSocket from "ws";
 
 import { WebsocketProvider } from "./y-websocket";
+import { PodResult, RuntimeInfo } from "../yjs/types";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -516,8 +517,8 @@ function bindZmqYjs({
   kernelName: string;
 }) {
   const rootMap = ydoc.getMap("rootMap");
-  const runtimeMap = rootMap.get("runtimeMap") as any;
-  const resultMap = rootMap.get("resultMap") as any;
+  const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
+  const resultMap = rootMap.get("resultMap") as Y.Map<PodResult>;
   wire.listenShell((msgs) => {
     switch (msgs.header.msg_type) {
       case "execute_reply":

@@ -11,8 +11,9 @@ generator client {
 }
 
 generator studio-client {
-    provider      = "prisma-client-js"
-    binaryTargets = ["native"]
+    provider        = "prisma-client-js"
+    previewFeatures = ["omitApi"]
+    binaryTargets   = ["native"]
 }
 
 model Post {

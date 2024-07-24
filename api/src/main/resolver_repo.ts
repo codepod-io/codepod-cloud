@@ -63,6 +63,9 @@ const getDashboardRepos = protectedProcedure.query(
           },
         ],
       },
+      omit: {
+        yDocBlob: true,
+      },
       include: {
         UserRepoData: {
           where: {
@@ -131,6 +134,9 @@ const repo = protectedProcedure
       include: {
         owner: true,
         collaborators: true,
+      },
+      omit: {
+        yDocBlob: true,
       },
     });
     if (!repo) throw Error("Repo not found");
