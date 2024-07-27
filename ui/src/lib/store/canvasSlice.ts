@@ -160,207 +160,103 @@ export function updateView(get: Getter, set: Setter) {
     return edges;
   }
   set(ATOM_edges, generateEdge(nodes));
-  updateView_addNode(get, set);
 }
 
 export const ATOM_updateView = atom(null, updateView);
 
 /**
- * Add node
+ * Given the anchor node and the handle position, return the insertion position
+ * of the new node.
+ * @returns {parentId: string, index: number} the parent node id and the index
+ * of the new node in the parent's children field.
  */
+function getParentIndex({
+  nodesMap,
+  anchorId,
+  position,
+}: {
+  nodesMap: Y.Map<Node<NodeData>>;
+  anchorId: string;
+  position: "top" | "bottom" | "right";
+}): { parentId: string; index: number } {
+  if (position === "right") return { parentId: anchorId, index: 0 };
 
-export const ATOM_isAddingNode = atom(false);
-
-export const ATOM_newNodeSpec = atom<{
-  type: "CODE" | "RICH";
-  lang?: "python" | "julia" | "javascript" | "racket";
-}>({ type: "CODE" });
-export const ATOM_mousePosition = atom({ x: 0, y: 0 });
-type AnchorNode = {
-  id: string;
-  position: "TOP" | "BOTTOM" | "RIGHT" | "LEFT";
-  isValid: boolean;
-};
-export const ATOM_anchorNode = atom<AnchorNode | undefined>(undefined);
-
-function updateView_addNode(get: Getter, set: Setter) {
-  if (get(ATOM_isAddingNode)) {
-    const newNode = {
-      id: "tempNode",
-      type: "TEMP",
-      position: get(ATOM_mousePosition),
-      width: 300,
-      height: 100,
-      data: {},
-    };
-    set(ATOM_nodes, [...get(ATOM_nodes), newNode]);
+  const anchor = nodesMap.get(anchorId);
+  if (!anchor) {
+    throw new Error("Anchor node not found");
+  }
+  const anchorParentId = anchor.data.parent;
+  if (!anchorParentId) {
+    throw new Error("Anchor node has no parent");
+  }
+  const parent = nodesMap.get(anchorParentId)!;
+  const index = parent.data.children.indexOf(anchorId);
+  switch (position) {
+    case "top":
+      return { parentId: anchorParentId, index };
+    case "bottom":
+      return { parentId: anchorParentId, index: index + 1 };
+    default:
+      throw new Error("unknown position");
   }
 }
 
-export const ATOM_updateView_addNode = atom(null, updateView_addNode);
-
-function getInsertPosition(get: Getter, set: Setter) {
-  // 1. given the mouse position, find the nearest node as anchor
-  // - if the mouse position is to the right of the anchor, insert to the right
-  // - if the mouse position is to the top or bottom of the anchor, insert to the top or bottom
-  // - otherwise, no position is identified
-
-  // get all the nodes
-  const nodes = get(ATOM_nodes).filter((n) => n.type !== "TEMP");
-  // get the mouse position
-  const mouse = get(ATOM_mousePosition);
-  // get the nearest node, defined by the bounding box of the node: x, y, x+width, y+height
-  const nearest = nodes.reduce<{
-    node: Node | undefined;
-    distance: number;
-  }>(
-    (acc, node) => {
-      const width = node.width!;
-      const height = node.height!;
-      const { x, y } = node.position;
-      const top = { x: x + width / 2, y };
-      const bottom = { x: x + width / 2, y: y + height };
-      const left = { x, y: y + height / 2 };
-      const right = { x: x + width, y: y + height / 2 };
-      const distance = Math.min(
-        Math.pow(mouse.x - top.x, 2) + Math.pow(mouse.y - top.y, 2),
-        Math.pow(mouse.x - bottom.x, 2) + Math.pow(mouse.y - bottom.y, 2),
-        Math.pow(mouse.x - left.x, 2) + Math.pow(mouse.y - left.y, 2),
-        Math.pow(mouse.x - right.x, 2) + Math.pow(mouse.y - right.y, 2)
-      );
-      if (distance < acc.distance) {
-        return { node, distance };
-      }
-      return acc;
-    },
-    { node: undefined, distance: Infinity }
-  );
-
-  // check the relative direction of the mouse to the nearest node
-  const node = nearest.node;
-  if (!node) return;
-
-  const width = node.width!;
-  const height = node.height!;
-  const { x, y } = node.position;
-  const top = { x: x + width / 2, y };
-  const bottom = { x: x + width / 2, y: y + height };
-  const left = { x, y: y + height / 2 };
-  const right = { x: x + width, y: y + height / 2 };
-  const topDistance =
-    Math.pow(mouse.x - top.x, 2) + Math.pow(mouse.y - top.y, 2);
-  const bottomDistance =
-    Math.pow(mouse.x - bottom.x, 2) + Math.pow(mouse.y - bottom.y, 2);
-  const leftDistance =
-    Math.pow(mouse.x - left.x, 2) + Math.pow(mouse.y - left.y, 2);
-  const rightDistance =
-    Math.pow(mouse.x - right.x, 2) + Math.pow(mouse.y - right.y, 2);
-  const minDistance = Math.min(
-    topDistance,
-    bottomDistance,
-    leftDistance,
-    rightDistance
-  );
-  if (minDistance === topDistance) {
-    set(ATOM_anchorNode, {
-      id: node.id,
-      position: "TOP",
-      isValid: node.id !== "ROOT",
+export const ATOM_addNode = atom(
+  null,
+  (
+    get,
+    set,
+    anchorId: string,
+    position: "top" | "bottom" | "right",
+    type: "CODE" | "RICH",
+    // lang?: "python" | "julia" | "javascript" | "racket"
+    lang?: string
+  ) => {
+    const nodesMap = get(ATOM_nodesMap);
+    const { parentId, index } = getParentIndex({
+      nodesMap,
+      anchorId,
+      position,
     });
-  } else if (minDistance === bottomDistance) {
-    set(ATOM_anchorNode, {
-      id: node.id,
-      position: "BOTTOM",
-      isValid: node.id !== "ROOT",
+    // create new node
+    const newNode = createNewNode(type, { x: 0, y: 0 });
+    switch (type) {
+      case "CODE":
+        get(ATOM_codeMap).set(newNode.id, new Y.Text());
+        break;
+      case "RICH":
+        get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+        break;
+    }
+    nodesMap.set(newNode.id, {
+      ...newNode,
+      data: {
+        ...newNode.data,
+        parent: parentId,
+        lang,
+      },
     });
-  } else if (minDistance === leftDistance) {
-    set(ATOM_anchorNode, { id: node.id, position: "LEFT", isValid: false });
-  } else if (minDistance === rightDistance) {
-    set(ATOM_anchorNode, {
-      id: node.id,
-      position: "RIGHT",
-      isValid: node.data.children.length === 0,
+    const parent = nodesMap.get(parentId);
+    if (!parent) throw new Error(`Parent node not found: ${parentId}`);
+    // add the node to the children field at index
+    const children = [...parent.data.children];
+    if (index === -1) {
+      children.push(newNode.id);
+    } else {
+      children.splice(index, 0, newNode.id);
+    }
+    // update the parent node
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        children,
+      },
     });
+    autoLayoutTree(get, set);
+    // updateView(get, set);
   }
-}
-
-export const ATOM_getInsertPosition = atom(null, getInsertPosition);
-
-function addNode(get: Getter, set: Setter, { parentId, index }) {
-  const { type, lang } = get(ATOM_newNodeSpec);
-  const nodesMap = get(ATOM_nodesMap);
-  const node = createNewNode(type, { x: 0, y: 0 });
-  switch (type) {
-    case "CODE":
-      get(ATOM_codeMap).set(node.id, new Y.Text());
-      break;
-    case "RICH":
-      get(ATOM_richMap).set(node.id, new Y.XmlFragment());
-      break;
-  }
-  nodesMap.set(node.id, {
-    ...node,
-    data: {
-      ...node.data,
-      parent: parentId,
-      lang,
-    },
-  });
-  const parent = nodesMap.get(parentId);
-  if (!parent) throw new Error("Parent node not found");
-  // add the node to the children field at index
-  const children = [...parent.data.children];
-  if (index === -1) {
-    children.push(node.id);
-  } else {
-    children.splice(index, 0, node.id);
-  }
-  // update the parent node
-  nodesMap.set(parentId, {
-    ...parent,
-    data: {
-      ...parent.data,
-      children,
-    },
-  });
-}
-
-function addNodeAtAnchor(get: Getter, set: Setter) {
-  const anchor = get(ATOM_anchorNode);
-  if (!anchor) return;
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(anchor.id)!;
-  const parentId = node.data.parent!;
-  const parentNode = nodesMap.get(parentId)!;
-  const index = parentNode?.data.children.indexOf(anchor.id);
-
-  if (anchor.isValid) {
-    match(anchor.position)
-      .with("TOP", () => {
-        addNode(get, set, {
-          parentId,
-          index,
-        });
-      })
-      .with("BOTTOM", () => {
-        addNode(get, set, {
-          parentId,
-          index: index + 1,
-        });
-      })
-      .with("RIGHT", () => {
-        addNode(get, set, {
-          parentId: anchor.id,
-          index: 0,
-        });
-      })
-      .otherwise(() => {
-        throw new Error("Should not reach here.");
-      });
-  }
-}
-
-export const ATOM_addNodeAtAnchor = atom(null, addNodeAtAnchor);
+);
 
 function toggleFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);

@@ -120,14 +120,12 @@ import { SlashExtension } from "./extensions/slash";
 import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
-import { Handles } from "./utils";
+import { AddNodeHandle, Handles } from "./utils";
 
 import { MyLexical } from "./rich/MyLexical";
 
 import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
 import { Ellipsis } from "lucide-react";
-import { match } from "ts-pattern";
-import { useAnchorStyle } from "./utils";
 import { ATOM_editMode } from "@/lib/store/atom";
 import {
   ATOM_nodesMap,
@@ -487,8 +485,6 @@ export const RichNode = memo<Props>(function ({
   const [showToolbar, setShowToolbar] = useState(false);
   const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
-  const anchorStyle = useAnchorStyle(id);
-
   const [hover, setHover] = useState(false);
 
   const node = nodesMap.get(id);
@@ -497,17 +493,21 @@ export const RichNode = memo<Props>(function ({
   return (
     <div
       className="nodrag"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
-        ...anchorStyle,
         width: "100%",
         minWidth: "300px",
         // This is the key to let the node auto-resize w.r.t. the content.
         height: "auto",
       }}
     >
+      {id !== "ROOT" && <AddNodeHandle id={id} position="top" type="RICH" />}
+      {id !== "ROOT" && <AddNodeHandle id={id} position="bottom" type="RICH" />}
+      {node.data.children.length == 0 && (
+        <AddNodeHandle id={id} position="right" type="RICH" />
+      )}
       <div
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
         style={{
           display: "flex",
           flexDirection: "column",

@@ -15,87 +15,7 @@ import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
 import { debounce } from "lodash";
 import { Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useSetAtom } from "jotai";
-import {
-  ATOM_addNodeAtAnchor,
-  ATOM_autoLayoutTree,
-  ATOM_getInsertPosition,
-  ATOM_isAddingNode,
-  ATOM_mousePosition,
-  ATOM_newNodeSpec,
-  ATOM_nodes,
-  ATOM_updateView,
-  ATOM_updateView_addNode,
-} from "@/lib/store/canvasSlice";
-
-import juliaLogo from "@/assets/julia.svg";
-import pythonLogo from "@/assets/python.svg";
-import javascriptLogo from "@/assets/javascript.svg";
-import racketLogo from "@/assets/racket.svg";
-
-import { NotebookPen } from "lucide-react";
-
-export function useAddNode(reactFlowWrapper) {
-  const [isAddingNode, setIsAddingNode] = useAtom(ATOM_isAddingNode);
-  const updateView = useSetAtom(ATOM_updateView);
-  const updateView_addNode = useSetAtom(ATOM_updateView_addNode);
-  const [mousePosition, setMousePosition] = useAtom(ATOM_mousePosition);
-  const getInsertPosition = useSetAtom(ATOM_getInsertPosition);
-
-  const reactFlowInstance = useReactFlow();
-  const addNodeAtAnchor = useSetAtom(ATOM_addNodeAtAnchor);
-
-  // cancel when ESC is pressed
-  const escapePressed = useKeyPress("Escape");
-  useEffect(() => {
-    if (escapePressed) {
-      console.log("escape pressed");
-      setIsAddingNode(false);
-      updateView();
-    }
-  }, [escapePressed]);
-
-  // when add node mode activated
-  // 1. there is a node moving with the mouse.
-  // 2. We calculate the desired position to insert the node in the tree
-  //    hierarchy, and show it on the canvas.
-  // 3. when the user clicks, we insert the node in the tree hierarchy.
-
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
-
-  useEffect(() => {
-    if (!reactFlowWrapper) return;
-    if (!isAddingNode) return;
-    const mouseMove = (event) => {
-      const bounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
-      });
-      // show the node on the canvas
-      setMousePosition(position);
-      getInsertPosition();
-      updateView_addNode();
-    };
-    const debouncedMouseMove = debounce(mouseMove, 1);
-    const mouseClick = (event) => {
-      // insert the node in the tree hierarchy
-      addNodeAtAnchor();
-      setIsAddingNode(false);
-      autoLayoutTree();
-      updateView();
-    };
-
-    reactFlowWrapper.current.addEventListener("mousemove", debouncedMouseMove);
-    reactFlowWrapper.current.addEventListener("click", mouseClick);
-    return () => {
-      reactFlowWrapper.current.removeEventListener(
-        "mousemove",
-        debouncedMouseMove
-      );
-      reactFlowWrapper.current.removeEventListener("click", mouseClick);
-    };
-  }, [isAddingNode, reactFlowWrapper]);
-}
+import { ATOM_nodes } from "@/lib/store/canvasSlice";
 
 export function useContextMenu() {
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -181,8 +101,6 @@ export function useUpload() {
 }
 
 export function ContextMenu({ setShowContextMenu, handleItemClick }) {
-  const setIsAddingNode = useSetAtom(ATOM_isAddingNode);
-  const setNewNodeSpec = useSetAtom(ATOM_newNodeSpec);
   return (
     <DropdownMenu.Root
       open={true}
@@ -204,83 +122,6 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content>
-        <DropdownMenu.Item
-          shortcut="⌘ D"
-          onClick={() => {
-            setNewNodeSpec({ type: "RICH" });
-            setIsAddingNode(true);
-          }}
-        >
-          + <NotebookPen /> Doc
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onClick={() => {
-            setNewNodeSpec({ type: "CODE", lang: "python" });
-            setIsAddingNode(true);
-          }}
-        >
-          +{" "}
-          <img
-            src={pythonLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
-          Python
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onClick={() => {
-            setNewNodeSpec({ type: "CODE", lang: "julia" });
-            setIsAddingNode(true);
-          }}
-        >
-          +{" "}
-          <img
-            src={juliaLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
-          Julia
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onClick={() => {
-            setNewNodeSpec({ type: "CODE", lang: "javascript" });
-            setIsAddingNode(true);
-          }}
-        >
-          +{" "}
-          <img
-            src={javascriptLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
-          JavaScript
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onClick={() => {
-            setNewNodeSpec({ type: "CODE", lang: "racket" });
-            setIsAddingNode(true);
-          }}
-        >
-          +{" "}
-          <img
-            src={racketLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
-          Racket
-        </DropdownMenu.Item>
-
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           shortcut="⌘ N"
