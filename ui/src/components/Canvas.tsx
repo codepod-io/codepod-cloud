@@ -41,26 +41,10 @@ import {
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { ATOM_editMode, ATOM_repoId, ATOM_shareOpen } from "@/lib/store/atom";
 
-const TempNode = () => {
-  return (
-    <div
-      style={{
-        width: "100px",
-        height: "100px",
-        borderRadius: "50%",
-        transform: "translate(-50%, -50%)",
-        backgroundColor: "orange",
-        opacity: 0.5,
-      }}
-    ></div>
-  );
-};
-
 const nodeTypes = {
   SCOPE: ScopeNode,
   CODE: CodeNode,
   RICH: RichNode,
-  TEMP: TempNode,
 };
 
 const edgeTypes = {
