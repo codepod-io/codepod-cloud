@@ -25,12 +25,7 @@ import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
 
-import {
-  ContextMenu,
-  useAddNode,
-  useContextMenu,
-  useUpload,
-} from "./canvas/ContextMenu";
+import { ContextMenu, useContextMenu, useUpload } from "./canvas/ContextMenu";
 import { useAnimatedNodes, useCopyPaste } from "./canvas/helpers";
 import { useJump } from "./canvas/jump";
 import {
@@ -114,9 +109,6 @@ function ViewportInfo() {
  */
 function CanvasImpl() {
   const reactFlowWrapper = useRef<any>(null);
-
-  // listen to add node event
-  useAddNode(reactFlowWrapper);
 
   const [nodes] = useAtom(ATOM_nodes);
 

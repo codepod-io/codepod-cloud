@@ -19,7 +19,7 @@ import Ansi from "ansi-to-react";
 
 import { MyMonaco } from "../MyMonaco";
 
-import { Handles, useAnchorStyle } from "./utils";
+import { AddNodeHandle, Handles } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
@@ -376,7 +376,6 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
   const [hover, setHover] = useState(false);
 
-  const anchorStyle = useAnchorStyle(id);
   let ref = useRunKey({ id })!;
 
   const node = nodesMap.get(id);
@@ -386,7 +385,6 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
     <div
       // className="nodrag"
       style={{
-        ...anchorStyle,
         width: "100%",
         minWidth: "300px",
         // This is the key to let the node auto-resize w.r.t. the content.
@@ -394,10 +392,25 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         // minHeight: "50px",
       }}
       ref={ref}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
     >
+      <AddNodeHandle id={id} position="top" type="CODE" lang={node.data.lang} />
+      <AddNodeHandle
+        id={id}
+        position="bottom"
+        type="CODE"
+        lang={node.data.lang}
+      />
+      {node.data.children.length == 0 && (
+        <AddNodeHandle
+          id={id}
+          position="right"
+          type="CODE"
+          lang={node.data.lang}
+        />
+      )}
       <div
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
         style={{
           display: "flex",
           flexDirection: "column",

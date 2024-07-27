@@ -9,7 +9,6 @@ import {
 
 import { useContext, useState } from "react";
 
-import Button from "@mui/material/Button";
 import CodeIcon from "@mui/icons-material/Code";
 import NoteIcon from "@mui/icons-material/Note";
 
@@ -29,12 +28,18 @@ import React from "react";
 import { ChevronLeft } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useSetAtom } from "jotai";
-import {
-  ATOM_anchorNode,
-  ATOM_isAddingNode,
-  ATOM_toggleFold,
-} from "@/lib/store/canvasSlice";
+import { ATOM_toggleFold } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+
+import juliaLogo from "@/assets/julia.svg";
+import pythonLogo from "@/assets/python.svg";
+import javascriptLogo from "@/assets/javascript.svg";
+import racketLogo from "@/assets/racket.svg";
+
+import { NotebookPen } from "lucide-react";
+
+import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { Button, DropdownMenu } from "@radix-ui/themes";
 
 export function ResizeIcon() {
   return (
@@ -441,7 +446,7 @@ export const ConfirmDeleteButton = React.forwardRef(
                 setOpen(false);
               }}
               autoFocus
-              color="error"
+              color="red"
             >
               Confirm
             </Button>
@@ -673,27 +678,142 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
   return fileContent;
 }
 
-export function useAnchorStyle(id: string) {
-  const [isAddingNode] = useAtom(ATOM_isAddingNode);
-  const [anchorNode] = useAtom(ATOM_anchorNode);
+export function AddNodeHandle({
+  id,
+  position,
+  type,
+  lang,
+}: {
+  id: string;
+  position: "top" | "bottom" | "right";
+  type: "CODE" | "RICH";
+  lang?: string;
+}) {
+  const [hover, setHover] = useState(false);
+  const addNode = useSetAtom(ATOM_addNode);
 
-  const anchorStyle = {};
-  if (isAddingNode && anchorNode && anchorNode.id === id) {
-    const border = `solid 3px ${anchorNode.isValid ? "green" : "red"}`;
-    match(anchorNode.position)
-      .with("TOP", () => {
-        anchorStyle["borderTop"] = border;
-      })
-      .with("BOTTOM", () => {
-        anchorStyle["borderBottom"] = border;
-      })
-      .with("RIGHT", () => {
-        anchorStyle["borderRight"] = border;
-      })
-      .with("LEFT", () => {
-        anchorStyle["borderLeft"] = border;
-      })
-      .exhaustive();
-  }
-  return anchorStyle;
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: "fixed",
+        display: "flex",
+        // align text center vertically
+        alignItems: "center",
+        // and horizontally
+        justifyContent: "center",
+        ...match(position)
+          .with("top", () => ({
+            right: "50%",
+            top: 0,
+            transform: "translateY(-100%) translateY(-10px) translateX(50%)",
+          }))
+          .with("bottom", () => ({
+            right: "50%",
+            bottom: 0,
+            transform: "translateY(100%) translateY(10px) translateX(50%)",
+          }))
+          .with("right", () => ({
+            right: 0,
+            top: "50%",
+            transform: "translateY(-50%) translateX(100%) translateX(15px)",
+          }))
+          .exhaustive(),
+        backgroundColor: "var(--gray-1)",
+        // show on hover
+        opacity: hover ? 1 : 0.2,
+      }}
+    >
+      <Button
+        size="1"
+        variant="surface"
+        onClick={() => {
+          addNode(id, position, type, lang);
+        }}
+      >
+        + {lang ? lang : type}
+      </Button>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <Button variant="surface" size="1">
+            <DropdownMenu.TriggerIcon />
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <DropdownMenu.Item
+            shortcut="⌘ D"
+            onClick={() => {
+              addNode(id, position, "RICH");
+            }}
+          >
+            + <NotebookPen /> Doc
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            shortcut="⌘ E"
+            onClick={() => {
+              addNode(id, position, "CODE", "python");
+            }}
+          >
+            +{" "}
+            <img
+              src={pythonLogo}
+              style={{
+                height: "1.5em",
+              }}
+            />{" "}
+            Python
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            shortcut="⌘ E"
+            onClick={() => {
+              addNode(id, position, "CODE", "julia");
+            }}
+          >
+            +{" "}
+            <img
+              src={juliaLogo}
+              style={{
+                height: "1.5em",
+              }}
+            />{" "}
+            Julia
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            shortcut="⌘ E"
+            onClick={() => {
+              addNode(id, position, "CODE", "javascript");
+            }}
+          >
+            +{" "}
+            <img
+              src={javascriptLogo}
+              style={{
+                height: "1.5em",
+              }}
+            />{" "}
+            JavaScript
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            shortcut="⌘ E"
+            onClick={() => {
+              addNode(id, position, "CODE", "racket");
+            }}
+          >
+            +{" "}
+            <img
+              src={racketLogo}
+              style={{
+                height: "1.5em",
+              }}
+            />{" "}
+            Racket
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
+  );
 }

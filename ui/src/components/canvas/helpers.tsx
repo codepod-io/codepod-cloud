@@ -38,7 +38,6 @@ import * as Y from "yjs";
 
 import { timer } from "d3-timer";
 
-import { ATOM_isAddingNode } from "@/lib/store/canvasSlice";
 import { useAtom } from "jotai";
 
 /**
@@ -47,9 +46,7 @@ import { useAtom } from "jotai";
 export function useAnimatedNodes(nodes: Node[]) {
   const [tmpNodes, setTmpNodes] = useState(nodes);
 
-  // When adding node, set the animation duration to 0 so that the temp node follows mouse.
-  const [isAddingNode] = useAtom(ATOM_isAddingNode);
-  const animationDuration = isAddingNode ? 0 : 100;
+  const animationDuration = 100;
 
   const { getNode } = useReactFlow();
 
