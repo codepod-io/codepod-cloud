@@ -49,7 +49,6 @@ import {
   ATOM_getScopeChain,
   ATOM_preprocessChain,
 } from "@/lib/store/runtimeSlice";
-import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap, ATOM_runtimeReady } from "@/lib/store/yjsSlice";
 import { ATOM_devMode } from "@/lib/store/settingSlice";
 
@@ -63,8 +62,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   // TODO runtimeReady is disabled for scope.
   // const runtimeReady = useAtomValue(ATOM_runtimeReady);
-
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   return (
     <Box
@@ -84,18 +81,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
             }}
           >
             <PlayCircleOutlineIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-      {/* auto force layout */}
-      {editMode === "edit" && (
-        <Tooltip title="force layout">
-          <IconButton
-            onClick={() => {
-              autoLayoutTree();
-            }}
-          >
-            <ViewTimelineOutlinedIcon />
           </IconButton>
         </Tooltip>
       )}
