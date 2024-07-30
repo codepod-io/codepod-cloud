@@ -7,7 +7,9 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import Editor, { DiffEditor } from "@monaco-editor/react";
+
+import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
+import { monaco } from "react-monaco-editor";
 
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
@@ -33,8 +35,31 @@ import {
 } from "@/lib/store/yjsSlice";
 import { selectAtom } from "jotai/utils";
 
-// FIXME will this monaco instance be the same as the one in the loader?
-import * as monaco from "monaco-editor";
+// From here: https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#use-monaco-editor-as-an-npm-package
+// Fix the error in https://github.com/codepod-io/codepod-cloud/pull/54
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
+
+self.MonacoEnvironment = {
+  getWorker(_, label) {
+    if (label === "json") {
+      return new jsonWorker();
+    }
+    if (label === "css" || label === "scss" || label === "less") {
+      return new cssWorker();
+    }
+    if (label === "html" || label === "handlebars" || label === "razor") {
+      return new htmlWorker();
+    }
+    if (label === "typescript" || label === "javascript") {
+      return new tsWorker();
+    }
+    return new editorWorker();
+  },
+};
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -178,12 +203,12 @@ monaco.languages.registerDocumentFormattingEditProvider("scheme", {
 
 export function MyMonacoDiff({ from, to }) {
   return (
-    <DiffEditor
+    <MonacoDiffEditor
       // width="800"
       // height="600"
       language="javascript"
       original={from || ""}
-      modified={to || ""}
+      value={to || ""}
       options={{
         selectOnLineNumbers: true,
         scrollBeyondLastLine: false,
@@ -201,7 +226,7 @@ export function MyMonacoDiff({ from, to }) {
         renderSideBySide: false,
         readOnly: true,
       }}
-      onMount={(editor, monaco) => {
+      editorDidMount={(editor, monaco) => {
         // const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight)
         // const lineCount = editor.getModel()?.getLineCount() || 1
         // const height = editor.getTopForLineNumber(lineCount + 1) + lineHeight
@@ -495,7 +520,7 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
   }
 
   return (
-    <Editor
+    <MonacoEditor
       language={lang}
       theme="codepod"
       options={{
@@ -525,7 +550,7 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
         },
         renderLineHighlight: "none",
       }}
-      onMount={onEditorDidMount}
+      editorDidMount={onEditorDidMount}
     />
   );
 };
