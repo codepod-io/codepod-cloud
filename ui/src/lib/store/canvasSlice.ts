@@ -17,6 +17,8 @@ import { flextree } from "d3-flextree";
 import { level2color, myNanoId } from "../utils/utils";
 import { NodeData } from "./types";
 
+import debounce from "lodash/debounce";
+
 const newScopeNodeShapeConfig = {
   width: 600,
   height: 600,
@@ -254,7 +256,7 @@ export const ATOM_addNode = atom(
       },
     });
     autoLayoutTree(get, set);
-    // updateView(get, set);
+    updateView(get, set);
   }
 );
 
@@ -400,8 +402,18 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
         throw new Error("Unknown change type");
     }
   });
+  debouncedAutoLayoutTree(get, set);
   updateView(get, set);
 }
+
+const debouncedAutoLayoutTree = debounce(
+  (get, set) => {
+    // console.log("debounced autoLayoutTree");
+    autoLayoutTree(get, set);
+  },
+  10,
+  { maxWait: 50 }
+);
 
 export const ATOM_onNodesChange = atom(null, onNodesChange);
 

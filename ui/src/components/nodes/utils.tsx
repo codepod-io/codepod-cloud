@@ -38,7 +38,7 @@ import racketLogo from "@/assets/racket.svg";
 
 import { NotebookPen } from "lucide-react";
 
-import { ATOM_addNode, ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
+import { ATOM_addNode } from "@/lib/store/canvasSlice";
 import { Button, DropdownMenu } from "@radix-ui/themes";
 
 export function ResizeIcon() {

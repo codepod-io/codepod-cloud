@@ -40,7 +40,6 @@ import {
   ATOM_resultMap,
   ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
-import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 import { ATOM_repoId } from "@/lib/store/atom";
 import { useSnackbar } from "notistack";
 
@@ -372,8 +371,6 @@ function useRunKey({ id }: { id: string }) {
 export const CodeNode = memo<{ id: string }>(function ({ id }) {
   const [nodesMap] = useAtom(ATOM_nodesMap);
 
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
-
   const [hover, setHover] = useState(false);
 
   let ref = useRunKey({ id })!;
@@ -516,7 +513,6 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
                   ...node,
                   style: { ...node.style, height: undefined },
                 });
-                autoLayoutTree();
               }
             }}
           >

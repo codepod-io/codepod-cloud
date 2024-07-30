@@ -133,7 +133,6 @@ import {
   ATOM_richMap,
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -482,9 +481,6 @@ export const RichNode = memo<Props>(function ({
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const reactFlowInstance = useReactFlow();
 
-  const [showToolbar, setShowToolbar] = useState(false);
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
-
   const [hover, setHover] = useState(false);
 
   const node = nodesMap.get(id);
@@ -546,7 +542,6 @@ export const RichNode = memo<Props>(function ({
                   ...node,
                   style: { ...node.style, height: undefined },
                 });
-                autoLayoutTree();
               }
             }}
           >
