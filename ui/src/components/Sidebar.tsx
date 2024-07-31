@@ -536,7 +536,7 @@ const MyTabsRoot = ({
   children: any;
 }) => {
   const [value, setValue] = useState(tabs[0].key);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   return (
     <Tabs.Root
       defaultValue={tabs[0].key}

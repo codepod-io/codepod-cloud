@@ -439,9 +439,7 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
   const data = subtree(id);
   // console.log("Data", data);
   const paddingX = 100;
-  const paddingY = 100;
-  // const paddingX = 0;
-  // const paddingY = 0;
+  const paddingY = 50;
 
   const layout = flextree({
     children: (data) => data.children,

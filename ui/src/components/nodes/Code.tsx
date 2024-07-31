@@ -450,7 +450,7 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
           style={{
             position: "fixed",
             bottom: "8px",
-            right: hover ? "30px" : "8px",
+            right: "8px",
           }}
         >
           {/* .py */}
@@ -520,7 +520,7 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
               sx={{
                 transform: "rotate(90deg)",
                 position: "absolute",
-                right: 5,
+                right: "30px",
                 bottom: 5,
               }}
             />

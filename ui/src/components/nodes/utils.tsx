@@ -707,22 +707,22 @@ export function AddNodeHandle({
           .with("top", () => ({
             right: "50%",
             top: 0,
-            transform: "translateY(-100%) translateY(-10px) translateX(50%)",
+            transform: "translateY(-100%)  translateX(50%)",
           }))
           .with("bottom", () => ({
             right: "50%",
             bottom: 0,
-            transform: "translateY(100%) translateY(10px) translateX(50%)",
+            transform: "translateY(100%) translateX(50%)",
           }))
           .with("right", () => ({
             right: 0,
             top: "50%",
-            transform: "translateY(-50%) translateX(100%) translateX(15px)",
+            transform: "translateY(-50%) translateX(100%) translateX(5px)",
           }))
           .exhaustive(),
         backgroundColor: "var(--gray-1)",
         // show on hover
-        opacity: hover ? 1 : 0.2,
+        opacity: hover ? 1 : 0,
       }}
     >
       <Button
