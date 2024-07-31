@@ -99,6 +99,7 @@ import {
   ATOM_repoId,
   ATOM_repoName,
 } from "@/lib/store/atom";
+import { FpsMeter } from "@/lib/FpsMeter";
 
 function SidebarSettings() {
   const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
@@ -656,6 +657,10 @@ export function SidebarLeft() {
               >
                 Mess Up
               </Button>
+              <Heading mb="2" size="4">
+                Performance
+              </Heading>
+              <FpsMeter />
             </Flex>
           ),
         },
