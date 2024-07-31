@@ -285,6 +285,9 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   const nodesMap = get(ATOM_nodesMap);
   const nodes = get(ATOM_nodes);
 
+  const codeMap = get(ATOM_codeMap);
+  const richMap = get(ATOM_richMap);
+
   // this will be true if it's a single node being dragged
   // inside we calculate the helper lines and snap position for the position where the node is being moved to
   if (
@@ -374,11 +377,16 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           node.data.children.forEach((childId) => {
             removeDescendants(childId);
             nodesMap.delete(childId);
+            // remove from codeMap or richMap
+            if (codeMap.has(childId)) codeMap.delete(childId);
+            if (richMap.has(childId)) richMap.delete(childId);
           });
         };
         removeDescendants(change.id);
         // remove the node itself
         nodesMap.delete(change.id);
+        if (codeMap.has(change.id)) codeMap.delete(change.id);
+        if (richMap.has(change.id)) richMap.delete(change.id);
         // update parent node's children field.
         const parentId = node.data.parent;
         if (!parentId) break;
