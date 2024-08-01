@@ -1,4 +1,3 @@
-import { ATOM_autoLayoutTree } from "@/lib/store/canvasSlice";
 import { useSetAtom } from "jotai";
 import {
   KBarProvider,
@@ -41,16 +40,7 @@ function RenderResults() {
 }
 
 export function MyKBar() {
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
   const actions = [
-    {
-      id: "auto-layout",
-      name: "Auto Layout",
-      keywords: "auto layout",
-      perform: () => {
-        autoLayoutTree();
-      },
-    },
     {
       id: "blog",
       name: "Blog",

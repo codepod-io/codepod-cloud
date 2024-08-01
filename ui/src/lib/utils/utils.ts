@@ -18,9 +18,9 @@ export function timeDifference(current: Date, previous: Date) {
   const msPerYear = msPerDay * 365;
   const elapsed = current.getTime() - previous.getTime();
 
-  if (elapsed < 0) {
-    throw new Error("current time is less than previous time");
-  }
+  // if (elapsed < 0) {
+  //   throw new Error(`current time is less than previous time ${elapsed}`);
+  // }
 
   if (elapsed < msPerMinute) {
     return Math.round(elapsed / 1000) + " sec";

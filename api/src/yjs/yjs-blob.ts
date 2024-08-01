@@ -174,10 +174,6 @@ export async function bindState(doc: Y.Doc, repoId: string) {
   if (rootMap.get("runtimeMap") === undefined) {
     rootMap.set("runtimeMap", new Y.Map<any>());
   }
-  const runtimeMap = rootMap.get("runtimeMap") as Y.Map<any>;
-  for (let key of runtimeMap.keys()) {
-    runtimeMap.set(key, {});
-  }
 }
 
 export function writeState() {
