@@ -18,18 +18,22 @@ export function timeDifference(current: Date, previous: Date) {
   const msPerYear = msPerDay * 365;
   const elapsed = current.getTime() - previous.getTime();
 
+  if (elapsed < 0) {
+    throw new Error("current time is less than previous time");
+  }
+
   if (elapsed < msPerMinute) {
-    return Math.round(elapsed / 1000) + " sec ago";
+    return Math.round(elapsed / 1000) + " sec";
   } else if (elapsed < msPerHour) {
-    return Math.round(elapsed / msPerMinute) + " min ago";
+    return Math.round(elapsed / msPerMinute) + " min";
   } else if (elapsed < msPerDay) {
-    return Math.round(elapsed / msPerHour) + " hours ago";
+    return Math.round(elapsed / msPerHour) + " hours";
   } else if (elapsed < msPerMonth) {
-    return Math.round(elapsed / msPerDay) + " days ago";
+    return Math.round(elapsed / msPerDay) + " days";
   } else if (elapsed < msPerYear) {
-    return Math.round(elapsed / msPerMonth) + " months ago";
+    return Math.round(elapsed / msPerMonth) + " months";
   } else {
-    return Math.round(elapsed / msPerYear) + " years ago";
+    return Math.round(elapsed / msPerYear) + " years";
   }
 }
 

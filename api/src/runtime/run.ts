@@ -1,6 +1,10 @@
 import { startServer } from "./server";
+import { recycleKernels } from "./recycle";
 
 startServer({ port: 4001 });
+
+// run recycle kernel procedure
+recycleKernels();
 
 // ts-node-dev might fail to restart. Force the exiting and restarting. Ref:
 // https://github.com/wclr/ts-node-dev/issues/69#issuecomment-493675960

@@ -34,6 +34,7 @@ import {
   Heading,
   Flex,
   IconButton,
+  Card,
 } from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
@@ -64,7 +65,7 @@ import {
   Paper,
   Menu,
 } from "@mui/material";
-import { getUpTime, myNanoId } from "@/lib/utils/utils";
+import { timeDifference } from "@/lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
@@ -244,76 +245,117 @@ function KernelStatus({
   const stop = runtimeTrpc.k8s.stop.useMutation();
 
   return (
-    <Flex>
-      {kernelName}:{" "}
-      {match(runtime?.status)
-        .with("idle", () => (
-          <Box color="green" component="span">
-            idle
-          </Box>
-        ))
-        .with("busy", () => (
-          <Box color="yellow" component="span">
-            busy
-          </Box>
-        ))
-        .with(undefined, () => (
-          <Box color="red" component="span">
-            Off
-          </Box>
-        ))
-        // FIXME the long text will stretch to the second line.
-        .otherwise(() => runtime?.status)}{" "}
-      {/* a dummy box to align the next item to the end */}
-      <Box sx={{ flexGrow: 1 }}></Box>
-      <Flex gap="1">
-        {runtime === undefined ? (
-          <IconButton
-            onClick={() => {
-              start.mutate({ repoId, kernelName });
-            }}
-            color="green"
-            size="1"
-            variant="ghost"
-          >
-            <Play />
-          </IconButton>
-        ) : (
-          <IconButton
-            onClick={() => {
-              stop.mutate({ repoId, kernelName });
-            }}
-            color="red"
-            size="1"
-            variant="ghost"
-          >
-            <Power />
-          </IconButton>
-        )}
-        <RadixTooltip content="Refresh Status">
-          <IconButton
-            onClick={() => {
-              status.mutate({ repoId, kernelName });
-            }}
-            size="1"
-            variant="ghost"
-          >
-            <RefreshCcw />
-          </IconButton>
-        </RadixTooltip>
+    <Card>
+      <Flex direction={"column"}>
+        <Flex>
+          {kernelName}:{" "}
+          {match(runtime?.status)
+            .with("idle", () => (
+              <Box color="green" component="span">
+                idle
+              </Box>
+            ))
+            .with("busy", () => (
+              <Box color="yellow" component="span">
+                busy
+              </Box>
+            ))
+            .with(undefined, () => (
+              <Box color="red" component="span">
+                Off
+              </Box>
+            ))
+            // FIXME the long text will stretch to the second line.
+            .otherwise(() => runtime?.status)}{" "}
+          {/* a dummy box to align the next item to the end */}
+        </Flex>
+        <Flex>
+          <Flex gap="1">
+            {runtime === undefined ? (
+              <IconButton
+                onClick={() => {
+                  start.mutate({ repoId, kernelName });
+                }}
+                color="green"
+                size="1"
+                variant="ghost"
+              >
+                <Play />
+              </IconButton>
+            ) : (
+              <IconButton
+                onClick={() => {
+                  stop.mutate({ repoId, kernelName });
+                }}
+                color="red"
+                size="1"
+                variant="ghost"
+              >
+                <Power />
+              </IconButton>
+            )}
+            <RadixTooltip content="Refresh Status">
+              <IconButton
+                onClick={() => {
+                  status.mutate({ repoId, kernelName });
+                }}
+                size="1"
+                variant="ghost"
+              >
+                <RefreshCcw />
+              </IconButton>
+            </RadixTooltip>
 
-        <RadixTooltip content="Interrupt Kernel">
-          <IconButton
-            onClick={() => {
-              interrupt.mutate({ repoId, kernelName });
-            }}
-            size="1"
-            variant="ghost"
-          >
-            <PauseCircle />
-          </IconButton>
-        </RadixTooltip>
+            <RadixTooltip content="Interrupt Kernel">
+              <IconButton
+                onClick={() => {
+                  interrupt.mutate({ repoId, kernelName });
+                }}
+                size="1"
+                variant="ghost"
+              >
+                <PauseCircle />
+              </IconButton>
+            </RadixTooltip>
+          </Flex>
+        </Flex>
+        {/* createdAt */}
+        <Flex>
+          {runtime && (
+            <CreatedAt
+              createdAt={runtime.createdAt}
+              recycledAt={runtime.recycledAt}
+            />
+          )}
+        </Flex>
       </Flex>
+    </Card>
+  );
+}
+
+function CreatedAt({
+  createdAt,
+  recycledAt,
+}: {
+  createdAt?: number;
+  recycledAt?: number;
+}) {
+  // refresh every second
+  const [b, setB] = useState(false);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setB((prev) => !prev);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <Flex wrap="wrap">
+      {createdAt && (
+        <Box>{timeDifference(new Date(), new Date(createdAt))} ago</Box>
+      )}
+      {recycledAt && (
+        <Box>{timeDifference(new Date(recycledAt), new Date())} remaining</Box>
+      )}
     </Flex>
   );
 }
@@ -323,14 +365,14 @@ const Runtime = () => {
   if (!repoId) throw new Error("repoId is null");
 
   return (
-    <>
+    <Flex direction={"column"} gap="2">
       <Typography variant="h6">runtime</Typography>
 
       <KernelStatus kernelName="python" />
       <KernelStatus kernelName="julia" />
       <KernelStatus kernelName="javascript" />
       <KernelStatus kernelName="racket" />
-    </>
+    </Flex>
   );
 };
 
@@ -545,6 +587,8 @@ const MyTabsRoot = ({
       value={value}
       style={{
         flexDirection: "row",
+        // The sidebar tabs should be scrollable.
+        overflow: "scroll",
       }}
     >
       {open && side === "right" && children}
@@ -602,6 +646,8 @@ function MyTabs({
           border: "1px solid black",
           width: "200px",
           backgroundColor: gray.gray1,
+          // The sidebar panel should be scrollable.
+          overflow: "scroll",
         }}
       >
         <>
@@ -712,14 +758,8 @@ export function SidebarRight() {
           // content: "Make changes to your account.".repeat(10),
           content: (
             <Flex direction="column">
-              <YjsSyncStatus />
-              <Typography variant="h6">Export to ..</Typography>
-              <ExportButtons />
-              <Separator my="3" size="4" />
-              <Runtime />
-              <Separator my="3" size="4" />
               <Heading mb="2" size="4">
-                Experimental
+                Right Sidebar
               </Heading>
 
               <Button
@@ -751,15 +791,6 @@ export function SidebarRight() {
             <>
               <Typography variant="h6">Table of Pods</Typography>
               {/* <TableofPods /> */}
-            </>
-          ),
-        },
-        {
-          key: "Runtime",
-          icon: <Cpu />,
-          content: (
-            <>
-              <Runtime />
             </>
           ),
         },

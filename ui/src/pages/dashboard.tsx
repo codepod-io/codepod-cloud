@@ -227,7 +227,7 @@ const RepoCard = ({
         </Stack>
         <Typography variant="subtitle2" color="gray">
           <Stack direction="row">
-            Viewed {timeDifference(new Date(), new Date(repo.accessedAt))}
+            Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
           </Stack>
         </Typography>
       </CardContent>

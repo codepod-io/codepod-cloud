@@ -13,6 +13,7 @@ export type PodResult = {
 };
 
 export type RuntimeInfo = {
-  status?: string;
-  wsStatus?: string;
+  status: string;
+  createdAt?: number;
+  recycledAt?: number;
 };

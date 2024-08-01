@@ -56,7 +56,9 @@ function Timer({ lastExecutedAt }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [counter]);
-  return <div> at {timeDifference(new Date(), new Date(lastExecutedAt))}</div>;
+  return (
+    <div> at {timeDifference(new Date(), new Date(lastExecutedAt))} ago</div>
+  );
 }
 
 export const ResultBlock = memo<any>(function ResultBlock({ id }) {
