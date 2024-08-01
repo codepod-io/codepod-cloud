@@ -49,7 +49,7 @@ import {
   Power,
   Play,
   RefreshCcw,
-  PauseCircle,
+  CircleStop,
 } from "lucide-react";
 
 import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
@@ -268,32 +268,33 @@ function KernelStatus({
             // FIXME the long text will stretch to the second line.
             .otherwise(() => runtime?.status)}{" "}
           {/* a dummy box to align the next item to the end */}
+          <Box flexGrow={"1"} />
+          {runtime === undefined ? (
+            <IconButton
+              onClick={() => {
+                start.mutate({ repoId, kernelName });
+              }}
+              color="green"
+              size="1"
+              variant="ghost"
+            >
+              <Play />
+            </IconButton>
+          ) : (
+            <IconButton
+              onClick={() => {
+                stop.mutate({ repoId, kernelName });
+              }}
+              color="red"
+              size="1"
+              variant="ghost"
+            >
+              <Power />
+            </IconButton>
+          )}
         </Flex>
-        <Flex>
+        {runtime && (
           <Flex gap="1">
-            {runtime === undefined ? (
-              <IconButton
-                onClick={() => {
-                  start.mutate({ repoId, kernelName });
-                }}
-                color="green"
-                size="1"
-                variant="ghost"
-              >
-                <Play />
-              </IconButton>
-            ) : (
-              <IconButton
-                onClick={() => {
-                  stop.mutate({ repoId, kernelName });
-                }}
-                color="red"
-                size="1"
-                variant="ghost"
-              >
-                <Power />
-              </IconButton>
-            )}
             <RadixTooltip content="Refresh Status">
               <IconButton
                 onClick={() => {
@@ -313,12 +314,13 @@ function KernelStatus({
                 }}
                 size="1"
                 variant="ghost"
+                color="red"
               >
-                <PauseCircle />
+                <CircleStop />
               </IconButton>
             </RadixTooltip>
           </Flex>
-        </Flex>
+        )}
         {/* createdAt */}
         <Flex>
           {runtime && (

@@ -69,7 +69,7 @@ function CanvasImplWrap() {
   useCopyPaste();
   useJump();
   return (
-    <Flex flexGrow={"1"}>
+    <Flex flexGrow={"1"} position="relative">
       <CanvasImpl />
       <ViewportInfo />
     </Flex>
@@ -79,11 +79,11 @@ function CanvasImplWrap() {
 function ViewportInfo() {
   const { x, y, zoom } = useViewport();
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         position: "absolute",
-        bottom: 0,
-        right: 0,
+        bottom: "10px",
+        right: "10px",
         backgroundColor: "rgba(0,0,0,0.5)",
         color: "white",
         padding: 1,
@@ -93,7 +93,7 @@ function ViewportInfo() {
       }}
     >
       {`x: ${x.toFixed(2)}, y: ${y.toFixed(2)}, zoom: ${zoom.toFixed(2)}`}
-    </Box>
+    </div>
   );
 }
 
@@ -173,7 +173,22 @@ function CanvasImpl() {
 
   return (
     <Flex
-      style={{ border: "solid 3px black" }}
+      style={{
+        backgroundImage:
+          "url('https://cdn.pixabay.com/photo/2019/03/12/17/18/trees-4051288_1280.jpg')",
+        backgroundSize: "cover",
+
+        // Rainbow border. Ref: https://codepen.io/unnegative/pen/dVwYBq
+        // border: "3px solid transparent",
+        // borderImage:
+        //   "linear-gradient(to bottom right, #b827fc 0%, #2c90fc 25%, #b8fd33 50%, #fec837 75%, #fd1892 100%)",
+        // borderImageSlice: 1,
+
+        // background gradient: https://freefrontend.com/css-gradient-examples/
+        // backgroundImage: "linear-gradient(200deg, #FDEB82, #F78FAD)",
+        // backgroundImage: "linear-gradient(200deg, #C1E3FF, #ABC7FF)",
+        // backgroundImage: "linear-gradient(200deg, #FDEB82, #ABC7FF)",
+      }}
       flexGrow={"1"}
       ref={reactFlowWrapper}
     >
@@ -192,10 +207,10 @@ function CanvasImpl() {
         defaultEdgeOptions={{
           style: { strokeWidth: 3, stroke: "black" },
           type: "floating",
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: "black",
-          },
+          // markerEnd: {
+          //   type: MarkerType.ArrowClosed,
+          //   color: "black",
+          // },
         }}
         connectionLineComponent={CustomConnectionLine}
         connectionLineStyle={{
@@ -221,7 +236,7 @@ function CanvasImpl() {
         disableKeyboardA11y={true}
       >
         <Box>
-          <MiniMap
+          {/* <MiniMap
             nodeStrokeColor={(n) => {
               if (n.style?.borderColor) return n.style.borderColor;
               if (n.type === "CODE") return "#d6dee6";
@@ -235,14 +250,15 @@ function CanvasImpl() {
               return "#f4f6f8";
             }}
             nodeBorderRadius={2}
-          />
+          /> */}
           <Controls
             showInteractive={editMode === "edit"}
             style={{
               display: "flex",
               backdropFilter: "blur(5px)",
+              backgroundColor: "rgba(255,255,255,0.5)",
             }}
-            position="bottom-center"
+            // position="bottom-center"
           />
 
           <HelperLines
@@ -251,7 +267,7 @@ function CanvasImpl() {
           />
 
           <Background />
-          <Background
+          {/* <Background
             id="1"
             gap={10}
             color="#f1f1f1"
@@ -263,7 +279,7 @@ function CanvasImpl() {
             offset={1}
             color="#ccc"
             variant={BackgroundVariant.Lines}
-          />
+          /> */}
         </Box>
       </ReactFlow>
       <input

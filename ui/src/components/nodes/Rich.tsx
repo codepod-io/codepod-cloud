@@ -374,7 +374,20 @@ const MyRemirror = ({
       <ThemeProvider>
         <MyStyledWrapper>
           {hover && (
-            <Box position={"fixed"} top="0" right="0" zIndex={1000}>
+            <Box
+              style={{
+                position: "fixed",
+                top: 0,
+                right: 0,
+                zIndex: 100,
+                border: "solid 1px var(--gray-8)",
+                transform: "translateY(-5px) translateX(-20px)",
+                backgroundColor: "white",
+                borderRadius: "10px",
+                // shadow
+                boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+              }}
+            >
               <TopRightMenu id={id} />
             </Box>
           )}
@@ -494,6 +507,12 @@ export const RichNode = memo<Props>(function ({
         minWidth: "300px",
         // This is the key to let the node auto-resize w.r.t. the content.
         height: "auto",
+
+        backdropFilter: "blur(10px)",
+        backgroundColor: "rgba(228, 228, 228, 0.5)",
+        padding: "8px",
+        borderRadius: "8px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
     >
       {id !== "ROOT" && <AddNodeHandle id={id} position="top" type="RICH" />}
@@ -509,8 +528,6 @@ export const RichNode = memo<Props>(function ({
           flexDirection: "column",
           backgroundColor: "white",
           cursor: "auto",
-          border: "solid 1px var(--gray-12)",
-          borderRadius: "4px",
         }}
       >
         {/* Two alternative editors */}
@@ -549,8 +566,8 @@ export const RichNode = memo<Props>(function ({
               sx={{
                 transform: "rotate(90deg)",
                 position: "absolute",
-                right: 5,
-                bottom: 5,
+                right: "15px",
+                bottom: "15px",
               }}
             />
           </NodeResizeControl>
