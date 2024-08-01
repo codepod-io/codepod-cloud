@@ -40,6 +40,7 @@ import {
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { ATOM_editMode, ATOM_repoId, ATOM_shareOpen } from "@/lib/store/atom";
+import { Flex } from "@radix-ui/themes";
 
 const nodeTypes = {
   SCOPE: ScopeNode,
@@ -59,10 +60,10 @@ function CanvasImplWrap() {
   useCopyPaste();
   useJump();
   return (
-    <Box sx={{ height: "100%" }}>
+    <Flex flexGrow={"1"}>
       <CanvasImpl />
       <ViewportInfo />
-    </Box>
+    </Flex>
   );
 }
 
@@ -153,135 +154,131 @@ function CanvasImpl() {
   };
 
   return (
-    <Box
-      style={{
-        display: "flex",
-        height: "100%",
-        flexDirection: "column",
-      }}
+    <Flex
+      style={{ border: "solid 3px black" }}
+      flexGrow={"1"}
+      ref={reactFlowWrapper}
     >
-      <Box sx={{ height: "100%" }} ref={reactFlowWrapper}>
-        <ReactFlow
-          nodes={animatedNodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          attributionPosition="top-right"
-          maxZoom={2}
-          minZoom={0.1}
-          fitView={true}
-          fitViewOptions={{
-            maxZoom: 1,
-          }}
-          onPaneContextMenu={onPaneContextMenu}
-          onNodeContextMenu={onNodeContextMenu}
-          nodeTypes={nodeTypes}
-          // custom edge for easy connect
-          edgeTypes={edgeTypes}
-          defaultEdgeOptions={{
-            style: { strokeWidth: 3, stroke: "black" },
-            type: "floating",
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: "black",
-            },
-          }}
-          connectionLineComponent={CustomConnectionLine}
-          connectionLineStyle={{
-            strokeWidth: 3,
-            stroke: "black",
-          }}
-          // end custom edge
+      <ReactFlow
+        nodes={animatedNodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        attributionPosition="top-right"
+        maxZoom={2}
+        minZoom={0.1}
+        fitView={true}
+        fitViewOptions={{
+          maxZoom: 1,
+        }}
+        onPaneContextMenu={onPaneContextMenu}
+        onNodeContextMenu={onNodeContextMenu}
+        nodeTypes={nodeTypes}
+        // custom edge for easy connect
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={{
+          style: { strokeWidth: 3, stroke: "black" },
+          type: "floating",
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: "black",
+          },
+        }}
+        connectionLineComponent={CustomConnectionLine}
+        connectionLineStyle={{
+          strokeWidth: 3,
+          stroke: "black",
+        }}
+        // end custom edge
 
-          zoomOnScroll={false}
-          panOnScroll={true}
-          connectionMode={ConnectionMode.Loose}
-          nodesDraggable={editMode === "edit"}
-          // disable node delete on backspace when the user is a guest.
-          deleteKeyCode={editMode === "view" ? null : "Backspace"}
-          multiSelectionKeyCode={isMac ? "Meta" : "Control"}
-          selectionMode={SelectionMode.Partial}
-          // TODO restore previous viewport
-          defaultViewport={{ zoom: 1, x: 0, y: 0 }}
-          proOptions={{ hideAttribution: true }}
-          disableKeyboardA11y={true}
-        >
-          <Box>
-            <MiniMap
-              nodeStrokeColor={(n) => {
-                if (n.style?.borderColor) return n.style.borderColor;
-                if (n.type === "CODE") return "#d6dee6";
-                if (n.type === "SCOPE") return "#f4f6f8";
+        zoomOnScroll={false}
+        panOnScroll={true}
+        connectionMode={ConnectionMode.Loose}
+        nodesDraggable={editMode === "edit"}
+        // disable node delete on backspace when the user is a guest.
+        deleteKeyCode={editMode === "view" ? null : "Backspace"}
+        multiSelectionKeyCode={isMac ? "Meta" : "Control"}
+        selectionMode={SelectionMode.Partial}
+        // TODO restore previous viewport
+        defaultViewport={{ zoom: 1, x: 0, y: 0 }}
+        proOptions={{ hideAttribution: true }}
+        disableKeyboardA11y={true}
+      >
+        <Box>
+          <MiniMap
+            nodeStrokeColor={(n) => {
+              if (n.style?.borderColor) return n.style.borderColor;
+              if (n.type === "CODE") return "#d6dee6";
+              if (n.type === "SCOPE") return "#f4f6f8";
 
-                return "#d6dee6";
-              }}
-              nodeColor={(n) => {
-                if (n.style?.backgroundColor) return n.style.backgroundColor;
-
-                return "#f4f6f8";
-              }}
-              nodeBorderRadius={2}
-            />
-            <Controls
-              showInteractive={editMode === "edit"}
-              style={{
-                display: "flex",
-                backdropFilter: "blur(5px)",
-              }}
-              position="bottom-center"
-            />
-
-            <HelperLines
-              horizontal={helperLineHorizontal}
-              vertical={helperLineVertical}
-            />
-
-            <Background />
-            <Background
-              id="1"
-              gap={10}
-              color="#f1f1f1"
-              variant={BackgroundVariant.Lines}
-            />
-            <Background
-              id="2"
-              gap={100}
-              offset={1}
-              color="#ccc"
-              variant={BackgroundVariant.Lines}
-            />
-          </Box>
-        </ReactFlow>
-        <input
-          type="file"
-          accept=".ipynb, .py"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={(e) => handleFileInputChange(e)}
-        />
-        {showContextMenu && (
-          <Box
-            sx={{
-              left: `${points.x}px`,
-              top: `${points.y}px`,
-              zIndex: 100,
-              position: "absolute",
-              boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
-              // width: '200px',
-              backgroundColor: "#fff",
-              borderRadius: "5px",
-              boxSizing: "border-box",
+              return "#d6dee6";
             }}
-          >
-            <ContextMenu
-              setShowContextMenu={setShowContextMenu}
-              handleItemClick={handleItemClick}
-            />
-          </Box>
-        )}
+            nodeColor={(n) => {
+              if (n.style?.backgroundColor) return n.style.backgroundColor;
 
-        {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
-      </Box>
-    </Box>
+              return "#f4f6f8";
+            }}
+            nodeBorderRadius={2}
+          />
+          <Controls
+            showInteractive={editMode === "edit"}
+            style={{
+              display: "flex",
+              backdropFilter: "blur(5px)",
+            }}
+            position="bottom-center"
+          />
+
+          <HelperLines
+            horizontal={helperLineHorizontal}
+            vertical={helperLineVertical}
+          />
+
+          <Background />
+          <Background
+            id="1"
+            gap={10}
+            color="#f1f1f1"
+            variant={BackgroundVariant.Lines}
+          />
+          <Background
+            id="2"
+            gap={100}
+            offset={1}
+            color="#ccc"
+            variant={BackgroundVariant.Lines}
+          />
+        </Box>
+      </ReactFlow>
+      <input
+        type="file"
+        accept=".ipynb, .py"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={(e) => handleFileInputChange(e)}
+      />
+      {showContextMenu && (
+        <Box
+          sx={{
+            left: `${points.x}px`,
+            top: `${points.y}px`,
+            zIndex: 100,
+            position: "absolute",
+            boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
+            // width: '200px',
+            backgroundColor: "#fff",
+            borderRadius: "5px",
+            boxSizing: "border-box",
+          }}
+        >
+          <ContextMenu
+            setShowContextMenu={setShowContextMenu}
+            handleItemClick={handleItemClick}
+          />
+        </Box>
+      )}
+
+      {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
+    </Flex>
   );
 }
 

@@ -84,6 +84,17 @@ model Repo {
     UserRepoData  UserRepoData[]
     stargazers    User[]         @relation("STAR")
     yDocBlob      Bytes?
+    Kernel        Kernel[]
+}
+
+model Kernel {
+    id         BigInt   @id @default(autoincrement())
+    name       String
+    dummyCount BigInt   @default(0)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    Repo       Repo     @relation(fields: [repoId], references: [id])
+    repoId     String
 }
 
 enum PodType {

@@ -390,6 +390,13 @@ spec:
               name: src
               readOnly: false
           env:
+            - name: ROACH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: ROACH_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
             - name: YJS_WS_URL
               value: "ws://codepod-yjs-service:4233/yjs"
             - name: RUNTIME_NS

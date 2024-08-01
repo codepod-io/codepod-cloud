@@ -13,12 +13,17 @@ import WebSocket from "ws";
 
 import { WebsocketProvider } from "./y-websocket";
 import { PodResult, RuntimeInfo } from "../yjs/types";
+import prisma from "../prisma";
 
-const kc = new k8s.KubeConfig();
-kc.loadFromDefault();
-
-const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
+import {
+  env,
+  k8sApi,
+  k8sAppsApi,
+  kernelMaxLifetime,
+  repoId2wireMap,
+  repoId2ydoc,
+} from "./vars";
+import { registerKernelActivity } from "./recycle";
 
 export function getDeploymentSpec(
   name: string,
@@ -240,9 +245,6 @@ async function wairForServiceReady(url) {
   }
 }
 
-const repoId2ydoc = new Map<string, Y.Doc>();
-const repoId2wireMap = new Map<string, Map<string, ZmqWire>>();
-
 async function createKernel({
   repoId,
   kernelName,
@@ -262,6 +264,8 @@ async function createKernel({
 
   await createDeployment(ns, deploy_spec);
   await createService(ns, service_spec);
+
+  await registerKernelActivity(repoId, kernelName);
 
   // wait for zmq service to be ready
   // 1. get the ZMQ url: ws://svc-repoId.{ns}:...
@@ -299,17 +303,6 @@ async function ensureYDoc({ repoId, token }) {
   return ydoc;
 }
 
-const env = z
-  .object({
-    KERNEL_IMAGE_PYTHON: z.string(),
-    KERNEL_IMAGE_JULIA: z.string(),
-    KERNEL_IMAGE_JAVASCRIPT: z.string(),
-    KERNEL_IMAGE_RACKET: z.string(),
-    RUNTIME_NS: z.string(),
-    YJS_WS_URL: z.string(),
-  })
-  .parse(process.env);
-
 export const k8sRouter = router({
   // Start the runtime containr for a repo if not already started.
   start: protectedProcedure
@@ -333,7 +326,9 @@ export const k8sRouter = router({
       const ydoc = await ensureYDoc({ repoId, token });
 
       // set the runtime status to "starting"
-      const runtimeMap = ydoc.getMap("rootMap").get("runtimeMap") as any;
+      const runtimeMap = ydoc
+        .getMap("rootMap")
+        .get("runtimeMap") as Y.Map<RuntimeInfo>;
       console.log("setting runtime status to starting");
       runtimeMap.set(kernelName, { status: "starting" });
 
@@ -361,6 +356,26 @@ export const k8sRouter = router({
       wire.requestKernelStatus();
       wire.runCode({ code: "3+4", msg_id: "123" });
       wireMap.set(kernelName, wire);
+
+      // set start time
+      const kernel = await prisma.kernel.findFirst({
+        where: {
+          name: kernelName,
+          Repo: {
+            id: repoId,
+          },
+        },
+      });
+      // convert from date to number
+      // const createdAt = kernel?.createdAt
+      assert(kernel);
+      const createdAt = kernel.createdAt.getTime();
+      runtimeMap.set(kernelName, {
+        status: "refreshing",
+        createdAt,
+        recycledAt: createdAt + kernelMaxLifetime,
+      });
+
       return true;
     }),
   // Stop the runtime container for a repo.
@@ -383,7 +398,9 @@ export const k8sRouter = router({
 
       const ydoc = await ensureYDoc({ repoId, token });
       // set the runtime status to "starting"
-      const runtimeMap = ydoc.getMap("rootMap").get("runtimeMap") as any;
+      const runtimeMap = ydoc
+        .getMap("rootMap")
+        .get("runtimeMap") as Y.Map<RuntimeInfo>;
       console.log("runtimemap", runtimeMap?.has(kernelName));
       runtimeMap?.delete(kernelName);
 
@@ -401,29 +418,66 @@ export const k8sRouter = router({
       // FIXME the container is deleted. But the status is not reset. There are
       // something wrong with yjs server handling runtime role.
       console.log("Deleting deployment");
-      await k8sAppsApi.deleteNamespacedDeployment(
-        `rt-${repoId}-${kernelName}`,
-        env.RUNTIME_NS
-      );
-      console.log("Deleting service");
-      await k8sApi.deleteNamespacedService(
-        `svc-${repoId}-${kernelName}`,
-        env.RUNTIME_NS
-      );
+      try {
+        await k8sAppsApi.deleteNamespacedDeployment(
+          `rt-${repoId}-${kernelName}`,
+          env.RUNTIME_NS
+        );
+        console.log("Deleting service");
+        await k8sApi.deleteNamespacedService(
+          `svc-${repoId}-${kernelName}`,
+          env.RUNTIME_NS
+        );
+      } catch (e: any) {
+        throw new Error("Error deleting k8s resources");
+      }
+
+      // delete from database
+      await prisma.kernel.deleteMany({
+        where: {
+          name: kernelName,
+          Repo: {
+            id: repoId,
+          },
+        },
+      });
     }),
 
   status: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
       const ydoc = await ensureYDoc({ repoId, token });
-      const runtimeMap = ydoc?.getMap("rootMap").get("runtimeMap") as any;
+      const runtimeMap = ydoc
+        ?.getMap("rootMap")
+        .get("runtimeMap") as Y.Map<RuntimeInfo>;
       const wireMap = repoId2wireMap.get(repoId);
       const wire = wireMap?.get(kernelName);
       if (!wire) {
         runtimeMap.delete(kernelName);
         return false;
       } else {
-        runtimeMap.set(kernelName, { status: "refreshing" });
+        if (wire.shell.closed) {
+          console.log("shell closed");
+          runtimeMap.delete(kernelName);
+          return false;
+        }
+        const kernel = await prisma.kernel.findFirst({
+          where: {
+            name: kernelName,
+            Repo: {
+              id: repoId,
+            },
+          },
+        });
+        // convert from date to number
+        // const createdAt = kernel?.createdAt
+        assert(kernel);
+        const createdAt = kernel?.createdAt.getTime();
+        runtimeMap.set(kernelName, {
+          status: "refreshing",
+          createdAt,
+          recycledAt: createdAt + kernelMaxLifetime,
+        });
         console.log("requestKernelStatus", repoId);
         wire.requestKernelStatus();
         return true;
@@ -547,7 +601,7 @@ function bindZmqYjs({
       case "status": {
         const status = msgs.content.execution_state;
         console.log("status", status);
-        runtimeMap.set(kernelName, { status });
+        runtimeMap.set(kernelName, { ...runtimeMap.get(kernelName), status });
         break;
       }
       case "execute_result": {

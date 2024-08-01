@@ -242,20 +242,16 @@ export function Repo() {
                   {/* <HeaderItem /> */}
                   <Title />
                 </Header>
-                <Flex height="100%">
+                <Flex
+                  flexGrow={"1"}
+                  // The main content is filled to the entire height.
+                  // Overflow="hidden" is required to make the canvas full height
+                  // without scroll.
+                  overflow={"hidden"}
+                >
                   <MyKBar />
-                  {/* Left sidebar */}
                   <SidebarLeft />
-                  {/* The Canvas */}
-                  <Box
-                    height="100%"
-                    width="100%"
-                    border="solid 3px black"
-                    boxSizing={"border-box"}
-                    overflow="auto"
-                  >
-                    <Canvas />
-                  </Box>
+                  <Canvas />
                   {/* Right sidebar */}
                   <SidebarRight />
                 </Flex>
