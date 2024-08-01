@@ -119,6 +119,32 @@ async function updateUserRepoData({ userId, repoId }) {
   }
 }
 
+const saveViewPort = protectedProcedure
+  .input(
+    z.object({
+      repoId: z.string(),
+      zoom: z.number(),
+      x: z.number(),
+      y: z.number(),
+    })
+  )
+  .mutation(async ({ input: { repoId, zoom, x, y }, ctx: { userId } }) => {
+    if (!userId) throw Error("Unauthenticated");
+    await ensureRepoEditAccess({ repoId, userId });
+    await prisma.userRepoData.updateMany({
+      where: {
+        userId,
+        repoId,
+      },
+      data: {
+        zoom,
+        x,
+        y,
+      },
+    });
+    return true;
+  });
+
 const repo = protectedProcedure
   .input(z.object({ id: z.string() }))
   .query(async ({ input: { id }, ctx: { userId } }) => {
@@ -134,6 +160,12 @@ const repo = protectedProcedure
       include: {
         owner: true,
         collaborators: true,
+        UserRepoData: {
+          where: {
+            userId,
+            repoId: id,
+          },
+        },
       },
       omit: {
         yDocBlob: true,
@@ -399,6 +431,7 @@ const copyRepo = protectedProcedure
 
 export const repoRouter = router({
   repo,
+  saveViewPort,
   getDashboardRepos,
   createRepo,
   updateRepo,

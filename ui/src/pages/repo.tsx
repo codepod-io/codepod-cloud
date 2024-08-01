@@ -39,6 +39,9 @@ import {
   ATOM_isPublic,
   ATOM_repoId,
   ATOM_repoName,
+  ATOM_repoX,
+  ATOM_repoY,
+  ATOM_repoZoom,
   ATOM_shareOpen,
 } from "@/lib/store/atom";
 import {
@@ -68,6 +71,9 @@ function RepoLoader({ id, children }) {
   // FIXME this should be a mutation as it changes the last access time.
   const repoQuery = trpc.repo.repo.useQuery({ id });
   const setRepoName = useSetAtom(ATOM_repoName);
+  const setRepoZoom = useSetAtom(ATOM_repoZoom);
+  const setRepoX = useSetAtom(ATOM_repoX);
+  const setRepoY = useSetAtom(ATOM_repoY);
 
   const me = trpc.user.me.useQuery();
   const setEditMode = useSetAtom(ATOM_editMode);
@@ -85,6 +91,16 @@ function RepoLoader({ id, children }) {
       setRepoName(repoQuery.data.name);
       setIsPublic(repoQuery.data.public);
       setCollaborators(repoQuery.data.collaborators);
+      // set initial viewport zoom and position
+      const userRepoData = repoQuery.data.UserRepoData;
+      if (userRepoData.length > 0) {
+        const zoom = userRepoData[0].zoom;
+        if (zoom) setRepoZoom(zoom);
+        const x = userRepoData[0].x;
+        if (x) setRepoX(x);
+        const y = userRepoData[0].y;
+        if (y) setRepoY(y);
+      }
       if (
         me.data?.id === repoQuery.data.userId ||
         repoQuery.data.collaborators.map(({ id }) => id).includes(me.data?.id)
