@@ -389,6 +389,15 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         // This is the key to let the node auto-resize w.r.t. the content.
         height: "auto",
         // minHeight: "50px",
+        backdropFilter: "blur(10px)",
+        backgroundColor: "rgba(228, 228, 228, 0.5)",
+        // backgroundImage: "linear-gradient(200deg, #FDEB82, #F78FAD)",
+        // backgroundColor: "red",
+        // backgroundImage: "linear-gradient(200deg, #41D8DD, #5583EE)",
+        // backgroundImage: "linear-gradient(200deg, #FAF8F9, #F0EFF0)",
+        padding: "8px",
+        borderRadius: "8px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
       ref={ref}
     >
@@ -416,7 +425,6 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
 
           // border: "solid 1px black",
           backgroundColor: "white",
-          border: "solid 1px var(--gray-12)",
 
           // NOTE: monaco editor has a overflow-guard that needs to have border
           // radius as well. See .overflow-guard and .monaco-editor in
@@ -431,6 +439,11 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
               top: 0,
               right: 0,
               zIndex: 100,
+              border: "solid 1px var(--gray-8)",
+              transform: "translateY(-5px) translateX(-20px)",
+              backgroundColor: "white",
+              borderRadius: "10px",
+              boxShadow: "0 0 10px rgba(0,0,0,0.2)",
             }}
           >
             <HeaderBar id={id} />
@@ -451,8 +464,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         <Box
           style={{
             position: "fixed",
-            bottom: "8px",
-            right: "8px",
+            bottom: "18px",
+            right: "18px",
           }}
         >
           {/* .py */}
@@ -522,8 +535,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
               sx={{
                 transform: "rotate(90deg)",
                 position: "absolute",
-                right: "30px",
-                bottom: 5,
+                right: "40px",
+                bottom: "16px",
               }}
             />
           </NodeResizeControl>
