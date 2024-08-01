@@ -9,6 +9,9 @@ import { ATOM_nodesMap } from "./yjsSlice";
 
 export const ATOM_repoName = atom<string | null>(null);
 export const ATOM_repoId = atom<string | null>(null);
+export const ATOM_repoZoom = atom<number>(1);
+export const ATOM_repoX = atom<number>(0);
+export const ATOM_repoY = atom<number>(0);
 
 export const ATOM_editMode = atom<"view" | "edit">("view");
 export const ATOM_shareOpen = atom<boolean>(false);

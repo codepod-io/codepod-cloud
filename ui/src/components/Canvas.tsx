@@ -15,7 +15,7 @@ import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
 
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { ShareProjDialog } from "./ShareProjDialog";
 import { RichNode } from "./nodes/Rich";
@@ -39,8 +39,17 @@ import {
   getAbsPos,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
-import { ATOM_editMode, ATOM_repoId, ATOM_shareOpen } from "@/lib/store/atom";
+import {
+  ATOM_editMode,
+  ATOM_repoId,
+  ATOM_repoX,
+  ATOM_repoY,
+  ATOM_repoZoom,
+  ATOM_shareOpen,
+} from "@/lib/store/atom";
 import { Flex } from "@radix-ui/themes";
+import { trpc } from "@/lib/trpc";
+import { debounce } from "lodash";
 
 const nodeTypes = {
   SCOPE: ScopeNode,
@@ -107,7 +116,7 @@ function CanvasImpl() {
   const reactFlowInstance = useReactFlow();
 
   // const repoId = useStore(store, (state) => state.repoId);
-  const [repoId] = useAtom(ATOM_repoId);
+  const repoId = useAtomValue(ATOM_repoId)!;
 
   const [editMode] = useAtom(ATOM_editMode);
 
@@ -153,6 +162,15 @@ function CanvasImpl() {
     fileInputRef!.current!.value = "";
   };
 
+  const saveViewPort = trpc.repo.saveViewPort.useMutation();
+  const debouncedSaveViewPort = debounce(saveViewPort.mutate, 50, {
+    maxWait: 5000,
+  });
+
+  const zoom = useAtomValue(ATOM_repoZoom);
+  const x = useAtomValue(ATOM_repoX);
+  const y = useAtomValue(ATOM_repoY);
+
   return (
     <Flex
       style={{ border: "solid 3px black" }}
@@ -166,10 +184,6 @@ function CanvasImpl() {
         attributionPosition="top-right"
         maxZoom={2}
         minZoom={0.1}
-        fitView={true}
-        fitViewOptions={{
-          maxZoom: 1,
-        }}
         onPaneContextMenu={onPaneContextMenu}
         onNodeContextMenu={onNodeContextMenu}
         nodeTypes={nodeTypes}
@@ -190,6 +204,9 @@ function CanvasImpl() {
         }}
         // end custom edge
 
+        onMove={(e, { x, y, zoom }) => {
+          debouncedSaveViewPort({ repoId, x, y, zoom });
+        }}
         zoomOnScroll={false}
         panOnScroll={true}
         connectionMode={ConnectionMode.Loose}
@@ -199,7 +216,7 @@ function CanvasImpl() {
         multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         selectionMode={SelectionMode.Partial}
         // TODO restore previous viewport
-        defaultViewport={{ zoom: 1, x: 0, y: 0 }}
+        defaultViewport={{ zoom, x, y }}
         proOptions={{ hideAttribution: true }}
         disableKeyboardA11y={true}
       >

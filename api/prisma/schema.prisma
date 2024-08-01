@@ -64,6 +64,11 @@ model UserRepoData {
     accessedAt DateTime @default(now()) @updatedAt
     dummyCount Int      @default(0)
 
+    // Canvas view port information
+    zoom Float?
+    x    Float?
+    y    Float?
+
     // use computed ID
     @@id([userId, repoId])
 }
