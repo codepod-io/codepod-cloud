@@ -1,15 +1,14 @@
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: database
-spec:
-  instances: 1
+# apiVersion: postgresql.cnpg.io/v1
+# kind: Cluster
+# metadata:
+#   name: database
+# spec:
+#   instances: 1
 
-  enableSuperuserAccess: true
+#   enableSuperuserAccess: true
 
-  storage:
-    size: 3Gi
-
+#   storage:
+#     size: 3Gi
 
 ---
 apiVersion: crdb.cockroachlabs.com/v1alpha1
@@ -36,8 +35,8 @@ spec:
       cpu: 2
       memory: 8Gi
   tlsEnabled: true
-# You can set either a version of the db or a specific image name
-# cockroachDBVersion: v23.2.3
+  # You can set either a version of the db or a specific image name
+  # cockroachDBVersion: v23.2.3
   image:
     name: cockroachdb/cockroach:v23.2.3
   # nodes refers to the number of crdb pods that are created
@@ -66,7 +65,6 @@ spec:
   # nodeSelector:
   #   worker-pool-name: crdb-workers
 
-
 ---
 # the CockroachDB client
 apiVersion: apps/v1
@@ -86,25 +84,25 @@ spec:
     spec:
       serviceAccountName: cockroachdb-sa
       containers:
-      - name: cockroachdb-client-secure
-        image: cockroachdb/cockroach:v23.2.3
-        imagePullPolicy: IfNotPresent
-        volumeMounts:
-        - name: client-certs
-          mountPath: /cockroach/cockroach-certs/
-        env:
-          - name: ROACH_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: mysecret
-                key: ROACH_PASSWORD
-        command:
-        - sleep
-        - "2147483648" # 2^31
+        - name: cockroachdb-client-secure
+          image: cockroachdb/cockroach:v23.2.3
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: client-certs
+              mountPath: /cockroach/cockroach-certs/
+          env:
+            - name: ROACH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: ROACH_PASSWORD
+          command:
+            - sleep
+            - "2147483648" # 2^31
       terminationGracePeriodSeconds: 0
       volumes:
-      - name: client-certs
-        projected:
+        - name: client-certs
+          projected:
             sources:
               - secret:
                   name: cockroachdb-node

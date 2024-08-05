@@ -12,6 +12,34 @@ Install Docker desktop and enable k8s in settings.
 
 Clone the codepod-cloud repository, into path `/path/to/codepod-cloud`.
 
+# Meta steps
+
+1. install longhorn
+2. install cockroachdb CRDs and operator
+3. install app
+   - edit src path
+   - edit ingress
+4. create cockroachdb user
+5. pnpm i
+6. prisma db push
+
+## Note about installing longhorn on k3s
+
+Need to install open-iscsi. Reference: https://github.com/longhorn/longhorn/issues/7139#issuecomment-1819684668
+
+To uninstall (broken) longhorn:
+
+```sh
+apiVersion: longhorn.io/v1beta2
+kind: Setting
+metadata:
+   name: deleting-confirmation-flag
+   namespace: longhorn-system
+value: "true"
+```
+
+then go to installed apps, select all namespaces, and delete longhorn first, then longhorn-crds.
+
 # Deploy
 
 create namespace
@@ -68,6 +96,16 @@ Here are the commands to work with Prisma schema:
 
 # CockroachDB setup
 
+Step 0: install CRDs and operators (https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-with-kubernetes#step-2-start-cockroachdb)
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/crds.yaml
+kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/operator.yaml
+
+```
+
+Then install the app. Then:
+
 Step 1: manually create a user.
 
 ```sh
@@ -76,11 +114,16 @@ cockroach sql \
  --certs-dir=/cockroach/cockroach-certs \
  --host=cockroachdb-public
 # create user
-echo "CREATE USER roach WITH PASSWORD '$ROACH_PASSWORD';" | cockroach sql \
+echo "CREATE USER roach WITH PASSWORD '$ROACH_PASSWORD'; GRANT admin TO roach;" | cockroach sql \
  --certs-dir=/cockroach/cockroach-certs \
  --host=cockroachdb-public
-# alter user
+
+# Optional: alter user
 echo "ALTER USER roach WITH PASSWORD '$ROACH_PASSWORD';" | cockroach sql \
+ --certs-dir=/cockroach/cockroach-certs \
+ --host=cockroachdb-public
+# Optional: grant admin permission
+echo "GRANT admin TO roach;" | cockroach sql \
  --certs-dir=/cockroach/cockroach-certs \
  --host=cockroachdb-public
 ```
