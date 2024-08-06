@@ -1,29 +1,51 @@
 ---
+# secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflared-secret
+type: Opaque
+stringData:
+  cfTunnelToken: "{{ .Values.cfTunnelToken }}"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudflared
+  labels:
+    app: cloudflared
+  name: cloudflared-deployment
 spec:
+  replicas: 2
   selector:
     matchLabels:
-      app: cloudflared
-  replicas: 2 # You could also consider elastic scaling for this deployment
+      pod: cloudflared
   template:
     metadata:
+      creationTimestamp: null
       labels:
-        app: cloudflared
+        pod: cloudflared
     spec:
       containers:
-        - name: cloudflared
-          image: cloudflare/cloudflared:2024.6.1
-          args:
+        - env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-secret
+                  key: cfTunnelToken
+          command:
+            - cloudflared
             - tunnel
-            # Points cloudflared to the config file, which configures what
-            # cloudflared will actually do. This file is created by a ConfigMap
-            # below.
-            - --config
-            - /etc/cloudflared/config/config.yaml
+            # In a k8s environment, the metrics server needs to listen outside the pod it runs on.
+            # The address 0.0.0.0:2000 allows any pod in the namespace.
+            - --metrics
+            - 0.0.0.0:2000
             - run
+          args:
+            - --token
+            - $(TOKEN)
+          image: cloudflare/cloudflared:latest
+          name: cloudflared
           livenessProbe:
             httpGet:
               # Cloudflared has a /ready endpoint which returns 200 if and only if
@@ -33,61 +55,3 @@ spec:
             failureThreshold: 1
             initialDelaySeconds: 10
             periodSeconds: 10
-          volumeMounts:
-            - name: config
-              mountPath: /etc/cloudflared/config
-              readOnly: true
-            # Each tunnel has an associated "credentials file" which authorizes machines
-            # to run the tunnel. cloudflared will read this file from its local filesystem,
-            # and it'll be stored in a k8s secret.
-            - name: creds
-              mountPath: /etc/cloudflared/creds
-              readOnly: true
-      volumes:
-        - name: creds
-          secret:
-            # By default, the credentials file will be created under ~/.cloudflared/<tunnel ID>.json
-            # when you run `cloudflared tunnel create`. You can move it into a secret by using:
-            # ```sh
-            # kubectl create secret generic tunnel-credentials \
-            # --from-file=credentials.json=/Users/yourusername/.cloudflared/<tunnel ID>.json
-            # ```
-            secretName: tunnel-credentials
-        # Create a config.yaml file from the ConfigMap below.
-        - name: config
-          configMap:
-            name: cloudflared
-            items:
-              - key: config.yaml
-                path: config.yaml
----
-# This ConfigMap is just a way to define the cloudflared config.yaml file in k8s.
-# It's useful to define it in k8s, rather than as a stand-alone .yaml file, because
-# this lets you use various k8s templating solutions (e.g. Helm charts) to
-# parameterize your config, instead of just using string literals.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloudflared
-data:
-  config.yaml: |
-    # Name of the tunnel you want to run
-    tunnel: codepod-staging-20240705
-    credentials-file: /etc/cloudflared/creds/credentials.json
-    # Serves the metrics server under /metrics and the readiness server under /ready
-    metrics: 0.0.0.0:2000
-    no-autoupdate: true
-    ingress:
-    - hostname: staging.codepod.io
-      path: /api/.*
-      service: http://codepod-api-service:4000
-    - hostname: staging.codepod.io
-      path: /runtime/.*
-      service: http://codepod-runtime-service:4001
-    - hostname: staging.codepod.io
-      path: /yjs/.*
-      service: http://codepod-yjs-service:4233
-    - hostname: staging.codepod.io
-      service: http://codepod-ui-service:80
-    # This rule matches any traffic which didn't match a previous rule, and responds with HTTP 404.
-    - service: http_status:404
