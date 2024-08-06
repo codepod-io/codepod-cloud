@@ -10,9 +10,53 @@ This helm chart is used for development.
 
 Install Docker desktop and enable k8s in settings.
 
-# Deploy
+# Step 1: install cluster and CRDs
 
-create namespace
+First, install a rancher for privisioning clusters:
+
+1. install k3s
+2. install rancher
+
+Next, use rancher to privision the cluster:
+
+1. create master VMs and runtime VMs. Install open-iscsi on master VMs
+2. provision k3s from rancher, set taint and label for runtime nodes
+3. install longhorn in the VM
+4. install cockroachdb CRD and operator
+
+Follow this: https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-with-kubernetes
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/crds.yaml
+kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/operator.yaml
+```
+
+5. install regcred for pulling private registry
+   1. first `docker login`, which generates `~/.docker/config.json` file.
+   2. add regcred secret from the above creds file
+
+```sh
+kubectl create secret generic regcred -n codepod-staging \
+    --from-file=.dockerconfigjson=./.values/config.json \
+    --type=kubernetes.io/dockerconfigjson
+```
+
+# Step 2: install the app
+
+fill in the values
+
+1. google client ID
+2. cloudflare tunnel token
+3. generate random tokens for jwtSecret and roachPassword
+
+verify other values:
+
+1. app chart version
+2. kernel version
+
+Install the app:
+
+1. create namespaces
 
 ```sh
 kubectl create ns codepod-staging
@@ -21,16 +65,7 @@ kubectl create ns codepod-staging-runtime
 # kubectl delete ns codepod-staging
 ```
 
-Create docker regcred:
-
-1. first `docker login`, which generates `~/.docker/config.json` file.
-2. add regcred secret from the above creds file
-
-```sh
-kubectl create secret generic regcred -n codepod-staging \
-    --from-file=.dockerconfigjson=$HOME/.docker/config.json \
-    --type=kubernetes.io/dockerconfigjson
-```
+2. run helm install
 
 edit configuration values and perform helm install:
 
@@ -45,24 +80,39 @@ helm upgrade codepod . -n codepod-staging --values=./.values/staging.yaml
 helm uninstall codepod -n codepod-staging
 ```
 
-# First time DB setup
-
-Change api pod's startup command to `tail -f /dev/null`, then run `pnpm dlx prisma migrate deploy` in the pod to apply the change, then change back the command.
-
-# Cloudflare Tunnels
+3. create cockroachdb user
 
 ```sh
-# 1. login
-cloudflared tunnel login
-# 2. create tunnel, so that there's a cred file
-cloudflared tunnel create codepod-staging-20240705
-# list tunnels
-cloudflared tunnel list
-# 3. upload the secret to k8s
-kubectl create secret generic tunnel-credentials -n codepod-staging\
-    --from-file=credentials.json=$HOME/.cloudflared/TUNNEL_ID.json
+# create user
+echo "CREATE USER roach WITH PASSWORD '$ROACH_PASSWORD'; GRANT admin TO roach;" | cockroach sql \
+ --certs-dir=/cockroach/cockroach-certs \
+ --host=cockroachdb-public
+```
 
-# 4. route the dns to the tunnel
-cloudflared tunnel route dns codepod-staging-20240705 staging.codepod.io
-# 5. deploy the app wih tunnel. It should work.
+4. prisma migrate deploy
+5. configure cloudflare tunnel in the web console as follows:
+
+staging-local.codepod.io/api
+http://codepod-api-service:4000
+
+staging-local.codepod.io/yjs
+http://codepod-yjs-service:4233
+
+staging-local.codepod.io/runtime
+http://codepod-runtime-service:4001
+
+staging-local.codepod.io/
+http://codepod-ui-service:80
+
+# Additional notes
+
+Observability of cockroachdb dashboard:
+
+```sh
+# pg
+kubectl port-forward -n codepod-dev svc/database-rw 5432:5432
+# cockroachDB
+kubectl port-forward svc/cockroachdb-public 26257:26257 -n codepod-dev
+# the DB console (dashboard)
+kubectl port-forward svc/cockroachdb-public 8080:8080 -n codepod-dev
 ```

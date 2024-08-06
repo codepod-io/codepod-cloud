@@ -5,11 +5,8 @@ metadata:
   name: mysecret
 stringData:
   GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
-data:
-  # Use automatically generated secret. Ref:
-  # https://stackoverflow.com/questions/48496647/automatically-generated-strings-for-secrets-using-yaml-config
-  # JWT_SECRET: $(head -c 24 /dev/random | base64)
-  JWT_SECRET: "{{ randAlphaNum 16 | b64enc }}"
+  JWT_SECRET: "{{ .Values.jwtSecret }}"
+  ROACH_PASSWORD: "{{ .Values.roachPassword }}"
 
 # UI
 ---
@@ -98,13 +95,13 @@ spec:
           ports:
             - containerPort: 4000
           env:
-            - name: DB_PASSWORD
+            - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database-superuser
-                  key: password
+                  name: mysecret
+                  key: ROACH_PASSWORD
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -160,13 +157,13 @@ spec:
         - name: psql
           image: postgres:10.1
           env:
-            - name: DB_PASSWORD
+            - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database-superuser
-                  key: password
+                  name: mysecret
+                  key: ROACH_PASSWORD
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
         - name: prisma
           image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
           workingDir: /app/api
@@ -180,13 +177,13 @@ spec:
           ports:
             - containerPort: 5555
           env:
-            - name: DB_PASSWORD
+            - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database-superuser
-                  key: password
+                  name: mysecret
+                  key: ROACH_PASSWORD
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
           resources:
             limits:
               memory: 2048Mi
@@ -243,13 +240,13 @@ spec:
           ports:
             - containerPort: 4233
           env:
-            - name: DB_PASSWORD
+            - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database-superuser
-                  key: password
+                  name: mysecret
+                  key: ROACH_PASSWORD
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -312,6 +309,13 @@ spec:
           ports:
             - containerPort: 4001
           env:
+            - name: ROACH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: ROACH_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
             - name: YJS_WS_URL
               value: "ws://codepod-yjs-service:4233/yjs"
             - name: RUNTIME_NS
