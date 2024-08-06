@@ -1,4 +1,4 @@
-# CodePod Helm chart v2
+# CodePod Helm chart
 
 This helm chart is used for development.
 
@@ -6,34 +6,12 @@ This helm chart is used for development.
 2. It mounts the host src dir into the k8s pods, so that the app is hot-reloaded
    when the src files change.
 
-# Prepare
+# Deploy
 
-Install Docker desktop and enable k8s in settings.
+## Install regcred for pulling private registry
 
-# Step 1: install cluster and CRDs
-
-First, install a rancher for privisioning clusters:
-
-1. install k3s
-2. install rancher
-
-Next, use rancher to privision the cluster:
-
-1. create master VMs and runtime VMs. Install open-iscsi on master VMs
-2. provision k3s from rancher, set taint and label for runtime nodes
-3. install longhorn in the VM
-4. install cockroachdb CRD and operator
-
-Follow this: https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-with-kubernetes
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/crds.yaml
-kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/operator.yaml
-```
-
-5. install regcred for pulling private registry
-   1. first `docker login`, which generates `~/.docker/config.json` file.
-   2. add regcred secret from the above creds file
+1.  first `docker login`, which generates `~/.docker/config.json` file.
+2.  add regcred secret from the above creds file
 
 ```sh
 kubectl create secret generic regcred -n codepod-staging \
@@ -41,9 +19,7 @@ kubectl create secret generic regcred -n codepod-staging \
     --type=kubernetes.io/dockerconfigjson
 ```
 
-# Step 2: install the app
-
-fill in the values
+## fill in the values.yaml
 
 1. google client ID
 2. cloudflare tunnel token
@@ -54,7 +30,7 @@ verify other values:
 1. app chart version
 2. kernel version
 
-Install the app:
+## Install the app
 
 1. create namespaces
 
@@ -104,15 +80,16 @@ http://codepod-runtime-service:4001
 staging-local.codepod.io/
 http://codepod-ui-service:80
 
-# Additional notes
+# Maintainence
 
-Observability of cockroachdb dashboard:
-
-```sh
-# pg
-kubectl port-forward -n codepod-dev svc/database-rw 5432:5432
-# cockroachDB
-kubectl port-forward svc/cockroachdb-public 26257:26257 -n codepod-dev
-# the DB console (dashboard)
-kubectl port-forward svc/cockroachdb-public 8080:8080 -n codepod-dev
-```
+1. Update version in Chart.yaml, and upgrate the app with helm.
+2. When DB schema changed, run prisma migrate deploy.
+3. DB backups.
+4. (deep) infra upgrade:
+   1. backup the data
+   2. redirect DNS to readonly instances
+   3. flush yjs cache
+   4. update the infra
+   5. redeploy app
+   6. restore DB
+   7. redirect DNS back
