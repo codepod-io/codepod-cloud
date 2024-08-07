@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codepod-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri" # Perform hashing based on the request URI.
+spec:
+  # use nginx ingress controller to have consistent hashing for yjs routing
+  ingressClassName: nginx
+  # ingressClassName: "traefik"
+  rules:
+    - host: local.codepod.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-ui-service
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-api-service
+                port:
+                  number: 4000
+          - path: /runtime
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-runtime-service
+                port:
+                  number: 4001
+          - path: /yjs
+            pathType: Prefix
+            backend:
+              service:
+                name: codepod-yjs-service
+                port:
+                  number: 4233
+    # Or use kubectl port forwarding
+    # kubectl port-forward svc/prisma-service 8080:80
+    - host: prisma.127.0.0.1.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prisma-service
+                port:
+                  number: 80
