@@ -106,9 +106,9 @@ cp values.yaml .values/XXX-codepod-io/values.yaml
 # edit the values
 # ...
 # THEN:
-helm install codepod . -n codepod-staging --values=./.values/XXX-codepod-io/values.yaml
-helm upgrade codepod . -n codepod-staging --values=./.values/XXX-codepod-io/values.yaml
-helm uninstall codepod -n codepod-staging
+helm install codepod . -n XXX-codepod-io --values=./.values/XXX-codepod-io/values.yaml
+helm upgrade codepod . -n XXX-codepod-io --values=./.values/XXX-codepod-io/values.yaml
+helm uninstall codepod -n XXX-codepod-io
 # or to install/upgrade wth one command
 
 helm upgrade --install ingress-nginx ingress-nginx \
