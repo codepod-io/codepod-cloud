@@ -113,7 +113,7 @@ import {
   TaskListExtension,
 } from "./extensions/list";
 
-import { CodePodSyncExtension } from "./extensions/codepodSync";
+import { CodePodSyncExtension, DebugExtension } from "./extensions/codepodSync";
 
 import { LinkExtension, LinkToolbar } from "./extensions/link";
 import { SlashExtension } from "./extensions/slash";
@@ -306,6 +306,7 @@ const MyRemirror = ({
 
       // // Special extensions (plain)
       new MyYjsExtension({ yXml, awareness: provider.awareness }),
+      // new DebugExtension(),
     ],
     onError: ({ json, invalidContent, transformers }) => {
       // Automatically remove all invalid nodes and marks.

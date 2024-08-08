@@ -51,3 +51,30 @@ export class CodePodSyncExtension extends PlainExtension<CodePodSyncOptions> {
     }
   }
 }
+
+@extension({
+  defaultOptions: {},
+  staticKeys: [],
+  handlerKeys: [],
+  customHandlerKeys: [],
+})
+/**
+ * This extension is used for debugging:
+ * - print out json and markdown content of the editor.
+ */
+export class DebugExtension extends PlainExtension {
+  firstUpdate = true;
+  turndownService = new TurndownService();
+  get name(): string {
+    return "debug";
+  }
+  onStateUpdate({ state, tr }: StateUpdateLifecycleProps) {
+    if (tr?.docChanged) {
+      console.log("content", JSON.stringify(state.doc.toJSON()));
+      var markdown = this.turndownService.turndown(
+        this.store.helpers.getHTML(state)
+      );
+      console.log("markdown", markdown);
+    }
+  }
+}

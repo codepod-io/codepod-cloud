@@ -25,6 +25,7 @@ import prisma from "../prisma";
 
 import { Node } from "reactflow";
 import { NodeData } from "@/../../ui/src/lib/store/types";
+import { json2yxml, myNanoId } from "./utils";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -134,15 +135,19 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     const rootMap = ydoc.getMap("rootMap");
     const nodesMap = new Y.Map<Node<NodeData>>();
     const richMap = new Y.Map<Y.XmlFragment>();
+    const codeMap = new Y.Map<Y.Text>();
     rootMap.set("nodesMap", nodesMap);
     rootMap.set("edgesMap", new Y.Map<any>());
-    rootMap.set("codeMap", new Y.Map<Y.Text>());
+    rootMap.set("codeMap", codeMap);
     rootMap.set("richMap", richMap);
     rootMap.set("resultMap", new Y.Map<any>());
     rootMap.set("runtimeMap", new Y.Map<any>());
     const metaMap = new Y.Map();
     metaMap.set("version", "v0.0.1");
     rootMap.set("metaMap", metaMap);
+    // the initial python pod id
+    const pod1_id = myNanoId();
+    const pod2_id = myNanoId();
     // add ROOT node
     nodesMap.set("ROOT", {
       id: "ROOT",
@@ -150,7 +155,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       position: { x: 0, y: 0 },
       data: {
         level: 0,
-        children: [],
+        children: [pod1_id, pod2_id],
         folded: false,
       },
       style: {
@@ -158,7 +163,55 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
         // height: 100,
       },
     });
-    richMap.set("ROOT", new Y.XmlFragment());
+
+    nodesMap.set(pod1_id, {
+      // a python code pod
+      id: pod1_id,
+      type: "CODE",
+      // This position is obtained after UI auto-layout.
+      position: { x: 400, y: -74 },
+      data: {
+        level: 1,
+        children: [],
+        parent: "ROOT",
+        folded: false,
+        lang: "python",
+      },
+    });
+    nodesMap.set(pod2_id, {
+      // a python code pod
+      id: pod2_id,
+      type: "CODE",
+      // This position is obtained after UI auto-layout.
+      position: { x: 400, y: 97 },
+      data: {
+        level: 1,
+        children: [],
+        parent: "ROOT",
+        folded: false,
+        lang: "python",
+      },
+    });
+    const welcome = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 4 },
+          content: [{ type: "text", text: "Welcome to CodePod IDE" }],
+        },
+        { type: "paragraph" },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Let's get started!" }],
+        },
+        { type: "paragraph" },
+      ],
+    };
+    const yxml = json2yxml(welcome);
+    richMap.set("ROOT", yxml);
+    codeMap.set(pod1_id, new Y.Text("def foo():\n    pass\n"));
+    codeMap.set(pod2_id, new Y.Text("def bar():\n    pass\n"));
   }
 }
 

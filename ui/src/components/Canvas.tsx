@@ -221,6 +221,8 @@ function CanvasImpl() {
         // end custom edge
 
         onMove={(e, { x, y, zoom }) => {
+          // FIXME this is causing the re-rendering of the canvas. All trpc
+          // mutations will cause the re-rendering.
           debouncedSaveViewPort({ repoId, x, y, zoom });
         }}
         zoomOnScroll={false}
@@ -263,6 +265,7 @@ function CanvasImpl() {
               backdropFilter: "blur(5px)",
               backgroundColor: "rgba(255,255,255,0.5)",
             }}
+            fitViewOptions={{ maxZoom: 1, duration: 100 }}
             // position="bottom-center"
           />
 
