@@ -7,7 +7,12 @@ import {
 
 import * as Y from "yjs";
 
+import { customAlphabet } from "nanoid";
+import { lowercase, numbers } from "nanoid-dictionary";
+
 import { schema } from "./remirrorSchema";
+
+export const myNanoId = customAlphabet(lowercase + numbers, 20);
 
 /**
  * From prosemirror json to Y.XmlFragment.
