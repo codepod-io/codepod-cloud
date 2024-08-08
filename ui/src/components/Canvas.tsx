@@ -231,8 +231,10 @@ function CanvasImpl() {
         deleteKeyCode={editMode === "view" ? null : "Backspace"}
         multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         selectionMode={SelectionMode.Partial}
-        // TODO restore previous viewport
+        // Restore previous viewport.
         defaultViewport={{ zoom, x, y }}
+        // Center node on repo creation. INIT_ZOOM is a magic number (1.001) to
+        // trigger initial centering.
         fitView={zoom === INIT_ZOOM}
         fitViewOptions={{ maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
