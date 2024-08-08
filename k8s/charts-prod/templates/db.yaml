@@ -62,7 +62,6 @@ metadata:
 spec:
   replicas: 1
   selector:
-    match: labels
     matchLabels:
       app: cockroachdb-client-secure
   template:
