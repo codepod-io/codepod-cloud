@@ -46,6 +46,7 @@ import {
   ATOM_repoY,
   ATOM_repoZoom,
   ATOM_shareOpen,
+  INIT_ZOOM,
 } from "@/lib/store/atom";
 import { Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
@@ -232,6 +233,8 @@ function CanvasImpl() {
         selectionMode={SelectionMode.Partial}
         // TODO restore previous viewport
         defaultViewport={{ zoom, x, y }}
+        fitView={zoom === INIT_ZOOM}
+        fitViewOptions={{ maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
         disableKeyboardA11y={true}
       >
