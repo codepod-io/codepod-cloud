@@ -27,7 +27,7 @@ import { Link as RadixLink, TextField } from "@radix-ui/themes";
 import { initParser } from "@/lib/parser";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
-import { Provider, atom, useAtom, useSetAtom } from "jotai";
+import { Provider, useAtom, useSetAtom } from "jotai";
 import {
   ATOM_connectYjs,
   ATOM_disconnectYjs,
@@ -66,7 +66,12 @@ function NotFoundAlert({}) {
   );
 }
 
-function RepoLoader({ id, children }) {
+function RepoLoader({ children }) {
+  const { id } = useParams();
+  if (!id) throw "Id is null";
+  const setRepoId = useSetAtom(ATOM_repoId);
+  setRepoId(id);
+
   // load the repo
   // FIXME this should be a mutation as it changes the last access time.
   const repoQuery = trpc.repo.repo.useQuery({ id });
@@ -77,14 +82,8 @@ function RepoLoader({ id, children }) {
 
   const me = trpc.user.me.useQuery();
   const setEditMode = useSetAtom(ATOM_editMode);
-  const setRepoId = useSetAtom(ATOM_repoId);
   const setIsPublic = useSetAtom(ATOM_isPublic);
   const setCollaborators = useSetAtom(ATOM_collaborators);
-
-  // console.log("load store", useRef(createRepoStore()));
-  useEffect(() => {
-    setRepoId(id!);
-  }, []);
 
   useEffect(() => {
     if (repoQuery.data && me.data) {
@@ -243,12 +242,10 @@ function Header({ children }) {
 }
 
 export function Repo() {
-  let { id } = useParams();
-
   return (
     <Provider>
       <UserWrapper>
-        <RepoLoader id={id}>
+        <RepoLoader>
           <WaitForProvider>
             <ParserWrapper>
               <Flex direction="column" height="100vh">
