@@ -156,7 +156,7 @@ function WaitForProvider({ children }) {
     return (
       <Box>
         {/* Show the header while loading yjs doc. */}
-        <Header> </Header>
+        <Header />
         <Box>Loading Yjs Doc ..</Box>
       </Box>
     );
@@ -213,31 +213,34 @@ function Title() {
   );
 }
 
-function Header({ children }) {
+function Header() {
   return (
-    <Box>
-      {/* maxWidth container */}
-      <Container
-        size="4"
-        style={{
-          border: "2px solid lightgray",
-          backgroundColor: "white",
-        }}
-      >
-        {/* The header items */}
-        <Flex align="center" my="2" gap="3">
-          <RadixLink asChild>
-            <ReactLink to="/">
-              <Typography noWrap>CodePod</Typography>
-            </ReactLink>
-          </RadixLink>
-          {children}
-          {/* The right side */}
-          <Box flexGrow="1" />
-          <UserProfile />
-        </Flex>
-      </Container>
-    </Box>
+    <Container
+      size="4"
+      style={{
+        border: "2px solid lightgray",
+        backgroundColor: "white",
+        height: "50px",
+        // horizontal align items
+        justifyContent: "center",
+      }}
+    >
+      {/* The header items */}
+      <Flex align="center" my="2" gap="3">
+        <RadixLink asChild>
+          <ReactLink to="/">
+            <Typography noWrap>CodePod</Typography>
+          </ReactLink>
+        </RadixLink>
+        {/* The  left side*/}
+        <Box>/</Box>
+        {/* <HeaderItem /> */}
+        <Title />
+        {/* The right side */}
+        <Box flexGrow="1" />
+        <UserProfile />
+      </Flex>
+    </Container>
   );
 }
 
@@ -249,12 +252,9 @@ export function Repo() {
           <WaitForProvider>
             <ParserWrapper>
               <Flex direction="column" height="100vh">
-                <Header>
-                  {/* The  left side*/}
-                  <Box>/</Box>
-                  {/* <HeaderItem /> */}
-                  <Title />
-                </Header>
+                <Flex>
+                  <Header />
+                </Flex>
                 <Flex
                   flexGrow={"1"}
                   // The main content is filled to the entire height.
