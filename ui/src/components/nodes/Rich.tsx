@@ -113,6 +113,8 @@ import {
   TaskListExtension,
 } from "./extensions/list";
 
+import { HighlightCurrentLineExtension } from "./extensions/lineHighlight";
+
 import { CodePodSyncExtension, DebugExtension } from "./extensions/codepodSync";
 
 import { LinkExtension, LinkToolbar } from "./extensions/link";
@@ -307,6 +309,7 @@ const MyRemirror = ({
       // // Special extensions (plain)
       new MyYjsExtension({ yXml, awareness: provider.awareness }),
       // new DebugExtension(),
+      new HighlightCurrentLineExtension(),
     ],
     onError: ({ json, invalidContent, transformers }) => {
       // Automatically remove all invalid nodes and marks.
@@ -382,7 +385,7 @@ const MyRemirror = ({
                 right: 0,
                 zIndex: 100,
                 border: "solid 1px var(--gray-8)",
-                transform: "translateY(-5px) translateX(-20px)",
+                transform: "translateY(-50%) translateX(-20px)",
                 backgroundColor: "white",
                 borderRadius: "10px",
                 // shadow
@@ -497,12 +500,15 @@ export const RichNode = memo<Props>(function ({
 
   const [hover, setHover] = useState(false);
 
+  const [focused, setFocused] = useState(false);
+
   const node = nodesMap.get(id);
   if (!node) return null;
 
   return (
     <div
-      className="nodrag"
+      // focused classname is used to show line highlight only for the focused Remirror node.
+      className={`nodrag ${focused ? "focused" : ""}`}
       style={{
         width: "100%",
         minWidth: "300px",
@@ -511,9 +517,18 @@ export const RichNode = memo<Props>(function ({
 
         backdropFilter: "blur(10px)",
         backgroundColor: "rgba(228, 228, 228, 0.5)",
-        padding: "8px",
+        // padding: "8px",
         borderRadius: "8px",
+        border: "5px solid",
+        borderColor: focused ? "red" : "transparent",
+        // add shadow
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+      }}
+      onFocus={() => {
+        setFocused(true);
+      }}
+      onBlur={() => {
+        setFocused(false);
       }}
     >
       {id !== "ROOT" && <AddNodeHandle id={id} position="top" type="RICH" />}
@@ -529,6 +544,8 @@ export const RichNode = memo<Props>(function ({
           flexDirection: "column",
           backgroundColor: "white",
           cursor: "auto",
+          // This is required to remove the weird corner of the border.
+          borderRadius: "5px",
         }}
       >
         {/* Two alternative editors */}
@@ -565,10 +582,8 @@ export const RichNode = memo<Props>(function ({
           >
             <HeightIcon
               sx={{
-                transform: "rotate(90deg)",
+                transform: "rotate(90deg) translate(-80%, 100%)",
                 position: "absolute",
-                right: "15px",
-                bottom: "15px",
               }}
             />
           </NodeResizeControl>

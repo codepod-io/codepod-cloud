@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-import "./App.css";
-import "./custom.css";
-
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -30,6 +27,9 @@ import { Link as ReactLink } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
 import { Alert, Button, Typography } from "@mui/material";
 import { Container, Flex, Link as RadixLink, Box } from "@radix-ui/themes";
+
+import "./App.css";
+import "./custom.css";
 
 const theme = createTheme({
   typography: {
