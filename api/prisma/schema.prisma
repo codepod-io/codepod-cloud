@@ -89,6 +89,7 @@ model Repo {
     UserRepoData  UserRepoData[]
     stargazers    User[]         @relation("STAR")
     yDocBlob      Bytes?
+    yDocBlobSize  Int            @default(0)
     Kernel        Kernel[]
 }
 
