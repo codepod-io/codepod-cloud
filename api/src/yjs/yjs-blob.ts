@@ -57,10 +57,13 @@ function getDebouncedCallback(key) {
 
 async function handleSaveBlob({ repoId, yDocBlob }) {
   console.log("save blob", repoId, yDocBlob.length);
+  // calculate the size of yDocBlob
+  const size = Buffer.byteLength(yDocBlob);
   await prisma.repo.update({
     where: { id: repoId },
     data: {
       yDocBlob,
+      yDocBlobSize: size,
     },
   });
 }

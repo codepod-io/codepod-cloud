@@ -174,6 +174,13 @@ const DeleteRepoButton = ({ repo }) => {
   );
 };
 
+function prettyPrintBytes(bytes: number) {
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  if (bytes === 0) return "0 B";
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+}
+
 const RepoCard = ({
   repo,
 }: {
@@ -187,6 +194,7 @@ const RepoCard = ({
       id: string;
       updatedAt: string;
     }[];
+    yDocBlobSize: number;
     name: string | null;
     accessedAt: string;
   };
@@ -226,9 +234,12 @@ const RepoCard = ({
           </Box>
         </Stack>
         <Typography variant="subtitle2" color="gray">
-          <Stack direction="row">
+          <Flex direction="row">
             Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
-          </Stack>
+            <Flex flexGrow={"1"}></Flex>
+            {/* the size */}
+            {prettyPrintBytes(repo.yDocBlobSize)}
+          </Flex>
         </Typography>
       </CardContent>
       <CardActions disableSpacing>
