@@ -175,9 +175,10 @@ function CanvasImpl() {
   return (
     <Flex
       style={{
-        backgroundImage:
-          "url('https://cdn.pixabay.com/photo/2019/03/12/17/18/trees-4051288_1280.jpg')",
-        backgroundSize: "cover",
+        // backgroundImage:
+        //   "url('https://cdn.pixabay.com/photo/2019/03/12/17/18/trees-4051288_1280.jpg')",
+        // backgroundSize: "cover",
+        backgroundColor: "var(--gray-2)",
 
         // Rainbow border. Ref: https://codepen.io/unnegative/pen/dVwYBq
         // border: "3px solid transparent",
@@ -274,7 +275,7 @@ function CanvasImpl() {
             vertical={helperLineVertical}
           />
 
-          <Background />
+          {/* <Background /> */}
           {/* <Background
             id="1"
             gap={10}
