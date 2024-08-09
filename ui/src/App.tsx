@@ -59,27 +59,27 @@ const RequireSignIn = ({ children }) => {
 
 function Header() {
   return (
-    <Box>
-      {/* maxWidth container */}
-      <Container
-        size="4"
-        style={{
-          border: "2px solid lightgray",
-          backgroundColor: "white",
-        }}
-      >
-        {/* The header items */}
-        <Flex align="center" my="2">
-          <RadixLink asChild>
-            <ReactLink to="/">
-              <Typography noWrap>CodePod</Typography>
-            </ReactLink>
-          </RadixLink>
-          <Box flexGrow="1" />
-          <UserProfile />
-        </Flex>
-      </Container>
-    </Box>
+    <Container
+      size="4"
+      style={{
+        border: "2px solid lightgray",
+        backgroundColor: "white",
+        height: "50px",
+        // horizontal align items
+        justifyContent: "center",
+      }}
+    >
+      {/* The header items */}
+      <Flex align="center" my="2">
+        <RadixLink asChild>
+          <ReactLink to="/">
+            <Typography noWrap>CodePod</Typography>
+          </ReactLink>
+        </RadixLink>
+        <Box flexGrow="1" />
+        <UserProfile />
+      </Flex>
+    </Container>
   );
 }
 
@@ -91,41 +91,41 @@ const router = createBrowserRouter([
   {
     path: "login",
     element: (
-      <Box>
-        <Box position="fixed" width="100%">
+      <Flex direction="column" height="100vh">
+        <Flex>
           <Header />
-        </Box>
-        <Box pt="50px">
+        </Flex>
+        <Flex overflow="auto" flexGrow={"1"}>
           <SignIn />
-        </Box>
-      </Box>
+        </Flex>
+      </Flex>
     ),
   },
   {
     path: "signup",
     element: (
-      <Box>
-        <Box position="fixed" width="100%">
+      <Flex direction="column" height="100vh">
+        <Flex>
           <Header />
-        </Box>
-        <Box pt="50px">
+        </Flex>
+        <Flex overflow="auto" flexGrow={"1"}>
           <SignUp />
-        </Box>
-      </Box>
+        </Flex>
+      </Flex>
     ),
   },
   {
     path: "profile",
     element: (
       <RequireSignIn>
-        <Box>
-          <Box position="fixed" width="100%">
+        <Flex direction="column" height="100vh">
+          <Flex>
             <Header />
-          </Box>
-          <Box pt="50px">
+          </Flex>
+          <Flex overflow="auto" flexGrow={"1"}>
             <Profile />
-          </Box>
-        </Box>
+          </Flex>
+        </Flex>
       </RequireSignIn>
     ),
   },
@@ -137,17 +137,23 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <RequireSignIn>
-        <Box>
-          <Box position="fixed" width="100%">
+        <Flex direction="column" height="100vh">
+          <Flex>
             <Header />
-          </Box>
-          {/* The main content */}
-          <Container size="3">
-            <Box pt="50px">
+          </Flex>
+
+          <Flex
+            overflow="auto"
+            flexGrow={"1"}
+            style={{
+              backgroundColor: "var(--gray-2)",
+            }}
+          >
+            <Container size="3">
               <Dashboard />
-            </Box>
-          </Container>
-        </Box>
+            </Container>
+          </Flex>
+        </Flex>
       </RequireSignIn>
     ),
   },
