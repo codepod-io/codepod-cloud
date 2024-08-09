@@ -144,7 +144,7 @@ const DeleteRepoButton = ({ repo }) => {
         </IconButton>
       </AlertDialog.Trigger>
       <AlertDialog.Content maxWidth="450px">
-        <AlertDialog.Title>Revoke access</AlertDialog.Title>
+        <AlertDialog.Title>Delete Repository</AlertDialog.Title>
         <AlertDialog.Description size="2">
           Are you sure? This project will no be deleted.
         </AlertDialog.Description>
