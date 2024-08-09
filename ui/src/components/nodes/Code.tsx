@@ -7,7 +7,7 @@ import {
   memo,
 } from "react";
 import * as React from "react";
-import { useReactFlow, NodeResizeControl } from "reactflow";
+import { useReactFlow, NodeResizeControl, NodeProps } from "reactflow";
 
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -370,10 +370,12 @@ function useRunKey({ id }: { id: string }) {
   );
 }
 
-export const CodeNode = memo<{ id: string }>(function ({ id }) {
+export const CodeNode = memo<NodeProps>(function ({ id }) {
   const [nodesMap] = useAtom(ATOM_nodesMap);
 
   const [hover, setHover] = useState(false);
+
+  const [focused, setFocused] = useState(false);
 
   let ref = useRunKey({ id })!;
 
@@ -395,9 +397,18 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         // backgroundColor: "red",
         // backgroundImage: "linear-gradient(200deg, #41D8DD, #5583EE)",
         // backgroundImage: "linear-gradient(200deg, #FAF8F9, #F0EFF0)",
-        padding: "8px",
+        // padding: "8px",
         borderRadius: "8px",
+        border: "5px solid",
+        borderColor: focused ? "red" : "transparent",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+      }}
+      className="nodrag"
+      onFocus={() => {
+        setFocused(true);
+      }}
+      onBlur={() => {
+        setFocused(false);
       }}
       ref={ref}
     >
@@ -440,7 +451,7 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
               right: 0,
               zIndex: 100,
               border: "solid 1px var(--gray-8)",
-              transform: "translateY(-5px) translateX(-20px)",
+              transform: "translateY(-50%) translateX(-20px)",
               backgroundColor: "white",
               borderRadius: "10px",
               boxShadow: "0 0 10px rgba(0,0,0,0.2)",
@@ -464,8 +475,9 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
         <Box
           style={{
             position: "fixed",
-            bottom: "18px",
-            right: "18px",
+            bottom: 0,
+            right: 0,
+            transform: "translate(-50%, -50%)",
           }}
         >
           {/* .py */}
@@ -533,10 +545,8 @@ export const CodeNode = memo<{ id: string }>(function ({ id }) {
           >
             <HeightIcon
               sx={{
-                transform: "rotate(90deg)",
+                transform: "rotate(90deg) translate(-110%, 220%)",
                 position: "absolute",
-                right: "40px",
-                bottom: "16px",
               }}
             />
           </NodeResizeControl>

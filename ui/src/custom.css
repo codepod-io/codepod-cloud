@@ -69,6 +69,22 @@
   /* Provide sufficient space to see the popup */
   --rmr-space-6: 400px;
 }
+
+/* remove the box-shadow that cause weird border corner. */
+.remirror-theme .ProseMirror {
+  box-shadow: none !important;
+}
+
+/* The style of current line highlight in Monaco */
+.focused .remirror-line-highlight {
+  background-color: rgba(223, 243, 205, 0.5);
+}
+
+/* The style of current line highlight in Monaco */
+.monaco-editor .view-overlays .current-line {
+  background-color: rgba(223, 243, 205, 0.5) !important;
+}
+
 .suggestions {
   border: 1px solid darkgray;
   border-radius: 4px;

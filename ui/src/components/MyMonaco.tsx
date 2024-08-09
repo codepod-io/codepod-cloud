@@ -548,7 +548,8 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
         },
-        renderLineHighlight: "none",
+        renderLineHighlight: "line",
+        renderLineHighlightOnlyWhenFocus: true,
       }}
       editorDidMount={onEditorDidMount}
     />
