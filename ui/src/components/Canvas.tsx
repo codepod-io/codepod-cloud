@@ -13,14 +13,10 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import Box from "@mui/material/Box";
-
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
-import { ShareProjDialog } from "./ShareProjDialog";
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
-import { ScopeNode } from "./nodes/Scope";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
@@ -48,12 +44,11 @@ import {
   ATOM_shareOpen,
   INIT_ZOOM,
 } from "@/lib/store/atom";
-import { Flex } from "@radix-ui/themes";
+import { Box, Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 
 const nodeTypes = {
-  SCOPE: ScopeNode,
   CODE: CodeNode,
   RICH: RichNode,
 };
@@ -300,11 +295,12 @@ function CanvasImpl() {
       />
       {showContextMenu && (
         <Box
-          sx={{
+          style={{
             left: `${points.x}px`,
             top: `${points.y}px`,
             zIndex: 100,
-            position: "absolute",
+            // FIXME still a little offset
+            position: "fixed",
             boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
             // width: '200px',
             backgroundColor: "#fff",
@@ -318,8 +314,6 @@ function CanvasImpl() {
           />
         </Box>
       )}
-
-      {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
     </Flex>
   );
 }

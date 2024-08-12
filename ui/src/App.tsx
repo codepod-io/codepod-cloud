@@ -8,8 +8,6 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-
 import { Dashboard } from "@/pages/dashboard";
 import { Repo } from "@/pages/repo";
 import { Test } from "@/pages/test";
@@ -18,33 +16,38 @@ import { Profile } from "@/pages/profile";
 import { SignIn } from "@/pages/login";
 import { SignUp } from "@/pages/signup";
 
-import { Footer, UserProfile } from "@/components/Header";
+import { UserProfile } from "@/components/Header";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 import { Link as ReactLink } from "react-router-dom";
 
-import { SnackbarProvider } from "notistack";
-import { Alert, Button, Typography } from "@mui/material";
-import { Container, Flex, Link as RadixLink, Box } from "@radix-ui/themes";
+import {
+  Container,
+  Flex,
+  Link as RadixLink,
+  Box,
+  Text,
+  Callout,
+} from "@radix-ui/themes";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 import "./App.css";
 import "./custom.css";
-
-const theme = createTheme({
-  typography: {
-    button: {
-      textTransform: "none",
-    },
-  },
-});
+import { ToastContainer } from "react-toastify";
 
 function NoLogginErrorAlert() {
   return (
     <Box style={{ maxWidth: "sm", alignItems: "center", margin: "auto" }}>
-      <Alert severity="error">
-        Please <ReactLink to="/login">login</ReactLink> to view your dashboard.
-      </Alert>
+      <Callout.Root color="red">
+        <Callout.Icon>
+          <InfoCircledIcon />
+        </Callout.Icon>
+        <Callout.Text>
+          Please <ReactLink to="/login">login</ReactLink> to view your
+          dashboard.
+        </Callout.Text>
+      </Callout.Root>
     </Box>
   );
 }
@@ -73,7 +76,7 @@ function Header() {
       <Flex align="center" my="2">
         <RadixLink asChild>
           <ReactLink to="/">
-            <Typography noWrap>CodePod</Typography>
+            <Text>CodePod</Text>
           </ReactLink>
         </RadixLink>
         <Box flexGrow="1" />
@@ -161,12 +164,9 @@ const router = createBrowserRouter([
 
 export function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <SnackbarProvider maxSnack={5}>
-          <RouterProvider router={router} />
-        </SnackbarProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <RouterProvider router={router} />
+      <ToastContainer pauseOnFocusLoss={false} />
+    </AuthProvider>
   );
 }

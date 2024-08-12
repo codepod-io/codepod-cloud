@@ -16,12 +16,7 @@ import jsx from "refractor/lang/jsx.js";
 import typescript from "refractor/lang/typescript.js";
 import python from "refractor/lang/python.js";
 
-import Box from "@mui/material/Box";
-import InputBase from "@mui/material/InputBase";
-import Tooltip from "@mui/material/Tooltip";
-import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
-import FormatColorResetIcon from "@mui/icons-material/FormatColorReset";
-import HeightIcon from "@mui/icons-material/Height";
+import { css } from "@emotion/css";
 
 import {
   BoldExtension,
@@ -60,45 +55,19 @@ import {
   EditorComponent,
   useRemirror,
   useCommands,
-  useActive,
-  WysiwygToolbar,
-  TableComponents,
   ThemeProvider,
   ReactComponentExtension,
-  HeadingLevelButtonGroup,
-  VerticalDivider,
-  FormattingButtonGroup,
-  CommandButtonGroup,
-  ListButtonGroup,
-  CreateTableButton,
-  DecreaseIndentButton,
-  IncreaseIndentButton,
-  TextAlignmentButtonGroup,
-  IndentationButtonGroup,
-  BaselineButtonGroup,
   CommandButton,
   CommandButtonProps,
-  useChainedCommands,
-  useCurrentSelection,
-  useAttrs,
-  useUpdateReason,
-  FloatingWrapper,
-  useMention,
-  useKeymap,
   ToggleBoldButton,
   ToggleItalicButton,
   ToggleUnderlineButton,
   ToggleCodeButton,
   ToggleStrikeButton,
 } from "@remirror/react";
-import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
+import { FloatingToolbar } from "@remirror/react";
 
-import { InputRule } from "@remirror/pm";
-import { markInputRule } from "@remirror/core-utils";
-
-import { TableExtension } from "@remirror/extension-react-tables";
 import "remirror/styles/all.css";
-import { styled } from "@mui/material";
 
 // Local Imports
 
@@ -126,8 +95,8 @@ import { AddNodeHandle, Handles } from "./utils";
 
 import { MyLexical } from "./rich/MyLexical";
 
-import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
-import { Ellipsis } from "lucide-react";
+import { Box, Button, DropdownMenu, IconButton } from "@radix-ui/themes";
+import { Ellipsis, MoveHorizontal, RemoveFormatting } from "lucide-react";
 import { ATOM_editMode } from "@/lib/store/atom";
 import {
   ATOM_nodesMap,
@@ -213,9 +182,10 @@ export const SetHighlightButton: React.FC<
       icon={
         color ? (
           <Box
-            sx={{
+            style={{
               backgroundColor: color,
-              paddingX: "4px",
+              paddingLeft: "4px",
+              paddingRight: "4px",
               borderRadius: "4px",
               lineHeight: 1.2,
             }}
@@ -223,25 +193,12 @@ export const SetHighlightButton: React.FC<
             A
           </Box>
         ) : (
-          <FormatColorResetIcon />
+          <RemoveFormatting size={16} />
         )
       }
     />
   );
 };
-
-const MyStyledWrapper = styled("div")(
-  () => `
-  .remirror-editor-wrapper {
-    padding: 0;
-  }
-
-  /* leave some space for the block handle */
-  .remirror-editor-wrapper .ProseMirror {
-    padding-left: 24px;
-  }
-`
-);
 
 // FIXME re-rendering performance
 const MyRemirror = ({
@@ -356,71 +313,81 @@ const MyRemirror = ({
 
   return (
     <Box
-      className="remirror-theme"
-      sx={{
+      className={
+        "remirror-theme " +
+        // Display different markers for different levels in nested ordered lists.
+        css`
+          ol {
+            list-style-type: decimal;
+          }
+          ol li ol {
+            list-style-type: lower-alpha;
+          }
+          ol li ol li ol {
+            list-style-type: lower-roman;
+          }
+          .remirror-editor-wrapper {
+            padding: 0;
+          }
+
+          /* leave some space for the block handle */
+          .remirror-editor-wrapper .ProseMirror {
+            padding-left: 24px;
+          }
+        `
+      }
+      style={{
         userSelect: "text",
         cursor: "auto",
-        // Display different markers for different levels in nested ordered lists.
-        ol: {
-          listStylType: "decimal",
-        },
-        "ol li ol": {
-          listStyleType: "lower-alpha",
-        },
-        "ol li ol li ol": {
-          listStyleType: "lower-roman",
-        },
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       overflow="auto"
     >
       <ThemeProvider>
-        <MyStyledWrapper>
-          {hover && (
-            <Box
-              style={{
-                position: "fixed",
-                top: 0,
-                right: 0,
-                zIndex: 100,
-                border: "solid 1px var(--gray-8)",
-                transform: "translateY(-50%) translateX(-20px)",
-                backgroundColor: "white",
-                borderRadius: "10px",
-                // shadow
-                boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-              }}
-            >
-              <TopRightMenu id={id} />
-            </Box>
-          )}
-          <Remirror
-            editable={editMode === "edit"}
-            manager={manager}
-            // Must set initialContent, otherwise the Reactflow will fire two
-            // dimension change events at the beginning. This should be caused
-            // by initialContent being empty, then the actual content. Setting
-            // it to the actual content at the beginning will prevent this.
-            initialContent={state}
-            // Should not set state and onChange (the controlled Remirror editor
-            // [1]), otherwise Chinsee (or CJK) input methods will not be
-            // supported [2].
-            // - [1] https://remirror.io/docs/controlled-editor
-            // - [2] demo that Chinese input method is not working:
-            //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
+        {hover && (
+          <Box
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              zIndex: 100,
+              border: "solid 1px var(--gray-8)",
+              transform: "translateY(-50%) translateX(-20px)",
+              backgroundColor: "white",
+              borderRadius: "10px",
+              // shadow
+              boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+            }}
           >
-            {/* <WysiwygToolbar /> */}
-            <EditorComponent />
+            <TopRightMenu id={id} />
+          </Box>
+        )}
+        <Remirror
+          editable={editMode === "edit"}
+          manager={manager}
+          // Must set initialContent, otherwise the Reactflow will fire two
+          // dimension change events at the beginning. This should be caused
+          // by initialContent being empty, then the actual content. Setting
+          // it to the actual content at the beginning will prevent this.
+          initialContent={state}
+          // Should not set state and onChange (the controlled Remirror editor
+          // [1]), otherwise Chinsee (or CJK) input methods will not be
+          // supported [2].
+          // - [1] https://remirror.io/docs/controlled-editor
+          // - [2] demo that Chinese input method is not working:
+          //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
+        >
+          {/* <WysiwygToolbar /> */}
+          <EditorComponent />
 
-            <SlashSuggestor />
+          <SlashSuggestor />
 
-            {editMode === "edit" && <EditorToolbar />}
-            <LinkToolbar />
+          {editMode === "edit" && <EditorToolbar />}
+          <LinkToolbar />
 
-            {/* <Menu /> */}
-          </Remirror>
-        </MyStyledWrapper>
+          {/* <Menu /> */}
+        </Remirror>
       </ThemeProvider>
     </Box>
   );
@@ -580,10 +547,10 @@ export const RichNode = memo<Props>(function ({
               }
             }}
           >
-            <HeightIcon
-              sx={{
-                transform: "rotate(90deg) translate(-80%, 100%)",
+            <MoveHorizontal
+              style={{
                 position: "absolute",
+                transform: "translate(-110%, -90%)",
               }}
             />
           </NodeResizeControl>

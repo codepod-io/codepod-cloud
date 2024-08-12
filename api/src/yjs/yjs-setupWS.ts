@@ -279,11 +279,9 @@ export const createSetupWSConnection = (_bindState, _writeState) => {
       docName = req.url.slice(1).split("?")[0],
       gc = true,
       readOnly = false,
-      role = undefined,
     } = {}
   ) => {
     conn.binaryType = "arraybuffer";
-    if (role) conn.role = role;
     console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
     // get doc, initialize if it does not exist yet
     const { doc, docLoadedPromise } = getYDoc(docName, gc);

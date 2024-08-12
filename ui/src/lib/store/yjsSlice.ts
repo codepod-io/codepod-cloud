@@ -10,7 +10,7 @@ import { NodeData } from "./types";
 import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
-import { ATOM_repoId, buildNode2Children } from "./atom";
+import { ATOM_repoId } from "./atom";
 
 // The atoms
 
@@ -211,8 +211,6 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     updateView(get, set);
     // Trigger initial results rendering.
     const resultMap = getResultMap(get);
-    // Initialize node2children
-    buildNode2Children(get, set);
     Array.from(resultMap.keys()).forEach((key) => {
       triggerResultChanged(get, set, key);
     });

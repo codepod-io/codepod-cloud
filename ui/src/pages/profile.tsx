@@ -1,10 +1,5 @@
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import Typography from "@mui/material/Typography";
-
-import Paper from "@mui/material/Paper";
-import { Container, Stack } from "@mui/material";
 import { trpc } from "@/lib/trpc";
+import { Box, Card, Container, Flex, Heading } from "@radix-ui/themes";
 
 export function Profile() {
   const me = trpc.user.me.useQuery();
@@ -13,32 +8,36 @@ export function Profile() {
     // router.push("/login");
     // return null;
     return (
-      <Box>
-        <Box>Profile Page</Box>
-        <Box>Please Log In</Box>
-      </Box>
+      <>
+        <>Profile Page</>
+        <>Please Log In</>
+      </>
     );
   }
 
-  if (me.isLoading) return <Box>Loading</Box>;
+  if (me.isLoading) return <>Loading</>;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 2 }}>
+    <Container
+      size="1"
+      style={{
+        paddingTop: "20px",
+      }}
+    >
       {!me.data ? (
         "Loading"
       ) : (
-        <Box>
-          <Paper elevation={3} sx={{ p: 2 }}>
-            <Stack>
-              <Typography variant="h4">User profile</Typography>
+        <Flex direction="column" gap="3">
+          <Card>
+            <Flex direction="column">
+              <Heading as="h4">User profile</Heading>
               <Box>
                 Name {me.data.firstname} {me.data.lastname}
               </Box>
               <Box> Email: {me.data.email}</Box>
-            </Stack>
-          </Paper>
-          <Divider />
-        </Box>
+            </Flex>
+          </Card>
+        </Flex>
       )}
     </Container>
   );

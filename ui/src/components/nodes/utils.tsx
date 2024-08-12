@@ -9,22 +9,6 @@ import {
 
 import { useContext, useState } from "react";
 
-import CodeIcon from "@mui/icons-material/Code";
-import NoteIcon from "@mui/icons-material/Note";
-
-import {
-  Box,
-  ClickAwayListener,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Popper,
-  Stack,
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import React from "react";
 import { ChevronLeft } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useSetAtom } from "jotai";
@@ -406,56 +390,6 @@ export const Handles = ({ id, hover }) => {
     </>
   );
 };
-
-// A delete button that requires confirmation.
-// Have to use React.forwardRef to allows <Tooltip> over this component. Ref:
-// https://mui.com/material-ui/guides/composition/#caveat-with-refs
-export const ConfirmDeleteButton = React.forwardRef(
-  ({ handleConfirm, ...props }: any, ref) => {
-    const [open, setOpen] = useState(false);
-    return (
-      <Box>
-        <IconButton
-          onClick={() => {
-            setOpen(true);
-          }}
-          {...props}
-        >
-          <DeleteIcon fontSize="inherit" />
-        </IconButton>
-        <Dialog
-          open={open}
-          onClose={() => {
-            setOpen(false);
-          }}
-          fullWidth
-        >
-          <DialogTitle>{`Please confirm deletion`}</DialogTitle>
-          <DialogContent>Are you sure?</DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => {
-                setOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                handleConfirm();
-                setOpen(false);
-              }}
-              autoFocus
-              color="red"
-            >
-              Confirm
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    );
-  }
-);
 
 export function downloadLink(dataUrl, fileName) {
   let element = document.createElement("a");

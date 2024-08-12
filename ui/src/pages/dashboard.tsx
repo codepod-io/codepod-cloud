@@ -1,41 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
-import Box from "@mui/material/Box";
-import Alert from "@mui/material/Alert";
-import DeleteIcon from "@mui/icons-material/Delete";
-import StopCircleIcon from "@mui/icons-material/StopCircle";
-import CircularProgress from "@mui/material/CircularProgress";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import GroupsIcon from "@mui/icons-material/Groups";
-import PublicIcon from "@mui/icons-material/Public";
-import PublicOffIcon from "@mui/icons-material/PublicOff";
-import Tooltip from "@mui/material/Tooltip";
-
 import {
+  AlertDialog,
+  Box,
+  Button,
   Card,
-  CardActions,
-  CardContent,
-  CardHeader,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { AlertDialog, Button, Flex, IconButton } from "@radix-ui/themes";
+  Flex,
+  IconButton,
+  Spinner,
+  Tooltip,
+} from "@radix-ui/themes";
 import { timeDifference } from "@/lib/utils/utils";
-import { useSnackbar } from "notistack";
-import { useTheme } from "@mui/material/styles";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
+import { FileText, LockOpen, ThumbsUp, Trash2, Users } from "lucide-react";
+import { toast } from "react-toastify";
 
 function CreateRepoForm(props) {
   const createRepo = trpc.repo.createRepo.useMutation();
@@ -76,7 +58,7 @@ const StarButton = ({ repo }) => {
   return (
     <>
       {isStarred ? (
-        <Tooltip title="unstar">
+        <Tooltip content="unstar">
           <IconButton
             size="1"
             variant="ghost"
@@ -85,17 +67,20 @@ const StarButton = ({ repo }) => {
             }}
             disabled={unstar.isLoading}
           >
-            <StarIcon
-              fontSize="inherit"
-              sx={{
-                color: "orange",
+            <ThumbsUp color="red" size={16} fill="pink" />
+            <Box
+              style={{
+                // Make the different numbers fixed width.
+                fontVariant: "tabular-nums",
+                paddingLeft: "5px",
               }}
-            />
-            {repo.stargazers.length}
+            >
+              {repo.stargazers.length}
+            </Box>
           </IconButton>
         </Tooltip>
       ) : (
-        <Tooltip title="star">
+        <Tooltip content="star">
           <IconButton
             size="1"
             variant="ghost"
@@ -104,8 +89,15 @@ const StarButton = ({ repo }) => {
             }}
             disabled={star.isLoading}
           >
-            <StarBorderIcon fontSize="inherit" />
-            {repo.stargazers.length}
+            <ThumbsUp size={16} />
+            <Box
+              style={{
+                fontVariant: "tabular-nums",
+                paddingLeft: "5px",
+              }}
+            >
+              {repo.stargazers.length}
+            </Box>
           </IconButton>
         </Tooltip>
       )}
@@ -114,19 +106,16 @@ const StarButton = ({ repo }) => {
 };
 
 const DeleteRepoButton = ({ repo }) => {
-  const [open, setOpen] = useState(false);
-  const { enqueueSnackbar } = useSnackbar();
   const utils = trpc.useUtils();
   const deleteRepo = trpc.repo.deleteRepo.useMutation({
     onSuccess(input) {
-      enqueueSnackbar("Successfully deleted repo", { variant: "success" });
+      toast.success("Successfully deleted repo");
       utils.repo.getDashboardRepos.invalidate();
     },
     onError() {
-      enqueueSnackbar("Failed to delete repo", { variant: "error" });
+      toast.error("Failed to delete repo");
     },
   });
-  const theme = useTheme();
   return (
     <AlertDialog.Root>
       <AlertDialog.Trigger>
@@ -136,11 +125,7 @@ const DeleteRepoButton = ({ repo }) => {
           variant="ghost"
           disabled={deleteRepo.isLoading}
         >
-          {deleteRepo.isLoading ? (
-            <CircularProgress size="14px" />
-          ) : (
-            <DeleteIcon fontSize="inherit" />
-          )}
+          {deleteRepo.isLoading ? <Spinner /> : <Trash2 />}
         </IconButton>
       </AlertDialog.Trigger>
       <AlertDialog.Content maxWidth="450px">
@@ -210,53 +195,41 @@ const RepoCard = ({
     return () => clearInterval(interval);
   }, [counter]);
   return (
-    <Card sx={{ minWidth: 275, maxWidth: 275 }}>
-      <CardContent>
-        <Stack direction="row" display="flex">
-          <Link
-            component={ReactLink}
-            to={`/repo/${repo.id}`}
-            sx={{
-              alignItems: "center",
-            }}
-          >
-            <Stack direction="row" display="inline-flex">
-              <DescriptionOutlinedIcon
-                sx={{
-                  marginRight: "5px",
-                }}
-              />
-              <Box component="span">{repo.name || "Untitled"}</Box>
-            </Stack>
-          </Link>
-          <Box ml="auto">
-            <StarButton repo={repo} />
-          </Box>
-        </Stack>
-        <Typography variant="subtitle2" color="gray">
-          <Flex direction="row">
-            Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
-            <Flex flexGrow={"1"}></Flex>
-            {/* the size */}
-            {prettyPrintBytes(repo.yDocBlobSize)}
+    <Card style={{ minWidth: 275, maxWidth: 275 }}>
+      <Flex>
+        <ReactLink
+          to={`/repo/${repo.id}`}
+          style={{
+            alignItems: "center",
+          }}
+        >
+          <Flex direction="row" display="inline-flex" gap="2">
+            <FileText />
+            <span>{repo.name || "Untitled"}</span>
           </Flex>
-        </Typography>
-      </CardContent>
-      <CardActions disableSpacing>
-        <Box>
-          {repo.userId !== me.data?.id && (
-            <Tooltip title="Shared with me">
-              <GroupsIcon fontSize="small" color="primary" />
-            </Tooltip>
-          )}
-          {repo.public && (
-            <Tooltip title="public">
-              <PublicIcon fontSize="small" color="success" />
-            </Tooltip>
-          )}
-        </Box>
+        </ReactLink>
+        <Flex flexGrow={"1"}></Flex>
+        <StarButton repo={repo} />
+      </Flex>
+      <Flex style={{ color: "gray" }}>
+        Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
+        <Flex flexGrow={"1"}></Flex>
+        {/* the size */}
+        {prettyPrintBytes(repo.yDocBlobSize)}
+      </Flex>
+      <Flex>
+        {repo.userId !== me.data?.id && (
+          <Tooltip content="Shared with me">
+            <Users color="blue" />
+          </Tooltip>
+        )}
+        {repo.public && (
+          <Tooltip content="public">
+            <LockOpen color="green" />
+          </Tooltip>
+        )}
         <DeleteRepoButton repo={repo} />
-      </CardActions>
+      </Flex>
     </Card>
   );
 };
@@ -265,12 +238,12 @@ const RepoLists = () => {
   const getDashboardRepos = trpc.repo.getDashboardRepos.useQuery();
 
   if (getDashboardRepos.isLoading) {
-    return <CircularProgress />;
+    return <Spinner />;
   }
   if (getDashboardRepos.isError) {
-    return <Box>ERROR: {getDashboardRepos.error.message}</Box>;
+    return <>ERROR: {getDashboardRepos.error.message}</>;
   }
-  if (!getDashboardRepos.data) return <Box>no data</Box>;
+  if (!getDashboardRepos.data) return <>no data</>;
   const repos = getDashboardRepos.data?.slice();
   // sort repos by last access time
   repos.sort((a, b) => {
@@ -285,9 +258,9 @@ const RepoLists = () => {
     }
   });
   return (
-    <Box>
+    <>
       <Box
-        sx={{
+        style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -295,7 +268,7 @@ const RepoLists = () => {
         }}
       >
         <Box
-          sx={{
+          style={{
             color: "#839DB5",
             fontSize: "25px",
           }}
@@ -307,7 +280,7 @@ const RepoLists = () => {
 
       {repos.length === 0 && (
         <Box
-          sx={{
+          style={{
             padding: "20px",
             color: "#6B87A2",
             fontSize: "18px",
@@ -322,14 +295,14 @@ const RepoLists = () => {
           started.
         </Box>
       )}
-      <Box display="flex" flexWrap="wrap">
+      <Flex wrap="wrap">
         {repos.map((repo) => (
-          <Box sx={{ m: 1 }} key={repo.id}>
+          <Box style={{ margin: 1 }} key={repo.id}>
             <RepoCard repo={repo} />
           </Box>
         ))}
-      </Box>
-    </Box>
+      </Flex>
+    </>
   );
 };
 
@@ -337,15 +310,15 @@ export function Dashboard() {
   const { isSignedIn } = useAuth();
   if (!isSignedIn()) {
     return (
-      <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
+      <Box style={{ maxWidth: "md", alignItems: "center", margin: "auto" }}>
         Not signed in.
       </Box>
     );
   }
   return (
-    <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
+    <Box style={{ maxWidth: "md", alignItems: "center", margin: "auto" }}>
       <Box
-        sx={{
+        style={{
           fontSize: "14px",
           paddingTop: "10px",
           color: "#6B87A2",

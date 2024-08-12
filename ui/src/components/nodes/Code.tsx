@@ -11,10 +11,6 @@ import { useReactFlow, NodeResizeControl, NodeProps } from "reactflow";
 
 import { useHotkeys } from "react-hotkeys-hook";
 
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import HeightIcon from "@mui/icons-material/Height";
-
 import Ansi from "ansi-to-react";
 
 import { MyMonaco } from "../MyMonaco";
@@ -23,8 +19,16 @@ import { AddNodeHandle, Handles } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
-import { DropdownMenu, Flex, IconButton, Select } from "@radix-ui/themes";
-import { Check, Ellipsis, Play, X } from "lucide-react";
+import {
+  Box,
+  Button,
+  Dialog,
+  DropdownMenu,
+  Flex,
+  IconButton,
+  Spinner,
+} from "@radix-ui/themes";
+import { Check, Ellipsis, MoveHorizontal, Play, X } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -41,12 +45,12 @@ import {
   ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 import { ATOM_repoId } from "@/lib/store/atom";
-import { useSnackbar } from "notistack";
 
 import juliaLogo from "@/assets/julia.svg";
 import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
+import { toast } from "react-toastify";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -94,29 +98,30 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
       className={resultScroll ? "nowheel" : ""}
     >
       {/* result header */}
-      <div
-        className="px-1 flex space-x-2"
+      <Flex
+        gap="2"
         style={{
           backgroundColor: "var(--accent-3)",
           height: "var(--space-6)",
           alignItems: "center",
+          padding: "0 10px",
         }}
       >
         <>
           {exec_count && (
             <Box
-              sx={{
+              style={{
                 color: "var(--gray-9)",
                 textAlign: "left",
-                paddingLeft: "5px",
               }}
             >
               [{exec_count}]
             </Box>
           )}
-          {error ? <X color="red" /> : <Check color="green" />}
+          {error && <X color="red" />}
+          {!error && !running && <Check color="green" />}
           {lastExecutedAt && <Timer lastExecutedAt={lastExecutedAt} />}
-          {running && <CircularProgress />}
+          {running && <Spinner />}
           <Flex flexGrow="1" />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
@@ -144,7 +149,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         </>
-      </div>
+      </Flex>
       {/* result content */}
       <div
         // Force display vertical scrollbar. Styles defined in custom.css.
@@ -213,7 +218,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             }
           })}
 
-        {error && <Box color="red">{error?.evalue}</Box>}
+        {error && <Box style={{ color: "red" }}>{error?.evalue}</Box>}
         {error?.stacktrace && error?.stacktrace.length > 0 && (
           <Box>
             <Box>StackTrace</Box>
@@ -298,7 +303,7 @@ function HeaderBar({ id }: { id: string }) {
           </DropdownMenu.Item>
 
           <DropdownMenu.Separator />
-          <DropdownMenu.Item
+          {/* <DropdownMenu.Item
             shortcut="⌘ ⌫"
             color="red"
             onClick={() => {
@@ -307,10 +312,92 @@ function HeaderBar({ id }: { id: string }) {
             }}
           >
             Delete
-          </DropdownMenu.Item>
+          </DropdownMenu.Item> */}
+
+          {/* Delete with Confirmation. */}
+          <ConfirmedDelete id={id} />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </Flex>
+  );
+}
+
+// Ref: https://github.com/radix-ui/primitives/discussions/1830#discussioncomment-10300947
+function ConfirmedDelete({ id }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const reactFlowInstance = useReactFlow();
+  return (
+    <Dialog.Root>
+      {/* Try 1: This button is not the style of DropDown MenuItem. */}
+      {/* <Button>Delete</Button> */}
+
+      {/* <Button>Delete</Button> */}
+
+      {/* Try 2: Trigger the inner event. Either stop propagation on inner, or preventDefault on outer.
+          However, the outer is bigger than the inner. As a result, clicking on the shortcut part of the outer
+          will not be picked up by the inner trigger. */}
+
+      {/* <DropdownMenu.Item
+        color="red"
+        shortcut="⌘ ⌫"
+        onClick={(e) => {
+          e.preventDefault();
+        }}
+      >
+        <div>
+          <Dialog.Trigger
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <div>Delete</div>
+          </Dialog.Trigger>
+        </div>
+      </DropdownMenu.Item> */}
+
+      {/* Try 3 (which works):  use a ref and trigger the click on the inner from the outer. */}
+      <DropdownMenu.Item
+        color="red"
+        shortcut="⌘ ⌫"
+        onClick={(e) => {
+          e.preventDefault();
+          ref?.current?.click();
+        }}
+      >
+        <div>
+          <Dialog.Trigger ref={ref}>
+            <div></div>
+          </Dialog.Trigger>
+          Delete
+        </div>
+      </DropdownMenu.Item>
+
+      <Dialog.Content maxWidth="450px">
+        <Dialog.Title size="3">This will delete pod.</Dialog.Title>
+        <Dialog.Description size="2" mb="4">
+          Continue?
+        </Dialog.Description>
+
+        <Flex gap="3" mt="4" justify="end">
+          <Dialog.Close>
+            <Button variant="soft" color="gray">
+              Cancel
+            </Button>
+          </Dialog.Close>
+          <Dialog.Close>
+            <DropdownMenu.Item
+              color="red"
+              onClick={() => {
+                // Delete all edges connected to the node.
+                reactFlowInstance.deleteElements({ nodes: [{ id }] });
+              }}
+            >
+              Delete
+            </DropdownMenu.Item>
+          </Dialog.Close>
+        </Flex>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }
 
@@ -346,13 +433,12 @@ function useRunKey({ id }: { id: string }) {
       React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
     );
   const repoId = useAtomValue(ATOM_repoId)!;
-  const { enqueueSnackbar } = useSnackbar();
   // call useHotKeys library
   return useHotkeys<HTMLDivElement>(
     "shift+enter",
     () => {
       if (!runtimeReady) {
-        enqueueSnackbar("Runtime is not ready.", { variant: "error" });
+        toast.error("Runtime is not ready.");
       } else {
         const specs = preprocessChain([id]);
         if (specs) runChain.mutate({ repoId, specs });
@@ -543,10 +629,10 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
               }
             }}
           >
-            <HeightIcon
-              sx={{
-                transform: "rotate(90deg) translate(-110%, 220%)",
+            <MoveHorizontal
+              style={{
                 position: "absolute",
+                transform: "translate(-220%, -110%)",
               }}
             />
           </NodeResizeControl>

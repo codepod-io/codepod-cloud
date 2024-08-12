@@ -93,12 +93,9 @@ export const useAuth = () => {
 };
 
 function useProvideAuth() {
-  const [authToken, setAuthToken] = useState<String | null>(null);
-
-  useEffect(() => {
-    // load initial state from local storage
-    setAuthToken(localStorage.getItem("token") || null);
-  }, []);
+  const [authToken, setAuthToken] = useState<String | null>(
+    localStorage.getItem("token")
+  );
 
   const getAuthHeaders = (): Record<string, string> => {
     if (!authToken) return {};

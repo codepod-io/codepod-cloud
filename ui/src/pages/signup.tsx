@@ -2,172 +2,303 @@ import { useEffect, useState } from "react";
 
 import { Link as ReactLink, useNavigate } from "react-router-dom";
 
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-import Link from "@mui/material/Link";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-
-import Alert from "@mui/material/Alert";
-
-import { useFormik } from "formik";
-
 import { useAuth } from "@/lib/auth";
 import { GoogleSignin } from "./login";
-import Divider from "@mui/material/Divider";
 import { trpc } from "@/lib/trpc";
+import {
+  Box,
+  Button,
+  Container,
+  Flex,
+  Heading,
+  Link,
+  TextField,
+} from "@radix-ui/themes";
+import { zodValidator } from "@tanstack/zod-form-adapter";
+import { toast } from "react-toastify";
+import { FieldApi, useForm } from "@tanstack/react-form";
+import { z } from "zod";
 
-export function SignUp() {
-  const signup = trpc.user.signup.useMutation();
-  const { signIn, isSignedIn } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+function FieldInfo({ field }: { field: FieldApi<any, any, any, any> }) {
+  return (
+    <>
+      {field.state.meta.isTouched && field.state.meta.errors.length ? (
+        <em style={{ color: "red" }}>{field.state.meta.errors.join(",")}</em>
+      ) : null}
+      {field.state.meta.isValidating ? (
+        <div style={{ color: "blue" }}>"Validating..."</div>
+      ) : null}
+    </>
+  );
+}
 
+function FieldInfoPassword({ field }: { field: FieldApi<any, any, any, any> }) {
+  const errors = field.state.meta.errors;
+  const error = errors.length > 0 && errors[0];
+  const result = {
+    "8 characters long": false,
+    "one uppercase letter": false,
+    "one lowercase letter": false,
+    "one digit": false,
+  };
+  if (error) {
+    error.includes("8 characters long") && (result["8 characters long"] = true);
+    error.includes("one uppercase letter") &&
+      (result["one uppercase letter"] = true);
+    error.includes("one lowercase letter") &&
+      (result["one lowercase letter"] = true);
+    error.includes("one digit") && (result["one digit"] = true);
+  }
+  return (
+    <>
+      {field.state.meta.isTouched && (
+        <>
+          {/* <em style={{ color: "red" }}>{field.state.meta.errors.join(",")}</em> */}
+          {Object.keys(result).map((key) => (
+            <Box>
+              <em
+                style={{
+                  color: result[key] ? "red" : "green",
+                }}
+              >
+                {key}
+              </em>
+            </Box>
+          ))}
+        </>
+      )}
+      {field.state.meta.isValidating ? (
+        <div style={{ color: "blue" }}>"Validating..."</div>
+      ) : null}
+    </>
+  );
+}
+
+function TanstackForm() {
+  const { isSignedIn, signIn } = useAuth();
   let navigate = useNavigate();
   useEffect(() => {
     if (isSignedIn()) {
       navigate("/");
     }
-  }, [isSignedIn, navigate]);
-
-  useEffect(() => {
-    if (signup.error) {
-      setError(signup.error.message);
-    }
-    if (signup.data?.token) {
-      signIn(signup.data.token);
-    }
-  }, [signup]);
-
-  const formik = useFormik({
-    initialValues: {
+  });
+  const login = trpc.user.signup.useMutation({
+    onSuccess: (data) => {
+      if (data.token) {
+        signIn(data.token);
+        navigate("/");
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+  const form = useForm({
+    defaultValues: {
       firstname: "",
       lastname: "",
       email: "",
       password: "",
     },
-    // validationSchema: validationSchema,
-    onSubmit: (values) => {
-      // alert(JSON.stringify(values, null, 2));
-      setError(null);
-      return signup.mutate({
-        email: values.email,
-        firstname: values.firstname,
-        lastname: values.lastname,
-        password: values.password,
-      });
+    onSubmit: async ({ value }) => {
+      login.mutate(value);
     },
+    validatorAdapter: zodValidator(),
   });
-
+  const [showPassword, setShowPassword] = useState(false);
   return (
-    <Container component="main" maxWidth="xs">
-      <CssBaseline />
-      <Box
-        sx={{
-          marginTop: 8,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-          <LockOutlinedIcon />
-        </Avatar>
-        <Typography component="h1" variant="h5">
-          Sign up
-        </Typography>
-        <GoogleSignin />
-        <Divider />
-        <Box>Or sign up with email</Box>
-        <Divider />
-        <Box
-          component="form"
-          noValidate
-          onSubmit={formik.handleSubmit}
-          sx={{ mt: 3 }}
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+      style={{
+        width: "100%",
+      }}
+    >
+      <Flex direction="column" gap="3">
+        <div>
+          <form.Field
+            name="firstname"
+            validators={{
+              onChange: z.string().min(1, "First name is required"),
+            }}
+            children={(field) => (
+              <>
+                {/* <label htmlFor={field.name}>Email:</label> */}
+                <TextField.Root
+                  placeholder="First Name"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                ></TextField.Root>
+                <FieldInfo field={field} />
+              </>
+            )}
+          />
+        </div>
+        <div>
+          <form.Field
+            name="lastname"
+            validators={{
+              onChange: z.string().min(1, "Last name is required"),
+            }}
+            children={(field) => (
+              <>
+                {/* <label htmlFor={field.name}>Email:</label> */}
+                <TextField.Root
+                  placeholder="Last Name"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                ></TextField.Root>
+                <FieldInfo field={field} />
+              </>
+            )}
+          />
+        </div>
+        <div>
+          <form.Field
+            name="email"
+            validators={{
+              onChange: z.string().email(),
+            }}
+            children={(field) => (
+              <>
+                {/* <label htmlFor={field.name}>Email:</label> */}
+                <TextField.Root
+                  placeholder="Email"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                ></TextField.Root>
+                <FieldInfo field={field} />
+              </>
+            )}
+          />
+        </div>
+        <div>
+          <form.Field
+            name="password"
+            validators={{
+              // onChange: z
+              //   .string()
+              //   .min(8, "Password must be at least 8 characters long")
+              //   .regex(
+              //     /[A-Z]/,
+              //     "Password must contain at least one uppercase letter"
+              //   )
+              //   .regex(
+              //     /[a-z]/,
+              //     "Password must contain at least one lowercase letter"
+              //   )
+              //   .regex(/[0-9]/, "Password must contain at least one digit")
+              //   .regex(
+              //     /[^A-Za-z0-9]/,
+              //     "Password must contain at least one special character"
+              //   ),
+              onChange: z
+                .string()
+                .min(8, "8 characters long")
+                .regex(/[A-Z]/, "one uppercase letter")
+                .regex(/[a-z]/, "one lowercase letter")
+                .regex(/[0-9]/, "one digit"),
+            }}
+            children={(field) => (
+              <>
+                {/* <label htmlFor={field.name}>Password:</label> */}
+                <TextField.Root
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                >
+                  <TextField.Slot></TextField.Slot>
+                  <TextField.Slot>
+                    <Button
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowPassword(!showPassword);
+                      }}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </Button>
+                  </TextField.Slot>
+                </TextField.Root>
+                <FieldInfoPassword field={field} />
+              </>
+            )}
+          />
+        </div>
+        {/* <Button type="submit">Submit</Button> */}
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+          children={([canSubmit, isSubmitting]) => (
+            <Button type="submit" disabled={!canSubmit}>
+              {isSubmitting ? "..." : "Sign Up"}
+            </Button>
+          )}
+        />
+      </Flex>
+    </form>
+  );
+}
+
+export function SignUp() {
+  return (
+    <Container flexGrow={"1"} size="1">
+      <Flex direction="column" gap="6">
+        <Flex style={{ backgroundColor: "red" }} flexGrow="1"></Flex>
+        <Heading
+          as="h1"
+          size="8"
+          style={{
+            // center the heading
+            textAlign: "center",
+          }}
         >
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                autoComplete="given-name"
-                name="firstname"
-                required
-                fullWidth
-                id="firstname"
-                label="First Name"
-                autoFocus
-                value={formik.values.firstname}
-                onChange={formik.handleChange}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                id="lastname"
-                label="Last Name"
-                name="lastname"
-                autoComplete="family-name"
-                value={formik.values.lastname}
-                onChange={formik.handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                error={formik.touched.email && Boolean(formik.errors.email)}
-                // helperText={formik.touched.email && formik.errors.email}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="new-password"
-                value={formik.values.password}
-                onChange={formik.handleChange}
-                error={
-                  formik.touched.password && Boolean(formik.errors.password)
-                }
-                // helperText={formik.touched.password && formik.errors.password}
-              />
-            </Grid>
-          </Grid>
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Sign Up
-          </Button>
-          {error && <Alert severity="error">{error}</Alert>}
-          <Grid container justifyContent="flex-end">
-            <Grid item>
-              <Link component={ReactLink} to="/login">
-                Already have an account? Sign in
-              </Link>
-            </Grid>
-          </Grid>
-        </Box>
-      </Box>
+          Sign Up to Your Account
+        </Heading>
+
+        {/* Option 1: OAuth */}
+        <GoogleSignin />
+
+        {/* A seperator. */}
+        <h2
+          style={{
+            textAlign: "center",
+            borderBottom: "1px solid lightgray",
+            lineHeight: "0.1em",
+            margin: "10px 0",
+          }}
+        >
+          <span style={{ background: "white", padding: "0 10px" }}>
+            Or continue with password
+          </span>
+        </h2>
+
+        {/* Option 2: Email and Password. */}
+        <TanstackForm />
+        <Flex>
+          <Flex>
+            <Link href="#">Forgot password?</Link>
+          </Flex>
+          <Flex flexGrow={"1"} />
+          <Flex gap="2">
+            Already have an account?
+            <Link asChild>
+              <ReactLink to="/login">{" Log In"}</ReactLink>
+            </Link>
+          </Flex>
+        </Flex>
+      </Flex>
     </Container>
   );
 }

@@ -14,8 +14,8 @@ async function ensureRepoEditAccess({ repoId, userId }) {
     where: {
       id: repoId,
       OR: [
-        { owner: { id: userId || "undefined" } },
-        { collaborators: { some: { id: userId || "undefined" } } },
+        { owner: { id: userId } },
+        { collaborators: { some: { id: userId } } },
       ],
     },
   });
@@ -32,8 +32,8 @@ async function ensurePodEditAccess({ id, userId }) {
       id,
       repo: {
         OR: [
-          { owner: { id: userId || "undefined" } },
-          { collaborators: { some: { id: userId || "undefined" } } },
+          { owner: { id: userId } },
+          { collaborators: { some: { id: userId } } },
         ],
       },
     },
@@ -145,7 +145,7 @@ const saveViewPort = protectedProcedure
     return true;
   });
 
-const repo = protectedProcedure
+const repo = publicProcedure
   .input(z.object({ id: z.string() }))
   .query(async ({ input: { id }, ctx: { userId } }) => {
     // a user can only access a private repo if he is the owner or a collaborator
@@ -153,13 +153,27 @@ const repo = protectedProcedure
       where: {
         OR: [
           { id, public: true },
-          { id, owner: { id: userId || "undefined" } },
-          { id, collaborators: { some: { id: userId || "undefined" } } },
+          { id, owner: { id: userId } },
+          { id, collaborators: { some: { id: userId } } },
         ],
       },
       include: {
-        owner: true,
-        collaborators: true,
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
+        collaborators: {
+          select: {
+            id: true,
+            email: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
         UserRepoData: {
           where: {
             userId,
@@ -187,7 +201,14 @@ async function doCreateRepo({ userId }) {
       },
     },
     include: {
-      owner: true,
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          firstname: true,
+          lastname: true,
+        },
+      },
     },
   });
   return repo;
@@ -205,7 +226,7 @@ const updateVisibility = protectedProcedure
     const repo = await prisma.repo.findFirst({
       where: {
         id: repoId,
-        owner: { id: userId || "undefined" },
+        owner: { id: userId },
       },
     });
     if (!repo) throw Error("Repo not found");
@@ -354,8 +375,8 @@ const star = protectedProcedure
       where: {
         id: repoId,
         OR: [
-          { owner: { id: userId || "undefined" } },
-          { collaborators: { some: { id: userId || "undefined" } } },
+          { owner: { id: userId } },
+          { collaborators: { some: { id: userId } } },
           { public: true },
         ],
       },

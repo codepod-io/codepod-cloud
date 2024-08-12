@@ -271,6 +271,11 @@ function toggleFold(get: Getter, set: Setter, id: string) {
       folded: !node.data.folded,
     },
   });
+  if (!node.data.folded) {
+    // This is a fold operation. This doesn't trigger auto-layout because
+    // nodesMap sees no change.
+    debouncedAutoLayoutTree(get, set);
+  }
   updateView(get, set);
 }
 
@@ -330,6 +335,11 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
 
   // I think this place update the node's width/height
   const nextNodes = applyNodeChanges(changes, nodes);
+
+  // console.log(
+  //   "changes",
+  //   changes.map((c) => c.type)
+  // );
 
   changes.forEach((change) => {
     switch (change.type) {
