@@ -57,7 +57,6 @@
     "d3-force": "^3.0.0",
     "d3-quadtree": "^3.0.1",
     "d3-timer": "^3.0.1",
-    "formik": "^2.2.9",
     "framer-motion": "^10.16.16",
     "graphql": "^16.8.0",
     "html-to-image": "^1.11.11",
