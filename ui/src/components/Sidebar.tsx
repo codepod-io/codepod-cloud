@@ -49,9 +49,7 @@ import {
 } from "@/lib/store/settingSlice";
 import { useAtom, useSetAtom } from "jotai";
 import {
-  ATOM_autoLayoutTree,
   ATOM_centerSelection,
-  ATOM_messUp,
   ATOM_nodes,
   ATOM_selectedPods,
   ATOM_selectPod,
@@ -81,7 +79,6 @@ function SidebarSettings() {
   const [copilotManualMode, setCopilotManualMode] = useAtom(
     ATOM_copilotManualMode
   );
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   return (
     <Box>

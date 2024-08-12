@@ -499,8 +499,10 @@ function autoLayoutTree(get: Getter, set: Setter) {
   updateView(get, set);
 }
 
-export const ATOM_autoLayoutTree = atom(null, autoLayoutTree);
+// DEPRECATED
+const ATOM_autoLayoutTree = atom(null, autoLayoutTree);
 
+// DEPRECATED
 function messUp(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   const nodes = Array.from(nodesMap.values());
@@ -514,4 +516,5 @@ function messUp(get: Getter, set: Setter) {
   updateView(get, set);
 }
 
-export const ATOM_messUp = atom(null, messUp);
+// DEPRECATED
+const ATOM_messUp = atom(null, messUp);
