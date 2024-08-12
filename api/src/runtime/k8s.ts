@@ -414,9 +414,6 @@ export const k8sRouter = router({
       // remove k8s resources
       //
       // FIXME safe guard to make sure the pods exist.
-      //
-      // FIXME the container is deleted. But the status is not reset. There are
-      // something wrong with yjs server handling runtime role.
       console.log("Deleting deployment");
       try {
         await k8sAppsApi.deleteNamespacedDeployment(
@@ -537,7 +534,6 @@ export async function getYDoc({ repoId, token }): Promise<Y.Doc> {
       // BC is more complex to track our custom Uploading status and SyncDone events.
       disableBc: true,
       params: {
-        role: "runtime",
         token,
       },
       // IMPORTANT: import websocket, because we're running it in node.js

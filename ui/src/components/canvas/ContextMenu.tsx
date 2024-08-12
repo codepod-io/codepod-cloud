@@ -1,21 +1,11 @@
-import {
-  useCallback,
-  useState,
-  useRef,
-  useContext,
-  useEffect,
-  memo,
-  ChangeEvent,
-} from "react";
-import * as React from "react";
-import { useReactFlow, useStore as useRfStore, useKeyPress } from "reactflow";
+import { useState, useEffect, ChangeEvent } from "react";
+import { useKeyPress } from "reactflow";
 import "reactflow/dist/style.css";
 
-import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
-import { debounce } from "lodash";
 import { Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useSetAtom } from "jotai";
 import { ATOM_nodes } from "@/lib/store/canvasSlice";
+import { FileUp } from "lucide-react";
 
 export function useContextMenu() {
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -130,7 +120,7 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
             handleItemClick();
           }}
         >
-          <FileUploadTwoToneIcon />
+          <FileUp />
           Import
         </DropdownMenu.Item>
 

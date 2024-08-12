@@ -1,29 +1,24 @@
 import React, { useEffect, useState, useRef } from "react";
 
-import Avatar from "@mui/material/Avatar";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-import Link from "@mui/material/Link";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import Button from "@mui/material/Button";
-import Alert from "@mui/material/Alert";
-
-import { useFormik } from "formik";
-
 import { Link as ReactLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/lib/auth";
-import Divider from "@mui/material/Divider";
 import { trpc } from "@/lib/trpc";
+import {
+  Box,
+  Button,
+  Container,
+  Flex,
+  Heading,
+  Link,
+  TextField,
+} from "@radix-ui/themes";
+import { toast } from "react-toastify";
 
-const theme = createTheme();
+import { zodValidator } from "@tanstack/zod-form-adapter";
+
+import { FieldApi, useForm } from "@tanstack/react-form";
+import { z } from "zod";
 
 // useLoadGsiScript from
 // https://github.com/MomenSherif/react-oauth/blob/244d2b970d910af18a1bfdf2a74625834e087b40/packages/%40react-oauth/google/src/GoogleOAuthProvider.tsx
@@ -114,122 +109,179 @@ export function GoogleSignin() {
   return <Box id="googleLoginDiv"></Box>;
 }
 
-export function SignIn() {
-  /* eslint-disable no-unused-vars */
-  const { isSignedIn, signIn } = useAuth();
-  const signin = trpc.user.login.useMutation();
-  const [error, setError] = useState<null | string>(null);
+function FieldInfo({ field }: { field: FieldApi<any, any, any, any> }) {
+  return (
+    <>
+      {field.state.meta.isTouched && field.state.meta.errors.length ? (
+        <em style={{ color: "red" }}>{field.state.meta.errors.join(",")}</em>
+      ) : null}
+      {field.state.meta.isValidating ? (
+        <div style={{ color: "blue" }}>"Validating..."</div>
+      ) : null}
+    </>
+  );
+}
 
-  let navigate = useNavigate();
+function TanstackForm() {
+  const { isSignedIn, signIn } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
     if (isSignedIn()) {
       navigate("/");
     }
-  }, [isSignedIn, navigate]);
-
-  useEffect(() => {
-    if (signin.error) {
-      setError(signin.error.message);
-    }
-    if (signin.data?.token) {
-      signIn(signin.data.token);
-    }
-  }, [signin]);
-
-  const formik = useFormik({
-    initialValues: {
+  });
+  const login = trpc.user.login.useMutation({
+    onSuccess: (data) => {
+      if (data.token) {
+        signIn(data.token);
+        navigate("/");
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+  const form = useForm({
+    defaultValues: {
       email: "",
       password: "",
     },
-    // validationSchema: validationSchema,
-    onSubmit: (values) => {
-      setError(null);
-      return signin.mutate({
-        email: values.email,
-        password: values.password,
-      });
+    onSubmit: async ({ value }) => {
+      login.mutate(value);
     },
+    validatorAdapter: zodValidator(),
   });
-
+  const [showPassword, setShowPassword] = useState(false);
   return (
-    <ThemeProvider theme={theme}>
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <Box
-          sx={{
-            marginTop: 8,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+      style={{
+        width: "100%",
+      }}
+    >
+      <Flex direction="column" gap="3">
+        <div>
+          <form.Field
+            name="email"
+            validators={{
+              onChange: z.string().email(),
+            }}
+            children={(field) => (
+              <>
+                {/* <label htmlFor={field.name}>Email:</label> */}
+                <TextField.Root
+                  placeholder="Email"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                ></TextField.Root>
+                <FieldInfo field={field} />
+              </>
+            )}
+          />
+        </div>
+        <div>
+          <form.Field
+            name="password"
+            validators={{
+              onChange: z.string().min(1, "Password Cannot be empty"),
+            }}
+            children={(field) => (
+              <>
+                {/* <label htmlFor={field.name}>Password:</label> */}
+                <TextField.Root
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                >
+                  <TextField.Slot></TextField.Slot>
+                  <TextField.Slot>
+                    <Button
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowPassword(!showPassword);
+                      }}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </Button>
+                  </TextField.Slot>
+                </TextField.Root>
+                <FieldInfo field={field} />
+              </>
+            )}
+          />
+        </div>
+        {/* <Button type="submit">Submit</Button> */}
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+          children={([canSubmit, isSubmitting]) => (
+            <Button type="submit" disabled={!canSubmit}>
+              {isSubmitting ? "..." : "Log In"}
+            </Button>
+          )}
+        />
+      </Flex>
+    </form>
+  );
+}
+
+export function SignIn() {
+  return (
+    <Container flexGrow={"1"} size="1">
+      <Flex direction="column" gap="6">
+        <Flex style={{ backgroundColor: "red" }} flexGrow="1"></Flex>
+        <Heading
+          as="h1"
+          size="8"
+          style={{
+            // center the heading
+            textAlign: "center",
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Sign in
-          </Typography>
-          <GoogleSignin />
-          <Divider />
-          <Box>Or login with email</Box>
-          <Divider />
-          <Box
-            component="form"
-            onSubmit={formik.handleSubmit}
-            noValidate
-            sx={{ mt: 1 }}
-          >
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              value={formik.values.email}
-              onChange={formik.handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={formik.values.password}
-              onChange={formik.handleChange}
-            />
-            {error && <Alert severity="error">{error}</Alert>}
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Sign In
-            </Button>
-            <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                <Link component={ReactLink} to="/signup">
-                  {"Don't have an account? Sign Up"}
-                </Link>
-                {/* <Link href="/signup" variant="body2">
-                  {"Don't have an account? Sign Up"}
-                </Link> */}
-              </Grid>
-            </Grid>
-          </Box>
-        </Box>
-      </Container>
-    </ThemeProvider>
+          Log In to Your Account
+        </Heading>
+
+        {/* Option 1: OAuth */}
+        <GoogleSignin />
+
+        {/* A seperator. */}
+        <h2
+          style={{
+            textAlign: "center",
+            borderBottom: "1px solid lightgray",
+            lineHeight: "0.1em",
+            margin: "10px 0",
+          }}
+        >
+          <span style={{ background: "white", padding: "0 10px" }}>
+            Or continue with password
+          </span>
+        </h2>
+
+        {/* Option 2: Email and Password. */}
+        <TanstackForm />
+        <Flex>
+          <Flex>
+            <Link href="#">Forgot password?</Link>
+          </Flex>
+          <Flex flexGrow={"1"} />
+          <Flex gap="2">
+            Don't have an account?
+            <Link asChild>
+              <ReactLink to="/signup">{" Sign Up"}</ReactLink>
+            </Link>
+          </Flex>
+        </Flex>
+      </Flex>
+    </Container>
   );
 }

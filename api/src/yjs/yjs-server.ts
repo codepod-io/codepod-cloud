@@ -21,6 +21,9 @@ interface TokenInterface {
 async function checkPermission({
   docName,
   userId,
+}: {
+  docName: string;
+  userId?: string;
 }): Promise<"read" | "write" | "none"> {
   // Docname is socket/he3og11sp3b73oh7k47o
   // We need to get the actual ID of the pod
@@ -80,26 +83,24 @@ export async function startWsServer({ jwtSecret, port }) {
     const url = new URL(`ws://${request.headers.host}${request.url}`);
     const docName = request.url.slice(1).split("?")[0];
     const token = url.searchParams.get("token");
-    const role = url.searchParams.get("role");
 
-    if (!token) {
-      console.log("Unauthorized.");
-      deny();
-      return;
+    let userId: string | undefined;
+    if (token) {
+      const decoded = jwt.verify(token, jwtSecret) as TokenInterface;
+      userId = decoded.id;
     }
-    const decoded = jwt.verify(token, jwtSecret) as TokenInterface;
-    const userId = decoded.id;
+
     const permission = await checkPermission({ docName, userId });
     switch (permission) {
       case "read":
         // TODO I should disable editing in the frontend as well.
         wss.handleUpgrade(request, socket, head, function done(ws) {
-          wss.emit("connection", ws, request, { readOnly: true, role });
+          wss.emit("connection", ws, request, { readOnly: true });
         });
         break;
       case "write":
         wss.handleUpgrade(request, socket, head, function done(ws) {
-          wss.emit("connection", ws, request, { readOnly: false, role });
+          wss.emit("connection", ws, request, { readOnly: false });
         });
         break;
       case "none":

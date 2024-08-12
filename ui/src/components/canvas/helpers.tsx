@@ -1,44 +1,13 @@
+import { useState, useRef, useEffect } from "react";
 import {
-  useCallback,
-  useState,
-  useRef,
-  useContext,
-  useEffect,
-  memo,
-  ChangeEvent,
-} from "react";
-import * as React from "react";
-import ReactFlow, {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  Background,
-  BackgroundVariant,
-  MiniMap,
-  Controls,
-  Handle,
   useReactFlow,
-  Position,
-  ConnectionMode,
-  MarkerType,
   Node,
-  ReactFlowProvider,
-  Edge,
-  useViewport,
   XYPosition,
   useStore as useRfStore,
-  useKeyPress,
-  SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import Box from "@mui/material/Box";
-
-import * as Y from "yjs";
-
 import { timer } from "d3-timer";
-
-import { useAtom } from "jotai";
 
 /**
  * Animate nodes and edges when their positions change.

@@ -1,20 +1,18 @@
-import Box from "@mui/material/Box";
-import Alert from "@mui/material/Alert";
-import Stack from "@mui/material/Stack";
+import { Box, Container } from "@radix-ui/themes";
 
 export function Home() {
   return (
     <Box
-      sx={{
+      style={{
         maxWidth: "lg",
-        m: "auto",
+        margin: "auto",
       }}
     >
-      <Box my={20}>
-        <Box sx={{ textAlign: "center", fontSize: 50 }}>
+      <Container>
+        <Box style={{ textAlign: "center", fontSize: 50 }}>
           Coding on a canvas, organized.
         </Box>
-      </Box>
+      </Container>
     </Box>
   );
 }

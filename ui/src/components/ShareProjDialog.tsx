@@ -1,44 +1,23 @@
-import DialogTitle from "@mui/material/DialogTitle";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Alert from "@mui/material/Alert";
-import { AlertColor } from "@mui/material/Alert";
-import Snackbar from "@mui/material/Snackbar";
-import { useEffect, useState } from "react";
-import ListSubheader from "@mui/material/ListSubheader";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import ListItemAvatar from "@mui/material/ListItemAvatar";
-import GroupAddIcon from "@mui/icons-material/GroupAdd";
-import Avatar from "@mui/material/Avatar";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import FileCopyIcon from "@mui/icons-material/FileCopy";
-import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
-import CloseIcon from "@mui/icons-material/Close";
-import React, { useContext, useReducer } from "react";
+import { useRef } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { trpc } from "@/lib/trpc";
-import {
-  ATOM_collaborators,
-  ATOM_isPublic,
-  ATOM_repoName,
-  ATOM_shareOpen,
-} from "@/lib/store/atom";
+import { ATOM_repoId } from "@/lib/store/atom";
 import { useAtom, useAtomValue } from "jotai";
+import {
+  Dialog,
+  Flex,
+  Text,
+  TextField,
+  Button,
+  Box,
+  Card,
+  Avatar,
+  DropdownMenu,
+} from "@radix-ui/themes";
+import { toast, ToastContainer } from "react-toastify";
+import { Check, Earth, Link, Lock } from "lucide-react";
 
 const initialState = { showInfo: false, status: "info", message: "wait..." };
-
-interface ShareProjDialogProps {
-  open?: boolean;
-  id?: string;
-}
 
 function reducer(state, action) {
   switch (action.type) {
@@ -107,274 +86,299 @@ function reducer(state, action) {
   }
 }
 
-function CollaboratorList({ repoId, collaborators, dispatch }) {
-  const deleteCollaborator = trpc.repo.deleteCollaborator.useMutation();
-
-  useEffect(() => {
-    if (deleteCollaborator.isError) {
-      dispatch({
-        type: "delete error",
-        message: deleteCollaborator.error.message,
-      });
-    }
-    if (deleteCollaborator.data) {
-      dispatch({ type: "delete success", name: deleteCollaborator.data });
-    }
-  }, [deleteCollaborator]);
-
-  if (!collaborators || collaborators?.length === 0) {
-    return (
-      <List dense={true}>
-        <ListSubheader sx={{ fontWeight: "bold" }}>Collaborators</ListSubheader>
-        <ListItem>
-          <ListItemIcon>
-            <GroupAddIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="No collaborators yet?"
-            secondary="Invite a friend right now!"
-            key="no-collaborators"
-          />
-        </ListItem>
-      </List>
-    );
-  }
+function CollaboratorList({
+  repoId,
+  owner,
+  collaborators,
+}: {
+  repoId: string;
+  owner: { id: string; firstname: string; lastname: string; email: string };
+  collaborators: {
+    id: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+  }[];
+}) {
+  const utils = trpc.useUtils();
+  const deleteCollaborator = trpc.repo.deleteCollaborator.useMutation({
+    onSuccess: (data, { collaboratorId }) => {
+      toast.success(`Remove the collaborator ${collaboratorId} successfully!`);
+      // invalidate the query to get the latest data
+      utils.repo.repo.invalidate({ id: repoId });
+    },
+    onError: (error) => {
+      toast.error("Remove collaborator failed: " + error.message);
+    },
+  });
 
   return (
-    <List
-      sx={{
-        maxHeight: 300,
-        overflow: "auto",
-      }}
-      dense={true}
-    >
-      <ListSubheader sx={{ fontWeight: "bold" }}>Collaborators</ListSubheader>
-      {collaborators?.map((collab) => (
-        <ListItem
-          secondaryAction={
-            <IconButton
-              edge="end"
-              aria-label="delete"
-              onClick={() =>
-                deleteCollaborator.mutate({
-                  repoId: repoId,
-                  collaboratorId: collab.id,
-                })
-              }
-            >
-              <CloseIcon />
-            </IconButton>
-          }
-          sx={{ "&:hover": { backgroundColor: "#f5f5f5" } }}
-          key={collab.id}
-        >
-          <ListItemAvatar>
-            <Avatar> {collab.firstname[0] + collab.lastname[0]} </Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={collab.firstname + " " + collab.lastname}
-            secondary={collab.email}
-            key={collab.id}
+    <Flex direction="column" gap="2">
+      {/* Owner */}
+      <Card variant="ghost" style={{ margin: 0 }}>
+        <Flex gap="3" align="center">
+          <Avatar
+            size="3"
+            // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+            radius="full"
+            fallback={owner.firstname[0] + owner.lastname[0]}
           />
-        </ListItem>
+          <Box>
+            <Text as="div" size="2" weight="bold">
+              {owner.firstname + " " + owner.lastname}
+            </Text>
+            <Text as="div" size="2" color="gray">
+              {owner.email}
+            </Text>
+          </Box>
+          {/* role */}
+          <Flex flexGrow="1" />
+          <Text as="div" size="2" color="gray">
+            Owner
+          </Text>
+        </Flex>
+      </Card>
+      {collaborators?.map((collab) => (
+        <Card key={collab.id} variant="ghost" style={{ margin: 0 }}>
+          <Flex gap="3" align="center">
+            <Avatar
+              size="3"
+              // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+              radius="full"
+              fallback={collab.firstname[0] + collab.lastname[0]}
+            />
+            <Box>
+              <Text as="div" size="2" weight="bold">
+                {collab.firstname + " " + collab.lastname}
+              </Text>
+              <Text as="div" size="2" color="gray">
+                {collab.email}
+              </Text>
+            </Box>
+            <Flex flexGrow="1" />
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button variant="soft">
+                  Editor
+                  <DropdownMenu.TriggerIcon />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Item disabled>
+                  <Check style={{ opacity: 0 }} />
+                  Viewer
+                </DropdownMenu.Item>
+                <DropdownMenu.Item>
+                  <Check /> Editor
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item color="red" disabled>
+                  Transfer Ownership
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  color="red"
+                  onClick={() => {
+                    deleteCollaborator.mutate({
+                      repoId: repoId,
+                      collaboratorId: collab.id,
+                    });
+                  }}
+                >
+                  Remove Access
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </Flex>
+        </Card>
       ))}
-    </List>
+    </Flex>
   );
 }
 
-const useUpdateVisibility = ({ dispatch }) => {
-  const updateVisibility = trpc.repo.updateVisibility.useMutation();
+export function ShareProjDialog() {
+  const [repoId] = useAtom(ATOM_repoId);
+  if (!repoId) throw new Error("repoId is null");
 
-  useEffect(() => {
-    if (updateVisibility.isError) {
-      dispatch({
-        type: "change visibility error",
-        message: updateVisibility.error.message,
-      });
-    }
-    if (updateVisibility.isSuccess) {
-      dispatch({ type: "change visibility success" });
-    }
-  }, [updateVisibility]);
-  return updateVisibility;
-};
+  const { isLoading, isError, isSuccess, data } = trpc.repo.repo.useQuery(
+    { id: repoId },
+    { retry: false }
+  );
+  if (isLoading) return <>Loading</>;
+  if (isError) return <>Error</>;
+  if (!data) return <>No data</>;
+  const { collaborators, owner, public: isPublic, name } = data;
 
-const useAddCollaborator = ({ dispatch }) => {
-  const addCollaborator = trpc.repo.addCollaborator.useMutation();
-  useEffect(() => {
-    if (addCollaborator.isError) {
-      dispatch({
-        type: "inivite error",
-        message: addCollaborator.error.message,
-      });
-    }
-    if (addCollaborator.isSuccess) {
-      dispatch({ type: "inivite success" });
-    }
-  }, [addCollaborator]);
-  return addCollaborator;
-};
+  const url = `${window.location.protocol}//${window.location.host}/repo/${repoId}`;
+  const inputRef = useRef<HTMLInputElement>(null);
 
-const aboutVisibility = `A private project is only visible to you and collaborators, while a public
-   project is visible to everyone. For both of them, only the owner can invite
-   collaborators by their email addresses, and only collaborators can edit the
-   project. The owner can change the visibility of a project at any time.`;
+  const utils = trpc.useUtils();
 
-export function ShareProjDialog({
-  open = false,
-  id = "",
-}: ShareProjDialogProps) {
-  const [showHelp, setShowHelp] = useState(false);
-  const [feedback, dispatch] = useReducer(reducer, initialState);
-  const [isPublic] = useAtom(ATOM_isPublic);
-  const [collaborators] = useAtom(ATOM_collaborators);
-  const [shareOpen, setShareOpen] = useAtom(ATOM_shareOpen);
-  const title = useAtomValue(ATOM_repoName);
-  const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const updateVisibility = useUpdateVisibility({ dispatch });
-  const addCollaborator = useAddCollaborator({ dispatch });
+  const addCollaborator = trpc.repo.addCollaborator.useMutation({
+    onSuccess: () => {
+      toast.success("Invitation is sent successfully!");
+      // invalidate the query to get the latest data
+      utils.repo.repo.invalidate({ id: repoId });
+    },
+    onError: (error) => {
+      toast.error("Invitation failed: " + error.message);
+    },
+  });
 
-  function onCloseAlert(event: React.SyntheticEvent | Event, reason?: string) {
-    if (reason === "clickaway") {
-      return;
-    }
-    dispatch({ type: "close info" });
-  }
+  const updateVisibility = trpc.repo.updateVisibility.useMutation({
+    onSuccess: () => {
+      toast.success("Change visibility successfully!");
+      // invalidate the query to get the latest data
+      utils.repo.repo.invalidate({ id: repoId });
+    },
+    onError: (error) => {
+      toast.error("Change visibility failed: " + error.message);
+    },
+  });
 
   return (
     <>
-      <Dialog open={open} onClose={() => setShareOpen(false)}>
-        <DialogTitle>
-          Share Project:{" "}
-          <span style={{ fontFamily: "monospace" }}>{title || "Untitled"}</span>
-          <IconButton
-            aria-label="close"
-            onClick={() => setShareOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            id="link"
-            type="text"
-            variant="standard"
-            label="Link"
-            defaultValue={url}
-            fullWidth
-            InputProps={{
-              readOnly: true,
-              endAdornment: (
-                <CopyToClipboard
-                  text={url}
-                  onCopy={() => {
-                    dispatch({ type: "copy success" });
-                  }}
-                >
-                  <Tooltip title="Copy link">
-                    <IconButton>
-                      <FileCopyIcon />
-                    </IconButton>
-                  </Tooltip>
-                </CopyToClipboard>
-              ),
-            }}
-          ></TextField>
+      <Dialog.Root>
+        <Dialog.Trigger>
+          <Button variant="soft">Share</Button>
+        </Dialog.Trigger>
 
-          <DialogContentText>
-            The project is currently {isPublic ? "public" : "private"}.
-            <Tooltip
-              title="learn more?"
-              placement="top"
-              sx={{ marginBottom: 1, marginLeft: -1 }}
-            >
-              <IconButton
-                onClick={() => setShowHelp((prev) => !prev)}
-                color={showHelp ? "primary" : "inherit"}
-              >
-                <HelpOutlineOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Button
-              sx={{ float: "right" }}
-              onClick={() => {
-                updateVisibility.mutate({
-                  repoId: id,
-                  isPublic: !isPublic,
-                });
+        <Dialog.Content maxWidth="600px">
+          {/* So that the toast message appear on the Portal. */}
+          <ToastContainer pauseOnFocusLoss={false} />
+          <Dialog.Title>
+            Share Project:{" "}
+            <span
+              style={{
+                fontFamily: "monospace",
+                color: "blue",
+                marginLeft: "5px",
               }}
             >
-              Make it {isPublic ? "private" : "public"}
-            </Button>
-          </DialogContentText>
+              {name || "Untitled"}
+            </span>
+          </Dialog.Title>
 
-          {showHelp && (
-            <DialogContentText
-              color="primary"
-              variant="body2"
-              fontSize="small"
-              sx={{ maxWidth: 500 }}
-            >
-              {aboutVisibility}
-            </DialogContentText>
-          )}
+          {/* ==== Add people by email */}
+
+          <label>
+            <Flex gap="3">
+              <TextField.Root
+                placeholder="Add people by email"
+                ref={inputRef}
+                style={{
+                  flexGrow: 1,
+                }}
+              />
+              <Button
+                variant="soft"
+                onClick={() => {
+                  const email = inputRef?.current?.value;
+                  if (!email) {
+                    toast.error("Email cannot be empty");
+                    return;
+                  }
+                  addCollaborator.mutate({ repoId, email });
+                }}
+              >
+                Invite
+              </Button>
+            </Flex>
+          </label>
+
+          {/* People with access */}
+
+          <Text as="div" mt="5" weight="bold">
+            People with access
+          </Text>
 
           <CollaboratorList
-            repoId={id}
+            repoId={repoId}
+            owner={owner}
             collaborators={collaborators}
-            dispatch={dispatch}
           />
 
-          <DialogContentText>
-            Enter the email address of the person you want to share this project
-            with.
-          </DialogContentText>
+          {/* General Access Setting */}
+          <Text as="div" size="2" mb="1" weight="bold" mt="5">
+            General access
+          </Text>
+          <Card variant="ghost" style={{ margin: 0 }}>
+            <Flex gap="3" align="center">
+              <Avatar
+                size="3"
+                // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+                radius="full"
+                fallback={isPublic ? <Earth color="green" /> : <Lock />}
+              />
+              <Box>
+                <Text as="div" size="2" weight="bold">
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                      {isPublic ? (
+                        <Button variant="ghost">
+                          Anyone with the link
+                          <DropdownMenu.TriggerIcon />
+                        </Button>
+                      ) : (
+                        <Button variant="ghost">
+                          Restricted
+                          <DropdownMenu.TriggerIcon />
+                        </Button>
+                      )}
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content>
+                      <DropdownMenu.Item
+                        onSelect={() => {
+                          updateVisibility.mutate({
+                            repoId,
+                            isPublic: false,
+                          });
+                        }}
+                      >
+                        <Check style={{ opacity: isPublic ? 0 : 1 }} />
+                        Restricted
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onSelect={() => {
+                          updateVisibility.mutate({
+                            repoId,
+                            isPublic: true,
+                          });
+                        }}
+                      >
+                        <Check style={{ opacity: isPublic ? 1 : 0 }} />
+                        Anyone with the link
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
+                </Text>
+                <Text as="div" size="2" color="gray">
+                  Only people with access can open with the link
+                </Text>
+              </Box>
+            </Flex>
+          </Card>
 
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Email Address"
-            type="email"
-            variant="standard"
-            fullWidth
-            inputRef={inputRef}
-          />
-          <DialogActions>
-            <Button
-              onClick={() => {
-                setShareOpen(false);
+          <Flex gap="3" mt="4" justify="end">
+            <CopyToClipboard
+              text={url}
+              onCopy={() => {
+                // enqueueSnackbar(`copy success`, {
+                //   variant: "success",
+                // });
+                toast.success("Link is copied to clipboard!");
               }}
             >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                const email = inputRef?.current?.value;
-                if (!email) {
-                  dispatch({ type: "error", message: "Email cannot be empty" });
-                  return;
-                }
-                addCollaborator.mutate({ repoId: id, email });
-              }}
-            >
-              Share
-            </Button>
-          </DialogActions>
-        </DialogContent>
-      </Dialog>
-      <Snackbar
-        open={feedback?.showInfo}
-        autoHideDuration={3000}
-        onClose={onCloseAlert}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert severity={feedback?.status as AlertColor} onClose={onCloseAlert}>
-          {feedback?.message}
-        </Alert>
-      </Snackbar>
+              <Button variant="outline">
+                <Link /> Copy Link
+              </Button>
+            </CopyToClipboard>
+            <Flex flexGrow={"1"} />
+            <Dialog.Close>
+              <Button>Done</Button>
+            </Dialog.Close>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
     </>
   );
 }

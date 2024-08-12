@@ -1,28 +1,21 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Link as ReactLink } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Link from "@mui/material/Link";
-import Alert from "@mui/material/Alert";
-import AlertTitle from "@mui/material/AlertTitle";
 
-import {
-  useEffect,
-  useState,
-  useRef,
-  useContext,
-  memo,
-  createContext,
-  useCallback,
-} from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import debounce from "lodash/debounce";
 
 import { Canvas } from "@/components/Canvas";
 import { UserProfile } from "@/components/Header";
 import { SidebarLeft, SidebarRight } from "@/components/Sidebar";
-import { Typography } from "@mui/material";
 
-import { Link as RadixLink, TextField } from "@radix-ui/themes";
+import {
+  Text,
+  Link as RadixLink,
+  TextField,
+  Callout,
+  Avatar,
+} from "@radix-ui/themes";
 
 import { initParser } from "@/lib/parser";
 import { trpc } from "@/lib/trpc";
@@ -50,19 +43,23 @@ import {
 } from "@/lib/store/runtimeSlice";
 import { MyKBar } from "@/components/MyKBar";
 import { Container, Flex } from "@radix-ui/themes";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { ShareProjDialog } from "@/components/ShareProjDialog";
 
 function NotFoundAlert({}) {
   return (
-    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
-      <Alert severity="error">
-        <AlertTitle>Error</AlertTitle>
+    <Callout.Root color="red">
+      <Callout.Icon>
+        <InfoCircledIcon /> Error
+      </Callout.Icon>
+      <Callout.Text>
         The repo you are looking for is not found. Please check the URL. Go back
         your{" "}
-        <Link component={ReactLink} to="/">
-          dashboard
-        </Link>
-      </Alert>
-    </Box>
+        <RadixLink asChild>
+          <ReactLink to="/">dashboard</ReactLink>
+        </RadixLink>
+      </Callout.Text>
+    </Callout.Root>
   );
 }
 
@@ -74,7 +71,7 @@ function RepoLoader({ children }) {
 
   // load the repo
   // FIXME this should be a mutation as it changes the last access time.
-  const repoQuery = trpc.repo.repo.useQuery({ id });
+  const repoQuery = trpc.repo.repo.useQuery({ id }, { retry: false });
   const setRepoName = useSetAtom(ATOM_repoName);
   const setRepoZoom = useSetAtom(ATOM_repoZoom);
   const setRepoX = useSetAtom(ATOM_repoX);
@@ -108,11 +105,15 @@ function RepoLoader({ children }) {
       }
     }
   }, [repoQuery, me]);
-  if (repoQuery.isLoading) return <Box>Loading</Box>;
+  if (repoQuery.isLoading) return <>Loading</>;
   if (repoQuery.isError) {
-    return <Box>Error: Repo not found</Box>;
+    console.log("repoQuery.isError");
+    return <NotFoundAlert />;
   }
-  if (!repoQuery.data) return <NotFoundAlert />;
+  if (!repoQuery.data) {
+    console.log("repoQuery.data is null");
+    return <NotFoundAlert />;
+  }
   return children;
 }
 
@@ -145,7 +146,7 @@ function WaitForProvider({ children }) {
   const [providerSynced] = useAtom(ATOM_providerSynced);
   const disconnectYjs = useSetAtom(ATOM_disconnectYjs);
   const connectYjs = useSetAtom(ATOM_connectYjs);
-  const me = trpc.user.me.useQuery();
+  const me = trpc.user.me.useQuery(undefined, { retry: false });
   useEffect(() => {
     connectYjs(me.data?.firstname || "Anonymous");
     return () => {
@@ -154,23 +155,12 @@ function WaitForProvider({ children }) {
   }, [connectYjs, disconnectYjs]);
   if (!providerSynced)
     return (
-      <Box>
+      <>
         {/* Show the header while loading yjs doc. */}
         <Header />
-        <Box>Loading Yjs Doc ..</Box>
-      </Box>
+        <>Loading Yjs Doc ..</>
+      </>
     );
-  return children;
-}
-
-/**
- * This loads users.
- */
-function UserWrapper({ children }) {
-  const { isSignedIn } = useAuth();
-
-  if (!isSignedIn()) return <Box>Not signed In</Box>;
-
   return children;
 }
 
@@ -213,6 +203,59 @@ function Title() {
   );
 }
 
+function ActiveEditors() {
+  return (
+    // Active editors. Tricks: row-reverse AND position: relative.
+    <Flex direction="row-reverse">
+      <Avatar
+        size="3"
+        // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+        radius="full"
+        fallback="+12"
+        style={{
+          // marginRight: "-10px",
+          border: "2px solid white",
+          backgroundColor: "lightgray",
+          position: "relative",
+        }}
+      />
+      <Avatar
+        size="3"
+        src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+        radius="full"
+        fallback="T"
+        style={{
+          marginRight: "-10px",
+          border: "2px solid white",
+          position: "relative",
+        }}
+      />
+      <Avatar
+        size="3"
+        src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+        radius="full"
+        fallback="T"
+        style={{
+          marginRight: "-10px",
+          border: "2px solid white",
+          position: "relative",
+        }}
+      />
+      <Avatar
+        size="3"
+        src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+        radius="full"
+        fallback="T"
+        style={{
+          marginRight: "-10px",
+          border: "2px solid white",
+          position: "relative",
+        }}
+      />
+    </Flex>
+  );
+}
+
 function Header() {
   return (
     <Container
@@ -229,15 +272,19 @@ function Header() {
       <Flex align="center" my="2" gap="3">
         <RadixLink asChild>
           <ReactLink to="/">
-            <Typography noWrap>CodePod</Typography>
+            <Text>CodePod</Text>
           </ReactLink>
         </RadixLink>
         {/* The  left side*/}
-        <Box>/</Box>
+        <>/</>
         {/* <HeaderItem /> */}
         <Title />
         {/* The right side */}
-        <Box flexGrow="1" />
+        <Flex flexGrow="1" />
+
+        {/* <ActiveEditors /> */}
+
+        <ShareProjDialog />
         <UserProfile />
       </Flex>
     </Container>
@@ -247,32 +294,30 @@ function Header() {
 export function Repo() {
   return (
     <Provider>
-      <UserWrapper>
-        <RepoLoader>
-          <WaitForProvider>
-            <ParserWrapper>
-              <Flex direction="column" height="100vh">
-                <Flex>
-                  <Header />
-                </Flex>
-                <Flex
-                  flexGrow={"1"}
-                  // The main content is filled to the entire height.
-                  // Overflow="hidden" is required to make the canvas full height
-                  // without scroll.
-                  overflow={"hidden"}
-                >
-                  <MyKBar />
-                  <SidebarLeft />
-                  <Canvas />
-                  {/* Right sidebar */}
-                  <SidebarRight />
-                </Flex>
+      <RepoLoader>
+        <WaitForProvider>
+          <ParserWrapper>
+            <Flex direction="column" height="100vh">
+              <Flex>
+                <Header />
               </Flex>
-            </ParserWrapper>
-          </WaitForProvider>
-        </RepoLoader>
-      </UserWrapper>
+              <Flex
+                flexGrow={"1"}
+                // The main content is filled to the entire height.
+                // Overflow="hidden" is required to make the canvas full height
+                // without scroll.
+                overflow={"hidden"}
+              >
+                <MyKBar />
+                <SidebarLeft />
+                <Canvas />
+                {/* Right sidebar */}
+                <SidebarRight />
+              </Flex>
+            </Flex>
+          </ParserWrapper>
+        </WaitForProvider>
+      </RepoLoader>
     </Provider>
   );
 }

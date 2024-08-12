@@ -33,15 +33,24 @@ const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
 const signup = publicProcedure
   .input(
     z.object({
-      email: z.string(),
-      password: z.string(),
-      firstname: z.string(),
-      lastname: z.string(),
+      email: z.string().email(),
+      password: z.string().min(1),
+      firstname: z.string().min(1),
+      lastname: z.string().min(1),
     })
   )
   .mutation(async ({ input: { email, password, firstname, lastname } }) => {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
+    // if user already exists, return error
+    const userExists = await prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (userExists) {
+      throw Error(`User with email ${email} already exists.`);
+    }
     const user = await prisma.user.create({
       data: {
         id: await nanoid(),
@@ -60,7 +69,11 @@ const signup = publicProcedure
 
 const updateUser = protectedProcedure
   .input(
-    z.object({ email: z.string(), firstname: z.string(), lastname: z.string() })
+    z.object({
+      email: z.string().email(),
+      firstname: z.string().min(1),
+      lastname: z.string().min(1),
+    })
   )
   .mutation(
     async ({ ctx: { userId }, input: { email, firstname, lastname } }) => {
@@ -90,7 +103,7 @@ const updateUser = protectedProcedure
   );
 
 const login = publicProcedure
-  .input(z.object({ email: z.string(), password: z.string() }))
+  .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
   .mutation(async ({ input: { email, password } }) => {
     // FIXME findUnique seems broken https://github.com/prisma/prisma/issues/5071
     const user = await prisma.user.findFirst({

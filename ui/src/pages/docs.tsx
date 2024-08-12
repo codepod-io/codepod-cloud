@@ -1,13 +1,11 @@
-import Box from "@mui/material/Box";
-
 export function Docs() {
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         textAlign: "center",
       }}
     >
       Documents
-    </Box>
+    </div>
   );
 }

@@ -1,30 +1,5 @@
 import { useEffect, useContext, useState } from "react";
 import { useParams } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Divider from "@mui/material/Divider";
-import Tooltip from "@mui/material/Tooltip";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import Popover from "@mui/material/Popover";
-import StopIcon from "@mui/icons-material/Stop";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import Drawer from "@mui/material/Drawer";
-import MenuList from "@mui/material/MenuList";
-import MenuItem from "@mui/material/MenuItem";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
-import ListItemButton from "@mui/material/ListItemButton";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import Typography from "@mui/material/Typography";
-import TreeView from "@mui/lab/TreeView";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import TreeItem from "@mui/lab/TreeItem";
-
-import { useSnackbar, VariantType } from "notistack";
 
 import {
   Text,
@@ -35,6 +10,10 @@ import {
   Flex,
   IconButton,
   Card,
+  Box,
+  Tooltip,
+  Button,
+  Checkbox,
 } from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
@@ -50,21 +29,13 @@ import {
   Play,
   RefreshCcw,
   CircleStop,
+  ChevronRight,
+  ChevronDown,
+  NotebookPen,
 } from "lucide-react";
 
 import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
-import {
-  FormControlLabel,
-  FormGroup,
-  Stack,
-  Switch,
-  Slider,
-  Input,
-  Grid,
-  Paper,
-  Menu,
-} from "@mui/material";
 import { timeDifference } from "@/lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
@@ -72,18 +43,17 @@ import { match } from "ts-pattern";
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 import {
   ATOM_copilotManualMode,
-  ATOM_devMode,
   ATOM_scopedVars,
   ATOM_showAnnotations,
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useSetAtom } from "jotai";
 import {
-  ATOM_autoLayoutTree,
   ATOM_centerSelection,
-  ATOM_messUp,
+  ATOM_nodes,
   ATOM_selectedPods,
   ATOM_selectPod,
+  ATOM_toggleFold,
 } from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
@@ -94,129 +64,87 @@ import {
   ATOM_yjsStatus,
   ATOM_yjsSyncStatus,
 } from "@/lib/store/yjsSlice";
-import {
-  ATOM_error,
-  ATOM_node2children,
-  ATOM_repoId,
-  ATOM_repoName,
-} from "@/lib/store/atom";
+import { ATOM_repoId, ATOM_repoName } from "@/lib/store/atom";
 import { FpsMeter } from "@/lib/FpsMeter";
+
+import juliaLogo from "@/assets/julia.svg";
+import pythonLogo from "@/assets/python.svg";
+import javascriptLogo from "@/assets/javascript.svg";
+import racketLogo from "@/assets/racket.svg";
 
 function SidebarSettings() {
   const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
   const [showAnnotations, setShowAnnotations] = useAtom(ATOM_showAnnotations);
-  const [devMode, setDevMode] = useAtom(ATOM_devMode);
   const [showLineNumbers, setShowLineNumbers] = useAtom(ATOM_showLineNumbers);
   const [copilotManualMode, setCopilotManualMode] = useAtom(
     ATOM_copilotManualMode
   );
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
 
   return (
     <Box>
-      <Box>
-        <Tooltip title={"Show Line Numbers"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showLineNumbers}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setShowLineNumbers(event.target.checked);
-                  }}
-                />
-              }
-              label="Show Line Numbers"
+      <Flex direction={"column"} gap="2">
+        <Tooltip side="right" content={"Show Line Numbers"}>
+          <Flex gap="3">
+            <Checkbox
+              size="3"
+              checked={showLineNumbers}
+              onClick={(e) => {
+                setShowLineNumbers(!showLineNumbers);
+              }}
             />
-          </FormGroup>
+            <Text size="3">Show Line Numbers</Text>
+          </Flex>
+        </Tooltip>
+        <Tooltip side="right" content={"Enable Scoped Variables"}>
+          <Flex gap="3">
+            <Checkbox
+              size="3"
+              checked={scopedVars}
+              onClick={(e) => {
+                setScopedVars(!scopedVars);
+              }}
+            />
+            <Text size="3">Scoped Variables</Text>
+          </Flex>
+        </Tooltip>
+        <Tooltip side="right" content={"Show Annotations in Editor"}>
+          <Flex gap="3">
+            <Checkbox
+              size="3"
+              checked={showAnnotations}
+              onClick={(e) => {
+                setShowAnnotations(!showAnnotations);
+              }}
+            />
+            <Text size="3">Show Annotations</Text>
+          </Flex>
         </Tooltip>
         <Tooltip
-          title={"Enable Debug Mode, e.g., show pod IDs"}
-          disableInteractive
+          side="right"
+          content={"Ctrl+Shift+Space to trigger Copilot manually"}
         >
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={devMode}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setDevMode(event.target.checked);
-                  }}
-                />
-              }
-              label="Debug Mode"
+          <Flex gap="3">
+            <Checkbox
+              size="3"
+              checked={copilotManualMode}
+              onClick={(e) => {
+                setCopilotManualMode(!copilotManualMode);
+              }}
             />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip title={"Enable Scoped Variables"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={scopedVars}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setScopedVars(event.target.checked);
-                  }}
-                />
-              }
-              label="Scoped Variables"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip title={"Show Annotations in Editor"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showAnnotations}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setShowAnnotations(event.target.checked);
-                  }}
-                />
-              }
-              label="Enable Annotations"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip
-          title={"Ctrl+Shift+Space to trigger Copilot manually"}
-          disableInteractive
-        >
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={copilotManualMode}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setCopilotManualMode(event.target.checked);
-                  }}
-                />
-              }
-              label="Trigger Copilot Manually"
-            />
-          </FormGroup>
+            <Text size="3">Trigger Copilot Manually</Text>
+          </Flex>
         </Tooltip>
         {showAnnotations && (
-          <Stack spacing={0.5}>
+          <Flex direction={"column"} gap={"1"}>
             <Box className="myDecoration-function">Function Definition</Box>
             <Box className="myDecoration-vardef">Variable Definition</Box>
             <Box className="myDecoration-varuse">Function/Variable Use</Box>
             <Box className="myDecoration-varuse my-underline">
               Undefined Variable
             </Box>
-          </Stack>
+          </Flex>
         )}
-      </Box>
+      </Flex>
     </Box>
   );
 }
@@ -251,17 +179,27 @@ function KernelStatus({
           {kernelName}:{" "}
           {match(runtime?.status)
             .with("idle", () => (
-              <Box color="green" component="span">
+              <Box
+                as="span"
+                style={{
+                  color: "green",
+                }}
+              >
                 idle
               </Box>
             ))
             .with("busy", () => (
-              <Box color="yellow" component="span">
+              <Box
+                as="span"
+                style={{
+                  color: "var(--orange-9)",
+                }}
+              >
                 busy
               </Box>
             ))
             .with(undefined, () => (
-              <Box color="red" component="span">
+              <Box as="span" style={{ color: "red" }}>
                 Off
               </Box>
             ))
@@ -368,7 +306,7 @@ const Runtime = () => {
 
   return (
     <Flex direction={"column"} gap="2">
-      <Typography variant="h6">runtime</Typography>
+      <Heading size="2">runtime</Heading>
 
       <KernelStatus kernelName="python" />
       <KernelStatus kernelName="julia" />
@@ -384,10 +322,10 @@ function YjsSyncStatus() {
   const [yjsSyncStatus] = useAtom(ATOM_yjsSyncStatus);
   return (
     <Box>
-      <Stack
+      <Flex
         direction="row"
-        spacing={2}
-        sx={{
+        gap={"2"}
+        style={{
           alignItems: "center",
         }}
       >
@@ -395,36 +333,29 @@ function YjsSyncStatus() {
         {/* {yjsStatus} */}
         Sync Server:
         {match(yjsStatus)
-          .with("connected", () => <Box color="green">connected</Box>)
-          .with("disconnected", () => <Box color="red">disconnected</Box>)
-          .with("connecting", () => <Box color="yellow">connecting</Box>)
+          .with("connected", () => (
+            <Box style={{ color: "green" }}>connected</Box>
+          ))
+          .with("disconnected", () => (
+            <Box style={{ color: "red" }}>disconnected</Box>
+          ))
+          .with("connecting", () => (
+            <Box style={{ color: "yellow" }}>connecting</Box>
+          ))
           // .with("syncing", () => <Box color="green">online</Box>)
           .otherwise(() => `${yjsStatus}`)}
-      </Stack>
-      <Stack direction="row" spacing={2}>
+      </Flex>
+      <Flex direction="row" gap={"2"}>
         Sync Status:
         {match(yjsSyncStatus)
-          .with("uploading", () => <Box color="yellow">uploading</Box>)
-          .with("synced", () => <Box color="green">synced</Box>)
+          .with("uploading", () => (
+            <Box style={{ color: "yellow" }}>uploading</Box>
+          ))
+          .with("synced", () => <Box style={{ color: "green" }}>synced</Box>)
           .otherwise(() => `Unknown: ${yjsSyncStatus}`)}
-      </Stack>
+      </Flex>
     </Box>
   );
-}
-
-function ToastError() {
-  const { enqueueSnackbar } = useSnackbar();
-  const [error, setError] = useAtom(ATOM_error);
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(`ERROR: ${error.msg}`, {
-        variant: error.type as VariantType,
-      });
-      // I'll need to clear this msg once it is displayed
-      setError(null);
-    }
-  }, [enqueueSnackbar, error, setError]);
-  return <Box></Box>;
 }
 
 function ExportJupyterNB() {
@@ -455,13 +386,7 @@ function ExportJupyterNB() {
   };
 
   return (
-    <Button
-      variant="outlined"
-      size="small"
-      color="secondary"
-      onClick={onClick}
-      disabled={loading}
-    >
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
       Jupyter Notebook
     </Button>
   );
@@ -500,13 +425,7 @@ function ExportSVG() {
   };
 
   return (
-    <Button
-      variant="outlined"
-      size="small"
-      color="secondary"
-      onClick={onClick}
-      disabled={loading}
-    >
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
       Download Image
     </Button>
   );
@@ -514,59 +433,129 @@ function ExportSVG() {
 
 function ExportButtons() {
   return (
-    <Stack spacing={1}>
+    <Flex gap={"1"} direction={"column"}>
       <ExportJupyterNB />
       <ExportSVG />
-    </Stack>
+    </Flex>
   );
 }
 
-function PodTreeItem({ id, node2children }) {
+function PodTreeItem({ id }) {
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) return null;
+
   const selectPod = useSetAtom(ATOM_selectPod);
   const setSelectedPods = useSetAtom(ATOM_selectedPods);
   const setCenterSelection = useSetAtom(ATOM_centerSelection);
-
-  if (!node2children.has(id)) return null;
-  const children = node2children.get(id);
+  const toggleFold = useSetAtom(ATOM_toggleFold);
   return (
-    <TreeItem
-      key={id}
-      nodeId={id}
-      label={id.substring(0, 8)}
-      onClick={() => {
-        setSelectedPods(new Set<string>());
-        selectPod({ id, selected: true });
-        setCenterSelection(true);
-      }}
-    >
-      {children.length > 0 &&
-        children.map((child) => (
-          <PodTreeItem key={child} id={child} node2children={node2children} />
-        ))}
-    </TreeItem>
+    <Flex direction="column">
+      <Flex align="center" gap="2">
+        {/* Node type icon */}
+        <Box>
+          {match(node.type)
+            .with("CODE", () =>
+              match(node.data.lang)
+                .with("python", () => (
+                  <img
+                    src={pythonLogo}
+                    style={{
+                      height: "1em",
+                    }}
+                  />
+                ))
+                .with("julia", () => (
+                  <img
+                    src={juliaLogo}
+                    style={{
+                      height: "1em",
+                    }}
+                  />
+                ))
+                .with("javascript", () => (
+                  <img
+                    src={javascriptLogo}
+                    style={{
+                      height: "1em",
+                    }}
+                  />
+                ))
+                .with("racket", () => (
+                  <img
+                    src={racketLogo}
+                    style={{
+                      height: "1em",
+                    }}
+                  />
+                ))
+                .otherwise(() => <Box>???</Box>)
+            )
+            .with("RICH", () => <NotebookPen size={15} />)
+            .otherwise(() => (
+              <Box>???</Box>
+            ))}
+        </Box>
+
+        {/* Node name */}
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setSelectedPods(new Set<string>());
+            selectPod({ id, selected: true });
+            setCenterSelection(true);
+          }}
+        >
+          {id.substring(0, 5)}
+        </Button>
+
+        {/* fold button */}
+        {node.data.children?.length ? (
+          <Button
+            variant="ghost"
+            size="1"
+            style={{
+              padding: 0,
+            }}
+          >
+            {node.data.folded ? (
+              <ChevronRight
+                onClick={() => {
+                  toggleFold(id);
+                }}
+              />
+            ) : (
+              <ChevronDown
+                onClick={() => {
+                  toggleFold(id);
+                }}
+              />
+            )}
+          </Button>
+        ) : null}
+      </Flex>
+
+      {!node.data.folded && (
+        <Flex>
+          <Flex direction="column" style={{ paddingLeft: "15px" }}>
+            {node.data.children?.map((child) => (
+              <PodTreeItem key={child} id={child} />
+            ))}
+          </Flex>
+        </Flex>
+      )}
+    </Flex>
   );
 }
 
 function TableofPods() {
-  const [node2children] = useAtom(ATOM_node2children);
-  // Set all nodes to expanded. Disable the collapse/expand for now.
-  const allIds = Array.from(node2children.keys());
+  // listen to nodes change.
+  const [nodes] = useAtom(ATOM_nodes);
 
   return (
-    <TreeView
-      aria-label="multi-select"
-      defaultCollapseIcon={<ExpandMoreIcon />}
-      defaultExpandIcon={<ChevronRightIcon />}
-      expanded={allIds}
-      multiSelect
-    >
-      {node2children.size > 0 &&
-        node2children!
-          .get("ROOT")!
-          .map((child) => (
-            <PodTreeItem key={child} id={child} node2children={node2children} />
-          ))}
-    </TreeView>
+    <Box>
+      <PodTreeItem key={"ROOT"} id={"ROOT"} />
+    </Box>
   );
 }
 
@@ -665,8 +654,6 @@ function MyTabs({
 }
 
 export function SidebarLeft() {
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
-  const messUp = useSetAtom(ATOM_messUp);
   return (
     <MyTabs
       side="left"
@@ -678,34 +665,15 @@ export function SidebarLeft() {
           content: (
             <Flex direction="column">
               <YjsSyncStatus />
-              <Typography variant="h6">Export to ..</Typography>
+              <Heading size="2">Export to ..</Heading>
               <ExportButtons />
               <Separator my="3" size="4" />
               <Runtime />
               <Separator my="3" size="4" />
-              <Heading mb="2" size="4">
+              <Heading mb="2" size="2">
                 Experimental
               </Heading>
-
-              <Button
-                onClick={() => {
-                  console.log("autolayout tree");
-                  autoLayoutTree();
-                  console.log("done");
-                }}
-              >
-                Layout tree
-              </Button>
-              <Button
-                onClick={() => {
-                  console.log("mess up");
-                  messUp();
-                  console.log("done");
-                }}
-              >
-                Mess Up
-              </Button>
-              <Heading mb="2" size="4">
+              <Heading mb="2" size="2">
                 Performance
               </Heading>
               <FpsMeter />
@@ -718,8 +686,8 @@ export function SidebarLeft() {
           icon: <ListTree />,
           content: (
             <>
-              <Typography variant="h6">Table of Pods</Typography>
-              {/* <TableofPods /> */}
+              <Heading size="2">Table of Pods</Heading>
+              <TableofPods />
             </>
           ),
         },
@@ -737,7 +705,7 @@ export function SidebarLeft() {
           icon: <Settings />,
           content: (
             <>
-              <Typography variant="h6">Site Settings</Typography>
+              <Heading size="2">Site Settings</Heading>
               <SidebarSettings />
             </>
           ),
@@ -748,8 +716,6 @@ export function SidebarLeft() {
 }
 
 export function SidebarRight() {
-  const autoLayoutTree = useSetAtom(ATOM_autoLayoutTree);
-  const messUp = useSetAtom(ATOM_messUp);
   return (
     <MyTabs
       side="right"
@@ -760,28 +726,10 @@ export function SidebarRight() {
           // content: "Make changes to your account.".repeat(10),
           content: (
             <Flex direction="column">
-              <Heading mb="2" size="4">
+              <Heading mb="2" size="2">
                 Right Sidebar
               </Heading>
-
-              <Button
-                onClick={() => {
-                  console.log("autolayout tree");
-                  autoLayoutTree();
-                  console.log("done");
-                }}
-              >
-                Layout tree
-              </Button>
-              <Button
-                onClick={() => {
-                  console.log("mess up");
-                  messUp();
-                  console.log("done");
-                }}
-              >
-                Mess Up
-              </Button>
+              <FpsMeter />
             </Flex>
           ),
         },
@@ -791,8 +739,8 @@ export function SidebarRight() {
           icon: <ListTree />,
           content: (
             <>
-              <Typography variant="h6">Table of Pods</Typography>
-              {/* <TableofPods /> */}
+              <Heading size="2">Table of Pods</Heading>
+              <TableofPods />
             </>
           ),
         },
@@ -801,7 +749,7 @@ export function SidebarRight() {
           icon: <Settings />,
           content: (
             <>
-              <Typography variant="h6">Site Settings</Typography>
+              <Heading size="2">Site Settings</Heading>
               <SidebarSettings />
             </>
           ),
