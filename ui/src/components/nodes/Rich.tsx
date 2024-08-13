@@ -295,8 +295,6 @@ const MyRemirror = ({
     stringHandler: "markdown",
   });
 
-  const [hover, setHover] = useState(false);
-
   // Printing the schema for backend JSON2YXML conversion. This is useful for
   // parsing the prosemirror JSON doc format in the backend (search `json2yxml`
   // funciton).
@@ -340,29 +338,9 @@ const MyRemirror = ({
         userSelect: "text",
         cursor: "auto",
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       overflow="auto"
     >
       <ThemeProvider>
-        {hover && (
-          <Box
-            style={{
-              position: "fixed",
-              top: 0,
-              right: 0,
-              zIndex: 100,
-              border: "solid 1px var(--gray-8)",
-              transform: "translateY(-50%) translateX(-20px)",
-              backgroundColor: "white",
-              borderRadius: "10px",
-              // shadow
-              boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-            }}
-          >
-            <TopRightMenu id={id} />
-          </Box>
-        )}
         <Remirror
           editable={editMode === "edit"}
           manager={manager}
@@ -491,12 +469,6 @@ export const RichNode = memo<Props>(function ({
         // add shadow
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
-      onFocus={() => {
-        setFocused(true);
-      }}
-      onBlur={() => {
-        setFocused(false);
-      }}
     >
       {id !== "ROOT" && <AddNodeHandle id={id} position="top" type="RICH" />}
       {id !== "ROOT" && <AddNodeHandle id={id} position="bottom" type="RICH" />}
@@ -515,10 +487,37 @@ export const RichNode = memo<Props>(function ({
           borderRadius: "5px",
         }}
       >
+        {hover && (
+          <Box
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              zIndex: 100,
+              border: "solid 1px var(--gray-8)",
+              transform: "translateY(-50%) translateX(-20px)",
+              backgroundColor: "white",
+              borderRadius: "10px",
+              // shadow
+              boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+            }}
+          >
+            <TopRightMenu id={id} />
+          </Box>
+        )}
         {/* Two alternative editors */}
 
         {/* <MyLexical id={id} /> */}
-        <MyRemirror id={id} />
+        <Box
+          onFocus={() => {
+            setFocused(true);
+          }}
+          onBlur={() => {
+            setFocused(false);
+          }}
+        >
+          <MyRemirror id={id} />
+        </Box>
 
         <Handles id={id} hover={hover} />
 

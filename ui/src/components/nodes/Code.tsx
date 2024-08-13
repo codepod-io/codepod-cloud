@@ -490,12 +490,6 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
       className="nodrag"
-      onFocus={() => {
-        setFocused(true);
-      }}
-      onBlur={() => {
-        setFocused(false);
-      }}
       ref={ref}
     >
       <AddNodeHandle id={id} position="top" type="CODE" lang={node.data.lang} />
@@ -550,6 +544,12 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
           style={{
             paddingTop: "5px",
             cursor: "auto",
+          }}
+          onFocus={() => {
+            setFocused(true);
+          }}
+          onBlur={() => {
+            setFocused(false);
           }}
         >
           <MyMonaco id={id} />
