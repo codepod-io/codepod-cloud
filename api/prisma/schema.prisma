@@ -88,6 +88,7 @@ model Repo {
     updatedAt     DateTime       @default(now()) @updatedAt
     UserRepoData  UserRepoData[]
     stargazers    User[]         @relation("STAR")
+    numLikes      Int            @default(0)
     yDocBlob      Bytes?
     yDocBlobSize  Int            @default(0)
     Kernel        Kernel[]

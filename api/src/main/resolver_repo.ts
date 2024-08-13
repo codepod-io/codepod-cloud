@@ -72,7 +72,6 @@ const getDashboardRepos = protectedProcedure.query(
             userId: userId,
           },
         },
-        stargazers: true,
       },
     });
     return repos.map((repo) => {
@@ -389,6 +388,7 @@ const star = protectedProcedure
       },
       data: {
         stargazers: { connect: { id: userId } },
+        numLikes: { increment: 1 },
       },
     });
     return true;
@@ -412,6 +412,8 @@ const unstar = protectedProcedure
       },
       data: {
         stargazers: { disconnect: { id: userId } },
+        // FIXME would this decrease if the user is not in the stargazers?
+        numLikes: { decrement: 1 },
       },
     });
     return true;

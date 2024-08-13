@@ -41,20 +41,33 @@ function CreateRepoForm(props) {
   );
 }
 
-const StarButton = ({ repo }) => {
+export const StarButton = ({
+  repo,
+}: {
+  repo: {
+    id: string;
+    userId: string;
+    public: boolean;
+    numLikes: number;
+  };
+}) => {
   const utils = trpc.useUtils();
   const me = trpc.user.me.useQuery();
   const star = trpc.repo.star.useMutation({
     onSuccess(input) {
       utils.repo.getDashboardRepos.invalidate();
+      utils.repo.repo.invalidate({ id: repo.id });
+      utils.user.me.invalidate();
     },
   });
   const unstar = trpc.repo.unstar.useMutation({
     onSuccess(input) {
       utils.repo.getDashboardRepos.invalidate();
+      utils.repo.repo.invalidate({ id: repo.id });
+      utils.user.me.invalidate();
     },
   });
-  const isStarred = repo.stargazers?.map(({ id }) => id).includes(me.data?.id);
+  const isStarred = me?.data?.stars.map(({ id }) => id).includes(repo.id);
   return (
     <>
       {isStarred ? (
@@ -75,7 +88,7 @@ const StarButton = ({ repo }) => {
                 paddingLeft: "5px",
               }}
             >
-              {repo.stargazers.length}
+              {repo.numLikes}
             </Box>
           </IconButton>
         </Tooltip>
@@ -96,7 +109,7 @@ const StarButton = ({ repo }) => {
                 paddingLeft: "5px",
               }}
             >
-              {repo.stargazers.length}
+              {repo.numLikes}
             </Box>
           </IconButton>
         </Tooltip>
@@ -175,10 +188,7 @@ const RepoCard = ({
     createdAt: string;
     updatedAt: string;
     public: boolean;
-    stargazers: {
-      id: string;
-      updatedAt: string;
-    }[];
+    numLikes: number;
     yDocBlobSize: number;
     name: string | null;
     accessedAt: string;
