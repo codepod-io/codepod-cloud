@@ -13,7 +13,7 @@ import {
   Spinner,
   Tooltip,
 } from "@radix-ui/themes";
-import { timeDifference } from "@/lib/utils/utils";
+import { prettyPrintBytes, timeDifference } from "@/lib/utils/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
 import { FileText, LockOpen, ThumbsUp, Trash2, Users } from "lucide-react";
@@ -171,13 +171,6 @@ const DeleteRepoButton = ({ repo }) => {
     </AlertDialog.Root>
   );
 };
-
-function prettyPrintBytes(bytes: number) {
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  if (bytes === 0) return "0 B";
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
-}
 
 const RepoCard = ({
   repo,
