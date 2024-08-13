@@ -36,7 +36,9 @@ import {
 
 import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
-import { timeDifference } from "@/lib/utils/utils";
+import * as Y from "yjs";
+
+import { prettyPrintBytes, timeDifference } from "@/lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
@@ -47,7 +49,7 @@ import {
   ATOM_showAnnotations,
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_centerSelection,
   ATOM_nodes,
@@ -61,6 +63,7 @@ import {
   ATOM_resultMap,
   ATOM_runtimeChanged,
   ATOM_runtimeMap,
+  ATOM_ydoc,
   ATOM_yjsStatus,
   ATOM_yjsSyncStatus,
 } from "@/lib/store/yjsSlice";
@@ -84,7 +87,7 @@ function SidebarSettings() {
     <Box>
       <Flex direction={"column"} gap="2">
         <Tooltip side="right" content={"Show Line Numbers"}>
-          <Flex gap="3">
+          <Flex gap="3" align="center">
             <Checkbox
               size="3"
               checked={showLineNumbers}
@@ -92,11 +95,11 @@ function SidebarSettings() {
                 setShowLineNumbers(!showLineNumbers);
               }}
             />
-            <Text size="3">Show Line Numbers</Text>
+            <Text size="3">Line Numbers</Text>
           </Flex>
         </Tooltip>
         <Tooltip side="right" content={"Enable Scoped Variables"}>
-          <Flex gap="3">
+          <Flex gap="3" align="center">
             <Checkbox
               size="3"
               checked={scopedVars}
@@ -108,7 +111,7 @@ function SidebarSettings() {
           </Flex>
         </Tooltip>
         <Tooltip side="right" content={"Show Annotations in Editor"}>
-          <Flex gap="3">
+          <Flex gap="3" align="center">
             <Checkbox
               size="3"
               checked={showAnnotations}
@@ -123,7 +126,7 @@ function SidebarSettings() {
           side="right"
           content={"Ctrl+Shift+Space to trigger Copilot manually"}
         >
-          <Flex gap="3">
+          <Flex gap="3" align="center">
             <Checkbox
               size="3"
               checked={copilotManualMode}
@@ -715,6 +718,24 @@ export function SidebarLeft() {
   );
 }
 
+function RepoSize() {
+  // Y.encodeStateAsUpdate(ydoc);
+  const ydoc = useAtomValue(ATOM_ydoc);
+  const size = Y.encodeStateAsUpdate(ydoc).byteLength;
+  const [b, setB] = useState(false);
+  useEffect(() => {
+    const interval = setInterval(
+      () => {
+        setB(!b);
+      },
+      // update every 10s
+      10000
+    );
+    return () => clearInterval(interval);
+  }, [b]);
+  return <Flex>Size: {prettyPrintBytes(size)}</Flex>;
+}
+
 export function SidebarRight() {
   return (
     <MyTabs
@@ -730,6 +751,7 @@ export function SidebarRight() {
                 Right Sidebar
               </Heading>
               <FpsMeter />
+              <RepoSize />
             </Flex>
           ),
         },
