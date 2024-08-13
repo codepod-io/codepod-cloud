@@ -25,6 +25,12 @@ const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
     where: {
       id: userId,
     },
+    select: {
+      id: true,
+      email: true,
+      firstname: true,
+      lastname: true,
+    },
   });
   if (!user) throw Error("Authorization token is not valid");
   return user;
