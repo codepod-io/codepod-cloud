@@ -20,7 +20,7 @@ import {
 import { initParser } from "@/lib/parser";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
-import { Provider, useAtom, useSetAtom } from "jotai";
+import { Provider, useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_connectYjs,
   ATOM_disconnectYjs,
@@ -45,6 +45,7 @@ import { MyKBar } from "@/components/MyKBar";
 import { Container, Flex } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { ShareProjDialog } from "@/components/ShareProjDialog";
+import { StarButton } from "./dashboard";
 
 function NotFoundAlert({}) {
   return (
@@ -257,6 +258,18 @@ function ActiveEditors() {
 }
 
 function Header() {
+  const repoId = useAtomValue(ATOM_repoId);
+  if (!repoId) throw "repoId is null";
+  const {
+    isLoading,
+    isError,
+    isSuccess,
+    data: repo,
+  } = trpc.repo.repo.useQuery({ id: repoId }, { retry: false });
+  if (isLoading) return <>Loading</>;
+  if (isError) return <>Error</>;
+  if (!isSuccess) return <>No data</>;
+  if (!repo) return <>Repo not found</>;
   return (
     <Container
       size="4"
@@ -279,6 +292,8 @@ function Header() {
         <>/</>
         {/* <HeaderItem /> */}
         <Title />
+        {/* thumbsup */}
+        <StarButton repo={repo} />
         {/* The right side */}
         <Flex flexGrow="1" />
 

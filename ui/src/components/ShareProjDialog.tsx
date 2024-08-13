@@ -31,6 +31,11 @@ function CollaboratorList({
     email: string;
   }[];
 }) {
+  const { isError, isLoading, data: me } = trpc.user.me.useQuery();
+  if (isError) return <>Error</>;
+  if (isLoading) return <>Loading</>;
+  if (!me) return <>No user loaded.</>;
+
   const utils = trpc.useUtils();
   const deleteCollaborator = trpc.repo.deleteCollaborator.useMutation({
     onSuccess: (data, { collaboratorId }) => {
@@ -56,7 +61,8 @@ function CollaboratorList({
           />
           <Box>
             <Text as="div" size="2" weight="bold">
-              {owner.firstname + " " + owner.lastname}
+              {owner.firstname + " " + owner.lastname}{" "}
+              {me.id === owner.id && "(you)"}
             </Text>
             <Text as="div" size="2" color="gray">
               {owner.email}
@@ -80,7 +86,8 @@ function CollaboratorList({
             />
             <Box>
               <Text as="div" size="2" weight="bold">
-                {collab.firstname + " " + collab.lastname}
+                {collab.firstname + " " + collab.lastname}{" "}
+                {me.id === collab.id && "(you)"}
               </Text>
               <Text as="div" size="2" color="gray">
                 {collab.email}
@@ -139,6 +146,8 @@ export function ShareProjDialog() {
   if (!data) return <>No data</>;
   const { collaborators, owner, public: isPublic, name } = data;
 
+  const me = trpc.user.me.useQuery();
+
   const url = `${window.location.protocol}//${window.location.host}/repo/${repoId}`;
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -166,11 +175,18 @@ export function ShareProjDialog() {
     },
   });
 
+  const isOwner = me.data && me.data.id === owner.id;
+  const isCollaborator =
+    me.data && collaborators.some((c) => c.id === me.data.id);
+
   return (
     <>
       <Dialog.Root>
         <Dialog.Trigger>
-          <Button variant="soft">Share</Button>
+          <Button variant="soft">
+            {isPublic ? <Earth color="green" /> : <Lock />}
+            Share
+          </Button>
         </Dialog.Trigger>
 
         <Dialog.Content maxWidth="600px">
@@ -191,103 +207,113 @@ export function ShareProjDialog() {
 
           {/* ==== Add people by email */}
 
-          <label>
-            <Flex gap="3">
-              <TextField.Root
-                placeholder="Add people by email"
-                ref={inputRef}
-                style={{
-                  flexGrow: 1,
-                }}
-              />
-              <Button
-                variant="soft"
-                onClick={() => {
-                  const email = inputRef?.current?.value;
-                  if (!email) {
-                    toast.error("Email cannot be empty");
-                    return;
-                  }
-                  addCollaborator.mutate({ repoId, email });
-                }}
-              >
-                Invite
-              </Button>
-            </Flex>
-          </label>
+          {isOwner && (
+            <label>
+              <Flex gap="3">
+                <TextField.Root
+                  placeholder="Add people by email"
+                  ref={inputRef}
+                  style={{
+                    flexGrow: 1,
+                  }}
+                />
+                <Button
+                  variant="soft"
+                  onClick={() => {
+                    const email = inputRef?.current?.value;
+                    if (!email) {
+                      toast.error("Email cannot be empty");
+                      return;
+                    }
+                    addCollaborator.mutate({ repoId, email });
+                  }}
+                >
+                  Invite
+                </Button>
+              </Flex>
+            </label>
+          )}
 
           {/* People with access */}
 
-          <Text as="div" mt="5" weight="bold">
-            People with access
-          </Text>
+          {(isOwner || isCollaborator) && (
+            <Text as="div" mt="5" weight="bold">
+              People with access
+            </Text>
+          )}
 
-          <CollaboratorList
-            repoId={repoId}
-            owner={owner}
-            collaborators={collaborators}
-          />
+          {(isOwner || isCollaborator) && (
+            <CollaboratorList
+              repoId={repoId}
+              owner={owner}
+              collaborators={collaborators}
+            />
+          )}
 
           {/* General Access Setting */}
-          <Text as="div" size="2" mb="1" weight="bold" mt="5">
-            General access
-          </Text>
-          <Card variant="ghost" style={{ margin: 0 }}>
-            <Flex gap="3" align="center">
-              <Avatar
-                size="3"
-                // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
-                radius="full"
-                fallback={isPublic ? <Earth color="green" /> : <Lock />}
-              />
-              <Box>
-                <Text as="div" size="2" weight="bold">
-                  <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                      {isPublic ? (
-                        <Button variant="ghost">
-                          Anyone with the link
-                          <DropdownMenu.TriggerIcon />
-                        </Button>
-                      ) : (
-                        <Button variant="ghost">
+          {isOwner && (
+            <Text as="div" size="2" mb="1" weight="bold" mt="5">
+              General access
+            </Text>
+          )}
+          {isOwner && (
+            <Card variant="ghost" style={{ margin: 0 }}>
+              <Flex gap="3" align="center">
+                <Avatar
+                  size="3"
+                  // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
+                  radius="full"
+                  fallback={isPublic ? <Earth color="green" /> : <Lock />}
+                />
+                <Box>
+                  <Text as="div" size="2" weight="bold">
+                    <DropdownMenu.Root>
+                      <DropdownMenu.Trigger>
+                        {isPublic ? (
+                          <Button variant="ghost">
+                            Anyone with the link
+                            <DropdownMenu.TriggerIcon />
+                          </Button>
+                        ) : (
+                          <Button variant="ghost">
+                            Restricted
+                            <DropdownMenu.TriggerIcon />
+                          </Button>
+                        )}
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content>
+                        <DropdownMenu.Item
+                          onSelect={() => {
+                            updateVisibility.mutate({
+                              repoId,
+                              isPublic: false,
+                            });
+                          }}
+                        >
+                          <Check style={{ opacity: isPublic ? 0 : 1 }} />
                           Restricted
-                          <DropdownMenu.TriggerIcon />
-                        </Button>
-                      )}
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content>
-                      <DropdownMenu.Item
-                        onSelect={() => {
-                          updateVisibility.mutate({
-                            repoId,
-                            isPublic: false,
-                          });
-                        }}
-                      >
-                        <Check style={{ opacity: isPublic ? 0 : 1 }} />
-                        Restricted
-                      </DropdownMenu.Item>
-                      <DropdownMenu.Item
-                        onSelect={() => {
-                          updateVisibility.mutate({
-                            repoId,
-                            isPublic: true,
-                          });
-                        }}
-                      >
-                        <Check style={{ opacity: isPublic ? 1 : 0 }} />
-                        Anyone with the link
-                      </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Root>
-                </Text>
-                <Text as="div" size="2" color="gray">
-                  Only people with access can open with the link
-                </Text>
-              </Box>
-            </Flex>
-          </Card>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item
+                          onSelect={() => {
+                            updateVisibility.mutate({
+                              repoId,
+                              isPublic: true,
+                            });
+                          }}
+                        >
+                          <Check style={{ opacity: isPublic ? 1 : 0 }} />
+                          Anyone with the link
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                  </Text>
+                  <Text as="div" size="2" color="gray">
+                    Only people with access can open with the link
+                  </Text>
+                </Box>
+              </Flex>
+            </Card>
+          )}
 
           <Flex gap="3" mt="4" justify="end">
             <CopyToClipboard
