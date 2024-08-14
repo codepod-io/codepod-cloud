@@ -16,7 +16,7 @@ import {
 import { prettyPrintBytes, timeDifference } from "@/lib/utils/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
-import { FileText, LockOpen, ThumbsUp, Trash2, Users } from "lucide-react";
+import { Earth, FileText, ThumbsUp, Trash2, Users } from "lucide-react";
 import { toast } from "react-toastify";
 
 function CreateRepoForm(props) {
@@ -228,7 +228,7 @@ const RepoCard = ({
         )}
         {repo.public && (
           <Tooltip content="public">
-            <LockOpen color="green" />
+            <Earth color="green" />
           </Tooltip>
         )}
         <DeleteRepoButton repo={repo} />
