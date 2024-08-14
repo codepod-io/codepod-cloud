@@ -1,5 +1,58 @@
-
 # These deployment is for pulling in the kernel images
+# ---
+# # network policy to deny all egress traffic
+# # This will isolate all the kernels from each other, as well as rest of the cluster.
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: deny-egress
+#   namespace: "{{ .Release.Namespace }}-runtime"
+# spec:
+#   podSelector: {}
+#   policyTypes:
+#     - Egress
+#   egress: []
+
+---
+# This will
+# 1. isolate all the kernels from each other, as well as rest of the cluster.
+# 2. allow the kernels to access the internet.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internet-access
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      # Defining ports here will allow only the specified ports to be accessed.
+      # But k8s doesn't support ICMP, so ping won't work. Therefore, we are allowing all ports.
+      #
+      # ports:
+      #   - protocol: TCP
+      #     port: 80 # Allow HTTP traffic
+      #   - protocol: TCP
+      #     port: 443 # Allow HTTPS traffic
+      #   # We need to allow DNS resolution.
+      #   - protocol: UDP
+      #     port: 53 # DNS
+
+    # This allows DNS resolution. However, I don't want to give DNS resoltion to the kernels.
+    # - to:
+    #     - ipBlock:
+    #         cidr: 10.0.0.0/8
+    #   ports:
+    #     - protocol: UDP
+    #       port: 53 # DNS
 
 ---
 apiVersion: apps/v1
@@ -26,10 +79,16 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      # The pods do not have access to the internal DNS due to the network
+      # policy. Therefore, we need to specify the DNS server. dnsPolicy: None
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.python }}"
-
 
 ---
 # this deployment is for pulling in the kernel images
@@ -61,7 +120,6 @@ spec:
         - name: kernel
           image: "{{ .Values.kernelImages.julia }}"
 
-
 ---
 # this deployment is for pulling in the kernel images
 apiVersion: apps/v1
@@ -91,7 +149,6 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.javascript }}"
-
 
 ---
 # this deployment is for pulling in the kernel images

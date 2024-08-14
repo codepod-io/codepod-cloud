@@ -56,6 +56,10 @@ export function getDeploymentSpec(
               effect: "NoSchedule",
             },
           ],
+          dnsPolicy: "None",
+          dnsConfig: {
+            nameservers: ["8.8.8.8", "1.1.1.1"],
+          },
           containers: [
             {
               name: `${name}-kernel`,
