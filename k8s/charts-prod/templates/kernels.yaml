@@ -1,3 +1,25 @@
+---
+# This will
+# 1. isolate all the kernels from each other, as well as rest of the cluster.
+# 2. allow the kernels to access the internet.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internet-access
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+
 # These deployment is for pulling in the kernel images
 ---
 apiVersion: apps/v1
@@ -24,6 +46,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.python }}"
@@ -54,6 +81,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.julia }}"
@@ -84,6 +116,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.javascript }}"
@@ -114,6 +151,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.racket }}"

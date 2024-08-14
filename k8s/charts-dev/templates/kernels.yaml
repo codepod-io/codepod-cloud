@@ -116,6 +116,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.julia }}"
@@ -146,6 +151,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.javascript }}"
@@ -176,6 +186,11 @@ spec:
           operator: Equal
           value: "true"
           effect: NoSchedule
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.racket }}"
