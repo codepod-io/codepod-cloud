@@ -9,7 +9,8 @@ spec:
   ingressClassName: nginx
   # ingressClassName: "traefik"
   rules:
-    - host: local.codepod.io
+    - host: "{{ .Values.host }}"
+      # - host: codepod.192.168.10.61.sslip.io
       http:
         paths:
           - path: /
