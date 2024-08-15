@@ -47,11 +47,9 @@ EOF
 COPY <<"EOF" /docker-entrypoint.d/env.sh
 cp -f /usr/share/nginx/html/index.html /tmp
 
-if [ -n "$GOOGLE_CLIENT_ID" ]; then
-    sed -i -e "s|REPLACE_GOOGLE_CLIENT_ID|$VITE_APP_GOOGLE_CLIENT_ID|g" /tmp/index.html
-    sed -i -e "s|REPLACE_READ_ONLY|$VITE_APP_READ_ONLY|g" /tmp/index.html
-    sed -i -e "s|REPLACE_BANNER|$VITE_APP_BANNER|g" /tmp/index.html
-fi
+sed -i -e "s|REPLACE_GOOGLE_CLIENT_ID|$VITE_APP_GOOGLE_CLIENT_ID|g" /tmp/index.html
+sed -i -e "s|REPLACE_READ_ONLY|$VITE_APP_READ_ONLY|g" /tmp/index.html
+sed -i -e "s|REPLACE_BANNER|$VITE_APP_BANNER|g" /tmp/index.html
 
 cat /tmp/index.html > /usr/share/nginx/html/index.html
 EOF
