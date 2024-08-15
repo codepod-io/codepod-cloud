@@ -4,7 +4,7 @@ metadata:
   name: codepod-ingress
 spec:
   rules:
-    - host: codepod.127.0.0.1.sslip.io
+    - host: "{{ .Values.host }}"
       http:
         paths:
           - path: /

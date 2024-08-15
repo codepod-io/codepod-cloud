@@ -6,7 +6,7 @@
 # > helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
 
 # Step 2: create the user and get the secret token:
-# > kubectl apply -f dashboard.yaml
+# > kubectl apply -f ../dashboard.yaml
 # > kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath={".data.token"} | base64 -d && echo
 
 # Access the Kubernetes Dashboard
