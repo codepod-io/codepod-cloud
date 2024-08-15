@@ -16,7 +16,7 @@ import { Profile } from "@/pages/profile";
 import { SignIn } from "@/pages/login";
 import { SignUp } from "@/pages/signup";
 
-import { UserProfile } from "@/components/Header";
+import { Header, UserProfile } from "@/components/Header";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
 
@@ -35,6 +35,7 @@ import { InfoCircledIcon } from "@radix-ui/react-icons";
 import "./App.css";
 import "./custom.css";
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function NoLogginErrorAlert() {
   return (
@@ -60,29 +61,17 @@ const RequireSignIn = ({ children }) => {
   return children;
 };
 
-function Header() {
+function HeaderWithItems() {
   return (
-    <Container
-      size="4"
-      style={{
-        border: "2px solid lightgray",
-        backgroundColor: "white",
-        height: "50px",
-        // horizontal align items
-        justifyContent: "center",
-      }}
-    >
-      {/* The header items */}
-      <Flex align="center" my="2">
-        <RadixLink asChild>
-          <ReactLink to="/">
-            <Text>CodePod</Text>
-          </ReactLink>
-        </RadixLink>
-        <Box flexGrow="1" />
-        <UserProfile />
-      </Flex>
-    </Container>
+    <Header>
+      <RadixLink asChild>
+        <ReactLink to="/">
+          <Text>CodePod</Text>
+        </ReactLink>
+      </RadixLink>
+      <Box flexGrow="1" />
+      <UserProfile />
+    </Header>
   );
 }
 
@@ -96,7 +85,7 @@ const router = createBrowserRouter([
     element: (
       <Flex direction="column" height="100vh">
         <Flex>
-          <Header />
+          <HeaderWithItems />
         </Flex>
         <Flex overflow="auto" flexGrow={"1"}>
           <SignIn />
@@ -109,7 +98,7 @@ const router = createBrowserRouter([
     element: (
       <Flex direction="column" height="100vh">
         <Flex>
-          <Header />
+          <HeaderWithItems />
         </Flex>
         <Flex overflow="auto" flexGrow={"1"}>
           <SignUp />
@@ -123,7 +112,7 @@ const router = createBrowserRouter([
       <RequireSignIn>
         <Flex direction="column" height="100vh">
           <Flex>
-            <Header />
+            <HeaderWithItems />
           </Flex>
           <Flex overflow="auto" flexGrow={"1"}>
             <Profile />
@@ -142,7 +131,7 @@ const router = createBrowserRouter([
       <RequireSignIn>
         <Flex direction="column" height="100vh">
           <Flex>
-            <Header />
+            <HeaderWithItems />
           </Flex>
 
           <Flex

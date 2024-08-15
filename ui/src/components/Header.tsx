@@ -2,10 +2,59 @@ import { Link as ReactLink, useLocation } from "react-router-dom";
 
 import { useNavigate } from "react-router-dom";
 
-import { Avatar, Box, DropdownMenu } from "@radix-ui/themes";
+import { Avatar, Box, DropdownMenu, Flex, Text } from "@radix-ui/themes";
 
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
+
+import { env } from "@/lib/vars";
+
+function Banner() {
+  return (
+    <Flex
+      style={{
+        backgroundColor: "var(--yellow-9)",
+        padding: "10px",
+        // make the items center
+        justifyContent: "center",
+      }}
+    >
+      <Text>{env.BANNER}</Text>
+    </Flex>
+  );
+}
+
+export function Header({ children }) {
+  console.log("env", env);
+  return (
+    <Flex
+      direction="column"
+      style={{
+        width: "100%",
+      }}
+    >
+      {env.BANNER && <Banner />}
+      <Flex
+        gap="3"
+        style={{
+          width: "100%",
+          border: "2px solid lightgray",
+          backgroundColor: "white",
+          height: "50px",
+          // horizontal align items
+          justifyContent: "center",
+          paddingLeft: "10%",
+          paddingRight: "10%",
+          alignItems: "center",
+        }}
+      >
+        {/* The header items */}
+
+        {children}
+      </Flex>
+    </Flex>
+  );
+}
 
 export const UserProfile = () => {
   const { isSignedIn, signOut } = useAuth();

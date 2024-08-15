@@ -15,6 +15,7 @@ import {
   TextField,
   Callout,
   Avatar,
+  Box,
 } from "@radix-ui/themes";
 
 import { initParser } from "@/lib/parser";
@@ -46,6 +47,8 @@ import { Container, Flex } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { ShareProjDialog } from "@/components/ShareProjDialog";
 import { StarButton } from "./dashboard";
+import { env } from "@/lib/vars";
+import { Header } from "@/components/Header";
 
 function NotFoundAlert({}) {
   return (
@@ -158,7 +161,7 @@ function WaitForProvider({ children }) {
     return (
       <>
         {/* Show the header while loading yjs doc. */}
-        <Header />
+        <HeaderWithItems />
         <>Loading Yjs Doc ..</>
       </>
     );
@@ -257,7 +260,7 @@ function ActiveEditors() {
   );
 }
 
-function Header() {
+function HeaderWithItems() {
   const repoId = useAtomValue(ATOM_repoId);
   if (!repoId) throw "repoId is null";
   const {
@@ -271,38 +274,35 @@ function Header() {
   if (!isSuccess) return <>No data</>;
   if (!repo) return <>Repo not found</>;
   return (
-    <Container
-      size="4"
-      style={{
-        border: "2px solid lightgray",
-        backgroundColor: "white",
-        height: "50px",
-        // horizontal align items
-        justifyContent: "center",
-      }}
-    >
-      {/* The header items */}
-      <Flex align="center" my="2" gap="3">
-        <RadixLink asChild>
-          <ReactLink to="/">
-            <Text>CodePod</Text>
-          </ReactLink>
-        </RadixLink>
-        {/* The  left side*/}
-        <>/</>
-        {/* <HeaderItem /> */}
-        <Title />
-        {/* thumbsup */}
-        <StarButton repo={repo} />
-        {/* The right side */}
-        <Flex flexGrow="1" />
+    <Header>
+      <RadixLink asChild>
+        <ReactLink to="/">
+          <Text>CodePod</Text>
+        </ReactLink>
+      </RadixLink>
+      {/* The  left side*/}
+      <>/</>
+      {/* <HeaderItem /> */}
+      <Title />
+      {/* thumbsup */}
+      <StarButton repo={repo} />
 
-        {/* <ActiveEditors /> */}
+      <Flex flexGrow="1" />
 
-        <ShareProjDialog />
-        <UserProfile />
-      </Flex>
-    </Container>
+      {env.READ_ONLY && (
+        <Box style={{ color: "red", backgroundColor: "yellow" }}>
+          READ ONLY MODE
+        </Box>
+      )}
+
+      {/* === The right side */}
+      <Flex flexGrow="1" />
+
+      {/* <ActiveEditors /> */}
+
+      <ShareProjDialog />
+      <UserProfile />
+    </Header>
   );
 }
 
@@ -314,7 +314,7 @@ export function Repo() {
           <ParserWrapper>
             <Flex direction="column" height="100vh">
               <Flex>
-                <Header />
+                <HeaderWithItems />
               </Flex>
               <Flex
                 flexGrow={"1"}

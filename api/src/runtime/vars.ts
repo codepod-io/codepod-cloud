@@ -14,6 +14,7 @@ export const env = z
     KERNEL_IMAGE_RACKET: z.string(),
     RUNTIME_NS: z.string(),
     YJS_WS_URL: z.string(),
+    READ_ONLY: z.enum(["true", "false"]).transform((x) => x === "true"),
   })
   .parse(process.env);
 

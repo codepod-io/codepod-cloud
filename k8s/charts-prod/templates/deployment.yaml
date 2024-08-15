@@ -31,7 +31,11 @@ spec:
           image: lihebi/codepod-cloud-ui:{{ .Chart.AppVersion }}
 
           env:
-            - name: GOOGLE_CLIENT_ID
+            - name: VITE_APP_READ_ONLY
+              value: "{{ .Values.READ_ONLY }}"
+            - name: VITE_APP_BANNER
+              value: "{{ .Values.BANNER }}"
+            - name: VITE_APP_GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: mysecret
@@ -95,6 +99,8 @@ spec:
           ports:
             - containerPort: 4000
           env:
+            - name: READ_ONLY
+              value: "{{ .Values.READ_ONLY }}"
             - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -240,6 +246,8 @@ spec:
           ports:
             - containerPort: 4233
           env:
+            - name: READ_ONLY
+              value: "{{ .Values.READ_ONLY }}"
             - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -309,6 +317,8 @@ spec:
           ports:
             - containerPort: 4001
           env:
+            - name: READ_ONLY
+              value: "{{ .Values.READ_ONLY }}"
             - name: ROACH_PASSWORD
               valueFrom:
                 secretKeyRef:

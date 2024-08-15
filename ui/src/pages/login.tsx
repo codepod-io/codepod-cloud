@@ -19,6 +19,7 @@ import { zodValidator } from "@tanstack/zod-form-adapter";
 
 import { FieldApi, useForm } from "@tanstack/react-form";
 import { z } from "zod";
+import { env } from "@/lib/vars";
 
 // useLoadGsiScript from
 // https://github.com/MomenSherif/react-oauth/blob/244d2b970d910af18a1bfdf2a74625834e087b40/packages/%40react-oauth/google/src/GoogleOAuthProvider.tsx
@@ -91,9 +92,7 @@ export function GoogleSignin() {
   useEffect(() => {
     if (!scriptLoadedSuccessfully) return;
     console.log("nodeenv mode", import.meta.env.MODE);
-    let client_id = import.meta.env.DEV
-      ? import.meta.env.VITE_APP_GOOGLE_CLIENT_ID
-      : window.GOOGLE_CLIENT_ID || null;
+    let client_id = env.GOOGLE_CLIENT_ID || null;
     google.accounts.id.initialize({
       client_id,
       callback: (response) => {

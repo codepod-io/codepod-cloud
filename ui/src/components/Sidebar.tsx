@@ -74,6 +74,7 @@ import juliaLogo from "@/assets/julia.svg";
 import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
+import { toast } from "react-toastify";
 
 function SidebarSettings() {
   const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
@@ -170,10 +171,26 @@ function KernelStatus({
   //   console.log("value", value);
   // });
   const runtime = runtimeMap.get(kernelName);
-  const status = runtimeTrpc.k8s.status.useMutation();
-  const interrupt = runtimeTrpc.k8s.interrupt.useMutation();
-  const start = runtimeTrpc.k8s.start.useMutation();
-  const stop = runtimeTrpc.k8s.stop.useMutation();
+  const status = runtimeTrpc.k8s.status.useMutation({
+    onError(error) {
+      toast.error(error.message);
+    },
+  });
+  const interrupt = runtimeTrpc.k8s.interrupt.useMutation({
+    onError(error) {
+      toast.error(error.message);
+    },
+  });
+  const start = runtimeTrpc.k8s.start.useMutation({
+    onError(error) {
+      toast.error(error.message);
+    },
+  });
+  const stop = runtimeTrpc.k8s.stop.useMutation({
+    onError(error) {
+      toast.error(error.message);
+    },
+  });
 
   return (
     <Card>
@@ -343,7 +360,7 @@ function YjsSyncStatus() {
             <Box style={{ color: "red" }}>disconnected</Box>
           ))
           .with("connecting", () => (
-            <Box style={{ color: "yellow" }}>connecting</Box>
+            <Box style={{ color: "var(--orange-9)" }}>connecting</Box>
           ))
           // .with("syncing", () => <Box color="green">online</Box>)
           .otherwise(() => `${yjsStatus}`)}
@@ -352,7 +369,7 @@ function YjsSyncStatus() {
         Sync Status:
         {match(yjsSyncStatus)
           .with("uploading", () => (
-            <Box style={{ color: "yellow" }}>uploading</Box>
+            <Box style={{ color: "var(--orange-9)" }}>uploading</Box>
           ))
           .with("synced", () => <Box style={{ color: "green" }}>synced</Box>)
           .otherwise(() => `Unknown: ${yjsSyncStatus}`)}

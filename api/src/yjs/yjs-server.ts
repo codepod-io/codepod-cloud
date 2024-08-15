@@ -9,6 +9,7 @@ import { createSetupWSConnection } from "./yjs-setupWS";
 import { bindState, writeState } from "./yjs-blob";
 
 import prisma from "../prisma";
+import { env } from "./vars";
 interface TokenInterface {
   id: string;
 }
@@ -43,7 +44,11 @@ async function checkPermission({
     repo.owner.id === userId ||
     repo.collaborators.find((collab) => collab.id === userId)
   ) {
-    return "write";
+    if (env.READ_ONLY) {
+      return "read";
+    } else {
+      return "write";
+    }
   }
   if (repo.public) {
     return "read";

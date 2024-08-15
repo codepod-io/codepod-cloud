@@ -318,6 +318,7 @@ export const k8sRouter = router({
     )
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
       console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
+      if (env.READ_ONLY) throw Error("Read only mode");
       if (!repoId2wireMap.has(repoId)) {
         repoId2wireMap.set(repoId, new Map());
       }
@@ -391,6 +392,7 @@ export const k8sRouter = router({
       })
     )
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+      if (env.READ_ONLY) throw Error("Read only mode");
       // remove zmq wire and ydoc
       console.log("deleting ZMQ wire ..");
       const wireMap = repoId2wireMap.get(repoId);
@@ -447,6 +449,7 @@ export const k8sRouter = router({
   status: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+      if (env.READ_ONLY) throw Error("Read only mode");
       const ydoc = await ensureYDoc({ repoId, token });
       const runtimeMap = ydoc
         ?.getMap("rootMap")
@@ -487,6 +490,7 @@ export const k8sRouter = router({
   interrupt: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName } }) => {
+      if (env.READ_ONLY) throw Error("Read only mode");
       console.log("interrupt", repoId);
       const wire = repoId2wireMap.get(repoId)?.get(kernelName);
       if (!wire) return false;
@@ -509,6 +513,7 @@ export const k8sRouter = router({
     )
     .mutation(async ({ input: { repoId, specs }, ctx: { token } }) => {
       console.log("runChain", repoId);
+      if (env.READ_ONLY) throw Error("Read only mode");
       const wireMap = repoId2wireMap.get(repoId);
       if (!wireMap) {
         console.error("wireMap not found for repo", repoId);
