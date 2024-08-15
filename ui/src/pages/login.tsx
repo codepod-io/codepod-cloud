@@ -105,7 +105,13 @@ export function GoogleSignin() {
       { theme: "outline", size: "large" } // customization attributes
     );
   }, [scriptLoadedSuccessfully]);
-  return <Box id="googleLoginDiv"></Box>;
+  return (
+    <Box
+      id="googleLoginDiv"
+      // Needed to center the rendered google signin button.
+      style={{ alignSelf: "center" }}
+    ></Box>
+  );
 }
 
 function FieldInfo({ field }: { field: FieldApi<any, any, any, any> }) {
