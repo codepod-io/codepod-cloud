@@ -20,7 +20,11 @@ import { Earth, FileText, ThumbsUp, Trash2, Users } from "lucide-react";
 import { toast } from "react-toastify";
 
 function CreateRepoForm(props) {
-  const createRepo = trpc.repo.createRepo.useMutation();
+  const createRepo = trpc.repo.createRepo.useMutation({
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
   const navigate = useNavigate();
   useEffect(() => {
     if (createRepo.data) {
@@ -59,12 +63,18 @@ export const StarButton = ({
       utils.repo.repo.invalidate({ id: repo.id });
       utils.user.me.invalidate();
     },
+    onError(error) {
+      toast.error(error.message);
+    },
   });
   const unstar = trpc.repo.unstar.useMutation({
     onSuccess(input) {
       utils.repo.getDashboardRepos.invalidate();
       utils.repo.repo.invalidate({ id: repo.id });
       utils.user.me.invalidate();
+    },
+    onError(error) {
+      toast.error(error.message);
     },
   });
   const isStarred = me?.data?.stars.map(({ id }) => id).includes(repo.id);

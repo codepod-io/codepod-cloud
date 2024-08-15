@@ -43,6 +43,7 @@ import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import { ATOM_editMode } from "@/lib/store/atom";
+import { env } from "@/lib/vars";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -528,7 +529,7 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
-        readOnly: editMode === "edit" ? false : true,
+        readOnly: env.READ_ONLY || editMode !== "edit",
         fontSize: 14,
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.

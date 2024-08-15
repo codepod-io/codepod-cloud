@@ -51,6 +51,7 @@ import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
+import { env } from "@/lib/vars";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -523,7 +524,7 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
           borderRadius: "4px",
         }}
       >
-        {hover && (
+        {hover && !env.READ_ONLY && (
           <Box
             style={{
               position: "fixed",

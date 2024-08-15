@@ -10,6 +10,7 @@ import prisma from "../prisma";
 
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
+import { env } from "./vars";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -51,6 +52,7 @@ const signup = publicProcedure
     })
   )
   .mutation(async ({ input: { email, password, firstname, lastname } }) => {
+    if (env.READ_ONLY) throw Error("Read only mode");
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
     // if user already exists, return error
@@ -89,6 +91,7 @@ const updateUser = protectedProcedure
   .mutation(
     async ({ ctx: { userId }, input: { email, firstname, lastname } }) => {
       if (!userId) throw Error("Unauthenticated");
+      if (env.READ_ONLY) throw Error("Read only mode");
       let user = await prisma.user.findFirst({
         where: {
           id: userId,

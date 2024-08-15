@@ -47,6 +47,7 @@ import {
 import { Box, Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
+import { env } from "../lib/vars";
 
 const nodeTypes = {
   CODE: CodeNode,
@@ -219,6 +220,7 @@ function CanvasImpl() {
         onMove={(e, { x, y, zoom }) => {
           // FIXME this is causing the re-rendering of the canvas. All trpc
           // mutations will cause the re-rendering.
+          if (env.READ_ONLY) return;
           debouncedSaveViewPort({ repoId, x, y, zoom });
         }}
         zoomOnScroll={false}

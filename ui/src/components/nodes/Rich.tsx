@@ -104,6 +104,7 @@ import {
   ATOM_richMap,
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { env } from "@/lib/vars";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -342,7 +343,7 @@ const MyRemirror = ({
     >
       <ThemeProvider>
         <Remirror
-          editable={editMode === "edit"}
+          editable={!env.READ_ONLY && editMode === "edit"}
           manager={manager}
           // Must set initialContent, otherwise the Reactflow will fire two
           // dimension change events at the beginning. This should be caused
@@ -361,7 +362,7 @@ const MyRemirror = ({
 
           <SlashSuggestor />
 
-          {editMode === "edit" && <EditorToolbar />}
+          {!env.READ_ONLY && editMode === "edit" && <EditorToolbar />}
           <LinkToolbar />
 
           {/* <Menu /> */}
@@ -487,7 +488,7 @@ export const RichNode = memo<Props>(function ({
           borderRadius: "5px",
         }}
       >
-        {hover && (
+        {hover && !env.READ_ONLY && (
           <Box
             style={{
               position: "fixed",
