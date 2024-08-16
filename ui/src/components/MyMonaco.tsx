@@ -453,10 +453,6 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
     }
   }, [annotations, editor, showAnnotations, scopedVars]);
 
-  if (lang === "racket") {
-    lang = "scheme";
-  }
-
   const provider = useAtomValue(ATOM_provider);
   const codeMap = useAtomValue(ATOM_codeMap);
 
@@ -525,7 +521,7 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
 
   return (
     <MonacoEditor
-      language={lang}
+      language={lang === "racket" ? "scheme" : lang}
       theme="codepod"
       options={{
         selectOnLineNumbers: true,

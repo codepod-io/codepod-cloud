@@ -84,7 +84,7 @@ export const UserProfile = () => {
             />
           </Box>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
+        <DropdownMenu.Content variant="soft">
           <DropdownMenu.Item asChild>
             <ReactLink to="/profile">Profile</ReactLink>
           </DropdownMenu.Item>
@@ -93,6 +93,9 @@ export const UserProfile = () => {
             onClick={() => {
               signOut();
               navigate("/login");
+            }}
+            style={{
+              color: "red",
             }}
           >
             Logout

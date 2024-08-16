@@ -23,7 +23,8 @@ import racketLogo from "@/assets/racket.svg";
 import { NotebookPen } from "lucide-react";
 
 import { ATOM_addNode } from "@/lib/store/canvasSlice";
-import { Button, DropdownMenu } from "@radix-ui/themes";
+import { Button, DropdownMenu, Flex } from "@radix-ui/themes";
+import { motion } from "framer-motion";
 
 export function ResizeIcon() {
   return (
@@ -612,142 +613,153 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
   return fileContent;
 }
 
-export function AddNodeHandle({
+import rowInsertTop from "@/assets/row-insert-top.svg";
+
+export function ToolbarAddPod({
   id,
   position,
-  type,
-  lang,
 }: {
   id: string;
   position: "top" | "bottom" | "right";
-  type: "CODE" | "RICH";
-  lang?: string;
 }) {
-  const [hover, setHover] = useState(false);
   const addNode = useSetAtom(ATOM_addNode);
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button
+          variant="ghost"
+          radius="small"
+          style={{
+            margin: 3,
+            padding: 0,
+          }}
+        >
+          {match(position)
+            .with("top", () => <img src={rowInsertTop} />)
+            .with("bottom", () => (
+              <img
+                src={rowInsertTop}
+                style={{
+                  // rotate 180deg
+                  transform: "rotate(180deg)",
+                }}
+              />
+            ))
+            .with("right", () => (
+              <img
+                src={rowInsertTop}
+                // rotate 90deg
+                style={{ transform: "rotate(90deg)" }}
+              />
+            ))
+            .exhaustive()}
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content variant="soft">
+        <DropdownMenu.Item
+          shortcut="⌘ D"
+          onClick={() => {
+            addNode(id, position, "RICH");
+          }}
+        >
+          <NotebookPen /> Doc
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            addNode(id, position, "CODE", "python");
+          }}
+        >
+          <img
+            src={pythonLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          Python
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            addNode(id, position, "CODE", "julia");
+          }}
+        >
+          <img
+            src={juliaLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          Julia
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            addNode(id, position, "CODE", "javascript");
+          }}
+        >
+          <img
+            src={javascriptLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          JavaScript
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onClick={() => {
+            addNode(id, position, "CODE", "racket");
+          }}
+        >
+          <img
+            src={racketLogo}
+            style={{
+              height: "1.5em",
+            }}
+          />{" "}
+          Racket
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  );
+}
+
+export function PodToolbar({ children }) {
+  const [hover, setHover] = useState(false);
 
   return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        position: "fixed",
-        display: "flex",
-        // align text center vertically
-        alignItems: "center",
-        // and horizontally
-        justifyContent: "center",
-        ...match(position)
-          .with("top", () => ({
-            right: "50%",
-            top: 0,
-            transform: "translateY(-100%)  translateX(50%)",
-          }))
-          .with("bottom", () => ({
-            right: "50%",
-            bottom: 0,
-            transform: "translateY(100%) translateX(50%)",
-          }))
-          .with("right", () => ({
-            right: 0,
-            top: "50%",
-            transform: "translateY(-50%) translateX(100%) translateX(5px)",
-          }))
-          .exhaustive(),
-        backgroundColor: "var(--gray-1)",
-        // show on hover
+    <motion.div
+      animate={{
         opacity: hover ? 1 : 0,
       }}
+      onMouseEnter={() => {
+        setHover(true);
+      }}
+      onMouseLeave={() => {
+        setHover(false);
+      }}
     >
-      <Button
-        size="1"
-        variant="surface"
-        onClick={() => {
-          addNode(id, position, type, lang);
+      <Flex
+        align="center"
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          zIndex: 100,
+          // border: "solid 1px var(--gray-8)",
+          transform: "translateY(-120%)",
+          backgroundColor: "white",
+          borderRadius: "5px",
+          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+          cursor: "auto",
         }}
       >
-        + {lang ? lang : type}
-      </Button>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button variant="surface" size="1">
-            <DropdownMenu.TriggerIcon />
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <DropdownMenu.Item
-            shortcut="⌘ D"
-            onClick={() => {
-              addNode(id, position, "RICH");
-            }}
-          >
-            + <NotebookPen /> Doc
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item
-            shortcut="⌘ E"
-            onClick={() => {
-              addNode(id, position, "CODE", "python");
-            }}
-          >
-            +{" "}
-            <img
-              src={pythonLogo}
-              style={{
-                height: "1.5em",
-              }}
-            />{" "}
-            Python
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            shortcut="⌘ E"
-            onClick={() => {
-              addNode(id, position, "CODE", "julia");
-            }}
-          >
-            +{" "}
-            <img
-              src={juliaLogo}
-              style={{
-                height: "1.5em",
-              }}
-            />{" "}
-            Julia
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Item
-            shortcut="⌘ E"
-            onClick={() => {
-              addNode(id, position, "CODE", "javascript");
-            }}
-          >
-            +{" "}
-            <img
-              src={javascriptLogo}
-              style={{
-                height: "1.5em",
-              }}
-            />{" "}
-            JavaScript
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Item
-            shortcut="⌘ E"
-            onClick={() => {
-              addNode(id, position, "CODE", "racket");
-            }}
-          >
-            +{" "}
-            <img
-              src={racketLogo}
-              style={{
-                height: "1.5em",
-              }}
-            />{" "}
-            Racket
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-    </div>
+        {children}
+      </Flex>
+    </motion.div>
   );
 }
