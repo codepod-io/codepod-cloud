@@ -9,7 +9,11 @@ import {
 } from "react";
 import * as React from "react";
 
-import { useReactFlow, NodeResizeControl } from "reactflow";
+import {
+  useReactFlow,
+  NodeResizeControl,
+  ResizeControlVariant,
+} from "reactflow";
 import Ansi from "ansi-to-react";
 
 import jsx from "refractor/lang/jsx.js";
@@ -91,11 +95,11 @@ import { SlashExtension } from "./extensions/slash";
 import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
-import { AddNodeHandle, Handles } from "./utils";
+import { Handles, PodToolbar, ToolbarAddPod } from "./utils";
 
 import { MyLexical } from "./rich/MyLexical";
 
-import { Box, Button, DropdownMenu, IconButton } from "@radix-ui/themes";
+import { Box, Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { Ellipsis, MoveHorizontal, RemoveFormatting } from "lucide-react";
 import { ATOM_editMode } from "@/lib/store/atom";
 import {
@@ -372,43 +376,43 @@ const MyRemirror = ({
   );
 };
 
-function TopRightMenu({ id }) {
+function MyPodToolbar({ id }) {
   const reactFlowInstance = useReactFlow();
-  const [nodesMap] = useAtom(ATOM_nodesMap);
-  const node = nodesMap.get(id)!;
-  const parentId = node.data.parent;
-  let index = 0;
-  if (parentId) {
-    const parentNode = nodesMap.get(parentId);
-    index = parentNode?.data.children?.indexOf(id)!;
-  }
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        <IconButton
-          variant="ghost"
-          radius="full"
-          style={{
-            margin: 0,
-          }}
-        >
-          <Ellipsis size="1.2em" />
-        </IconButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <DropdownMenu.Item
-          shortcut="⌘ ⌫"
-          color="red"
-          disabled={node.id === "ROOT"}
-          onClick={() => {
-            // Delete all edges connected to the node.
-            reactFlowInstance.deleteElements({ nodes: [{ id }] });
-          }}
-        >
-          Delete
-        </DropdownMenu.Item>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+    <PodToolbar>
+      {/* Toolbar for adding new pod top/bottom/right */}
+      {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
+      {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
+      <ToolbarAddPod id={id} position="right" />
+      {/* The "more" button */}
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <IconButton
+            variant="ghost"
+            radius="small"
+            style={{
+              margin: 3,
+              padding: 0,
+            }}
+          >
+            <Ellipsis />
+          </IconButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <DropdownMenu.Item
+            shortcut="⌘ ⌫"
+            color="red"
+            disabled={id === "ROOT"}
+            onClick={() => {
+              // Delete all edges connected to the node.
+              reactFlowInstance.deleteElements({ nodes: [{ id }] });
+            }}
+          >
+            Delete
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </PodToolbar>
   );
 }
 
@@ -465,17 +469,12 @@ export const RichNode = memo<Props>(function ({
         backgroundColor: "rgba(228, 228, 228, 0.5)",
         // padding: "8px",
         borderRadius: "8px",
-        border: "5px solid",
-        borderColor: focused ? "red" : "transparent",
+        border: "3px solid",
+        borderColor: focused ? "black" : "transparent",
         // add shadow
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
     >
-      {id !== "ROOT" && <AddNodeHandle id={id} position="top" type="RICH" />}
-      {id !== "ROOT" && <AddNodeHandle id={id} position="bottom" type="RICH" />}
-      {node.data.children.length == 0 && (
-        <AddNodeHandle id={id} position="right" type="RICH" />
-      )}
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -488,24 +487,7 @@ export const RichNode = memo<Props>(function ({
           borderRadius: "5px",
         }}
       >
-        {hover && !env.READ_ONLY && (
-          <Box
-            style={{
-              position: "fixed",
-              top: 0,
-              right: 0,
-              zIndex: 100,
-              border: "solid 1px var(--gray-8)",
-              transform: "translateY(-50%) translateX(-20px)",
-              backgroundColor: "white",
-              borderRadius: "10px",
-              // shadow
-              boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-            }}
-          >
-            <TopRightMenu id={id} />
-          </Box>
-        )}
+        {!env.READ_ONLY && <MyPodToolbar id={id} />}
         {/* Two alternative editors */}
 
         {/* <MyLexical id={id} /> */}
@@ -522,39 +504,28 @@ export const RichNode = memo<Props>(function ({
 
         <Handles id={id} hover={hover} />
 
-        {hover && (
-          <NodeResizeControl
-            style={{
-              background: "transparent",
-              border: "none",
-              zIndex: 100,
-              // put it to the right-bottom corner, instead of right-middle.
-              top: "100%",
-              color: "red",
-            }}
-            minWidth={300}
-            minHeight={50}
-            // this allows the resize happens in X-axis only.
-            position="right"
-            onResizeEnd={() => {
-              // remove style.height so that the node auto-resizes.
-              const node = nodesMap.get(id);
-              if (node) {
-                nodesMap.set(id, {
-                  ...node,
-                  style: { ...node.style, height: undefined },
-                });
-              }
-            }}
-          >
-            <MoveHorizontal
-              style={{
-                position: "absolute",
-                transform: "translate(-110%, -90%)",
-              }}
-            />
-          </NodeResizeControl>
-        )}
+        <NodeResizeControl
+          minWidth={300}
+          minHeight={50}
+          // this allows the resize happens in X-axis only.
+          position="right"
+          onResizeEnd={() => {
+            // remove style.height so that the node auto-resizes.
+            const node = nodesMap.get(id);
+            if (node) {
+              nodesMap.set(id, {
+                ...node,
+                style: { ...node.style, height: undefined },
+              });
+            }
+          }}
+          variant={ResizeControlVariant.Line}
+          color="transparent"
+          style={{
+            border: "10px solid transparent",
+            transform: "translateX(-30%)",
+          }}
+        />
       </div>
     </div>
   );

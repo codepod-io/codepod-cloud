@@ -7,7 +7,12 @@ import {
   memo,
 } from "react";
 import * as React from "react";
-import { useReactFlow, NodeResizeControl, NodeProps } from "reactflow";
+import {
+  useReactFlow,
+  NodeResizeControl,
+  NodeProps,
+  ResizeControlVariant,
+} from "reactflow";
 
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -15,7 +20,7 @@ import Ansi from "ansi-to-react";
 
 import { MyMonaco } from "../MyMonaco";
 
-import { AddNodeHandle, Handles } from "./utils";
+import { Handles, PodToolbar, ToolbarAddPod } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
@@ -28,7 +33,7 @@ import {
   IconButton,
   Spinner,
 } from "@radix-ui/themes";
-import { Check, Ellipsis, MoveHorizontal, Play, X } from "lucide-react";
+import { Check, Ellipsis, Play, X } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -231,8 +236,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   );
 });
 
-function HeaderBar({ id }: { id: string }) {
-  const reactFlowInstance = useReactFlow();
+function MyPodToolbar({ id }: { id: string }) {
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
 
@@ -244,22 +248,19 @@ function HeaderBar({ id }: { id: string }) {
       React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
     );
   const repoId = useAtomValue(ATOM_repoId)!;
-  const [nodesMap] = useAtom(ATOM_nodesMap);
-  const node = nodesMap.get(id)!;
-  const parentId = node.data.parent;
-  let index = 0;
-  if (parentId) {
-    const parentNode = nodesMap.get(parentId);
-    index = parentNode?.data.children?.indexOf(id)!;
-  }
 
   return (
-    <Flex>
+    <PodToolbar>
+      {/* Toolbar for adding new pod top/bottom/right */}
+      <ToolbarAddPod id={id} position="top" />
+      <ToolbarAddPod id={id} position="bottom" />
+      <ToolbarAddPod id={id} position="right" />
       <IconButton
         variant="ghost"
         radius="full"
         style={{
-          margin: 0,
+          margin: 3,
+          padding: 0,
         }}
         disabled={!runtimeReady}
         onClick={() => {
@@ -273,12 +274,13 @@ function HeaderBar({ id }: { id: string }) {
         <DropdownMenu.Trigger>
           <IconButton
             variant="ghost"
-            radius="full"
+            radius="small"
             style={{
-              margin: 0,
+              margin: 3,
+              padding: 0,
             }}
           >
-            <Ellipsis size="1.2em" />
+            <Ellipsis />
           </IconButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
@@ -319,7 +321,7 @@ function HeaderBar({ id }: { id: string }) {
           <ConfirmedDelete id={id} />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    </Flex>
+    </PodToolbar>
   );
 }
 
@@ -486,28 +488,13 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
         // backgroundImage: "linear-gradient(200deg, #FAF8F9, #F0EFF0)",
         // padding: "8px",
         borderRadius: "8px",
-        border: "5px solid",
-        borderColor: focused ? "red" : "transparent",
+        border: "3px solid",
+        borderColor: focused ? "black" : "transparent",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
       className="nodrag"
       ref={ref}
     >
-      <AddNodeHandle id={id} position="top" type="CODE" lang={node.data.lang} />
-      <AddNodeHandle
-        id={id}
-        position="bottom"
-        type="CODE"
-        lang={node.data.lang}
-      />
-      {node.data.children.length == 0 && (
-        <AddNodeHandle
-          id={id}
-          position="right"
-          type="CODE"
-          lang={node.data.lang}
-        />
-      )}
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -524,23 +511,7 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
           borderRadius: "4px",
         }}
       >
-        {hover && !env.READ_ONLY && (
-          <Box
-            style={{
-              position: "fixed",
-              top: 0,
-              right: 0,
-              zIndex: 100,
-              border: "solid 1px var(--gray-8)",
-              transform: "translateY(-50%) translateX(-20px)",
-              backgroundColor: "white",
-              borderRadius: "10px",
-              boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-            }}
-          >
-            <HeaderBar id={id} />
-          </Box>
-        )}
+        {!env.READ_ONLY && <MyPodToolbar id={id} />}
         <div
           style={{
             paddingTop: "5px",
@@ -604,40 +575,28 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
             .otherwise(() => "??")}{" "}
         </Box>
 
-        {hover && (
-          <NodeResizeControl
-            style={{
-              background: "transparent",
-              border: "none",
-              // make it above the pod
-              zIndex: 100,
-              // put it to the right-bottom corner, instead of right-middle.
-              top: "100%",
-              color: "red",
-            }}
-            minWidth={300}
-            minHeight={50}
-            // this allows the resize happens in X-axis only.
-            position="right"
-            onResizeEnd={() => {
-              // remove style.height so that the node auto-resizes.
-              const node = nodesMap.get(id);
-              if (node) {
-                nodesMap.set(id, {
-                  ...node,
-                  style: { ...node.style, height: undefined },
-                });
-              }
-            }}
-          >
-            <MoveHorizontal
-              style={{
-                position: "absolute",
-                transform: "translate(-220%, -110%)",
-              }}
-            />
-          </NodeResizeControl>
-        )}
+        <NodeResizeControl
+          minWidth={300}
+          minHeight={50}
+          // this allows the resize happens in X-axis only.
+          position="right"
+          onResizeEnd={() => {
+            // remove style.height so that the node auto-resizes.
+            const node = nodesMap.get(id);
+            if (node) {
+              nodesMap.set(id, {
+                ...node,
+                style: { ...node.style, height: undefined },
+              });
+            }
+          }}
+          variant={ResizeControlVariant.Line}
+          color="transparent"
+          style={{
+            border: "10px solid transparent",
+            transform: "translateX(-30%)",
+          }}
+        />
       </div>
     </div>
   );

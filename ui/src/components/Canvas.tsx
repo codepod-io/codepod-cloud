@@ -203,7 +203,7 @@ function CanvasImpl() {
         // custom edge for easy connect
         edgeTypes={edgeTypes}
         defaultEdgeOptions={{
-          style: { strokeWidth: 3, stroke: "black" },
+          style: { strokeWidth: 3, stroke: "lightgray" },
           type: "floating",
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,

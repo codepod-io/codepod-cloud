@@ -40,7 +40,7 @@ function createNewNode(
   position
 ): Node<NodeData> {
   let id = myNanoId();
-  const newNode = {
+  const newNode: Node<NodeData> = {
     id,
     type,
     position,
@@ -181,11 +181,13 @@ function getParentIndex({
   anchorId: string;
   position: "top" | "bottom" | "right";
 }): { parentId: string; index: number } {
-  if (position === "right") return { parentId: anchorId, index: 0 };
-
   const anchor = nodesMap.get(anchorId);
   if (!anchor) {
     throw new Error("Anchor node not found");
+  }
+  if (position === "right") {
+    // add to the end of children
+    return { parentId: anchorId, index: anchor.data.children.length };
   }
   const anchorParentId = anchor.data.parent;
   if (!anchorParentId) {
@@ -211,8 +213,7 @@ export const ATOM_addNode = atom(
     anchorId: string,
     position: "top" | "bottom" | "right",
     type: "CODE" | "RICH",
-    // lang?: "python" | "julia" | "javascript" | "racket"
-    lang?: string
+    lang?: "python" | "julia" | "javascript" | "racket"
   ) => {
     const nodesMap = get(ATOM_nodesMap);
     const { parentId, index } = getParentIndex({

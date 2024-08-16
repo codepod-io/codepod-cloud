@@ -5,5 +5,5 @@ export type NodeData = {
   children: string[];
   parent?: string;
   folded: boolean;
-  lang?: string;
+  lang?: "python" | "julia" | "javascript" | "racket";
 };
