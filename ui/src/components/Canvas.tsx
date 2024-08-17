@@ -48,10 +48,12 @@ import { Box, Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 import { env } from "../lib/vars";
+import { SvgNode } from "./Scope";
 
 const nodeTypes = {
   CODE: CodeNode,
   RICH: RichNode,
+  SVG: SvgNode,
 };
 
 const edgeTypes = {
@@ -203,7 +205,7 @@ function CanvasImpl() {
         // custom edge for easy connect
         edgeTypes={edgeTypes}
         defaultEdgeOptions={{
-          style: { strokeWidth: 3, stroke: "lightgray" },
+          style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
           type: "floating",
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,
