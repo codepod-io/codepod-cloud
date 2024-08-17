@@ -749,7 +749,7 @@ export function PodToolbar({ children }) {
   return (
     <motion.div
       animate={{
-        opacity: true ? 1 : 0,
+        opacity: hover ? 1 : 0,
       }}
       onMouseEnter={() => {
         setHover(true);
