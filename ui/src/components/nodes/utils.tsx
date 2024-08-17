@@ -640,9 +640,11 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
 export function ToolbarAddPod({
   id,
   position,
+  cb = () => {},
 }: {
   id: string;
   position: "left" | "top" | "bottom" | "right";
+  cb: () => void;
 }) {
   const addNode = useSetAtom(ATOM_addNode);
   const cutId = useAtomValue(ATOM_cutId);
@@ -691,6 +693,7 @@ export function ToolbarAddPod({
           shortcut="⌘ D"
           onClick={() => {
             addNode(id, position, "RICH");
+            cb();
           }}
         >
           <NotebookPen /> Doc
@@ -700,6 +703,7 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onClick={() => {
             addNode(id, position, "CODE", "python");
+            cb();
           }}
         >
           <img
@@ -714,6 +718,7 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onClick={() => {
             addNode(id, position, "CODE", "julia");
+            cb();
           }}
         >
           <img
@@ -729,6 +734,7 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onClick={() => {
             addNode(id, position, "CODE", "javascript");
+            cb();
           }}
         >
           <img
@@ -744,6 +750,7 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onClick={() => {
             addNode(id, position, "CODE", "racket");
+            cb();
           }}
         >
           <img
@@ -800,7 +807,6 @@ export function PodToolbar({
           position: "fixed",
           top: 0,
           right: 0,
-          zIndex: 100,
           // border: "solid 1px var(--gray-8)",
           transform: "translateY(-120%)",
           backgroundColor: "white",
@@ -810,10 +816,40 @@ export function PodToolbar({
         }}
       >
         {/* Toolbar for adding new pod top/bottom/right */}
-        {id !== "ROOT" && <ToolbarAddPod id={id} position="left" />}
-        {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
-        {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
-        <ToolbarAddPod id={id} position="right" />
+        {id !== "ROOT" && (
+          <ToolbarAddPod
+            id={id}
+            position="left"
+            cb={() => {
+              setHover(false);
+            }}
+          />
+        )}
+        {id !== "ROOT" && (
+          <ToolbarAddPod
+            id={id}
+            position="top"
+            cb={() => {
+              setHover(false);
+            }}
+          />
+        )}
+        {id !== "ROOT" && (
+          <ToolbarAddPod
+            id={id}
+            position="bottom"
+            cb={() => {
+              setHover(false);
+            }}
+          />
+        )}
+        <ToolbarAddPod
+          id={id}
+          position="right"
+          cb={() => {
+            setHover(false);
+          }}
+        />
         {id !== "ROOT" && (
           <IconButton
             variant="ghost"
