@@ -204,7 +204,7 @@ export const ATOM_addNode = atom(
     lang?: "python" | "julia" | "javascript" | "racket"
   ) => {
     if (position === "left") {
-      wrap(get, set, anchorId);
+      wrap({ get, set, id: anchorId, type, lang });
       return;
     }
     const nodesMap = get(ATOM_nodesMap);
@@ -321,7 +321,19 @@ export const ATOM_moveCut = atom(
   }
 );
 
-function wrap(get: Getter, set: Setter, id: string) {
+function wrap({
+  get,
+  set,
+  id,
+  type,
+  lang,
+}: {
+  get: Getter;
+  set: Setter;
+  id: string;
+  type: "CODE" | "RICH";
+  lang?: "python" | "julia" | "javascript" | "racket";
+}) {
   // wrap the node with a new parent node, i.e., add a node between the node and its parent.
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -331,13 +343,22 @@ function wrap(get: Getter, set: Setter, id: string) {
   const parent = nodesMap.get(parentId);
   if (!parent) throw new Error("Parent not found");
   // create a new node
-  const newNode = createNewNode("RICH");
+  const newNode = createNewNode(type);
+  switch (type) {
+    case "CODE":
+      get(ATOM_codeMap).set(newNode.id, new Y.Text());
+      break;
+    case "RICH":
+      get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+      break;
+  }
   get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
   nodesMap.set(newNode.id, {
     ...newNode,
     data: {
       ...newNode.data,
       parent: parentId,
+      lang,
       children: [id],
     },
   });
