@@ -11,8 +11,8 @@ import { useContext, useState } from "react";
 
 import { ChevronLeft } from "lucide-react";
 import { match, P } from "ts-pattern";
-import { useAtom, useSetAtom } from "jotai";
-import { ATOM_toggleFold } from "@/lib/store/canvasSlice";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { ATOM_moveCut, ATOM_toggleFold } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
 import juliaLogo from "@/assets/julia.svg";
@@ -20,11 +20,14 @@ import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 
-import { NotebookPen } from "lucide-react";
+import { NotebookPen, Clipboard } from "lucide-react";
 
 import { ATOM_addNode } from "@/lib/store/canvasSlice";
 import { Button, DropdownMenu, Flex } from "@radix-ui/themes";
 import { motion } from "framer-motion";
+
+import rowInsertTop from "@/assets/row-insert-top.svg";
+import { ATOM_cutId } from "@/lib/store/atom";
 
 export function ResizeIcon() {
   return (
@@ -613,8 +616,6 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
   return fileContent;
 }
 
-import rowInsertTop from "@/assets/row-insert-top.svg";
-
 export function ToolbarAddPod({
   id,
   position,
@@ -623,6 +624,8 @@ export function ToolbarAddPod({
   position: "top" | "bottom" | "right";
 }) {
   const addNode = useSetAtom(ATOM_addNode);
+  const cutId = useAtomValue(ATOM_cutId);
+  const moveCut = useSetAtom(ATOM_moveCut);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -723,6 +726,18 @@ export function ToolbarAddPod({
           />{" "}
           Racket
         </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          onClick={() => {
+            // addNode(id, position, "CODE", "racket");
+            moveCut(id, position);
+          }}
+          disabled={!cutId || cutId === id}
+          color="orange"
+        >
+          <Clipboard />
+          Paste
+        </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
@@ -734,7 +749,7 @@ export function PodToolbar({ children }) {
   return (
     <motion.div
       animate={{
-        opacity: hover ? 1 : 0,
+        opacity: true ? 1 : 0,
       }}
       onMouseEnter={() => {
         setHover(true);

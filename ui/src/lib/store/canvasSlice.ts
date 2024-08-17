@@ -18,6 +18,7 @@ import { level2color, myNanoId } from "../utils/utils";
 import { NodeData } from "./types";
 
 import debounce from "lodash/debounce";
+import { ATOM_cutId } from "./atom";
 
 const newScopeNodeShapeConfig = {
   width: 600,
@@ -256,6 +257,74 @@ export const ATOM_addNode = atom(
         children,
       },
     });
+    autoLayoutTree(get, set);
+    updateView(get, set);
+  }
+);
+
+export const ATOM_moveCut = atom(
+  null,
+  (get, set, anchorId: string, position: "top" | "bottom" | "right") => {
+    const cutId = get(ATOM_cutId);
+    if (!cutId) throw new Error("No node to move");
+    if (anchorId === cutId) throw new Error("Cannot move a node to itself");
+    // move the node id to the new position
+    // get the parent node of the anchor node
+    const nodesMap = get(ATOM_nodesMap);
+    const { parentId, index } = getParentIndex({
+      nodesMap,
+      anchorId,
+      position,
+    });
+    const node = nodesMap.get(cutId);
+    if (!node) throw new Error("Node not found");
+    const oldParentId = node.data.parent;
+    if (!oldParentId) throw new Error("Node has no parent");
+    const oldParent = nodesMap.get(oldParentId);
+    if (!oldParent) throw new Error("Old parent not found");
+    const newParent = nodesMap.get(parentId);
+    if (!newParent) throw new Error("New parent not found");
+    // remove the node from the old parent
+    const oldChildren = oldParent.data.children;
+    const oldIndex = oldChildren.indexOf(cutId);
+    if (oldIndex === -1) throw new Error("Node not found in old parent");
+    oldChildren.splice(oldIndex, 1);
+    nodesMap.set(oldParentId, {
+      ...oldParent,
+      data: {
+        ...oldParent.data,
+        children: oldChildren,
+      },
+    });
+    // add the node to the new parent
+    const newChildren = newParent.data.children;
+    if (index === -1) {
+      newChildren.push(cutId);
+    } else {
+      newChildren.splice(index, 0, cutId);
+    }
+    nodesMap.set(parentId, {
+      ...newParent,
+      data: {
+        ...newParent.data,
+        children: newChildren,
+      },
+    });
+
+    // update the node's parent
+    nodesMap.set(cutId, {
+      ...node,
+      data: {
+        ...node.data,
+        parent: parentId,
+      },
+    });
+
+    // Do not clear the cutId, so that it can be explicit to the user which pod
+    // is being moved.
+
+    // set(ATOM_cutId, null);
+
     autoLayoutTree(get, set);
     updateView(get, set);
   }

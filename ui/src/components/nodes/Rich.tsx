@@ -100,8 +100,8 @@ import { Handles, PodToolbar, ToolbarAddPod } from "./utils";
 import { MyLexical } from "./rich/MyLexical";
 
 import { Box, Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
-import { Ellipsis, MoveHorizontal, RemoveFormatting } from "lucide-react";
-import { ATOM_editMode } from "@/lib/store/atom";
+import { Ellipsis, RemoveFormatting, ScissorsLineDashed } from "lucide-react";
+import { ATOM_cutId, ATOM_editMode } from "@/lib/store/atom";
 import {
   ATOM_nodesMap,
   ATOM_provider,
@@ -378,12 +378,30 @@ const MyRemirror = ({
 
 function MyPodToolbar({ id }) {
   const reactFlowInstance = useReactFlow();
+  const [cutId, setCutId] = useAtom(ATOM_cutId);
   return (
     <PodToolbar>
       {/* Toolbar for adding new pod top/bottom/right */}
       {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
       {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
       <ToolbarAddPod id={id} position="right" />
+      <IconButton
+        variant="ghost"
+        radius="small"
+        style={{
+          margin: 3,
+          padding: 0,
+        }}
+        onClick={() => {
+          if (cutId === id) {
+            setCutId(null);
+          } else {
+            setCutId(id);
+          }
+        }}
+      >
+        <ScissorsLineDashed />
+      </IconButton>
       {/* The "more" button */}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
@@ -455,6 +473,8 @@ export const RichNode = memo<Props>(function ({
   const node = nodesMap.get(id);
   if (!node) return null;
 
+  const cutId = useAtomValue(ATOM_cutId);
+
   return (
     <div
       // focused classname is used to show line highlight only for the focused Remirror node.
@@ -469,8 +489,9 @@ export const RichNode = memo<Props>(function ({
         backgroundColor: "rgba(228, 228, 228, 0.5)",
         // padding: "8px",
         borderRadius: "8px",
-        border: "3px solid",
-        borderColor: focused ? "black" : "transparent",
+        // border: "3px solid",
+        // borderColor: focused ? "black" : "transparent",
+        border: cutId === id ? "3px dashed red" : "3px solid transparent",
         // add shadow
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
