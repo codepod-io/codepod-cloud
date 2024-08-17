@@ -95,7 +95,15 @@ import { SlashExtension } from "./extensions/slash";
 import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
-import { Handles, PodToolbar, ToolbarAddPod } from "./utils";
+import {
+  DeleteButton,
+  Handles,
+  PodToolbar,
+  RaiseButton,
+  SlurpButton,
+  SpliceButton,
+  ToolbarAddPod,
+} from "./utils";
 
 import { MyLexical } from "./rich/MyLexical";
 
@@ -378,58 +386,34 @@ const MyRemirror = ({
 
 function MyPodToolbar({ id }) {
   const reactFlowInstance = useReactFlow();
-  const [cutId, setCutId] = useAtom(ATOM_cutId);
+  const node = useAtomValue(ATOM_nodesMap).get(id);
   return (
-    <PodToolbar>
-      {/* Toolbar for adding new pod top/bottom/right */}
-      {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
-      {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
-      <ToolbarAddPod id={id} position="right" />
-      <IconButton
-        variant="ghost"
-        radius="small"
-        style={{
-          margin: 3,
-          padding: 0,
-        }}
-        onClick={() => {
-          if (cutId === id) {
-            setCutId(null);
-          } else {
-            setCutId(id);
-          }
-        }}
-      >
-        <ScissorsLineDashed />
-      </IconButton>
+    <PodToolbar id={id}>
       {/* The "more" button */}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <IconButton
-            variant="ghost"
-            radius="small"
-            style={{
-              margin: 3,
-              padding: 0,
-            }}
-          >
-            <Ellipsis />
-          </IconButton>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <DropdownMenu.Item
-            shortcut="⌘ ⌫"
-            color="red"
-            disabled={id === "ROOT"}
-            onClick={() => {
-              // Delete all edges connected to the node.
-              reactFlowInstance.deleteElements({ nodes: [{ id }] });
-            }}
-          >
-            Delete
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      {id !== "ROOT" && (
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <IconButton
+              variant="ghost"
+              radius="small"
+              style={{
+                margin: 3,
+                padding: 0,
+              }}
+            >
+              <Ellipsis />
+            </IconButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            {/* Structural edit */}
+            {node?.data.parent !== "ROOT" && <RaiseButton id={id} />}
+            <SlurpButton id={id} />
+            <DropdownMenu.Separator />
+            <SpliceButton id={id} />
+            <DeleteButton id={id} />
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      )}
     </PodToolbar>
   );
 }

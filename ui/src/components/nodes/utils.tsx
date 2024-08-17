@@ -5,14 +5,27 @@ import {
   NodePositionChange,
   XYPosition,
   Handle,
+  useReactFlow,
 } from "reactflow";
 
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 
-import { ChevronLeft } from "lucide-react";
+import {
+  ChevronLeft,
+  ScissorsLineDashed,
+  Trash,
+  Trash2,
+  CalendarArrowUp,
+} from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_moveCut, ATOM_toggleFold } from "@/lib/store/canvasSlice";
+import {
+  ATOM_moveCut,
+  ATOM_raise,
+  ATOM_slurp,
+  ATOM_splice,
+  ATOM_toggleFold,
+} from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
 import juliaLogo from "@/assets/julia.svg";
@@ -23,11 +36,19 @@ import racketLogo from "@/assets/racket.svg";
 import { NotebookPen, Clipboard } from "lucide-react";
 
 import { ATOM_addNode } from "@/lib/store/canvasSlice";
-import { Button, DropdownMenu, Flex } from "@radix-ui/themes";
+import {
+  Button,
+  Dialog,
+  DropdownMenu,
+  Flex,
+  IconButton,
+} from "@radix-ui/themes";
 import { motion } from "framer-motion";
 
 import rowInsertTop from "@/assets/row-insert-top.svg";
 import { ATOM_cutId } from "@/lib/store/atom";
+
+import ArrowLeftToLine from "@/assets/ArrowLeftToLine.svg";
 
 export function ResizeIcon() {
   return (
@@ -621,7 +642,7 @@ export function ToolbarAddPod({
   position,
 }: {
   id: string;
-  position: "top" | "bottom" | "right";
+  position: "left" | "top" | "bottom" | "right";
 }) {
   const addNode = useSetAtom(ATOM_addNode);
   const cutId = useAtomValue(ATOM_cutId);
@@ -653,6 +674,13 @@ export function ToolbarAddPod({
                 src={rowInsertTop}
                 // rotate 90deg
                 style={{ transform: "rotate(90deg)" }}
+              />
+            ))
+            .with("left", () => (
+              <img
+                src={rowInsertTop}
+                // rotate -90deg
+                style={{ transform: "rotate(-90deg)" }}
               />
             ))
             .exhaustive()}
@@ -730,9 +758,10 @@ export function ToolbarAddPod({
         <DropdownMenu.Item
           onClick={() => {
             // addNode(id, position, "CODE", "racket");
+            if (position === "left") throw new Error("Cannot paste to left.");
             moveCut(id, position);
           }}
-          disabled={!cutId || cutId === id}
+          disabled={!cutId || cutId === id || position === "left"}
           color="orange"
         >
           <Clipboard />
@@ -743,8 +772,15 @@ export function ToolbarAddPod({
   );
 }
 
-export function PodToolbar({ children }) {
+export function PodToolbar({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
   const [hover, setHover] = useState(false);
+  const [cutId, setCutId] = useAtom(ATOM_cutId);
 
   return (
     <motion.div
@@ -773,8 +809,162 @@ export function PodToolbar({ children }) {
           cursor: "auto",
         }}
       >
+        {/* Toolbar for adding new pod top/bottom/right */}
+        {id !== "ROOT" && <ToolbarAddPod id={id} position="left" />}
+        {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
+        {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
+        <ToolbarAddPod id={id} position="right" />
+        {id !== "ROOT" && (
+          <IconButton
+            variant="ghost"
+            radius="small"
+            style={{
+              margin: 3,
+              padding: 0,
+            }}
+            onClick={() => {
+              if (cutId === id) {
+                setCutId(null);
+              } else {
+                setCutId(id);
+              }
+            }}
+          >
+            <ScissorsLineDashed />
+          </IconButton>
+        )}
+
         {children}
       </Flex>
     </motion.div>
+  );
+}
+
+export function RaiseButton({ id }) {
+  const raise = useSetAtom(ATOM_raise);
+  return (
+    <DropdownMenu.Item
+      onClick={() => {
+        // replace the parent with the current pod.
+        raise(id);
+      }}
+    >
+      <img src={ArrowLeftToLine} />
+      Raise
+    </DropdownMenu.Item>
+  );
+}
+
+export function SlurpButton({ id }) {
+  const slurp = useSetAtom(ATOM_slurp);
+  return (
+    <DropdownMenu.Item
+      onClick={() => {
+        // move its next sibling to its children
+        slurp(id);
+      }}
+    >
+      <CalendarArrowUp />
+      Slurp
+    </DropdownMenu.Item>
+  );
+}
+
+// Ref: https://github.com/radix-ui/primitives/discussions/1830#discussioncomment-10300947
+function ConfirmedDelete({
+  color,
+  onClick,
+  trigger,
+  title,
+  description,
+  confirm,
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  return (
+    <Dialog.Root>
+      {/* Try 3 (which works):  use a ref and trigger the click on the inner from the outer. */}
+      <DropdownMenu.Item
+        color={color}
+        onClick={(e) => {
+          e.preventDefault();
+          ref?.current?.click();
+        }}
+      >
+        <Dialog.Trigger
+          ref={ref}
+          style={{
+            display: "none",
+          }}
+        >
+          <div></div>
+        </Dialog.Trigger>
+        {trigger}
+      </DropdownMenu.Item>
+
+      <Dialog.Content maxWidth="450px">
+        <Dialog.Title size="3">{title}</Dialog.Title>
+        <Dialog.Description size="2" mb="4">
+          {description}
+        </Dialog.Description>
+
+        <Flex gap="3" mt="4" justify="end">
+          <Dialog.Close>
+            <Button variant="soft" color="gray">
+              Cancel
+            </Button>
+          </Dialog.Close>
+          <Dialog.Close>
+            <DropdownMenu.Item color={color} onClick={onClick}>
+              {confirm}
+            </DropdownMenu.Item>
+          </Dialog.Close>
+        </Flex>
+      </Dialog.Content>
+    </Dialog.Root>
+  );
+}
+
+export function SpliceButton({ id }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const splice = useSetAtom(ATOM_splice);
+  return (
+    <ConfirmedDelete
+      color="orange"
+      onClick={() => {
+        // remove this pod, place its parent in place of it.
+        splice(id);
+      }}
+      trigger={
+        <>
+          <Trash /> Delete Pod
+        </>
+      }
+      title="This will delete this pod."
+      description="The children will be spliced into the place of this pod. Continue?"
+      confirm="Delete Pod"
+    />
+  );
+}
+
+export function DeleteButton({ id }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const reactFlowInstance = useReactFlow();
+  return (
+    <ConfirmedDelete
+      color="red"
+      onClick={() => {
+        // Delete all edges connected to the node.
+        reactFlowInstance.deleteElements({ nodes: [{ id }] });
+      }}
+      trigger={
+        <>
+          <Trash2 color="red" /> Delete Tree
+        </>
+      }
+      title="This will delete the entire subtree."
+      description="Continue?"
+      confirm="Delete"
+    />
   );
 }

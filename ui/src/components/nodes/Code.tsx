@@ -20,7 +20,15 @@ import Ansi from "ansi-to-react";
 
 import { MyMonaco } from "../MyMonaco";
 
-import { Handles, PodToolbar, ToolbarAddPod } from "./utils";
+import {
+  DeleteButton,
+  Handles,
+  PodToolbar,
+  RaiseButton,
+  SlurpButton,
+  SpliceButton,
+  ToolbarAddPod,
+} from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
@@ -248,33 +256,10 @@ function MyPodToolbar({ id }: { id: string }) {
       React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
     );
   const repoId = useAtomValue(ATOM_repoId)!;
-
-  const [cutId, setCutId] = useAtom(ATOM_cutId);
+  const node = useAtomValue(ATOM_nodesMap).get(id);
 
   return (
-    <PodToolbar>
-      {/* Toolbar for adding new pod top/bottom/right */}
-      <ToolbarAddPod id={id} position="top" />
-      <ToolbarAddPod id={id} position="bottom" />
-      <ToolbarAddPod id={id} position="right" />
-      {/* The cut button */}
-      <IconButton
-        variant="ghost"
-        radius="small"
-        style={{
-          margin: 3,
-          padding: 0,
-        }}
-        onClick={() => {
-          if (cutId === id) {
-            setCutId(null);
-          } else {
-            setCutId(id);
-          }
-        }}
-      >
-        <ScissorsLineDashed />
-      </IconButton>
+    <PodToolbar id={id}>
       {/* The run button */}
       <IconButton
         variant="ghost"
@@ -326,102 +311,16 @@ function MyPodToolbar({ id }: { id: string }) {
             Run Chain
           </DropdownMenu.Item>
 
+          {/* Structural edit */}
           <DropdownMenu.Separator />
-          {/* <DropdownMenu.Item
-            shortcut="⌘ ⌫"
-            color="red"
-            onClick={() => {
-              // Delete all edges connected to the node.
-              reactFlowInstance.deleteElements({ nodes: [{ id }] });
-            }}
-          >
-            Delete
-          </DropdownMenu.Item> */}
-
-          {/* Delete with Confirmation. */}
-          <ConfirmedDelete id={id} />
+          {node?.data.parent !== "ROOT" && <RaiseButton id={id} />}
+          <SlurpButton id={id} />
+          <DropdownMenu.Separator />
+          <SpliceButton id={id} />
+          <DeleteButton id={id} />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </PodToolbar>
-  );
-}
-
-// Ref: https://github.com/radix-ui/primitives/discussions/1830#discussioncomment-10300947
-function ConfirmedDelete({ id }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const reactFlowInstance = useReactFlow();
-  return (
-    <Dialog.Root>
-      {/* Try 1: This button is not the style of DropDown MenuItem. */}
-      {/* <Button>Delete</Button> */}
-
-      {/* <Button>Delete</Button> */}
-
-      {/* Try 2: Trigger the inner event. Either stop propagation on inner, or preventDefault on outer.
-          However, the outer is bigger than the inner. As a result, clicking on the shortcut part of the outer
-          will not be picked up by the inner trigger. */}
-
-      {/* <DropdownMenu.Item
-        color="red"
-        shortcut="⌘ ⌫"
-        onClick={(e) => {
-          e.preventDefault();
-        }}
-      >
-        <div>
-          <Dialog.Trigger
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <div>Delete</div>
-          </Dialog.Trigger>
-        </div>
-      </DropdownMenu.Item> */}
-
-      {/* Try 3 (which works):  use a ref and trigger the click on the inner from the outer. */}
-      <DropdownMenu.Item
-        color="red"
-        shortcut="⌘ ⌫"
-        onClick={(e) => {
-          e.preventDefault();
-          ref?.current?.click();
-        }}
-      >
-        <div>
-          <Dialog.Trigger ref={ref}>
-            <div></div>
-          </Dialog.Trigger>
-          Delete
-        </div>
-      </DropdownMenu.Item>
-
-      <Dialog.Content maxWidth="450px">
-        <Dialog.Title size="3">This will delete pod.</Dialog.Title>
-        <Dialog.Description size="2" mb="4">
-          Continue?
-        </Dialog.Description>
-
-        <Flex gap="3" mt="4" justify="end">
-          <Dialog.Close>
-            <Button variant="soft" color="gray">
-              Cancel
-            </Button>
-          </Dialog.Close>
-          <Dialog.Close>
-            <DropdownMenu.Item
-              color="red"
-              onClick={() => {
-                // Delete all edges connected to the node.
-                reactFlowInstance.deleteElements({ nodes: [{ id }] });
-              }}
-            >
-              Delete
-            </DropdownMenu.Item>
-          </Dialog.Close>
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
   );
 }
 
