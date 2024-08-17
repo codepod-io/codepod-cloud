@@ -33,7 +33,7 @@ import {
   IconButton,
   Spinner,
 } from "@radix-ui/themes";
-import { Check, Ellipsis, Play, X } from "lucide-react";
+import { Check, Ellipsis, Play, ScissorsLineDashed, X } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -49,7 +49,7 @@ import {
   ATOM_resultMap,
   ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
-import { ATOM_repoId } from "@/lib/store/atom";
+import { ATOM_cutId, ATOM_repoId } from "@/lib/store/atom";
 
 import juliaLogo from "@/assets/julia.svg";
 import pythonLogo from "@/assets/python.svg";
@@ -249,15 +249,36 @@ function MyPodToolbar({ id }: { id: string }) {
     );
   const repoId = useAtomValue(ATOM_repoId)!;
 
+  const [cutId, setCutId] = useAtom(ATOM_cutId);
+
   return (
     <PodToolbar>
       {/* Toolbar for adding new pod top/bottom/right */}
       <ToolbarAddPod id={id} position="top" />
       <ToolbarAddPod id={id} position="bottom" />
       <ToolbarAddPod id={id} position="right" />
+      {/* The cut button */}
       <IconButton
         variant="ghost"
-        radius="full"
+        radius="small"
+        style={{
+          margin: 3,
+          padding: 0,
+        }}
+        onClick={() => {
+          if (cutId === id) {
+            setCutId(null);
+          } else {
+            setCutId(id);
+          }
+        }}
+      >
+        <ScissorsLineDashed />
+      </IconButton>
+      {/* The run button */}
+      <IconButton
+        variant="ghost"
+        radius="small"
         style={{
           margin: 3,
           padding: 0,
@@ -268,7 +289,7 @@ function MyPodToolbar({ id }: { id: string }) {
           if (specs) runChain.mutate({ repoId, specs });
         }}
       >
-        <Play size="1.2em" />
+        <Play />
       </IconButton>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
@@ -462,14 +483,11 @@ function useRunKey({ id }: { id: string }) {
 export const CodeNode = memo<NodeProps>(function ({ id }) {
   const [nodesMap] = useAtom(ATOM_nodesMap);
 
-  const [hover, setHover] = useState(false);
-
-  const [focused, setFocused] = useState(false);
-
   let ref = useRunKey({ id })!;
 
   const node = nodesMap.get(id);
   if (!node) return null;
+  const cutId = useAtomValue(ATOM_cutId);
 
   return (
     <div
@@ -488,16 +506,15 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
         // backgroundImage: "linear-gradient(200deg, #FAF8F9, #F0EFF0)",
         // padding: "8px",
         borderRadius: "8px",
-        border: "3px solid",
-        borderColor: focused ? "black" : "transparent",
+        // border: isCutting ? "3px dash" : "3px solid",
+        // borderColor: focused ? "black" : "transparent",
+        border: cutId === id ? "3px dashed red" : "3px solid transparent",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
       className="nodrag"
       ref={ref}
     >
       <div
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -516,12 +533,6 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
           style={{
             paddingTop: "5px",
             cursor: "auto",
-          }}
-          onFocus={() => {
-            setFocused(true);
-          }}
-          onBlur={() => {
-            setFocused(false);
           }}
         >
           <MyMonaco id={id} />
