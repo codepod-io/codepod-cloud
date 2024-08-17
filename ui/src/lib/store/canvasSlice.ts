@@ -70,6 +70,7 @@ function createNewNode(type: "CODE" | "RICH"): Node<NodeData> {
       level: 0,
       children: [],
       folded: false,
+      isScope: false,
       lang: "python",
     },
     dragHandle: ".custom-drag-handle",
@@ -126,18 +127,35 @@ export function updateView(get: Getter, set: Setter) {
   let selectedPods = get(ATOM_selectedPods);
   // let nodes = Array.from<Node>(nodesMap.values());
   // follow the tree order, skip folded nodes
-  function dfs(node: Node<NodeData>) {
+  function dfs(node: Node<NodeData>): Node[] {
     if (node.data.folded) return [node];
     let children = node.data.children.map((id) => nodesMap.get(id)!);
     return [node, ...children.flatMap(dfs)];
   }
   let nodes = dfs(nodesMap.get("ROOT")!);
-  set(ATOM_nodes, nodes);
+  // generate the scope overlay SVG here
+  // for each node, start a SVG drawing covering it and all its children.
+  // node: {x,y,width,height}
+  const svgNodes = nodes
+    .filter((node) => node.data.isScope)
+    .map((node) => {
+      return {
+        id: node.id + "_SVG",
+        type: "SVG",
+        // position: { x: node.position.x, y: node.position.y },
+        position: { x: 0, y: 0 },
+        data: {
+          id: node.id,
+        },
+      };
+    });
+  set(ATOM_nodes, [...svgNodes, ...nodes]);
+
   // edges view
   // const edgesMap = get().getEdgesMap();
   // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
   function generateEdge(nodes: Node[]) {
-    const edges: any[] = [];
+    const edges: Edge[] = [];
     nodes.forEach((node) => {
       node.data?.children?.map((id: string) => {
         edges.push({
@@ -192,6 +210,21 @@ function getParentIndex({
       throw new Error("unknown position");
   }
 }
+
+export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      isScope: !node.data.isScope,
+    },
+  });
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
 
 export const ATOM_addNode = atom(
   null,

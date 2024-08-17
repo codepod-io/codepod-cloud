@@ -5,5 +5,6 @@ export type NodeData = {
   children: string[];
   parent?: string;
   folded: boolean;
+  isScope: boolean;
   lang?: "python" | "julia" | "javascript" | "racket";
 };

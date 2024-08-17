@@ -199,6 +199,7 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
           level: 0,
           children: [],
           folded: false,
+          isScope: false,
         },
         style: {
           width: 300,

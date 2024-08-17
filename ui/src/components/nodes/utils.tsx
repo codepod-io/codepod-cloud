@@ -25,6 +25,7 @@ import {
   ATOM_slurp,
   ATOM_splice,
   ATOM_toggleFold,
+  ATOM_toggleScope,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
@@ -42,6 +43,8 @@ import {
   DropdownMenu,
   Flex,
   IconButton,
+  Switch,
+  Tooltip,
 } from "@radix-ui/themes";
 import { motion } from "framer-motion";
 
@@ -789,6 +792,12 @@ export function PodToolbar({
   const [hover, setHover] = useState(false);
   const [cutId, setCutId] = useAtom(ATOM_cutId);
 
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error(`Node ${id} not found.`);
+
+  const toggleScope = useSetAtom(ATOM_toggleScope);
+
   return (
     <motion.div
       animate={{
@@ -815,6 +824,16 @@ export function PodToolbar({
           cursor: "auto",
         }}
       >
+        {/* scope switch */}
+        <Tooltip content="Scope">
+          <Switch
+            checked={node.data.isScope}
+            onClick={() => {
+              console.log("toggle scope", id);
+              toggleScope(id);
+            }}
+          />
+        </Tooltip>
         {/* Toolbar for adding new pod top/bottom/right */}
         {id !== "ROOT" && (
           <ToolbarAddPod
@@ -869,7 +888,6 @@ export function PodToolbar({
             <ScissorsLineDashed />
           </IconButton>
         )}
-
         {children}
       </Flex>
     </motion.div>
