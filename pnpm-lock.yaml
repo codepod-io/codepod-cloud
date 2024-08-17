@@ -13,7 +13,7 @@ importers:
         version: 3.8.3(graphql@16.6.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@benrbray/prosemirror-math':
         specifier: ^0.2.2
-        version: 0.2.2(katex@0.16.11)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.9.0)(prosemirror-view@1.31.7)
+        version: 0.2.2(katex@0.16.11)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.10.0)(prosemirror-view@1.31.7)
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1
@@ -73,7 +73,7 @@ importers:
         version: 1.0.1
       jest:
         specifier: ^29.0.3
-        version: 29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+        version: 29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       jsdom:
         specifier: ^22.1.0
         version: 22.1.0
@@ -161,13 +161,13 @@ importers:
         version: 8.0.0
       ts-jest:
         specifier: ^29.0.1
-        version: 29.0.1(@babel/core@7.23.2)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.2))(jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)))(typescript@5.3.2)
+        version: 29.0.1(@babel/core@7.23.2)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.2))(jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)))(typescript@5.3.2)
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)
+        version: 10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)
       ts-node-dev:
         specifier: ^2.0.0
-        version: 2.0.0(@swc/core@1.7.10)(@types/node@18.11.2)(node-notifier@10.0.1)(typescript@5.3.2)
+        version: 2.0.0(@swc/core@1.7.11)(@types/node@18.11.2)(node-notifier@10.0.1)(typescript@5.3.2)
       typescript:
         specifier: ^5.3.2
         version: 5.3.2
@@ -176,7 +176,7 @@ importers:
     dependencies:
       '@benrbray/prosemirror-math':
         specifier: ^0.2.2
-        version: 0.2.2(katex@0.13.0)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.9.0)(prosemirror-view@1.31.7)
+        version: 0.2.2(katex@0.13.0)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.10.0)(prosemirror-view@1.31.7)
       '@emotion/css':
         specifier: ^11.13.0
         version: 11.13.0
@@ -346,11 +346,11 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       lucide-react:
-        specifier: ^0.394.0
-        version: 0.394.0(react@18.2.0)
+        specifier: ^0.428.0
+        version: 0.428.0(react@18.2.0)
       monaco-editor:
-        specifier: ^0.34.1
-        version: 0.34.1
+        specifier: ^0.50.0
+        version: 0.50.0
       nanoid:
         specifier: ^3.0.0
         version: 3.0.0
@@ -383,7 +383,7 @@ importers:
         version: 4.5.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react-monaco-editor:
         specifier: ^0.50.1
-        version: 0.50.1(@types/react@18.2.15)(monaco-editor@0.34.1)(react@18.2.0)
+        version: 0.50.1(@types/react@18.2.15)(monaco-editor@0.50.0)(react@18.2.0)
       react-resizable:
         specifier: ^3.0.4
         version: 3.0.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -428,7 +428,7 @@ importers:
         version: 0.7.0(xterm@5.2.1)
       y-monaco:
         specifier: ^0.1.4
-        version: 0.1.4(monaco-editor@0.34.1)(yjs@13.6.7)
+        version: 0.1.4(monaco-editor@0.50.0)(yjs@13.6.7)
       y-prosemirror:
         specifier: ^1.2.1
         version: 1.2.1(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-view@1.31.7)(y-protocols@1.0.5)(yjs@13.6.7)
@@ -2864,8 +2864,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@swc/core-darwin-arm64@1.7.10':
-    resolution: {integrity: sha512-TYp4x/9w/C/yMU1olK5hTKq/Hi7BjG71UJ4V1U1WxI1JA3uokjQ/GoktDfmH5V5pX4dgGSOJwUe2RjoN8Z/XnA==}
+  '@swc/core-darwin-arm64@1.7.11':
+    resolution: {integrity: sha512-HRQv4qIeMBPThZ6Y/4yYW52rGsS6yrpusvuxLGyoFo45Y0y12/V2yXkOIA/0HIQyrqoUAxn1k4zQXpPaPNCmnw==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [darwin]
@@ -2876,8 +2876,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@swc/core-darwin-x64@1.7.10':
-    resolution: {integrity: sha512-P3LJjAWh5yLc6p5IUwV5LgRfA3R1oDCZDMabYyb2BVQuJTD4MfegW9DhBcUUF5dhBLwq3191KpLVzE+dLTbiXw==}
+  '@swc/core-darwin-x64@1.7.11':
+    resolution: {integrity: sha512-vtMQj0F3oYwDu5yhO7SKDRg1XekRSi6/TbzHAbBXv+dBhlGGvcZZynT1H90EVFTv+7w7Sh+lOFvRv5Z4ZTcxow==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [darwin]
@@ -2888,8 +2888,8 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@swc/core-linux-arm-gnueabihf@1.7.10':
-    resolution: {integrity: sha512-yGOFjE7w/akRTmqGY3FvWYrqbxO7OB2N2FHj2LO5HtzXflfoABb5RyRvdEquX+17J6mEpu4EwjYNraTD/WHIEQ==}
+  '@swc/core-linux-arm-gnueabihf@1.7.11':
+    resolution: {integrity: sha512-mHtzWKxhtyreI4CSxs+3+ENv8t/Qo35WFoYG66qHEgJz/Z2Lh6jv1E+MYgHdYwnpQHgHbdvAco7HsBu/Dt6xXw==}
     engines: {node: '>=10'}
     cpu: [arm]
     os: [linux]
@@ -2900,8 +2900,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@swc/core-linux-arm64-gnu@1.7.10':
-    resolution: {integrity: sha512-SPWsgWHfdWKKjLrYlvhxcdBJ7Ruy6crJbPoE9NfD95eJEjMnS2yZTqj2ChFsY737WeyhWYlHzgYhYOVCp83YwQ==}
+  '@swc/core-linux-arm64-gnu@1.7.11':
+    resolution: {integrity: sha512-FRwe/x0GfXSQjGP2lIk+NO0pUFS/lI/RorCLBPiK808EVE9JTbh9DKCc/4Bbb4jgScAjNkrFCUVObQYl3YKmpA==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
@@ -2912,8 +2912,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@swc/core-linux-arm64-musl@1.7.10':
-    resolution: {integrity: sha512-PUi50bkNqnBL3Z/Zq6jSfwgN9A/taA6u2Zou0tjDJi7oVdpjdr7SxNgCGzMJ/nNg5D/IQn1opM1jktMvpsPAuQ==}
+  '@swc/core-linux-arm64-musl@1.7.11':
+    resolution: {integrity: sha512-GY/rs0+GUq14Gbnza90KOrQd/9yHd5qQMii5jcSWcUCT5A8QTa8kiicsM2NxZeTJ69xlKmT7sLod5l99lki/2A==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
@@ -2924,8 +2924,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@swc/core-linux-x64-gnu@1.7.10':
-    resolution: {integrity: sha512-Sc+pY55gknCAmBQBR6DhlA7jZSxHaLSDb5Sevzi6DOFMXR79NpA6zWTNKwp1GK2AnRIkbAfvYLgOxS5uWTFVpg==}
+  '@swc/core-linux-x64-gnu@1.7.11':
+    resolution: {integrity: sha512-QDkGRwSPmp2RBOlSs503IUXlWYlny8DyznTT0QuK0ML2RpDFlXWU94K/EZhS0RBEUkMY/W51OacM8P8aS/dkCg==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
@@ -2936,8 +2936,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@swc/core-linux-x64-musl@1.7.10':
-    resolution: {integrity: sha512-g5NKx2LXaGd0K26hmEts1Cvb7ptIvq3MHSgr6/D1tRPcDZw1Sp0dYsmyOv0ho4F5GOJyiCooG3oE9FXdb7jIpQ==}
+  '@swc/core-linux-x64-musl@1.7.11':
+    resolution: {integrity: sha512-SBEfKrXy6zQ6ksnyxw1FaCftrIH4fLfA81xNnKb7x/6iblv7Ko6H0aK3P5C86jyqF/82+ONl9C7ImGkUFQADig==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
@@ -2948,8 +2948,8 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@swc/core-win32-arm64-msvc@1.7.10':
-    resolution: {integrity: sha512-plRIsOcfy9t9Q/ivm5DA7I0HaIvfAWPbI+bvVRrr3C/1K2CSqnqZJjEWOAmx2LiyipijNnEaFYuLBp0IkGuJpg==}
+  '@swc/core-win32-arm64-msvc@1.7.11':
+    resolution: {integrity: sha512-a2Y4xxEsLLYHJN7sMnw9+YQJDi3M1BxEr9hklfopPuGGnYLFNnx5CypH1l9ReijEfWjIAHNi7pq3m023lzW1Hg==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [win32]
@@ -2960,8 +2960,8 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@swc/core-win32-ia32-msvc@1.7.10':
-    resolution: {integrity: sha512-GntrVNT23viHtbfzmlK8lfBiKeajH24GzbDT7qXhnoO20suUPcyYZxyvCb4gWM2zu8ZBTPHNlqfrNsriQCZ+lQ==}
+  '@swc/core-win32-ia32-msvc@1.7.11':
+    resolution: {integrity: sha512-ZbZFMwZO+j8ulhegJ7EhJ/QVZPoQ5qc30ylJQSxizizTJaen71Q7/13lXWc6ksuCKvg6dUKrp/TPgoxOOtSrFA==}
     engines: {node: '>=10'}
     cpu: [ia32]
     os: [win32]
@@ -2972,8 +2972,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@swc/core-win32-x64-msvc@1.7.10':
-    resolution: {integrity: sha512-uXIF8GuSappe1imm6Lf7pHGepfCBjDQlS+qTqvEGE0wZAsL1IVATK9P/cH/OCLfJXeQDTLeSYmrpwjtXNt46tQ==}
+  '@swc/core-win32-x64-msvc@1.7.11':
+    resolution: {integrity: sha512-IUohZedSJyDu/ReEBG/mqX6uG29uA7zZ9z6dIAF+p6eFxjXmh9MuHryyM+H8ebUyoq/Ad3rL+rUCksnuYNnI0w==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [win32]
@@ -2987,8 +2987,8 @@ packages:
       '@swc/helpers':
         optional: true
 
-  '@swc/core@1.7.10':
-    resolution: {integrity: sha512-l0xrFwBQ9atizhmV94yC2nwcecTk/oftofwMNPiFMGe56dqdmi2ArHaTV3PCtMlgaUH6rGCehoRMt5OrCI1ktg==}
+  '@swc/core@1.7.11':
+    resolution: {integrity: sha512-AB+qc45UrJrDfbhPKcUXk+9z/NmFfYYwJT6G7/iur0fCse9kXjx45gi40+u/O2zgarG/30/zV6E3ps8fUvjh7g==}
     engines: {node: '>=10'}
     peerDependencies:
       '@swc/helpers': '*'
@@ -5631,10 +5631,10 @@ packages:
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
 
-  lucide-react@0.394.0:
-    resolution: {integrity: sha512-PzTbJ0bsyXRhH59k5qe7MpTd5MxlpYZUcM9kGSwvPGAfnn0J6FElDwu2EX6Vuh//F7y60rcVJiFQ7EK9DCMgfw==}
+  lucide-react@0.428.0:
+    resolution: {integrity: sha512-rGrzslfEcgqwh+TLBC5qJ8wvVIXhLvAIXVFKNHndYyb1utSxxn9rXOC+1CNJLi6yNOooyPqIs6+3YCp6uSiEvg==}
     peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
 
   make-dir@4.0.0:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
@@ -5735,8 +5735,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  monaco-editor@0.34.1:
-    resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
+  monaco-editor@0.50.0:
+    resolution: {integrity: sha512-8CclLCmrRRh+sul7C08BmPBP3P8wVWfBHomsTcndxg5NRCEPfu/mc2AGU8k37ajjDVXcXFc12ORAMUkmk+lkFA==}
 
   moo@0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
@@ -6204,17 +6204,17 @@ packages:
       prosemirror-state: ^1.4.2
       prosemirror-view: ^1.31.2
 
+  prosemirror-transform@1.10.0:
+    resolution: {integrity: sha512-9UOgFSgN6Gj2ekQH5CTDJ8Rp/fnKR2IkYfGdzzp5zQMFsS4zDllLVx/+jGcX86YlACpG7UR5fwAXiWzxqWtBTg==}
+
   prosemirror-transform@1.8.0:
     resolution: {integrity: sha512-BaSBsIMv52F1BVVMvOmp1yzD3u65uC3HTzCBQV1WDPqJRQ2LuHKcyfn0jwqodo8sR9vVzMzZyI+Dal5W9E6a9A==}
-
-  prosemirror-transform@1.9.0:
-    resolution: {integrity: sha512-5UXkr1LIRx3jmpXXNKDhv8OyAOeLTGuXNwdVfg8x27uASna/wQkr9p6fD3eupGOi4PLJfbezxTyi/7fSJypXHg==}
 
   prosemirror-view@1.31.7:
     resolution: {integrity: sha512-Pr7w93yOYmxQwzGIRSaNLZ/1uM6YjnenASzN2H6fO6kGekuzRbgZ/4bHbBTd1u4sIQmL33/TcGmzxxidyPwCjg==}
 
-  prosemirror-view@1.33.9:
-    resolution: {integrity: sha512-xV1A0Vz9cIcEnwmMhKKFAOkfIp8XmJRnaZoPqNXrPS7EK5n11Ov8V76KhR0RsfQd/SIzmWY+bg+M44A2Lx/Nnw==}
+  prosemirror-view@1.33.10:
+    resolution: {integrity: sha512-wsKg9JeQkWlkXG8DDcloI/tbB9r3CysziubigoC8wTuE6zobN/9cl8bGRk1J1XjkUp7rxGBziOSxrhoILL84hg==}
 
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
@@ -7935,7 +7935,7 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@benrbray/prosemirror-math@0.2.2(katex@0.13.0)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.9.0)(prosemirror-view@1.31.7)':
+  '@benrbray/prosemirror-math@0.2.2(katex@0.13.0)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.10.0)(prosemirror-view@1.31.7)':
     dependencies:
       katex: 0.13.0
       prosemirror-commands: 1.6.0
@@ -7945,10 +7945,10 @@ snapshots:
       prosemirror-keymap: 1.2.2
       prosemirror-model: 1.22.2
       prosemirror-state: 1.4.3
-      prosemirror-transform: 1.9.0
+      prosemirror-transform: 1.10.0
       prosemirror-view: 1.31.7
 
-  '@benrbray/prosemirror-math@0.2.2(katex@0.16.11)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.9.0)(prosemirror-view@1.31.7)':
+  '@benrbray/prosemirror-math@0.2.2(katex@0.16.11)(prosemirror-commands@1.6.0)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.4.1)(prosemirror-inputrules@1.4.0)(prosemirror-keymap@1.2.2)(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-transform@1.10.0)(prosemirror-view@1.31.7)':
     dependencies:
       katex: 0.16.11
       prosemirror-commands: 1.6.0
@@ -7958,7 +7958,7 @@ snapshots:
       prosemirror-keymap: 1.2.2
       prosemirror-model: 1.22.2
       prosemirror-state: 1.4.3
-      prosemirror-transform: 1.9.0
+      prosemirror-transform: 1.10.0
       prosemirror-view: 1.31.7
 
   '@cspotcode/source-map-support@0.8.1':
@@ -8390,7 +8390,7 @@ snapshots:
       jest-util: 29.7.0
       slash: 3.0.0
 
-  '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))':
+  '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))':
     dependencies:
       '@jest/console': 29.7.0
       '@jest/reporters': 29.7.0(node-notifier@10.0.1)
@@ -8404,7 +8404,7 @@ snapshots:
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@18.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      jest-config: 29.7.0(@types/node@18.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -12201,61 +12201,61 @@ snapshots:
   '@swc/core-darwin-arm64@1.3.95':
     optional: true
 
-  '@swc/core-darwin-arm64@1.7.10':
+  '@swc/core-darwin-arm64@1.7.11':
     optional: true
 
   '@swc/core-darwin-x64@1.3.95':
     optional: true
 
-  '@swc/core-darwin-x64@1.7.10':
+  '@swc/core-darwin-x64@1.7.11':
     optional: true
 
   '@swc/core-linux-arm-gnueabihf@1.3.95':
     optional: true
 
-  '@swc/core-linux-arm-gnueabihf@1.7.10':
+  '@swc/core-linux-arm-gnueabihf@1.7.11':
     optional: true
 
   '@swc/core-linux-arm64-gnu@1.3.95':
     optional: true
 
-  '@swc/core-linux-arm64-gnu@1.7.10':
+  '@swc/core-linux-arm64-gnu@1.7.11':
     optional: true
 
   '@swc/core-linux-arm64-musl@1.3.95':
     optional: true
 
-  '@swc/core-linux-arm64-musl@1.7.10':
+  '@swc/core-linux-arm64-musl@1.7.11':
     optional: true
 
   '@swc/core-linux-x64-gnu@1.3.95':
     optional: true
 
-  '@swc/core-linux-x64-gnu@1.7.10':
+  '@swc/core-linux-x64-gnu@1.7.11':
     optional: true
 
   '@swc/core-linux-x64-musl@1.3.95':
     optional: true
 
-  '@swc/core-linux-x64-musl@1.7.10':
+  '@swc/core-linux-x64-musl@1.7.11':
     optional: true
 
   '@swc/core-win32-arm64-msvc@1.3.95':
     optional: true
 
-  '@swc/core-win32-arm64-msvc@1.7.10':
+  '@swc/core-win32-arm64-msvc@1.7.11':
     optional: true
 
   '@swc/core-win32-ia32-msvc@1.3.95':
     optional: true
 
-  '@swc/core-win32-ia32-msvc@1.7.10':
+  '@swc/core-win32-ia32-msvc@1.7.11':
     optional: true
 
   '@swc/core-win32-x64-msvc@1.3.95':
     optional: true
 
-  '@swc/core-win32-x64-msvc@1.7.10':
+  '@swc/core-win32-x64-msvc@1.7.11':
     optional: true
 
   '@swc/core@1.3.95':
@@ -12274,21 +12274,21 @@ snapshots:
       '@swc/core-win32-ia32-msvc': 1.3.95
       '@swc/core-win32-x64-msvc': 1.3.95
 
-  '@swc/core@1.7.10':
+  '@swc/core@1.7.11':
     dependencies:
       '@swc/counter': 0.1.3
       '@swc/types': 0.1.12
     optionalDependencies:
-      '@swc/core-darwin-arm64': 1.7.10
-      '@swc/core-darwin-x64': 1.7.10
-      '@swc/core-linux-arm-gnueabihf': 1.7.10
-      '@swc/core-linux-arm64-gnu': 1.7.10
-      '@swc/core-linux-arm64-musl': 1.7.10
-      '@swc/core-linux-x64-gnu': 1.7.10
-      '@swc/core-linux-x64-musl': 1.7.10
-      '@swc/core-win32-arm64-msvc': 1.7.10
-      '@swc/core-win32-ia32-msvc': 1.7.10
-      '@swc/core-win32-x64-msvc': 1.7.10
+      '@swc/core-darwin-arm64': 1.7.11
+      '@swc/core-darwin-x64': 1.7.11
+      '@swc/core-linux-arm-gnueabihf': 1.7.11
+      '@swc/core-linux-arm64-gnu': 1.7.11
+      '@swc/core-linux-arm64-musl': 1.7.11
+      '@swc/core-linux-x64-gnu': 1.7.11
+      '@swc/core-linux-x64-musl': 1.7.11
+      '@swc/core-win32-arm64-msvc': 1.7.11
+      '@swc/core-win32-ia32-msvc': 1.7.11
+      '@swc/core-win32-x64-msvc': 1.7.11
     optional: true
 
   '@swc/counter@0.1.2': {}
@@ -13524,13 +13524,13 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.3
 
-  create-jest@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)):
+  create-jest@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
       '@jest/types': 29.6.3
       chalk: 4.1.2
       exit: 0.1.2
       graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      jest-config: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       jest-util: 29.7.0
       prompts: 2.4.2
     transitivePeerDependencies:
@@ -14808,16 +14808,16 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)):
+  jest-cli@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
-      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
       chalk: 4.1.2
-      create-jest: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      create-jest: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       exit: 0.1.2
       import-local: 3.1.0
-      jest-config: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      jest-config: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       jest-util: 29.7.0
       jest-validate: 29.7.0
       yargs: 17.7.2
@@ -14829,7 +14829,7 @@ snapshots:
       - supports-color
       - ts-node
 
-  jest-config@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)):
+  jest-config@29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
       '@babel/core': 7.23.2
       '@jest/test-sequencer': 29.7.0
@@ -14855,12 +14855,12 @@ snapshots:
       strip-json-comments: 3.1.1
     optionalDependencies:
       '@types/node': 18.11.2
-      ts-node: 10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)
+      ts-node: 10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
 
-  jest-config@29.7.0(@types/node@18.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)):
+  jest-config@29.7.0(@types/node@18.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
       '@babel/core': 7.23.2
       '@jest/test-sequencer': 29.7.0
@@ -14886,7 +14886,7 @@ snapshots:
       strip-json-comments: 3.1.1
     optionalDependencies:
       '@types/node': 18.18.8
-      ts-node: 10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)
+      ts-node: 10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -15106,12 +15106,12 @@ snapshots:
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)):
+  jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)):
     dependencies:
-      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       '@jest/types': 29.6.3
       import-local: 3.1.0
-      jest-cli: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      jest-cli: 29.7.0(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
     optionalDependencies:
       node-notifier: 10.0.1
     transitivePeerDependencies:
@@ -15461,7 +15461,7 @@ snapshots:
   ltgt@2.2.1:
     optional: true
 
-  lucide-react@0.394.0(react@18.2.0):
+  lucide-react@0.428.0(react@18.2.0):
     dependencies:
       react: 18.2.0
 
@@ -15544,7 +15544,7 @@ snapshots:
 
   mkdirp@1.0.4: {}
 
-  monaco-editor@0.34.1: {}
+  monaco-editor@0.50.0: {}
 
   moo@0.5.2: {}
 
@@ -16001,7 +16001,7 @@ snapshots:
     dependencies:
       prosemirror-model: 1.22.3
       prosemirror-state: 1.4.3
-      prosemirror-transform: 1.9.0
+      prosemirror-transform: 1.10.0
 
   prosemirror-dropcursor@1.8.1:
     dependencies:
@@ -16026,8 +16026,8 @@ snapshots:
   prosemirror-history@1.4.1:
     dependencies:
       prosemirror-state: 1.4.3
-      prosemirror-transform: 1.9.0
-      prosemirror-view: 1.33.9
+      prosemirror-transform: 1.10.0
+      prosemirror-view: 1.33.10
       rope-sequence: 1.3.4
 
   prosemirror-inputrules@1.2.1:
@@ -16038,7 +16038,7 @@ snapshots:
   prosemirror-inputrules@1.4.0:
     dependencies:
       prosemirror-state: 1.4.3
-      prosemirror-transform: 1.9.0
+      prosemirror-transform: 1.10.0
 
   prosemirror-keymap@1.2.2:
     dependencies:
@@ -16127,13 +16127,13 @@ snapshots:
       prosemirror-state: 1.4.3
       prosemirror-view: 1.31.7
 
+  prosemirror-transform@1.10.0:
+    dependencies:
+      prosemirror-model: 1.22.3
+
   prosemirror-transform@1.8.0:
     dependencies:
       prosemirror-model: 1.22.2
-
-  prosemirror-transform@1.9.0:
-    dependencies:
-      prosemirror-model: 1.22.3
 
   prosemirror-view@1.31.7:
     dependencies:
@@ -16141,11 +16141,11 @@ snapshots:
       prosemirror-state: 1.4.3
       prosemirror-transform: 1.8.0
 
-  prosemirror-view@1.33.9:
+  prosemirror-view@1.33.10:
     dependencies:
       prosemirror-model: 1.22.3
       prosemirror-state: 1.4.3
-      prosemirror-transform: 1.9.0
+      prosemirror-transform: 1.10.0
 
   proxy-addr@2.0.7:
     dependencies:
@@ -16267,10 +16267,10 @@ snapshots:
 
   react-is@18.2.0: {}
 
-  react-monaco-editor@0.50.1(@types/react@18.2.15)(monaco-editor@0.34.1)(react@18.2.0):
+  react-monaco-editor@0.50.1(@types/react@18.2.15)(monaco-editor@0.50.0)(react@18.2.0):
     dependencies:
       '@types/react': 18.2.15
-      monaco-editor: 0.34.1
+      monaco-editor: 0.50.0
       prop-types: 15.8.1
       react: 18.2.0
 
@@ -17152,11 +17152,11 @@ snapshots:
     dependencies:
       tslib: 2.6.2
 
-  ts-jest@29.0.1(@babel/core@7.23.2)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.2))(jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)))(typescript@5.3.2):
+  ts-jest@29.0.1(@babel/core@7.23.2)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.2))(jest@29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)))(typescript@5.3.2):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2))
+      jest: 29.0.3(@types/node@18.11.2)(babel-plugin-macros@3.1.0)(node-notifier@10.0.1)(ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2))
       jest-util: 29.7.0
       json5: 2.2.3
       lodash.memoize: 4.1.2
@@ -17169,7 +17169,7 @@ snapshots:
       '@jest/types': 29.6.3
       babel-jest: 29.7.0(@babel/core@7.23.2)
 
-  ts-node-dev@2.0.0(@swc/core@1.7.10)(@types/node@18.11.2)(node-notifier@10.0.1)(typescript@5.3.2):
+  ts-node-dev@2.0.0(@swc/core@1.7.11)(@types/node@18.11.2)(node-notifier@10.0.1)(typescript@5.3.2):
     dependencies:
       chokidar: 3.5.3
       dynamic-dedupe: 0.3.0
@@ -17179,7 +17179,7 @@ snapshots:
       rimraf: 2.7.1
       source-map-support: 0.5.21
       tree-kill: 1.2.2
-      ts-node: 10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2)
+      ts-node: 10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2)
       tsconfig: 7.0.0
       typescript: 5.3.2
     optionalDependencies:
@@ -17189,7 +17189,7 @@ snapshots:
       - '@swc/wasm'
       - '@types/node'
 
-  ts-node@10.9.2(@swc/core@1.7.10)(@types/node@18.11.2)(typescript@5.3.2):
+  ts-node@10.9.2(@swc/core@1.7.11)(@types/node@18.11.2)(typescript@5.3.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -17207,7 +17207,7 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optionalDependencies:
-      '@swc/core': 1.7.10
+      '@swc/core': 1.7.11
 
   ts-node@10.9.2(@types/node@20.5.9)(typescript@5.2.2):
     dependencies:
@@ -17654,10 +17654,10 @@ snapshots:
       yjs: 13.6.7
     optional: true
 
-  y-monaco@0.1.4(monaco-editor@0.34.1)(yjs@13.6.7):
+  y-monaco@0.1.4(monaco-editor@0.50.0)(yjs@13.6.7):
     dependencies:
       lib0: 0.2.83
-      monaco-editor: 0.34.1
+      monaco-editor: 0.50.0
       yjs: 13.6.7
 
   y-prosemirror@1.2.1(prosemirror-model@1.22.2)(prosemirror-state@1.4.3)(prosemirror-view@1.31.7)(y-protocols@1.0.5)(yjs@13.6.7):

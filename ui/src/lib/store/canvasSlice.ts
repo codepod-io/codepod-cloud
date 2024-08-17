@@ -19,6 +19,7 @@ import { NodeData } from "./types";
 
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
+import { toast } from "react-toastify";
 
 const newScopeNodeShapeConfig = {
   width: 600,
@@ -36,45 +37,31 @@ export const newNodeShapeConfig = {
 /**
  * The new reactflow nodes for context-menu's addXXX items.
  */
-function createNewNode(
-  type: "SCOPE" | "CODE" | "RICH",
-  position
-): Node<NodeData> {
+function createNewNode(type: "CODE" | "RICH"): Node<NodeData> {
   let id = myNanoId();
   const newNode: Node<NodeData> = {
     id,
     type,
-    position,
-    ...(type === "SCOPE"
-      ? {
-          width: newScopeNodeShapeConfig.width,
-          height: newScopeNodeShapeConfig.height,
-          style: {
-            backgroundColor: level2color[0],
-            width: newScopeNodeShapeConfig.width,
-            height: newScopeNodeShapeConfig.height,
-          },
-        }
-      : {
-          width: newNodeShapeConfig.width,
-          // // Previously, we should not specify height, so that the pod can grow
-          // // when content changes. But when we add auto-layout on adding a new
-          // // node, unspecified height will cause  the node to be added always at
-          // // the top-left corner (the reason is unknown). Thus, we have to
-          // // specify the height here. Note that this height is a dummy value;
-          // // the content height will still be adjusted based on content height.
-          height: newNodeShapeConfig.height,
-          style: {
-            // Need to set the style.width here. Otherwise, there could be weird
-            // dimension changes, and may cause a node to keep expanding its
-            // width.
-            width: newNodeShapeConfig.width,
-            //   // It turns out that this height should not be specified to let the
-            //   // height change automatically.
-            //   //
-            //   // height: 200
-          },
-        }),
+    position: { x: 0, y: 0 },
+
+    width: newNodeShapeConfig.width,
+    // // Previously, we should not specify height, so that the pod can grow
+    // // when content changes. But when we add auto-layout on adding a new
+    // // node, unspecified height will cause  the node to be added always at
+    // // the top-left corner (the reason is unknown). Thus, we have to
+    // // specify the height here. Note that this height is a dummy value;
+    // // the content height will still be adjusted based on content height.
+    height: newNodeShapeConfig.height,
+    style: {
+      // Need to set the style.width here. Otherwise, there could be weird
+      // dimension changes, and may cause a node to keep expanding its
+      // width.
+      width: newNodeShapeConfig.width,
+      //   // It turns out that this height should not be specified to let the
+      //   // height change automatically.
+      //   //
+      //   // height: 200
+    },
     data: {
       // label: id,
       // name: "",
@@ -212,10 +199,14 @@ export const ATOM_addNode = atom(
     get,
     set,
     anchorId: string,
-    position: "top" | "bottom" | "right",
+    position: "top" | "bottom" | "right" | "left",
     type: "CODE" | "RICH",
     lang?: "python" | "julia" | "javascript" | "racket"
   ) => {
+    if (position === "left") {
+      wrap(get, set, anchorId);
+      return;
+    }
     const nodesMap = get(ATOM_nodesMap);
     const { parentId, index } = getParentIndex({
       nodesMap,
@@ -223,7 +214,7 @@ export const ATOM_addNode = atom(
       position,
     });
     // create new node
-    const newNode = createNewNode(type, { x: 0, y: 0 });
+    const newNode = createNewNode(type);
     switch (type) {
       case "CODE":
         get(ATOM_codeMap).set(newNode.id, new Y.Text());
@@ -329,6 +320,209 @@ export const ATOM_moveCut = atom(
     updateView(get, set);
   }
 );
+
+function wrap(get: Getter, set: Setter, id: string) {
+  // wrap the node with a new parent node, i.e., add a node between the node and its parent.
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  const parentId = node.data.parent;
+  if (!parentId) return;
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent not found");
+  // create a new node
+  const newNode = createNewNode("RICH");
+  get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+  nodesMap.set(newNode.id, {
+    ...newNode,
+    data: {
+      ...newNode.data,
+      parent: parentId,
+      children: [id],
+    },
+  });
+  // update the parent node
+  const parentChildren = parent.data.children;
+  const index = parentChildren.indexOf(id);
+  if (index === -1) throw new Error("Node not found in parent");
+  parentChildren.splice(index, 1, newNode.id);
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children: parentChildren,
+    },
+  });
+  // update the node
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      parent: newNode.id,
+    },
+  });
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_raise = atom(null, (get, set, id: string) => {
+  // raise the node to replace its parent. The parent and its other descendants are removed.
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  const parentId = node.data.parent;
+  if (!parentId) {
+    toast.error("Cannot raise pod: no parent found.");
+    return;
+  }
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent not found");
+  const grandParentId = parent.data.parent;
+  if (!grandParentId) {
+    toast.error("Cannot raise pod to ROOT");
+    return;
+  }
+  const grandParent = nodesMap.get(grandParentId);
+  if (!grandParent) throw new Error("Grand parent not found");
+  // remove the parent node
+  const grandParentChildren = grandParent.data.children;
+  const parentIndex = grandParentChildren.indexOf(parentId);
+  if (parentIndex === -1) throw new Error("Parent not found in grand parent");
+  grandParentChildren.splice(parentIndex, 1);
+  nodesMap.set(grandParentId, {
+    ...grandParent,
+    data: {
+      ...grandParent.data,
+      children: grandParentChildren,
+    },
+  });
+  // remove the parent node and its descendants
+  const removeDescendants = (toremove: string) => {
+    const node = nodesMap.get(toremove);
+    if (!node) throw new Error("Node not found");
+    node.data.children.forEach((childId) => {
+      // do not remove the node itself
+      if (childId === id) return;
+      removeDescendants(childId);
+    });
+    nodesMap.delete(toremove);
+  };
+  removeDescendants(parentId);
+  // update the node
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      parent: grandParentId,
+    },
+  });
+  // update the grand parent node
+  const grandParentChildren2 = grandParent.data.children;
+  grandParentChildren2.splice(parentIndex, 0, id);
+  nodesMap.set(grandParentId, {
+    ...grandParent,
+    data: {
+      ...grandParent.data,
+      children: grandParentChildren2,
+    },
+  });
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
+
+// This is remove node itself.
+export const ATOM_splice = atom(null, (get, set, id: string) => {
+  // remove this node; place its children in its place.
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  const parentId = node.data.parent;
+  if (!parentId) {
+    toast.error("Cannot splice ROOT node");
+    return;
+  }
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent not found");
+  const index = parent.data.children.indexOf(id);
+  if (index === -1) throw new Error("Node not found in parent");
+  // remove the node
+  const parentChildren = parent.data.children;
+  // replace the node with its children
+  parentChildren.splice(index, 1, ...node.data.children);
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children: parentChildren,
+    },
+  });
+  // update the children
+  node.data.children.forEach((childId) => {
+    const child = nodesMap.get(childId);
+    if (!child) throw new Error("Child not found");
+    nodesMap.set(childId, {
+      ...child,
+      data: {
+        ...child.data,
+        parent: parentId,
+      },
+    });
+  });
+  // remove the node
+  nodesMap.delete(id);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
+
+export const ATOM_slurp = atom(null, (get, set, id: string) => {
+  // move its next sibling to the end of its children.
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  const parentId = node.data.parent;
+  if (!parentId) throw new Error("Should not slurp ROOT node");
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent not found");
+  const index = parent.data.children.indexOf(id);
+  if (index === -1) throw new Error("Node not found in parent");
+  if (index === parent.data.children.length - 1) {
+    toast.error("No next sibling to slurp");
+    return;
+  }
+  const siblingId = parent.data.children[index + 1];
+  const sibling = nodesMap.get(siblingId);
+  if (!sibling) throw new Error("Sibling not found");
+  // remove the sibling
+  const parentChildren = parent.data.children;
+  parentChildren.splice(index + 1, 1);
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children: parentChildren,
+    },
+  });
+  // add the sibling to the node
+  const children = node.data.children;
+  children.push(siblingId);
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      children,
+    },
+  });
+  // update the sibling
+  nodesMap.set(siblingId, {
+    ...sibling,
+    data: {
+      ...sibling.data,
+      parent: id,
+    },
+  });
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
 
 function toggleFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
@@ -515,7 +709,7 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
   if (!rootNode) throw new Error("Root node not found");
   function subtree(id: string) {
     const node = nodesMap.get(id);
-    if (!node) throw new Error("Node not found");
+    if (!node) throw new Error(`Node not found: ${id}`);
     const children = node.data.children;
     return {
       id: node.id,
