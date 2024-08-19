@@ -27,6 +27,7 @@ import {
   RaiseButton,
   SlurpButton,
   SpliceButton,
+  SymbolTable,
   ToolbarAddPod,
 } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
@@ -50,6 +51,7 @@ import {
   ATOM_clearResults,
   ATOM_getEdgeChain,
   ATOM_preprocessChain,
+  ATOM_resolvePod,
 } from "@/lib/store/runtimeSlice";
 import {
   ATOM_nodesMap,
@@ -65,6 +67,7 @@ import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
+import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -257,6 +260,8 @@ function MyPodToolbar({ id }: { id: string }) {
     );
   const repoId = useAtomValue(ATOM_repoId)!;
   const node = useAtomValue(ATOM_nodesMap).get(id);
+  const parsePod = useSetAtom(ATOM_parsePod);
+  const resolvePod = useSetAtom(ATOM_resolvePod);
 
   return (
     <PodToolbar id={id}>
@@ -276,6 +281,7 @@ function MyPodToolbar({ id }: { id: string }) {
       >
         <Play />
       </IconButton>
+
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           <IconButton
@@ -309,6 +315,13 @@ function MyPodToolbar({ id }: { id: string }) {
             }}
           >
             Run Chain
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item onClick={() => parsePod(id)}>
+            Parse
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => resolvePod(id)}>
+            Resolve
           </DropdownMenu.Item>
 
           {/* Structural edit */}
@@ -437,6 +450,7 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
           <MyMonaco id={id} />
         </div>
         <ResultBlock id={id} />
+        <SymbolTable id={id} />
 
         <HandleWithHover id={id} />
 

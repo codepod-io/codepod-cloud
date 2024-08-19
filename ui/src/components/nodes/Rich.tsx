@@ -102,6 +102,7 @@ import {
   RaiseButton,
   SlurpButton,
   SpliceButton,
+  SymbolTable,
   ToolbarAddPod,
 } from "./utils";
 
@@ -506,6 +507,8 @@ export const RichNode = memo<Props>(function ({
         >
           <MyRemirror id={id} />
         </Box>
+
+        <SymbolTable id={id} />
 
         <Handles id={id} hover={hover} />
 
