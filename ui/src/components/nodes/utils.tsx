@@ -833,7 +833,7 @@ export function PodToolbar({
         }}
       >
         {/* scope switch */}
-        <Tooltip content="Scope">
+        {/* <Tooltip content="Scope">
           <Switch
             checked={node.data.isScope}
             onClick={() => {
@@ -841,7 +841,7 @@ export function PodToolbar({
               toggleScope(id);
             }}
           />
-        </Tooltip>
+        </Tooltip> */}
         {/* Toolbar for adding new pod top/bottom/right */}
         {id !== "ROOT" && (
           <ToolbarAddPod
