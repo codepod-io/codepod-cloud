@@ -159,6 +159,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       data: {
         level: 0,
         children: [pod1_id, pod2_id],
+        isScope: false,
         folded: false,
       },
       style: {
@@ -178,6 +179,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
         children: [],
         parent: "ROOT",
         folded: false,
+        isScope: false,
         lang: "python",
       },
     });
@@ -192,6 +194,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
         children: [],
         parent: "ROOT",
         folded: false,
+        isScope: false,
         lang: "python",
       },
     });
