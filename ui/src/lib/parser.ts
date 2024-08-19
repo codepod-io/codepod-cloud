@@ -68,12 +68,11 @@ export type Annotation = {
   endIndex: number;
   startPosition: { row: number; column: number };
   endPosition: { row: number; column: number };
-  // The ID of the pod that defines this name.
-  origin?: string;
 };
 
-type CodeAnalysisResult = {
+export type CodeAnalysisResult = {
   ispublic: boolean;
+  isutility: boolean;
   isbridge?: boolean;
   annotations: Annotation[];
   errors?: string[];
@@ -90,14 +89,23 @@ export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
   );
   let annotations: Annotation[] = [];
   let ispublic = false;
+  let isutility = false;
   // FIXME better error handling
-  if (!code) return { ispublic, annotations };
+  if (!code) return { ispublic, isutility, annotations };
+  if (code.trim().startsWith("@export")) {
+    ispublic = true;
+    code = code.replace("@export", " ".repeat("@export".length));
+  }
+  if (code.trim().startsWith("@utility")) {
+    isutility = true;
+    code = code.replace("@utility", " ".repeat("@utility".length));
+  }
   if (code.trim().startsWith("@export")) {
     ispublic = true;
     code = code.replace("@export", " ".repeat("@export".length));
   }
   // magic commands
-  if (code.startsWith("!")) return { ispublic, annotations };
+  if (code.startsWith("!")) return { ispublic, isutility, annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -129,7 +137,7 @@ export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, annotations };
+  return { ispublic, isutility, annotations };
 }
 
 /**
@@ -140,8 +148,9 @@ export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
 export function analyzeCode(code: string): CodeAnalysisResult {
   let annotations: Annotation[] = [];
   let ispublic = false;
+  let isutility = false;
   // FIXME better error handling
-  if (!code) return { ispublic, annotations };
+  if (!code) return { ispublic, isutility, annotations };
   // check for @export statements, a regular expression that matches a starting
   // of the line followed by @export and a name
 
@@ -161,15 +170,23 @@ export function analyzeCode(code: string): CodeAnalysisResult {
     return " ".repeat(match.length);
   });
   if (annotations.length > 0) {
-    return { ispublic: true, isbridge: true, annotations };
+    return { ispublic: true, isutility, isbridge: true, annotations };
   }
 
   if (code.trim().startsWith("@export")) {
     ispublic = true;
     code = code.replace("@export", " ".repeat("@export".length));
   }
+  if (code.trim().startsWith("@utility")) {
+    isutility = true;
+    code = code.replace("@utility", " ".repeat("@utility".length));
+  }
+  if (code.trim().startsWith("@export")) {
+    ispublic = true;
+    code = code.replace("@export", " ".repeat("@export".length));
+  }
   // magic commands
-  if (code.startsWith("!")) return { ispublic, annotations };
+  if (code.startsWith("!")) return { ispublic, isutility, annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -244,6 +261,7 @@ export function analyzeCode(code: string): CodeAnalysisResult {
 
   return {
     ispublic,
+    isutility,
     annotations,
     errors,
     error_messages: errors.map((e) => e.message),

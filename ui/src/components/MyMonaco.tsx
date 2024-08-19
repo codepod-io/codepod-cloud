@@ -25,15 +25,16 @@ import {
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import {
-  ATOM_parseResult,
-  ATOM_preprocessChain,
+  getOrCreate_ATOM_parseResult,
+  getOrCreate_ATOM_resolveResult,
+  ParseResult,
+  ResolveResult,
 } from "@/lib/store/runtimeSlice";
 import {
   ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_provider,
 } from "@/lib/store/yjsSlice";
-import { selectAtom } from "jotai/utils";
 
 // From here: https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#use-monaco-editor-as-an-npm-package
 // Fix the error in https://github.com/codepod-io/codepod-cloud/pull/54
@@ -301,7 +302,8 @@ async function computeDiff(
  */
 function highlightAnnotations(
   editor: monaco.editor.IStandaloneCodeEditor & { oldDecorations?: any[] },
-  annotations: Annotation[]
+  parseResult: ParseResult,
+  resolveResult: ResolveResult
 ) {
   if (!editor.oldDecorations) {
     editor.oldDecorations = [];
@@ -311,10 +313,9 @@ function highlightAnnotations(
   for (const {
     type,
     name,
-    origin,
     startPosition,
     endPosition,
-  } of annotations) {
+  } of parseResult.annotations) {
     decorations.push({
       range: new monaco.Range(
         startPosition.row + 1,
@@ -342,9 +343,9 @@ function highlightAnnotations(
               default:
                 throw new Error("unknown type: " + type);
             }
-          })() + (origin ? "" : " my-underline"),
+          })() + (resolveResult?.unresolved.has(name) ? " my-underline" : ""),
         hoverMessage: {
-          value: `${name} -> ${origin}`,
+          value: `${name} -> ${resolveResult?.resolved.get(name)}`,
         },
       },
     });
@@ -428,9 +429,8 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
   // there's no racket language support
   const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
 
-  const [annotations] = useAtom(
-    useMemo(() => selectAtom(ATOM_parseResult, (v) => v[id]?.annotations), [id])
-  );
+  const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(id));
+  const resolveResult = useAtomValue(getOrCreate_ATOM_resolveResult(id));
 
   const [showAnnotations] = useAtom(ATOM_showAnnotations);
   const [scopedVars] = useAtom(ATOM_scopedVars);
@@ -447,11 +447,9 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
   useEffect(() => {
     if (!editor) return;
     if (showAnnotations) {
-      highlightAnnotations(editor, annotations || []);
-    } else {
-      highlightAnnotations(editor, []);
+      highlightAnnotations(editor, parseResult, resolveResult);
     }
-  }, [annotations, editor, showAnnotations, scopedVars]);
+  }, [parseResult, resolveResult, editor, showAnnotations, scopedVars]);
 
   const provider = useAtomValue(ATOM_provider);
   const codeMap = useAtomValue(ATOM_codeMap);

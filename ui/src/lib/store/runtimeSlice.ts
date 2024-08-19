@@ -1,5 +1,5 @@
-import { Getter, Setter, atom } from "jotai";
-import { Annotation, analyzeCode } from "../parser";
+import { Getter, PrimitiveAtom, Setter, atom } from "jotai";
+import { CodeAnalysisResult, analyzeCode } from "../parser";
 import {
   ATOM_codeMap,
   ATOM_edgesMap,
@@ -10,74 +10,7 @@ import {
 import { produce } from "immer";
 import { ATOM_edges, ATOM_nodes } from "./canvasSlice";
 import { Edge, Node } from "reactflow";
-
-function collectSymbolTables(get: Getter, id: string): Record<string, string> {
-  const nodesMap = get(ATOM_nodesMap);
-  const nodes = Array.from<Node>(nodesMap.values());
-  const parseResult = get(ATOM_parseResult);
-  const node = nodesMap.get(id);
-  if (!node) return {};
-  const isbridge = parseResult[id].isbridge;
-  // Collect from parent scope.
-  let parentId = node.parentNode;
-  let allSymbolTables: Record<string, string>[] = [];
-  // do this for all ancestor scopes.
-  while (parentId) {
-    const siblings = nodes
-      .filter((node) => node.parentNode === parentId)
-      .map((n) => n.id);
-    const tables = siblings.map((sibId) => {
-      // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
-      if (nodesMap.get(sibId)?.type === "CODE") {
-        if (isbridge && sibId === id) {
-          // The key to support recursive export bridge are:
-          // 1. not to add the name to symbol table when resolving this bridge
-          //    pod, so that we can correctly set name_thisScope =
-          //    name_originScope.
-          // 2. do add the name to symbol table when resolving other pods, so
-          //    that other pods can see its definition.
-          return {};
-        } else {
-          return parseResult[sibId].symbolTable || {};
-        }
-      } else {
-        // FIXME dfs, or re-export?
-        const children = nodes.filter((n) => n.parentNode === sibId);
-        let tables = (children || [])
-          .filter(({ id }) => parseResult[id].ispublic)
-          .map(({ id }) => parseResult[id].symbolTable);
-        return Object.assign({}, ...tables);
-      }
-    });
-    allSymbolTables.push(Object.assign({}, ...tables));
-    if (!parentId) break;
-    // next iteration
-    parentId = nodesMap.get(parentId)?.parentNode;
-  }
-  // collect from all ancestor scopes.
-  // Collect from scopes by Arrows.
-  const edges = get(ATOM_edges);
-  edges.forEach(({ source, target }) => {
-    if (target === node.parentNode) {
-      if (nodesMap.get(source)?.type === "CODE") {
-        allSymbolTables.push(parseResult[target]?.symbolTable || {});
-      } else {
-        const children = nodes.filter((n) => n.parentNode === source);
-        let tables = (children || [])
-          .filter(({ id }) => parseResult[id].ispublic)
-          .map(({ id }) => parseResult[id]?.symbolTable);
-        allSymbolTables.push(Object.assign({}, ...tables));
-      }
-    }
-  });
-  // Combine the tables and return.
-  let res: Record<string, string> = Object.assign(
-    {},
-    parseResult[id].symbolTable,
-    ...allSymbolTables
-  );
-  return res;
-}
+import { toast } from "react-toastify";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -91,10 +24,26 @@ function rewriteCode(id: string, get: Getter): string | null {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   const codeMap = get(ATOM_codeMap);
-  const parseResult = get(ATOM_parseResult);
+  const parseResult = get(getOrCreate_ATOM_parseResult(id));
+  const resolveResult = get(getOrCreate_ATOM_resolveResult(id));
+  if (resolveResult.unresolved.size > 0) {
+    toast.error(
+      "Unresolved symbols in pod " +
+        id +
+        ": " +
+        [...resolveResult.unresolved].join(",")
+    );
+    return null;
+  }
   if (!node) return null;
   if (!codeMap.has(id)) return null;
   let code = codeMap.get(id)!.toString();
+  if (code.trim().startsWith("@export")) {
+    code = code.replace("@export", " ".repeat("@export".length));
+  }
+  if (code.trim().startsWith("@utility")) {
+    code = code.replace("@utility", " ".repeat("@utility".length));
+  }
   if (code.trim().startsWith("@export")) {
     code = code.replace("@export", " ".repeat("@export".length));
   }
@@ -102,41 +51,22 @@ function rewriteCode(id: string, get: Getter): string | null {
   // replace with symbol table
   let newcode = "";
   let index = 0;
-  parseResult[id].annotations?.forEach((annotation) => {
+  parseResult.annotations?.forEach((annotation) => {
     newcode += code.slice(index, annotation.startIndex);
     switch (annotation.type) {
       case "vardef":
-      case "varuse":
-        // directly replace with _SCOPE if we can resolve it
-        if (annotation.origin) {
-          newcode += `${annotation.name}_${
-            nodesMap.get(annotation.origin)!.parentNode
-          }`;
-        } else {
-          newcode += annotation.name;
-        }
-        break;
       case "function":
-      case "callsite":
-        // directly replace with _SCOPE too
-        if (annotation.origin) {
-          newcode += `${annotation.name}_${
-            nodesMap.get(annotation.origin)!.parentNode
-          }`;
-        } else {
-          console.log("function not found", annotation.name);
-          newcode += annotation.name;
+        {
+          // add this pod's id to the name
+          newcode += `${annotation.name}_${id}`;
         }
         break;
-      case "bridge":
-        // replace "@export x" with "x_thisScope = x_originScope"
-        if (annotation.origin) {
-          newcode += `${annotation.name}_${nodesMap.get(id)!.parentNode} = ${
+      case "varuse":
+      case "callsite":
+        {
+          newcode += `${annotation.name}_${resolveResult.resolved.get(
             annotation.name
-          }_${nodesMap.get(annotation.origin)!.parentNode}`;
-        } else {
-          console.log("bridge not found", annotation.name);
-          newcode += annotation.name;
+          )}`;
         }
         break;
       default:
@@ -149,17 +79,123 @@ function rewriteCode(id: string, get: Getter): string | null {
   return newcode;
 }
 
-type ParseResult = Record<
-  string,
-  {
-    ispublic: boolean;
-    isbridge: boolean;
-    symbolTable: { [key: string]: string };
-    annotations: Annotation[];
-  }
->;
+export type ParseResult = CodeAnalysisResult;
 
-export const ATOM_parseResult = atom<ParseResult>({});
+// ---- parse result
+const id2_ATOM_parseResult = new Map<
+  string,
+  PrimitiveAtom<CodeAnalysisResult>
+>();
+export function getOrCreate_ATOM_parseResult(id: string) {
+  if (id2_ATOM_parseResult.has(id)) {
+    const res = id2_ATOM_parseResult.get(id);
+    return id2_ATOM_parseResult.get(id)!;
+  }
+  const res = atom<CodeAnalysisResult>({
+    ispublic: false,
+    isutility: false,
+    annotations: [],
+  });
+  id2_ATOM_parseResult.set(id, res);
+  return id2_ATOM_parseResult.get(id)!;
+}
+
+// ---- private symbol table
+const id2_ATOM_privateST = new Map<
+  string,
+  PrimitiveAtom<Map<string, string>>
+>();
+export function getOrCreate_ATOM_privateST(id: string) {
+  if (id2_ATOM_privateST.has(id)) {
+    return id2_ATOM_privateST.get(id)!;
+  }
+  const res = atom(new Map<string, string>());
+  id2_ATOM_privateST.set(id, res);
+  return res;
+}
+
+// ---- public symbol table
+const id2_ATOM_publicST = new Map<string, PrimitiveAtom<Map<string, string>>>();
+export function getOrCreate_ATOM_publicST(id: string) {
+  if (id2_ATOM_publicST.has(id)) {
+    return id2_ATOM_publicST.get(id)!;
+  }
+  const res = atom(new Map<string, string>());
+  id2_ATOM_publicST.set(id, res);
+  return res;
+}
+
+// ---- utility symbol table
+const id2_ATOM_utilityST = new Map<
+  string,
+  PrimitiveAtom<Map<string, string>>
+>();
+export function getOrCreate_ATOM_utilityST(id: string) {
+  if (id2_ATOM_utilityST.has(id)) {
+    return id2_ATOM_utilityST.get(id)!;
+  }
+  const res = atom(new Map<string, string>());
+  id2_ATOM_utilityST.set(id, res);
+  return res;
+}
+
+// generate symbol table for a pod.
+function generateSymbolTable(get: Getter, set: Setter, id: string) {
+  // private table: all symbols defined in its children
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error(`Node not found for id: ${id}`);
+
+  // compute the symbol table with its children
+  const privateSt = new Map<string, string>();
+  const publicSt = new Map<string, string>();
+  const utilitySt = new Map<string, string>();
+
+  const children = nodesMap.get(id)?.data.children || [];
+  children.forEach((childId) => {
+    const child = nodesMap.get(childId);
+    if (!child) throw new Error(`Child not found for id: ${childId}`);
+    const parseResult = get(getOrCreate_ATOM_parseResult(childId));
+
+    parseResult.annotations
+      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .forEach((annotation) => {
+        privateSt.set(annotation.name, childId);
+      });
+
+    if (parseResult.ispublic) {
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          publicSt.set(annotation.name, childId);
+        });
+    }
+    if (parseResult.isutility) {
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          utilitySt.set(annotation.name, childId);
+        });
+    }
+    // If a child has public ST, merge it to the parent's private ST
+    const childPubSt = get(getOrCreate_ATOM_publicST(childId));
+    childPubSt.forEach((value, key) => {
+      privateSt.set(key, value);
+    });
+    // If a child has symbol in BOTH utility and public ST (i.e., public
+    // utility), merge it to the parent's utility ST.
+    const childUtilSt = get(getOrCreate_ATOM_utilityST(childId));
+    childUtilSt.forEach((value, key) => {
+      if (childPubSt.has(key)) {
+        utilitySt.set(key, value);
+      }
+    });
+  });
+
+  set(getOrCreate_ATOM_privateST(id), privateSt);
+  set(getOrCreate_ATOM_publicST(id), publicSt);
+  set(getOrCreate_ATOM_utilityST(id), utilitySt);
+}
 
 /**
  * Parse the code for defined variables and functions.
@@ -167,36 +203,22 @@ export const ATOM_parseResult = atom<ParseResult>({});
  */
 function parsePod(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error(`Node not found for id: ${id}`);
   const codeMap = get(ATOM_codeMap);
-  set(
-    ATOM_parseResult,
-    produce((parseResult: ParseResult) => {
-      const analyze = analyzeCode;
-      let { ispublic, isbridge, annotations } = analyze(
-        codeMap.get(id)?.toString() || ""
-      );
-      parseResult[id] = {
-        ispublic: false,
-        isbridge: false,
-        symbolTable: {},
-        annotations: [],
-      };
-      parseResult[id].ispublic = ispublic;
-      if (isbridge) parseResult[id].isbridge = isbridge;
-
-      parseResult[id].symbolTable = Object.assign(
-        {},
-        ...annotations
-          .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-          .map(({ name }) => ({
-            [name]: id,
-          }))
-      );
-
-      parseResult[id].annotations = annotations;
-    })
-  );
+  const parseResult = analyzeCode(codeMap.get(id)?.toString() || "");
+  set(getOrCreate_ATOM_parseResult(id), parseResult);
+  const parentId = node.data.parent;
+  if (!parentId) return;
+  generateSymbolTable(get, set, parentId);
+  const parent = nodesMap.get(parentId);
+  if (!parent) return;
+  const grandParentId = parent.data.parent;
+  if (!grandParentId) return;
+  generateSymbolTable(get, set, grandParentId);
 }
+
+export const ATOM_parsePod = atom(null, parsePod);
 
 function parseAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
@@ -209,24 +231,108 @@ function parseAllPods(get: Getter, set: Setter) {
 
 export const ATOM_parseAllPods = atom(null, parseAllPods);
 
-function resolvePod(get: Getter, set: Setter, id: string) {
-  let st = collectSymbolTables(get, id);
-  // 2. resolve symbols
-  const parseResult = get(ATOM_parseResult);
-  set(
-    ATOM_parseResult,
-    produce((parseResult) => {
-      // update the origin field of the annotations
-      parseResult[id].annotations.forEach((annotation) => {
-        let { name } = annotation;
-        if (st[name]) {
-          annotation.origin = st[name];
-        } else {
-          annotation.origin = undefined;
-        }
-      });
-    })
+export type ResolveResult = {
+  resolved: Map<string, string>;
+  unresolved: Set<string>;
+};
+const resolveResult: ResolveResult = {
+  resolved: new Map(),
+  unresolved: new Set(),
+};
+const id2_ATOM_resolveResult = new Map<string, PrimitiveAtom<ResolveResult>>();
+export function getOrCreate_ATOM_resolveResult(id: string) {
+  if (id2_ATOM_resolveResult.has(id)) {
+    return id2_ATOM_resolveResult.get(id)!;
+  }
+  const res = atom(resolveResult);
+  id2_ATOM_resolveResult.set(id, res);
+  return res;
+}
+
+function resolveUtility(get: Getter, id: string, resolveResult: ResolveResult) {
+  const st = get(getOrCreate_ATOM_utilityST(id));
+  if (!st) throw new Error(`Symbol table not found for id: ${id}`);
+  resolveResult.unresolved.forEach((symbol) => {
+    if (st.has(symbol)) {
+      resolveResult.resolved.set(symbol, st.get(symbol)!);
+    }
+  });
+  resolveResult.resolved.forEach((_, key) =>
+    resolveResult.unresolved.delete(key)
   );
+  if (resolveResult.unresolved.size === 0) return;
+  const node = get(ATOM_nodesMap).get(id);
+  if (!node) throw new Error(`Node not found for id: ${id}`);
+  if (!node.data.parent) return;
+  resolveUtility(get, node.data.parent, resolveResult);
+}
+
+export const ATOM_resolvePod = atom(null, resolvePod);
+
+function resolvePod(get: Getter, set: Setter, id: string) {
+  // 1. gather all symbols to be resolved
+  const resolveResult = {
+    resolved: new Map<string, string>(),
+    unresolved: new Set<string>(),
+  };
+  const parseResult = get(getOrCreate_ATOM_parseResult(id));
+  parseResult.annotations
+    .filter(({ type }) => ["varuse", "callsite"].includes(type))
+    .forEach((annotation) => {
+      resolveResult.unresolved.add(annotation.name);
+    });
+  // 2. try this pod's private ST
+  {
+    const st = get(getOrCreate_ATOM_privateST(id));
+    if (!st) throw new Error(`Symbol table not found for id: ${id}`);
+    resolveResult.unresolved.forEach((symbol) => {
+      if (st.has(symbol)) {
+        resolveResult.resolved.set(symbol, st.get(symbol)!);
+      }
+    });
+    resolveResult.resolved.forEach((_, key) =>
+      resolveResult.unresolved.delete(key)
+    );
+  }
+  // 3. try the parent's private ST
+  if (resolveResult.unresolved.size > 0) {
+    const node = get(ATOM_nodesMap).get(id);
+    if (!node) throw new Error(`Node not found for id: ${id}`);
+    if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
+    const st = get(getOrCreate_ATOM_privateST(node.data.parent));
+    if (!st)
+      throw new Error(`Symbol table not found for id: ${node.data.parent}`);
+    resolveResult.unresolved.forEach((symbol) => {
+      if (st.has(symbol)) {
+        resolveResult.resolved.set(symbol, st.get(symbol)!);
+      }
+    });
+    resolveResult.resolved.forEach((_, key) =>
+      resolveResult.unresolved.delete(key)
+    );
+  }
+  // 4. ancestors' the utility scopes. The parent's utility is already included
+  //    in parent's private ST. Therefore we should start with grandparent's
+  //    utility.
+  if (resolveResult.unresolved.size > 0) {
+    const node = get(ATOM_nodesMap).get(id);
+    if (!node) throw new Error(`Node not found for id: ${id}`);
+    if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
+    const parent = get(ATOM_nodesMap).get(node.data.parent);
+    if (!parent) throw new Error(`Parent not found for id: ${id}`);
+    if (!parent.data.parent)
+      throw new Error(`Grandparent not found for id: ${id}`);
+    resolveUtility(get, parent.data.parent, resolveResult);
+  }
+  if (resolveResult.unresolved.size > 0) {
+    toast.error(
+      "Unresolved symbols in pod " +
+        id +
+        ": " +
+        [...resolveResult.unresolved].join(",")
+    );
+  }
+  set(getOrCreate_ATOM_resolveResult(id), resolveResult);
 }
 
 export const ATOM_resolveAllPods = atom(null, (get, set) => {

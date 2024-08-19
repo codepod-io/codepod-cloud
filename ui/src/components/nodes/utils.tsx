@@ -16,6 +16,7 @@ import {
   Trash,
   Trash2,
   CalendarArrowUp,
+  Wrench,
 } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -26,6 +27,7 @@ import {
   ATOM_splice,
   ATOM_toggleFold,
   ATOM_toggleScope,
+  getAbsPos,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
@@ -38,6 +40,7 @@ import { NotebookPen, Clipboard } from "lucide-react";
 
 import { ATOM_addNode } from "@/lib/store/canvasSlice";
 import {
+  Box,
   Button,
   Dialog,
   DropdownMenu,
@@ -52,6 +55,11 @@ import rowInsertTop from "@/assets/row-insert-top.svg";
 import { ATOM_cutId } from "@/lib/store/atom";
 
 import ArrowLeftToLine from "@/assets/ArrowLeftToLine.svg";
+import {
+  getOrCreate_ATOM_privateST,
+  getOrCreate_ATOM_publicST,
+  getOrCreate_ATOM_utilityST,
+} from "@/lib/store/runtimeSlice";
 
 export function ResizeIcon() {
   return (
@@ -1020,5 +1028,58 @@ export function DeleteButton({ id }) {
       description="Continue?"
       confirm="Delete"
     />
+  );
+}
+
+export function SymbolTable({ id }) {
+  const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
+  const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
+  const utilitySt = useAtomValue(getOrCreate_ATOM_utilityST(id));
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error(`Node ${id} not found.`);
+  const reactFlowInstance = useReactFlow();
+  return (
+    <Box
+      style={{
+        // place it on the right
+        position: "absolute",
+        top: 0,
+        right: 0,
+        transform: "translateX(100%) translateX(10px)",
+      }}
+    >
+      {[...privateSt.keys()].map((key) => (
+        <Flex align="center" key={key}>
+          <Button
+            onClick={() => {
+              // jump to the node
+              const targetId = privateSt.get(key)!;
+              const targetNode = nodesMap.get(targetId);
+              if (!targetNode) return;
+              const pos = getAbsPos(targetNode, nodesMap);
+              reactFlowInstance.setCenter(
+                pos.x + targetNode.width! / 2,
+                pos.y + targetNode.height! / 2,
+                {
+                  zoom: reactFlowInstance.getZoom(),
+                  duration: 800,
+                }
+              );
+            }}
+            variant="ghost"
+          >
+            <code
+              style={{
+                color: publicSt.has(key) ? "green" : "black",
+              }}
+            >
+              {key}
+            </code>
+          </Button>
+          {utilitySt.has(key) ? <Wrench /> : ""}
+        </Flex>
+      ))}
+    </Box>
   );
 }
