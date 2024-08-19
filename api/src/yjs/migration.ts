@@ -140,7 +140,12 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
         name: pod.name || undefined,
         children: node2children.get(pod.id) || [],
         level: 0,
-        lang: pod.lang || "python",
+        lang: (pod.lang || "python") as
+          | "python"
+          | "julia"
+          | "javascript"
+          | "racket",
+        isScope: false,
         folded: false,
       },
       position: {
@@ -164,6 +169,7 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
       level: 0,
       children: node2children.get("ROOT") || [],
       folded: false,
+      isScope: false,
     },
     position: { x: 0, y: 0 },
     width: 300,
