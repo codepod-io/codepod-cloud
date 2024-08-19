@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { env } from "@/lib/vars";
 import { Box, Card, Container, Flex, Heading } from "@radix-ui/themes";
 
 export function Profile() {
@@ -35,6 +36,8 @@ export function Profile() {
                 Name {me.data.firstname} {me.data.lastname}
               </Box>
               <Box> Email: {me.data.email}</Box>
+              <Heading as="h4">App Version</Heading>
+              <Box>{env.APP_VERSION}</Box>
             </Flex>
           </Card>
         </Flex>

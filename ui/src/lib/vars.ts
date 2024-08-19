@@ -27,6 +27,7 @@ function wrapper() {
         GOOGLE_CLIENT_ID: z.string(),
         READ_ONLY: z.enum(["true", "false"]).transform((x) => x === "true"),
         BANNER: z.string(),
+        APP_VERSION: z.string(),
       })
       .parse({
         GOOGLE_CLIENT_ID: import.meta.env.DEV
@@ -38,6 +39,9 @@ function wrapper() {
         BANNER: import.meta.env.DEV
           ? import.meta.env.VITE_APP_BANNER
           : window.BANNER,
+        APP_VERSION: import.meta.env.DEV
+          ? import.meta.env.VITE_APP_APP_VERSION
+          : window.APP_VERSION,
       });
 
     return env;

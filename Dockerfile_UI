@@ -50,6 +50,7 @@ cp -f /usr/share/nginx/html/index.html /tmp
 sed -i -e "s|REPLACE_GOOGLE_CLIENT_ID|$VITE_APP_GOOGLE_CLIENT_ID|g" /tmp/index.html
 sed -i -e "s|REPLACE_READ_ONLY|$VITE_APP_READ_ONLY|g" /tmp/index.html
 sed -i -e "s|REPLACE_BANNER|$VITE_APP_BANNER|g" /tmp/index.html
+sed -i -e "s|REPLACE_APP_VERSION|$VITE_APP_APP_VERSION|g" /tmp/index.html
 
 cat /tmp/index.html > /usr/share/nginx/html/index.html
 EOF

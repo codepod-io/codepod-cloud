@@ -40,6 +40,8 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: GOOGLE_CLIENT_ID
+            - name: VITE_APP_APP_VERSION
+              value: "{{ .Chart.AppVersion }}"
           ports:
             - containerPort: 80
           resources:
