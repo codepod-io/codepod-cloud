@@ -121,6 +121,8 @@ function RepoLoader({ children }) {
   return children;
 }
 
+import { initParser as initParserRacket } from "@/lib/parserRacket";
+
 /**
  * This loads repo metadata.
  */
@@ -128,20 +130,28 @@ function ParserWrapper({ children }) {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   // const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
-  const [parserLoaded, setParserLoaded] = useState(false);
+  const [pythonParserLoaded, setPythonParserLoaded] = useState(false);
+  const [racketParserLoaded, setRacketParserLoaded] = useState(false);
 
   useEffect(() => {
-    initParser("/", () => {
-      setParserLoaded(true);
+    initParserRacket("/", () => {
+      console.log("parserRacket is ready");
+      setRacketParserLoaded(true);
     });
   }, []);
 
   useEffect(() => {
-    if (parserLoaded) {
+    initParser("/", () => {
+      setPythonParserLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (pythonParserLoaded && racketParserLoaded) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, parserLoaded, resolveAllPods]);
+  }, [parseAllPods, resolveAllPods, pythonParserLoaded, racketParserLoaded]);
 
   return children;
 }
