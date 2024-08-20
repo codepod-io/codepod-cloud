@@ -2,21 +2,32 @@ import Parser from "web-tree-sitter";
 import { match, P } from "ts-pattern";
 import keywords from "./utils/python-keywords";
 import { atom } from "jotai";
+import { Mutex } from "async-mutex";
 
 let parser: Parser | null = null;
 
+const mutex = new Mutex();
+
 export const ATOM_parserReady = atom(false);
 export const ATOM_loadParser = atom(null, async (get, set) => {
-  if (parser) return;
-  await Parser.init({
-    locateFile(scriptName: string, scriptDirectory: string) {
-      return "/" + scriptName;
-    },
-  });
-  parser = new Parser();
-  const lang = await Parser.Language.load("/tree-sitter-python.wasm");
-  parser.setLanguage(lang);
-  set(ATOM_parserReady, true);
+  await mutex.acquire();
+  try {
+    if (parser) {
+      set(ATOM_parserReady, true);
+      return;
+    }
+    await Parser.init({
+      locateFile(scriptName: string, scriptDirectory: string) {
+        return "/" + scriptName;
+      },
+    });
+    parser = new Parser();
+    const lang = await Parser.Language.load("/tree-sitter-python.wasm");
+    parser.setLanguage(lang);
+    set(ATOM_parserReady, true);
+  } finally {
+    mutex.release();
+  }
 });
 
 export type Annotation = {
