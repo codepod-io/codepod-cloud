@@ -18,7 +18,14 @@ import {
   Box,
 } from "@radix-ui/themes";
 
-import { initParser } from "@/lib/parser";
+import {
+  ATOM_loadParser as ATOM_loadParser_python,
+  ATOM_parserReady as ATOM_parserReady_python,
+} from "@/lib/parser";
+import {
+  ATOM_loadParser as ATOM_loadParser_racket,
+  ATOM_parserReady as ATOM_parserReady_racket,
+} from "@/lib/parserRacket";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
 import { Provider, useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -121,8 +128,6 @@ function RepoLoader({ children }) {
   return children;
 }
 
-import { initParser as initParserRacket } from "@/lib/parserRacket";
-
 /**
  * This loads repo metadata.
  */
@@ -130,28 +135,21 @@ function ParserWrapper({ children }) {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   // const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
-  const [pythonParserLoaded, setPythonParserLoaded] = useState(false);
-  const [racketParserLoaded, setRacketParserLoaded] = useState(false);
+
+  const loadParser_python = useSetAtom(ATOM_loadParser_python);
+  loadParser_python();
+  const parserReady_python = useAtomValue(ATOM_parserReady_python);
+
+  const loadParser_racket = useSetAtom(ATOM_loadParser_racket);
+  loadParser_racket();
+  const parserReady_racket = useAtomValue(ATOM_parserReady_racket);
 
   useEffect(() => {
-    initParserRacket("/", () => {
-      console.log("parserRacket is ready");
-      setRacketParserLoaded(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    initParser("/", () => {
-      setPythonParserLoaded(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (pythonParserLoaded && racketParserLoaded) {
+    if (parserReady_python && parserReady_racket) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, resolveAllPods, pythonParserLoaded, racketParserLoaded]);
+  }, [parseAllPods, resolveAllPods, parserReady_python, parserReady_racket]);
 
   return children;
 }
