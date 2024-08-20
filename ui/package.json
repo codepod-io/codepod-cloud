@@ -52,6 +52,7 @@
     "@trpc/react-query": "^10.43.0",
     "@trpc/server": "^10.45.2",
     "ansi-to-react": "^6.1.6",
+    "async-mutex": "^0.5.0",
     "classnames": "^2.5.1",
     "d3-flextree": "^2.1.2",
     "d3-force": "^3.0.0",
