@@ -356,10 +356,6 @@ export const k8sRouter = router({
       console.log("binding zmq and yjs");
       bindZmqYjs({ wire, ydoc, kernelName });
 
-      // 3. run some code to test
-      console.log("requesting kernel status");
-      wire.requestKernelStatus();
-      wire.runCode({ code: "3+4", msg_id: "123" });
       wireMap.set(kernelName, wire);
 
       // set start time
@@ -380,6 +376,10 @@ export const k8sRouter = router({
         createdAt,
         recycledAt: createdAt + kernelMaxLifetime,
       });
+      // 3. run some code to test
+      console.log("requesting kernel status");
+      wire.requestKernelStatus();
+      wire.runCode({ code: "3+4", msg_id: "123" });
 
       return true;
     }),
