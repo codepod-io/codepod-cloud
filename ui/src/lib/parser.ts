@@ -1,65 +1,23 @@
 import Parser from "web-tree-sitter";
 import { match, P } from "ts-pattern";
 import keywords from "./utils/python-keywords";
+import { atom } from "jotai";
 
 let parser: Parser | null = null;
-let parser_loading = false;
 
-export async function initParser(prefix = "/", callback = () => {}) {
-  if (parser_loading) return false;
-  if (parser) {
-    callback();
-    return true;
-  }
-  return new Promise((resolve, reject) => {
-    parser_loading = true;
-    Parser.init({
-      locateFile(scriptName: string, scriptDirectory: string) {
-        return "/" + scriptName;
-      },
-    }).then(async () => {
-      /* the library is ready */
-      console.log("tree-sitter is ready");
-      parser = new Parser();
-      const Python = await Parser.Language.load(
-        `${prefix}tree-sitter-python.wasm`
-      );
-      parser.setLanguage(Python);
-      parser_loading = false;
-      callback();
-      resolve(true);
-    });
+export const ATOM_parserReady = atom(false);
+export const ATOM_loadParser = atom(null, async (get, set) => {
+  if (parser) return;
+  await Parser.init({
+    locateFile(scriptName: string, scriptDirectory: string) {
+      return "/" + scriptName;
+    },
   });
-}
-
-/**
- * This function is used only in unit test. The difference:
- * 1. no locateFile function.
- * 2. use ./public/ prefix
- * 3. no callback.
- */
-export async function initParserForTest() {
-  if (parser_loading) return false;
-  if (parser) {
-    return true;
-  }
-  return new Promise((resolve, reject) => {
-    parser_loading = true;
-    // Diff 1: no locateFile
-    Parser.init().then(async () => {
-      /* the library is ready */
-      parser = new Parser();
-      const Python = await Parser.Language.load(
-        // Diff 2: use ./public/ prefix
-        `./public/tree-sitter-python.wasm`
-      );
-      parser.setLanguage(Python);
-      parser_loading = false;
-      // Diff 3: no callback
-      resolve(true);
-    });
-  });
-}
+  parser = new Parser();
+  const lang = await Parser.Language.load("/tree-sitter-python.wasm");
+  parser.setLanguage(lang);
+  set(ATOM_parserReady, true);
+});
 
 export type Annotation = {
   name: string;

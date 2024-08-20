@@ -2,37 +2,23 @@
 
 import Parser from "web-tree-sitter";
 import { Annotation, ParseResult } from "./parser";
+import { atom } from "jotai";
 
 let parser: Parser | null = null;
-let parser_loading = false;
 
-export async function initParser(prefix = "/", callback = () => {}) {
-  if (parser_loading) return false;
-  if (parser) {
-    callback();
-    return true;
-  }
-  return new Promise((resolve, reject) => {
-    parser_loading = true;
-    Parser.init({
-      locateFile(scriptName: string, scriptDirectory: string) {
-        return "/" + scriptName;
-      },
-    }).then(async () => {
-      /* the library is ready */
-      console.log("tree-sitter is ready");
-      parser = new Parser();
-      const Racket = await Parser.Language.load(
-        `${prefix}tree-sitter-scheme.wasm`
-      );
-      parser.setLanguage(Racket);
-      parser_loading = false;
-
-      callback();
-      resolve(true);
-    });
+export const ATOM_parserReady = atom(false);
+export const ATOM_loadParser = atom(null, async (get, set) => {
+  if (parser) return;
+  await Parser.init({
+    locateFile(scriptName: string, scriptDirectory: string) {
+      return "/" + scriptName;
+    },
   });
-}
+  parser = new Parser();
+  const lang = await Parser.Language.load("/tree-sitter-scheme.wasm");
+  parser.setLanguage(lang);
+  set(ATOM_parserReady, true);
+});
 
 /**
  * Use tree-sitter query to analyze the code. This only work for functions.
