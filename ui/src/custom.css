@@ -17,19 +17,19 @@
 }
 
 .myDecoration-function {
-  background: yellow;
+  background: var(--yellow-3);
 }
 
 .myDecoration-callsite {
-  background: orange;
+  background: var(--yellow-2);
 }
 
 .myDecoration-vardef {
-  background: cyan;
+  background: var(--ruby-4);
 }
 
 .myDecoration-varuse {
-  background: rgb(221, 247, 255);
+  background: var(--ruby-2);
 }
 
 /* Do not show unresolved marks, because it contains too many noise, e.g.,

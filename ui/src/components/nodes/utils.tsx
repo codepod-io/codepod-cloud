@@ -905,15 +905,22 @@ export function PodToolbar({
 export function RaiseButton({ id }) {
   const raise = useSetAtom(ATOM_raise);
   return (
-    <DropdownMenu.Item
+    <ConfirmedDelete
+      color="black"
       onClick={() => {
         // replace the parent with the current pod.
         raise(id);
       }}
-    >
-      <img src={ArrowLeftToLine} />
-      Raise
-    </DropdownMenu.Item>
+      trigger={
+        <>
+          <img src={ArrowLeftToLine} />
+          Raise
+        </>
+      }
+      title="This replace and delete the parent."
+      description="Continue?"
+      confirm="Raise"
+    />
   );
 }
 

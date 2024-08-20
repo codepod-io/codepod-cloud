@@ -354,7 +354,9 @@ function highlightAnnotations(
             ? " myDecoration-unresolved"
             : ""),
         hoverMessage: {
-          value: `${name} -> ${resolveResult?.resolved.get(name)}`,
+          value: `${name} -> ${resolveResult?.resolved
+            .get(name)
+            ?.substring(0, 6)}`,
         },
       },
     });
