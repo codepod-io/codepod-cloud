@@ -12,8 +12,6 @@ import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 
 import { MonacoBinding } from "y-monaco";
-import { useReactFlow } from "reactflow";
-import { Annotation } from "@/lib/parser";
 import { copilotTrpc } from "@/lib/trpc";
 
 import { llamaInlineCompletionProvider } from "@/lib/llamaCompletionProvider";
@@ -27,7 +25,6 @@ import {
 import {
   getOrCreate_ATOM_parseResult,
   getOrCreate_ATOM_resolveResult,
-  ParseResult,
   ResolveResult,
 } from "@/lib/store/runtimeSlice";
 import {
@@ -45,6 +42,7 @@ import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import { ATOM_editMode } from "@/lib/store/atom";
 import { env } from "@/lib/vars";
+import { ParseResult } from "@/lib/parser";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -334,16 +332,27 @@ function highlightAnnotations(
                 return "myDecoration-vardef";
               case "callsite":
                 // NOTE using the same style for both callsite and varuse.
-                // return "myDecoration-callsite";
-                return "myDecoration-varuse";
+                if (resolveResult?.resolved.has(name)) {
+                  return "myDecoration-callsite";
+                } else {
+                  return "myDecoration-unresolved";
+                }
+              // return "myDecoration-varuse";
               case "varuse":
-                return "myDecoration-varuse";
+                if (resolveResult?.resolved.has(name)) {
+                  return "myDecoration-varuse";
+                } else {
+                  return "myDecoration-unresolved";
+                }
               case "bridge":
                 return "myDecoration-bridge-unused";
               default:
                 throw new Error("unknown type: " + type);
             }
-          })() + (resolveResult?.unresolved.has(name) ? " my-underline" : ""),
+          })() +
+          (resolveResult?.unresolved.has(name)
+            ? " myDecoration-unresolved"
+            : ""),
         hoverMessage: {
           value: `${name} -> ${resolveResult?.resolved.get(name)}`,
         },

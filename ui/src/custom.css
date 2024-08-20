@@ -32,9 +32,12 @@
   background: rgb(221, 247, 255);
 }
 
-.my-underline {
+/* Do not show unresolved marks, because it contains too many noise, e.g.,
+libraries, built-in keywords. */
+
+/* .myDecoration-unresolved {
   text-decoration: wavy underline red;
-}
+} */
 
 .react-flow__node-SCOPE.active {
   box-shadow:

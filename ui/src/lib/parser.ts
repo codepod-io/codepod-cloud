@@ -70,7 +70,7 @@ export type Annotation = {
   endPosition: { row: number; column: number };
 };
 
-export type CodeAnalysisResult = {
+export type ParseResult = {
   ispublic: boolean;
   isutility: boolean;
   isbridge?: boolean;
@@ -83,10 +83,7 @@ export type CodeAnalysisResult = {
  * Use tree-sitter query to analyze the code. This only work for functions.
  * @param code
  */
-export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
-  console.warn(
-    "DEPRECATED: analyzeCodeViaQuery is deprecated. Enable scoped variables instead."
-  );
+export function parsePython(code: string): ParseResult {
   let annotations: Annotation[] = [];
   let ispublic = false;
   let isutility = false;
@@ -111,17 +108,26 @@ export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
   }
   let tree = parser.parse(code);
 
-  const function_def = "(function_definition (identifier) @function)";
+  // top-level function definition
+  const function_def = "(module (function_definition (identifier) @function))";
   const callsite = `(call (identifier) @callsite)`;
+  // top-level variable definition
+  const vardef = `(module (expression_statement (assignment (identifier) @vardef)))`;
+  const varuse = `((identifier) @varuse)`;
 
   let query_func = parser.getLanguage().query(`
   [
     ${function_def}
     ${callsite}
+    ${vardef}
+    ${varuse}
   ]
   `);
+  const visited = new Set();
   query_func.matches(tree.rootNode).forEach((match) => {
     let node = match.captures[0].node;
+    if (visited.has(JSON.stringify([node.startIndex, node.endIndex]))) return;
+    visited.add(JSON.stringify([node.startIndex, node.endIndex]));
     annotations.push({
       name: node.text, // the name of the function or variable
       // FIXME the name may not be "callsite".
@@ -145,7 +151,7 @@ export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
  * @param code the code
  * @returns a list of names defined in this code.
  */
-export function analyzeCode(code: string): CodeAnalysisResult {
+export function analyzeCode(code: string): ParseResult {
   let annotations: Annotation[] = [];
   let ispublic = false;
   let isutility = false;
