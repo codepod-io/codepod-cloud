@@ -14,6 +14,8 @@ import { Edge, Node } from "reactflow";
 import { toast } from "react-toastify";
 import { match } from "ts-pattern";
 import { ParseResult } from "../parser";
+import { parseJavascript } from "../parserJavascript";
+import { parseJulia } from "../parserJulia";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -232,6 +234,8 @@ function parsePod(get: Getter, set: Setter, id: string) {
   const analyzeCode = match(node.data.lang)
     .with("python", () => parsePython)
     .with("racket", () => parseRacket)
+    .with("javascript", () => parseJavascript)
+    .with("julia", () => parseJulia)
     .otherwise(() => null);
   if (!analyzeCode) {
     console.log("Unsupported language: " + node.data.lang);

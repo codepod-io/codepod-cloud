@@ -26,6 +26,16 @@ import {
   ATOM_loadParser as ATOM_loadParser_racket,
   ATOM_parserReady as ATOM_parserReady_racket,
 } from "@/lib/parserRacket";
+import {
+  ATOM_loadParser as ATOM_loadParser_javascript,
+  ATOM_parserReady as ATOM_parserReady_javascript,
+} from "@/lib/parserJavascript";
+
+import {
+  ATOM_loadParser as ATOM_loadParser_julia,
+  ATOM_parserReady as ATOM_parserReady_julia,
+} from "@/lib/parserJulia";
+
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
 import { Provider, useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -144,12 +154,32 @@ function ParserWrapper({ children }) {
   loadParser_racket();
   const parserReady_racket = useAtomValue(ATOM_parserReady_racket);
 
+  const loadParser_javascript = useSetAtom(ATOM_loadParser_javascript);
+  loadParser_javascript();
+  const parserReady_javascript = useAtomValue(ATOM_parserReady_javascript);
+
+  const loadParser_julia = useSetAtom(ATOM_loadParser_julia);
+  loadParser_julia();
+  const parserReady_julia = useAtomValue(ATOM_parserReady_julia);
+
   useEffect(() => {
-    if (parserReady_python && parserReady_racket) {
+    if (
+      parserReady_python &&
+      parserReady_racket &&
+      parserReady_javascript &&
+      parserReady_julia
+    ) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, resolveAllPods, parserReady_python, parserReady_racket]);
+  }, [
+    parseAllPods,
+    resolveAllPods,
+    parserReady_python,
+    parserReady_racket,
+    parserReady_javascript,
+    parserReady_julia,
+  ]);
 
   return children;
 }
