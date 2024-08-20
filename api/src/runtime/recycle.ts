@@ -62,11 +62,11 @@ export function recycleKernels() {
         where: {
           createdAt: {
             // greater than 1 hr
-            // gt: new Date(Date.now() - 60 * 60 * 1000),
-            gt: new Date(Date.now() - kernelMaxLifetime),
+            // gt: new Date(Date.now() + 60 * 60 * 1000),
+            gt: new Date(Date.now() + kernelMaxLifetime),
             //
             // greater than 30s
-            // gt: new Date(Date.now() - 30 * 1000),
+            // gt: new Date(Date.now() + 30 * 1000),
           },
         },
       });
