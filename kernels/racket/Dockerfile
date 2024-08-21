@@ -32,4 +32,10 @@ EOF
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]
 # CMD ["bash"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]
-CMD ["racket", "-l", "iracket/iracket", "--", "/conn.json"]
+
+# Need to add -t flag to escape sandbox. Otherwise, (system "ls") won't work,
+# throwing an error:
+# > subprocess: `execute' access denied for /bin/sh
+#
+# Ref: https://github.com/rmculpepper/iracket/issues/13#issuecomment-880958818
+CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
