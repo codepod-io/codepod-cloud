@@ -38,4 +38,5 @@ EOF
 # > subprocess: `execute' access denied for /bin/sh
 #
 # Ref: https://github.com/rmculpepper/iracket/issues/13#issuecomment-880958818
-CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
+# CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
+CMD ["sh", "-c", "racket -l iracket/iracket -- -t /conn.json"]
