@@ -28,8 +28,10 @@ COPY <<EOF /conn.json
 }
 EOF
 
-# RUN raco pkg install --auto https://github.com/bhdl/bhdl.git?path=src
 RUN apt update && apt install -y git procps
+# Looks like I have to install bhdl package BEFORE invoking iracket, otherwise, requiring bhdl will fail
+# eval-linklet: cannot use unsafe linklet loaded with non-original code inspector
+RUN raco pkg install --auto --no-docs https://github.com/bhdl/bhdl.git?path=src
 
 # FIXME I need to map the ports
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]
@@ -41,5 +43,5 @@ RUN apt update && apt install -y git procps
 # > subprocess: `execute' access denied for /bin/sh
 #
 # Ref: https://github.com/rmculpepper/iracket/issues/13#issuecomment-880958818
-# CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
-CMD ["sh", "-c", "env && racket -l iracket/iracket -- -t /conn.json"]
+CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
+# CMD ["sh", "-c", "racket -l iracket/iracket -- -t /conn.json"]
