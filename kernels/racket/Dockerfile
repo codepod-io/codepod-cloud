@@ -28,6 +28,9 @@ COPY <<EOF /conn.json
 }
 EOF
 
+RUN raco pkg install --auto https://github.com/bhdl/bhdl.git?path=src
+RUN apt update && apt install -y git
+
 # FIXME I need to map the ports
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]
 # CMD ["bash"]
@@ -39,4 +42,4 @@ EOF
 #
 # Ref: https://github.com/rmculpepper/iracket/issues/13#issuecomment-880958818
 # CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
-CMD ["sh", "-c", "racket -l iracket/iracket -- -t /conn.json"]
+CMD ["sh", "-c", "env && racket -l iracket/iracket -- -t /conn.json"]
