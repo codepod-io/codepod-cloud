@@ -11,7 +11,11 @@ FROM racket/racket:8.1-full
 # install build deps so that I'll just run local install everytime a new
 # contianer is created
 RUN raco pkg install --auto zeromq-r-lib uuid sha
-RUN raco pkg install iracket
+
+# RUN raco pkg install iracket
+# I added trusted code inspector so that installing a package can be loaded in already started kernels.
+# Ref: https://github.com/codepod-io/iracket/pull/1
+RUN raco pkg install https://github.com/codepod-io/iracket.git#use-trusted-code-inspector
 
 COPY <<EOF /conn.json
 {
@@ -28,6 +32,11 @@ COPY <<EOF /conn.json
 }
 EOF
 
+RUN apt update && apt install -y git procps
+# Looks like I have to install bhdl package BEFORE invoking iracket, otherwise, requiring bhdl will fail
+# eval-linklet: cannot use unsafe linklet loaded with non-original code inspector
+# RUN raco pkg install --auto --no-docs https://github.com/bhdl/bhdl.git?path=src
+
 # FIXME I need to map the ports
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]
 # CMD ["bash"]
@@ -39,3 +48,4 @@ EOF
 #
 # Ref: https://github.com/rmculpepper/iracket/issues/13#issuecomment-880958818
 CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
+# CMD ["sh", "-c", "racket -l iracket/iracket -- -t /conn.json"]
