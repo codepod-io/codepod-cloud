@@ -72,6 +72,16 @@ export function getDeploymentSpec(
                 { containerPort: 55695 },
                 { containerPort: 55696 },
               ],
+              resources: {
+                limits: {
+                  memory: "256Mi",
+                  cpu: "1",
+                },
+                requests: {
+                  memory: "128Mi",
+                  cpu: "0.2",
+                },
+              },
             },
           ],
         },
