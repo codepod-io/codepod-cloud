@@ -54,6 +54,13 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.python }}"
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: "1"
+            requests:
+              memory: 128Mi
+              cpu: "0.2"
 
 ---
 # this deployment is for pulling in the kernel images
@@ -89,6 +96,13 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.julia }}"
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: "1"
+            requests:
+              memory: 128Mi
+              cpu: "0.2"
 
 ---
 # this deployment is for pulling in the kernel images
@@ -124,6 +138,13 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.javascript }}"
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: "1"
+            requests:
+              memory: 128Mi
+              cpu: "0.2"
 
 ---
 # this deployment is for pulling in the kernel images
@@ -159,3 +180,10 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.racket }}"
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: "1"
+            requests:
+              memory: 128Mi
+              cpu: "0.2"
