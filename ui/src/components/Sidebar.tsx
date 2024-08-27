@@ -14,6 +14,7 @@ import {
   Tooltip,
   Button,
   Checkbox,
+  DropdownMenu,
 } from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
@@ -38,7 +39,12 @@ import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
 import * as Y from "yjs";
 
-import { prettyPrintBytes, timeDifference } from "@/lib/utils/utils";
+import {
+  prettyPrintBytes,
+  prettyPrintCPU,
+  prettyPrintMemory,
+  timeDifference,
+} from "@/lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
@@ -176,6 +182,11 @@ function KernelStatus({
       toast.error(error.message);
     },
   });
+  const usageStatus = runtimeTrpc.k8s.usageStatus.useMutation({
+    onError(error) {
+      toast.error(error.message);
+    },
+  });
   const interrupt = runtimeTrpc.k8s.interrupt.useMutation({
     onError(error) {
       toast.error(error.message);
@@ -191,11 +202,16 @@ function KernelStatus({
       toast.error(error.message);
     },
   });
+  // init the kernel status when the component is mounted
+  useEffect(() => {
+    console.log("init kernel status", repoId, kernelName);
+    status.mutate({ repoId, kernelName });
+  }, []);
 
   return (
     <Card>
       <Flex direction={"column"}>
-        <Flex>
+        <Flex align="center">
           {kernelName}:{" "}
           {match(runtime?.status)
             .with("idle", () => (
@@ -239,53 +255,67 @@ function KernelStatus({
               <Play />
             </IconButton>
           ) : (
-            <IconButton
-              onClick={() => {
-                stop.mutate({ repoId, kernelName });
-              }}
-              color="red"
-              size="1"
-              variant="ghost"
-            >
-              <Power />
-            </IconButton>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button variant="ghost">
+                  <DropdownMenu.TriggerIcon />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item
+                  onClick={() => {
+                    status.mutate({ repoId, kernelName });
+                  }}
+                  color="blue"
+                >
+                  <RefreshCcw /> Refresh
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    interrupt.mutate({ repoId, kernelName });
+                  }}
+                  color="pink"
+                >
+                  <CircleStop />
+                  Interrupt
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    usageStatus.mutate({ repoId, kernelName });
+                  }}
+                >
+                  <RefreshCcw /> Metrics
+                </DropdownMenu.Item>
+
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item
+                  onClick={() => {
+                    stop.mutate({ repoId, kernelName });
+                  }}
+                  color="red"
+                >
+                  <Power /> Power Off
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           )}
         </Flex>
-        {runtime && (
-          <Flex gap="1">
-            <RadixTooltip content="Refresh Status">
-              <IconButton
-                onClick={() => {
-                  status.mutate({ repoId, kernelName });
-                }}
-                size="1"
-                variant="ghost"
-              >
-                <RefreshCcw />
-              </IconButton>
-            </RadixTooltip>
 
-            <RadixTooltip content="Interrupt Kernel">
-              <IconButton
-                onClick={() => {
-                  interrupt.mutate({ repoId, kernelName });
-                }}
-                size="1"
-                variant="ghost"
-                color="red"
-              >
-                <CircleStop />
-              </IconButton>
-            </RadixTooltip>
-          </Flex>
-        )}
         {/* createdAt */}
-        <Flex>
+        <Flex direction="column">
           {runtime && (
-            <CreatedAt
-              createdAt={runtime.createdAt}
-              recycledAt={runtime.recycledAt}
-            />
+            <>
+              <CreatedAt
+                createdAt={runtime.createdAt}
+                recycledAt={runtime.recycledAt}
+              />
+              {/* the resource usage */}
+              {runtime.cpu && <Box>{prettyPrintCPU(runtime.cpu)} vCPU</Box>}
+              {runtime.memory && (
+                <Box>{prettyPrintMemory(runtime.memory)} MiB</Box>
+              )}
+            </>
           )}
         </Flex>
       </Flex>

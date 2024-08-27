@@ -21,10 +21,4 @@ export const env = z
 export const repoId2ydoc = new Map<string, Y.Doc>();
 export const repoId2wireMap = new Map<string, Map<string, ZmqWire>>();
 
-const kc = new k8s.KubeConfig();
-kc.loadFromDefault();
-
-export const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-export const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
-
 export const kernelMaxLifetime = 60 * 60 * 1000; // 1 hr
