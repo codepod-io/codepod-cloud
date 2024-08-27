@@ -148,3 +148,9 @@ https://codepen.io/stevenlewis/pen/jOKvMx */
 .monaco-editor {
   border-radius: 10px;
 }
+
+/* Make lucide icons respect current fontSize. */
+.lucide {
+  width: 1.3em;
+  height: 1.3em;
+}

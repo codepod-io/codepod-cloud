@@ -1,4 +1,5 @@
 import * as k8s from "@kubernetes/client-node";
+import { Metrics } from "@kubernetes/client-node";
 
 import { z } from "zod";
 import { match, P } from "ts-pattern";
@@ -15,33 +16,37 @@ import { WebsocketProvider } from "./y-websocket";
 import { PodResult, RuntimeInfo } from "../yjs/types";
 import prisma from "../prisma";
 
-import {
-  env,
-  k8sApi,
-  k8sAppsApi,
-  kernelMaxLifetime,
-  repoId2wireMap,
-  repoId2ydoc,
-} from "./vars";
+import { env, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
 import { registerKernelActivity } from "./recycle";
 
-export function getDeploymentSpec(
-  name: string,
-  image: string
-): k8s.V1Deployment {
+const kc = new k8s.KubeConfig();
+kc.loadFromDefault();
+const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
+const k8sMetricsClient = new Metrics(kc);
+
+function getDeploymentSpec({
+  repoId,
+  image,
+  kernelName,
+}: {
+  repoId: string;
+  image: string;
+  kernelName: string;
+}): k8s.V1Deployment {
   return {
     apiVersion: "apps/v1",
     kind: "Deployment",
     metadata: {
-      name: `rt-${name}`,
+      name: `rt-${repoId}-${kernelName}`,
     },
     spec: {
       replicas: 1,
       selector: {
-        matchLabels: { app: `${name}` },
+        matchLabels: { app: `rt-${repoId}-${kernelName}` },
       },
       template: {
-        metadata: { labels: { app: `${name}` } },
+        metadata: { labels: { app: `rt-${repoId}-${kernelName}` } },
         spec: {
           // only schedule to runtime nodes
           nodeSelector: {
@@ -62,7 +67,7 @@ export function getDeploymentSpec(
           },
           containers: [
             {
-              name: `${name}-kernel`,
+              name: `rt-${repoId}-${kernelName}`,
               image,
               ports: [
                 // These are pre-defined in kernel/conn.json
@@ -90,16 +95,22 @@ export function getDeploymentSpec(
   };
 }
 
-export function getServiceSpec(name: string): k8s.V1Service {
+function getServiceSpec({
+  repoId,
+  kernelName,
+}: {
+  repoId: string;
+  kernelName: string;
+}): k8s.V1Service {
   return {
     apiVersion: "v1",
     kind: "Service",
     metadata: {
-      name: `svc-${name}`,
+      name: `svc-${repoId}-${kernelName}`,
     },
     spec: {
       selector: {
-        app: `${name}`,
+        app: `rt-${repoId}-${kernelName}`,
       },
       ports: [
         // {
@@ -272,9 +283,8 @@ async function createKernel({
 }) {
   // python kernel
   console.log(`creating ${kernelName} kernel ..`);
-  const containerName = `${repoId}-${kernelName}`;
-  let deploy_spec = getDeploymentSpec(containerName, image);
-  let service_spec = getServiceSpec(containerName);
+  let deploy_spec = getDeploymentSpec({ repoId, kernelName, image });
+  let service_spec = getServiceSpec({ repoId, kernelName });
 
   await createDeployment(ns, deploy_spec);
   await createService(ns, service_spec);
@@ -283,7 +293,7 @@ async function createKernel({
 
   // wait for zmq service to be ready
   // 1. get the ZMQ url: ws://svc-repoId.{ns}:...
-  const url = `svc-${containerName}.${ns}`;
+  const url = `svc-${repoId}-${kernelName}.${ns}`;
   await wairForServiceReady(url);
   // 2. connect ZMQ socket
   console.log("creating zmq wire");
@@ -456,6 +466,62 @@ export const k8sRouter = router({
       });
     }),
 
+  usageStatus: protectedProcedure
+    .input(z.object({ repoId: z.string(), kernelName: z.string() }))
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+      if (env.READ_ONLY) throw Error("Read only mode");
+      console.log("usageStatus", repoId);
+      const ydoc = await ensureYDoc({ repoId, token });
+      const runtimeMap = ydoc
+        .getMap("rootMap")
+        .get("runtimeMap") as Y.Map<RuntimeInfo>;
+      const oldInfo = runtimeMap.get(kernelName);
+      // reset the CPU and Memory metrics
+      runtimeMap.set(kernelName, {
+        status: "unknown",
+        ...oldInfo,
+        cpu: undefined,
+        memory: undefined,
+      });
+      // -- The resource limits.
+      // get the pod name of the kernel deployment
+      // const deploy = await k8sAppsApi.readNamespacedDeployment(
+      //   `rt-${repoId}-${kernelName}`,
+      //   env.RUNTIME_NS
+      // );
+      // deploy.body.spec?.template.spec?.containers[0].resources?.limits;
+      // get the k8s pod resource usage
+      console.log("--- list pods", `app=rt-${repoId}-${kernelName}`);
+      const pods = await k8sApi.listNamespacedPod(
+        env.RUNTIME_NS,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        `app=rt-${repoId}-${kernelName}`
+      );
+      console.log("pods found", pods.body.items.length);
+      if (pods.body.items.length === 0) {
+        throw new Error("Pod not found");
+      }
+      const podName = pods.body.items[0].metadata?.name!;
+      console.log("pod name", podName);
+
+      const metrics = await k8sMetricsClient.getPodMetrics(
+        env.RUNTIME_NS,
+        // "rt-jhhjqzbnmkpofcyu4cou-python-6784c59f99-xk956"
+        podName
+      );
+      // res.containers[0].usage: { cpu: '19612n', memory: '48440Ki' }
+      console.log("pod metrics", metrics.containers[0].usage);
+      runtimeMap.set(kernelName, {
+        status: "unknown",
+        ...oldInfo,
+        cpu: metrics.containers[0].usage.cpu,
+        memory: metrics.containers[0].usage.memory,
+      });
+    }),
+
   status: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
@@ -475,22 +541,10 @@ export const k8sRouter = router({
           runtimeMap.delete(kernelName);
           return false;
         }
-        const kernel = await prisma.kernel.findFirst({
-          where: {
-            name: kernelName,
-            Repo: {
-              id: repoId,
-            },
-          },
-        });
-        // convert from date to number
-        // const createdAt = kernel?.createdAt
-        assert(kernel);
-        const createdAt = kernel?.createdAt.getTime();
+        const oldInfo = runtimeMap.get(kernelName);
         runtimeMap.set(kernelName, {
+          ...oldInfo,
           status: "refreshing",
-          createdAt,
-          recycledAt: createdAt + kernelMaxLifetime,
         });
         console.log("requestKernelStatus", repoId);
         wire.requestKernelStatus();

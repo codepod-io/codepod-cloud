@@ -16,4 +16,8 @@ export type RuntimeInfo = {
   status: string;
   createdAt?: number;
   recycledAt?: number;
+  cpu?: string;
+  cpuLimit?: string;
+  memory?: string;
+  memoryLimit?: string;
 };
