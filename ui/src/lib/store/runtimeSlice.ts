@@ -371,9 +371,10 @@ function resolvePod(get: Getter, set: Setter, id: string) {
     if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
     const parent = get(ATOM_nodesMap).get(node.data.parent);
     if (!parent) throw new Error(`Parent not found for id: ${id}`);
-    if (!parent.data.parent)
-      throw new Error(`Grandparent not found for id: ${id}`);
-    resolveUtility(get, parent.data.parent, resolveResult);
+    const grandParentId = parent.data.parent;
+    if (grandParentId) {
+      resolveUtility(get, grandParentId, resolveResult);
+    }
   }
   if (resolveResult.unresolved.size > 0) {
     console.log(
