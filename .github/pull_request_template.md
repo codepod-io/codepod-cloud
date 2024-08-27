@@ -1,0 +1,1 @@
+Indicate whether this is a major change (by selecting the `major` label).
