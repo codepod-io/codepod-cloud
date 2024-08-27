@@ -93,6 +93,18 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
 
   const [resultMap] = useAtom(ATOM_resultMap);
   const result = resultMap.get(id);
+
+  const scrollDivRef = useRef<HTMLDivElement>(null);
+  const [follow, setFollow] = useState(true);
+
+  useEffect(() => {
+    if (scrollDivRef.current && follow) {
+      scrollDivRef.current.scrollTop = scrollDivRef.current.scrollHeight;
+    }
+  }, [result, follow]);
+
+  const [expand, setExpand] = useState(false);
+
   if (!result) {
     return null;
   }
@@ -149,6 +161,20 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             <DropdownMenu.Content>
               <DropdownMenu.Item
                 onClick={() => {
+                  setFollow(!follow);
+                }}
+              >
+                {follow ? "Unfollow" : "Follow"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => {
+                  setExpand(!expand);
+                }}
+              >
+                {expand ? "Collapse" : "Expand"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => {
                   setResultScroll(!resultScroll);
                 }}
                 disabled
@@ -173,12 +199,18 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
         className="result-content"
         style={{
           backgroundColor: "var(--accent-2)",
-          maxHeight: "200px",
-          overflow: "scroll",
+          ...(expand
+            ? {}
+            : {
+                maxHeight: "200px",
+                overflow: "scroll",
+              }),
+
           fontSize: "0.8em",
           padding: "0 5px",
           whiteSpace: "pre-wrap",
         }}
+        ref={scrollDivRef}
       >
         {results &&
           results.length > 0 &&
