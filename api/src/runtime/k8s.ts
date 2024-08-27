@@ -74,7 +74,7 @@ export function getDeploymentSpec(
               ],
               resources: {
                 limits: {
-                  memory: "256Mi",
+                  memory: "2560Mi",
                   cpu: "1",
                 },
                 requests: {
