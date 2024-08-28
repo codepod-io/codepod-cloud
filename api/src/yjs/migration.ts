@@ -6,13 +6,12 @@ import prisma from "../prisma";
 import { json2yxml } from "./utils";
 import { PodResult } from "./types";
 import { assert } from "console";
-import { Node } from "reactflow";
-import { NodeData } from "@/../../ui/src/lib/store/types";
+import { AppNode } from "@/../../ui/src/lib/store/types";
 
 /**
  * Auto layout.
  */
-export function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
+export function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   // const data = subtree("1");
   const rootNode = nodesMap.get(id);
   if (!rootNode) throw new Error("Root node not found");
@@ -96,7 +95,7 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
   // TODO make sure the ydoc is empty.
   // 2. construct Y doc types
   const rootMap = ydoc.getMap("rootMap");
-  const nodesMap = new Y.Map<Node<NodeData>>();
+  const nodesMap = new Y.Map<AppNode>();
   const edgesMap = new Y.Map<any>();
   const codeMap = new Y.Map<Y.Text>();
   const richMap = new Y.Map<Y.XmlFragment>();
@@ -135,11 +134,9 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
         .with(P.union("MD", "REPL", "SCOPE"), () => {
           throw new Error(`should not have dbtype ${pod.type}`);
         })
-        .exhaustive(),
+        .exhaustive() as "CODE" | "RICH",
       data: {
-        name: pod.name || undefined,
         children: node2children.get(pod.id) || [],
-        level: 0,
         lang: (pod.lang || "python") as
           | "python"
           | "julia"

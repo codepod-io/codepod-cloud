@@ -10,7 +10,7 @@ import {
 } from "./yjsSlice";
 import { produce } from "immer";
 import { ATOM_edges, ATOM_nodes } from "./canvasSlice";
-import { Edge, Node } from "reactflow";
+import { Edge, Node } from "@xyflow/react";
 import { toast } from "react-toastify";
 import { match } from "ts-pattern";
 import { ParseResult } from "../parser";
@@ -230,6 +230,7 @@ function parsePod(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) throw new Error(`Node not found for id: ${id}`);
+  if (node.type !== "CODE") return;
   const codeMap = get(ATOM_codeMap);
   const analyzeCode = match(node.data.lang)
     .with("python", () => parsePython)
@@ -410,6 +411,10 @@ function setRunning(get: Getter, set: Setter, podId: string) {
 
 function preprocessChain(get: Getter, set: Setter, ids: string[]) {
   let specs = ids.map((id) => {
+    const nodesMap = get(ATOM_nodesMap);
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found for id: ${id}`);
+    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
     // Actually send the run request.
     // Analyze code and set symbol table
     parsePod(get, set, id);
@@ -417,8 +422,6 @@ function preprocessChain(get: Getter, set: Setter, ids: string[]) {
     resolvePod(get, set, id);
     const newcode = rewriteCode(id, get);
     // console.log("newcode", newcode);
-    const nodesMap = get(ATOM_nodesMap);
-    const node = nodesMap.get(id);
     const lang = node?.data.lang;
     return { podId: id, code: newcode || "", kernelName: lang || "python" };
   });
@@ -480,7 +483,7 @@ export const ATOM_getEdgeChain = atom(null, getEdgeChain);
 function getDescendants(node: Node, nodes: Node[]): string[] {
   if (node.type === "CODE") return [node.id];
   if (node.type === "SCOPE") {
-    let children = nodes.filter((n) => n.parentNode === node.id);
+    let children = nodes.filter((n) => n.parentId === node.id);
     children.sort((a, b) => {
       if (a.position.y === b.position.y) {
         return a.position.x - b.position.x;

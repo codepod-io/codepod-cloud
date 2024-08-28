@@ -11,8 +11,10 @@ import {
   useReactFlow,
   NodeResizeControl,
   NodeProps,
-  ResizeControlVariant,
-} from "reactflow";
+  Handle,
+  Position,
+} from "@xyflow/react";
+import { ResizeControlVariant } from "@xyflow/react";
 
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -68,6 +70,8 @@ import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
+import { CodeNodeType, ScopeNodeType } from "@/lib/store/types";
+import { ATOM_addScope } from "@/lib/store/canvasSlice";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -279,21 +283,22 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   );
 });
 
-function MyPodToolbar({ id }: { id: string }) {
+function MyPodToolbar({ node }: { node: CodeNodeType }) {
+  const id = node.id;
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
 
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
-  const lang = useAtomValue(ATOM_nodesMap).get(id)?.data.lang;
+  const lang = node.data.lang;
   const runtimeReady =
     lang &&
     useAtomValue(
       React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
     );
   const repoId = useAtomValue(ATOM_repoId)!;
-  const node = useAtomValue(ATOM_nodesMap).get(id);
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
+  const addScope = useSetAtom(ATOM_addScope);
 
   return (
     <PodToolbar id={id}>
@@ -358,6 +363,13 @@ function MyPodToolbar({ id }: { id: string }) {
 
           {/* Structural edit */}
           <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={() => {
+              addScope(id);
+            }}
+          >
+            Add Scope
+          </DropdownMenu.Item>
           {node?.data.parent !== "ROOT" && <RaiseButton id={id} />}
           <SlurpButton id={id} />
           <DropdownMenu.Separator />
@@ -390,15 +402,18 @@ function HandleWithHover({ id }) {
  * @returns a ref to be attached to a React component so that the hotkey is
  * bound to that pod.
  */
-function useRunKey({ id }: { id: string }) {
+function useRunKey({ node }: { node: CodeNodeType }) {
   // The runtime ATOMs and trpc APIs.
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
-  const lang = useAtomValue(ATOM_nodesMap).get(id)?.data.lang;
+  const lang = node.data.lang;
   const runtimeReady =
     lang &&
     useAtom(
-      React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
+      React.useMemo(
+        () => selectAtom(ATOM_runtimeReady, (v) => v[lang]),
+        [node.id]
+      )
     );
   const repoId = useAtomValue(ATOM_repoId)!;
   // call useHotKeys library
@@ -408,7 +423,7 @@ function useRunKey({ id }: { id: string }) {
       if (!runtimeReady) {
         toast.error("Runtime is not ready.");
       } else {
-        const specs = preprocessChain([id]);
+        const specs = preprocessChain([node.id]);
         if (specs) runChain.mutate({ repoId, specs });
       }
     },
@@ -425,13 +440,20 @@ function useRunKey({ id }: { id: string }) {
 }
 
 export const CodeNode = memo<NodeProps>(function ({ id }) {
-  const [nodesMap] = useAtom(ATOM_nodesMap);
-
-  let ref = useRunKey({ id })!;
-
+  const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) return null;
+  if (node.type !== "CODE") {
+    throw new Error("Should not reach here");
+  }
+  return <CodeNodeImpl node={node} />;
+});
+
+function CodeNodeImpl({ node }: { node: CodeNodeType }) {
+  const id = node.id;
+  let ref = useRunKey({ node });
   const cutId = useAtomValue(ATOM_cutId);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
 
   return (
     <div
@@ -472,19 +494,21 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
           borderRadius: "4px",
         }}
       >
-        {!env.READ_ONLY && <MyPodToolbar id={id} />}
+        {!env.READ_ONLY && <MyPodToolbar node={node} />}
         <div
           style={{
             paddingTop: "5px",
             cursor: "auto",
           }}
         >
-          <MyMonaco id={id} />
+          <MyMonaco node={node} />
         </div>
         <ResultBlock id={id} />
         <SymbolTable id={id} />
 
-        <HandleWithHover id={id} />
+        {/* <HandleWithHover id={id} /> */}
+        <Handle id="left" type="source" position={Position.Left} />
+        <Handle id="right" type="source" position={Position.Right} />
 
         <Box
           style={{
@@ -546,7 +570,9 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
               });
             }
           }}
-          variant={ResizeControlVariant.Line}
+          // FIXME couldn't get the variant to work.
+          variant={"line" as any}
+          // variant={ResizeControlVariant.Line}
           color="transparent"
           style={{
             border: "10px solid transparent",
@@ -556,4 +582,4 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
       </div>
     </div>
   );
-});
+}

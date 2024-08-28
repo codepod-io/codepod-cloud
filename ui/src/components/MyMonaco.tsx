@@ -43,6 +43,7 @@ import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 import { ATOM_editMode } from "@/lib/store/atom";
 import { env } from "@/lib/vars";
 import { ParseResult } from "@/lib/parser";
+import { CodeNodeType } from "@/lib/store/types";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -436,9 +437,10 @@ async function updateGitGutter(editor) {
   );
 }
 
-export const MyMonaco = function MyMonaco({ id = "0" }) {
+export const MyMonaco = function MyMonaco({ node }: { node: CodeNodeType }) {
   // there's no racket language support
   const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
+  const id = node.id;
 
   const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(id));
   const resolveResult = useAtomValue(getOrCreate_ATOM_resolveResult(id));
@@ -449,9 +451,7 @@ export const MyMonaco = function MyMonaco({ id = "0" }) {
   const [copilotManualMode] = useAtom(ATOM_copilotManualMode);
 
   // TODO support other languages.
-  const [nodesMap] = useAtom(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  let lang = node?.data.lang || "python";
+  let lang = node.data.lang;
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 

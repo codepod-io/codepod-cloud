@@ -29,8 +29,7 @@ import ReactFlow, {
   useStore as useRfStore,
   useKeyPress,
   SelectionMode,
-} from "reactflow";
-import "reactflow/dist/style.css";
+} from "@xyflow/react";
 
 import {
   ATOM_centerSelection,
@@ -166,10 +165,10 @@ export function useJump() {
 
     // get the sibling nodes
     const siblings = Array.from<Node>(nodesMap.values()).filter(
-      (node) => node.parentNode === pod.parentNode
+      (node) => node.parentId === pod.parentId
     );
     const children = Array.from<Node>(nodesMap.values()).filter(
-      (node) => node.parentNode === id
+      (node) => node.parentId === id
     );
 
     let to: null | Node = null;
@@ -177,8 +176,8 @@ export function useJump() {
     switch (event.key) {
       case "ArrowUp":
         if (event.shiftKey) {
-          if (pod.parentNode) {
-            to = nodesMap.get(pod.parentNode)!;
+          if (pod.parentId) {
+            to = nodesMap.get(pod.parentId)!;
           } else {
             to = pod;
           }

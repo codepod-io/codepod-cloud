@@ -23,8 +23,11 @@ import debounce from "lodash/debounce";
 
 import prisma from "../prisma";
 
-import { Node } from "reactflow";
-import { NodeData } from "@/../../ui/src/lib/store/types";
+import {
+  AppNode,
+  CodeNodeType,
+  RichNodeType,
+} from "@/../../ui/src/lib/store/types";
 import { json2yxml, myNanoId } from "./utils";
 
 const debounceRegistry = new Map<string, any>();
@@ -136,7 +139,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
   } else {
     // init the ydoc
     const rootMap = ydoc.getMap("rootMap");
-    const nodesMap = new Y.Map<Node<NodeData>>();
+    const nodesMap = new Y.Map<AppNode>();
     const richMap = new Y.Map<Y.XmlFragment>();
     const codeMap = new Y.Map<Y.Text>();
     rootMap.set("nodesMap", nodesMap);
@@ -152,12 +155,11 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     const pod1_id = myNanoId();
     const pod2_id = myNanoId();
     // add ROOT node
-    nodesMap.set("ROOT", {
+    const rootNode: RichNodeType = {
       id: "ROOT",
       type: "RICH",
       position: { x: 0, y: 0 },
       data: {
-        level: 0,
         children: [pod1_id, pod2_id],
         isScope: false,
         folded: false,
@@ -166,38 +168,39 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
         width: 300,
         // height: 100,
       },
-    });
+    };
+    nodesMap.set("ROOT", rootNode);
 
-    nodesMap.set(pod1_id, {
+    const pod1: CodeNodeType = {
       // a python code pod
       id: pod1_id,
       type: "CODE",
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: -74 },
       data: {
-        level: 1,
         children: [],
         parent: "ROOT",
         folded: false,
         isScope: false,
         lang: "python",
       },
-    });
-    nodesMap.set(pod2_id, {
+    };
+    nodesMap.set(pod1_id, pod1);
+    const pod2: CodeNodeType = {
       // a python code pod
       id: pod2_id,
       type: "CODE",
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: 97 },
       data: {
-        level: 1,
         children: [],
         parent: "ROOT",
         folded: false,
         isScope: false,
         lang: "python",
       },
-    });
+    };
+    nodesMap.set(pod2_id, pod2);
     const welcome = {
       type: "doc",
       content: [

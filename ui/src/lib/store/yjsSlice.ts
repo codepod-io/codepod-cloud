@@ -4,9 +4,9 @@ import * as Y from "yjs";
 // FIXME can I import from api/ folder?
 import { WebsocketProvider } from "@/../../api/src/runtime/y-websocket";
 import { PodResult, RuntimeInfo } from "@/../../api/src/yjs/types";
-import { Edge, Node, NodeChange, applyNodeChanges } from "reactflow";
+import { Edge, Node, NodeChange, applyNodeChanges } from "@xyflow/react";
 import { getHelperLines } from "@/components/nodes/utils";
-import { NodeData } from "./types";
+import { AppNode } from "./types";
 import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
@@ -45,7 +45,7 @@ function triggerResultChanged(get: Getter, set: Setter, id: string) {
  */
 function getNodesMap(get: Getter) {
   const ydoc = get(ATOM_ydoc);
-  const rootMap = ydoc.getMap<Y.Map<Node<NodeData>>>("rootMap");
+  const rootMap = ydoc.getMap<Y.Map<AppNode>>("rootMap");
   if (!rootMap) {
     throw new Error("rootMap not found");
   }
