@@ -21,6 +21,7 @@ import {
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
+  ATOM_deleteSubtree,
   ATOM_moveCut,
   ATOM_slurp,
   ATOM_toggleFold,
@@ -973,14 +974,12 @@ function ConfirmedDelete({
 }
 
 export function DeleteButton({ id }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const reactFlowInstance = useReactFlow();
+  const deleteSubtree = useSetAtom(ATOM_deleteSubtree);
   return (
     <ConfirmedDelete
       color="red"
       onSelect={() => {
-        // Delete all edges connected to the node.
-        reactFlowInstance.deleteElements({ nodes: [{ id }] });
+        deleteSubtree(id);
       }}
       trigger={
         <>

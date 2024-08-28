@@ -926,6 +926,56 @@ function toggleFold(get: Getter, set: Setter, id: string) {
 
 export const ATOM_toggleFold = atom(null, toggleFold);
 
+export const ATOM_deleteSubtree = atom(
+  null,
+  (get: Getter, set: Setter, todelete: string) => {
+    const nodesMap = get(ATOM_nodesMap);
+    const codeMap = get(ATOM_codeMap);
+    const richMap = get(ATOM_richMap);
+    const node = nodesMap.get(todelete);
+    if (!node) throw new Error("Node not found");
+    // remove all descendants
+    const removeDescendants = (id: string) => {
+      const node = nodesMap.get(id);
+      if (!node) throw new Error("Node not found");
+      node.data.children.forEach((childId) => {
+        removeDescendants(childId);
+        nodesMap.delete(childId);
+        // remove from codeMap or richMap
+        if (codeMap.has(childId)) codeMap.delete(childId);
+        if (richMap.has(childId)) richMap.delete(childId);
+      });
+      if (node.type === "SCOPE") {
+        node.data.scopeChildren.forEach((childId) => {
+          removeDescendants(childId);
+          nodesMap.delete(childId);
+          // remove from codeMap or richMap
+          if (codeMap.has(childId)) codeMap.delete(childId);
+          if (richMap.has(childId)) richMap.delete(childId);
+        });
+      }
+    };
+    removeDescendants(todelete);
+    // remove the node itself
+    nodesMap.delete(todelete);
+    if (codeMap.has(todelete)) codeMap.delete(todelete);
+    if (richMap.has(todelete)) richMap.delete(todelete);
+    // update parent node's children field.
+    const parentId = node.data.parent;
+    if (!parentId) return;
+    const parent = nodesMap.get(parentId);
+    if (!parent) return;
+    nodesMap.set(
+      parentId,
+      produce(parent, (draft) => {
+        draft.data.children.splice(draft.data.children.indexOf(todelete), 1);
+      })
+    );
+    autoLayoutTree(get, set);
+    updateView(get, set);
+  }
+);
+
 function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   // compute the helper lines
   // get(setHelperLineHorizontal)(undefined);
@@ -1013,50 +1063,8 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           if (!node) throw new Error(`Node not found: ${change.id}`);
           nodesMap.set(change.id, node as AppNode);
         }
-
         break;
       case "remove":
-        // FIXME Would reactflow fire multiple remove for all nodes? If so,
-        // do they have a proper order? Seems yes.
-        // remove from yjs
-        //
-        // TODO remove from codeMap and richMap?
-        const node = nodesMap.get(change.id);
-        if (!node) throw new Error("Node not found");
-        // remove all descendants
-        const removeDescendants = (id) => {
-          const node = nodesMap.get(id);
-          if (!node) throw new Error("Node not found");
-          node.data.children.forEach((childId) => {
-            removeDescendants(childId);
-            nodesMap.delete(childId);
-            // remove from codeMap or richMap
-            if (codeMap.has(childId)) codeMap.delete(childId);
-            if (richMap.has(childId)) richMap.delete(childId);
-          });
-        };
-        removeDescendants(change.id);
-        // remove the node itself
-        nodesMap.delete(change.id);
-        if (codeMap.has(change.id)) codeMap.delete(change.id);
-        if (richMap.has(change.id)) richMap.delete(change.id);
-        // update parent node's children field.
-        const parentId = node.data.parent;
-        if (!parentId) break;
-        const parent = nodesMap.get(parentId);
-        if (!parent) break;
-        nodesMap.set(
-          parentId,
-          produce(parent, (draft) => {
-            draft.data.children.splice(
-              draft.data.children.indexOf(change.id),
-              1
-            );
-          })
-        );
-
-        // remove from selected pods
-        selectPod(get, set, { id: change.id, selected: false });
         break;
       default:
         // should not reach here.
