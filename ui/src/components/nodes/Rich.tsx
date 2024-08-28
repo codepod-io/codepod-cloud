@@ -101,9 +101,7 @@ import {
   DeleteButton,
   Handles,
   PodToolbar,
-  RaiseButton,
   SlurpButton,
-  SpliceButton,
   SymbolTable,
   ToolbarAddPod,
 } from "./utils";
@@ -418,10 +416,8 @@ function MyPodToolbar({ id }) {
             >
               Add Scope
             </DropdownMenu.Item>
-            {node?.data.parent !== "ROOT" && <RaiseButton id={id} />}
             <SlurpButton id={id} />
             <DropdownMenu.Separator />
-            <SpliceButton id={id} />
             <DeleteButton id={id} />
           </DropdownMenu.Content>
         </DropdownMenu.Root>
