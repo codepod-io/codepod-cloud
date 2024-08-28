@@ -22,9 +22,7 @@ import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_moveCut,
-  ATOM_raise,
   ATOM_slurp,
-  ATOM_splice,
   ATOM_toggleFold,
   ATOM_toggleScope,
   getAbsPos,
@@ -904,28 +902,6 @@ export function PodToolbar({
   );
 }
 
-export function RaiseButton({ id }) {
-  const raise = useSetAtom(ATOM_raise);
-  return (
-    <ConfirmedDelete
-      color="black"
-      onSelect={() => {
-        // replace the parent with the current pod.
-        raise(id);
-      }}
-      trigger={
-        <>
-          <img src={ArrowLeftToLine} />
-          Raise
-        </>
-      }
-      title="This replace and delete the parent."
-      description="Continue?"
-      confirm="Raise"
-    />
-  );
-}
-
 export function SlurpButton({ id }) {
   const slurp = useSetAtom(ATOM_slurp);
   return (
@@ -993,28 +969,6 @@ function ConfirmedDelete({
         </Flex>
       </Dialog.Content>
     </Dialog.Root>
-  );
-}
-
-export function SpliceButton({ id }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const splice = useSetAtom(ATOM_splice);
-  return (
-    <ConfirmedDelete
-      color="orange"
-      onSelect={() => {
-        // remove this pod, place its parent in place of it.
-        splice(id);
-      }}
-      trigger={
-        <>
-          <Trash /> Delete Pod
-        </>
-      }
-      title="This will delete this pod."
-      description="The children will be spliced into the place of this pod. Continue?"
-      confirm="Delete Pod"
-    />
   );
 }
 
