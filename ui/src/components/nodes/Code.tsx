@@ -162,21 +162,21 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               <DropdownMenu.Item
-                onClick={() => {
+                onSelect={() => {
                   setFollow(!follow);
                 }}
               >
                 {follow ? "Unfollow" : "Follow"}
               </DropdownMenu.Item>
               <DropdownMenu.Item
-                onClick={() => {
+                onSelect={() => {
                   setExpand(!expand);
                 }}
               >
                 {expand ? "Collapse" : "Expand"}
               </DropdownMenu.Item>
               <DropdownMenu.Item
-                onClick={() => {
+                onSelect={() => {
                   setResultScroll(!resultScroll);
                 }}
                 disabled
@@ -184,7 +184,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
                 Focus
               </DropdownMenu.Item>
               <DropdownMenu.Item
-                onClick={() => {
+                onSelect={() => {
                   clearResults(id);
                 }}
                 color="red"
@@ -333,7 +333,7 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
         <DropdownMenu.Content>
           <DropdownMenu.Item
             shortcut="⇧ ⏎"
-            onClick={() => {
+            onSelect={() => {
               const specs = preprocessChain([id]);
               if (specs) runChain.mutate({ repoId, specs });
             }}
@@ -343,7 +343,7 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
           </DropdownMenu.Item>
           <DropdownMenu.Item
             disabled={!runtimeReady}
-            onClick={() => {
+            onSelect={() => {
               const chain = getEdgeChain(id);
               const specs = preprocessChain(chain);
               if (specs) runChain.mutate({ repoId, specs });
@@ -352,10 +352,10 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
             Run Chain
           </DropdownMenu.Item>
 
-          <DropdownMenu.Item onClick={() => parsePod(id)}>
+          <DropdownMenu.Item onSelect={() => parsePod(id)}>
             Parse
           </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => resolvePod(id)}>
+          <DropdownMenu.Item onSelect={() => resolvePod(id)}>
             Resolve
           </DropdownMenu.Item>
 

@@ -90,7 +90,7 @@ export const UserProfile = () => {
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item
-            onClick={() => {
+            onSelect={() => {
               signOut();
               navigate("/login");
             }}
