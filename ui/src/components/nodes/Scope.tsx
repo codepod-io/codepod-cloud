@@ -6,6 +6,7 @@ import { DeleteButton, PodToolbar, SlurpButton } from "./utils";
 import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
 import { Ellipsis } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
+import { ATOM_cutId } from "@/lib/store/atom";
 
 function getCoordinates(id: string, nodesMap): { x: number; y: number }[] {
   const node = nodesMap.get(id);
@@ -186,6 +187,7 @@ function ScopeToolbar({ node }: { node: ScopeNodeType }) {
 export const ScopeNode = function ({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
+  const cutId = useAtomValue(ATOM_cutId);
   if (!node) return null;
   if (node.type !== "SCOPE") throw new Error("Invalid node type");
   // node.data.scopeChildren
@@ -195,7 +197,7 @@ export const ScopeNode = function ({ id }) {
         color: "red",
         width: "100%",
         height: "100%",
-        border: "1px solid red",
+        border: cutId === id ? "3px dashed red" : "3px solid transparent",
         backgroundColor: "rgba(255, 0, 0, 0.1)",
       }}
     >
