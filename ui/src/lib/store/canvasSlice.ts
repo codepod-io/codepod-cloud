@@ -498,6 +498,29 @@ export const ATOM_addNode = atom(
   }
 );
 
+function checkCutValid({
+  nodesMap,
+  anchorId,
+  cutId,
+}: {
+  nodesMap: Y.Map<AppNode>;
+  anchorId: string;
+  cutId: string;
+}) {
+  // the anchor should not be in the subtree of the cut node.
+  // loop through the subtree of cutId, if we find anchorId, return false.
+  const dfs = (id: string): boolean => {
+    const node = nodesMap.get(id);
+    if (!node) throw new Error("Node not found");
+    if (id === anchorId) return false;
+    return [
+      ...node.data.children,
+      ...(node.type === "SCOPE" ? node.data.scopeChildren : []),
+    ].every((childId) => dfs(childId));
+  };
+  return dfs(cutId);
+}
+
 function moveCut_top_bottom(
   get: Getter,
   set: Setter,
@@ -686,6 +709,13 @@ function moveCut_right(get: Getter, set: Setter, anchorId: string) {
 export const ATOM_moveCut = atom(
   null,
   (get, set, anchorId: string, position: "top" | "bottom" | "right") => {
+    const nodesMap = get(ATOM_nodesMap);
+    const cutId = get(ATOM_cutId);
+    if (!cutId) throw new Error("No node to move");
+    if (!checkCutValid({ nodesMap, anchorId, cutId })) {
+      toast.error("Cannot move a node to its own subtree");
+      return;
+    }
     match(position)
       .with("top", () => {
         moveCut_top_bottom(get, set, anchorId, "top");
