@@ -750,6 +750,18 @@ export const ATOM_addScope = atom(null, (get, set, id: string) => {
       children: node.data.children,
     },
   } as typeof newScopeNode);
+  // update the node children's parent to be this new scope node
+  node.data.children.forEach((childId) => {
+    const child = nodesMap.get(childId);
+    if (!child) throw new Error("Child not found");
+    nodesMap.set(childId, {
+      ...child,
+      data: {
+        ...child.data,
+        parent: newScopeNode.id,
+      },
+    } as typeof child);
+  });
   // update the node
   // 1. the scope node will be the parent of the node
   nodesMap.set(id, {
