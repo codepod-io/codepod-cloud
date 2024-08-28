@@ -1115,7 +1115,6 @@ function dfsForScope(
   if (node.type === "SCOPE" || id === "ROOT") {
     // if (node.type === "SCOPE") {
     layoutSubTree(nodesMap, id);
-    updateView(get, set);
   }
 }
 
@@ -1143,12 +1142,12 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
     };
   }
   function subtree_for_scope(node: ScopeNodeType) {
-    const children = [...node.data.scopeChildren];
+    const scopeChildren = [...node.data.scopeChildren];
     return {
       id: node.id,
       width: 0,
       height: 0,
-      children: node.data.folded ? [] : children.map(subtree),
+      children: node.data.folded ? [] : scopeChildren.map(subtree),
     };
   }
   let data;
@@ -1174,6 +1173,9 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   });
   const tree = layout.hierarchy(data);
   layout(tree);
+  // console.log("layout data", data);
+  // console.log("layout result", tree);
+  // console.log("layout result dump", layout.dump(tree));
   let x1 = Infinity;
   let x2 = -Infinity;
   let y1 = Infinity;
@@ -1203,6 +1205,17 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
           node.data.height / 2,
       },
     });
+
+    if (n.type === "SCOPE" && n.id !== rootNode.id) {
+      const dx = rootNode.position.x + node.y - n.position.x;
+      const dy =
+        (scopeSizeMap.get(id)?.height || rootNode.measured?.height || 0) / 2 +
+        node.x -
+        node.data.height / 2 -
+        n.position.y;
+      // shift dx,dy for all children
+      shiftChildren(nodesMap, n.id, dx, dy);
+    }
   });
   if (rootNode.type === "SCOPE") {
     scopeSizeMap.set(id, { width: y2 - y1 + 50, height: x2 - x1 + 50 });
@@ -1214,7 +1227,44 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   }
 }
 
+function shiftChildren(
+  nodesMap: Y.Map<AppNode>,
+  id: string,
+  dx: number,
+  dy: number
+) {
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  node.data.children.forEach((childId) => {
+    const child = nodesMap.get(childId);
+    if (!child) throw new Error("Child not found");
+    nodesMap.set(childId, {
+      ...child,
+      position: {
+        x: child.position.x + dx,
+        y: child.position.y + dy,
+      },
+    });
+    shiftChildren(nodesMap, childId, dx, dy);
+  });
+  if (node.type === "SCOPE") {
+    node.data.scopeChildren.forEach((childId) => {
+      const child = nodesMap.get(childId);
+      if (!child) throw new Error("Child not found");
+      nodesMap.set(childId, {
+        ...child,
+        position: {
+          x: child.position.x + dx,
+          y: child.position.y + dy,
+        },
+      });
+      shiftChildren(nodesMap, childId, dx, dy);
+    });
+  }
+}
+
 function autoLayoutTree(get: Getter, set: Setter) {
+  // console.log("autoLayoutTree");
   const nodesMap = get(ATOM_nodesMap);
   scopeSizeMap.clear();
   // layoutSubTree(nodesMap, "ROOT");
