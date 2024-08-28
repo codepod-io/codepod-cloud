@@ -7,15 +7,15 @@ import {
   NodeChange,
   XYPosition,
   applyNodeChanges,
-} from "reactflow";
-import { getHelperLines, sortNodes } from "@/components/nodes/utils";
+} from "@xyflow/react";
+import { getHelperLines } from "@/components/nodes/utils";
 import { produce } from "immer";
 import { useCallback } from "react";
 import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
 import { level2color, myNanoId } from "../utils/utils";
-import { NodeData } from "./types";
+import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
 
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
@@ -35,57 +35,72 @@ export const newNodeShapeConfig = {
 };
 
 /**
- * The new reactflow nodes for context-menu's addXXX items.
+ * Create a new node. The node will start from the given position. Typically
+ * auto-layout will be triggered after this to move the new node to place in an
+ * animation.
  */
-function createNewNode(type: "CODE" | "RICH"): Node<NodeData> {
+function createNewNode(
+  type: "CODE" | "RICH" | "SCOPE",
+  position: XYPosition = { x: 0, y: 0 }
+): AppNode {
   let id = myNanoId();
-  const newNode: Node<NodeData> = {
+  const commonData = {
+    children: [],
+    folded: false,
+    isScope: false,
+  };
+  const commonAttrs = {
     id,
     type,
-    position: { x: 0, y: 0 },
-
-    width: newNodeShapeConfig.width,
-    // // Previously, we should not specify height, so that the pod can grow
-    // // when content changes. But when we add auto-layout on adding a new
-    // // node, unspecified height will cause  the node to be added always at
-    // // the top-left corner (the reason is unknown). Thus, we have to
-    // // specify the height here. Note that this height is a dummy value;
-    // // the content height will still be adjusted based on content height.
-    height: newNodeShapeConfig.height,
-    style: {
-      // Need to set the style.width here. Otherwise, there could be weird
-      // dimension changes, and may cause a node to keep expanding its
-      // width.
-      width: newNodeShapeConfig.width,
-      //   // It turns out that this height should not be specified to let the
-      //   // height change automatically.
-      //   //
-      //   // height: 200
-    },
-    data: {
-      // label: id,
-      // name: "",
-      // FIXME the key "ROOT" is deprecated.
-      // parent: "ROOT",
-      level: 0,
-      children: [],
-      folded: false,
-      isScope: false,
-      lang: "python",
-    },
+    position,
     dragHandle: ".custom-drag-handle",
   };
-  return newNode;
+  switch (type) {
+    case "CODE":
+      {
+        return {
+          ...commonAttrs,
+          data: {
+            ...commonData,
+            lang: "python",
+          },
+        } as CodeNodeType;
+      }
+      break;
+    case "RICH":
+      {
+        return {
+          ...commonAttrs,
+          data: {
+            ...commonData,
+          },
+        } as RichNodeType;
+      }
+      break;
+    case "SCOPE":
+      {
+        return {
+          ...commonAttrs,
+          data: {
+            ...commonData,
+            scopeChildren: [],
+          },
+        } as ScopeNodeType;
+      }
+      break;
+    default:
+      throw new Error("Unknown type");
+  }
 }
 
 /**
  * Get the absoluate position of the node.
  */
-export function getAbsPos(node: Node, nodesMap: Y.Map<Node>): XYPosition {
+export function getAbsPos(node: Node, nodesMap: Y.Map<AppNode>): XYPosition {
   let x = node.position.x;
   let y = node.position.y;
-  while (node.parentNode) {
-    node = nodesMap.get(node.parentNode)!;
+  while (node.parentId) {
+    node = nodesMap.get(node.parentId)!;
     x += node.position.x;
     y += node.position.y;
   }
@@ -127,10 +142,16 @@ export function updateView(get: Getter, set: Setter) {
   let selectedPods = get(ATOM_selectedPods);
   // let nodes = Array.from<Node>(nodesMap.values());
   // follow the tree order, skip folded nodes
-  function dfs(node: Node<NodeData>): Node[] {
+  function dfs(node: AppNode): AppNode[] {
     if (node.data.folded) return [node];
-    let children = node.data.children.map((id) => nodesMap.get(id)!);
-    return [node, ...children.flatMap(dfs)];
+    let res = node.data.children.map((id) => nodesMap.get(id)!);
+    if (node.type === "SCOPE") {
+      const scopeChildren = node.data.scopeChildren.map(
+        (id) => nodesMap.get(id)!
+      );
+      res = [...res, ...scopeChildren];
+    }
+    return [node, ...res.flatMap(dfs)];
   }
   let nodes = dfs(nodesMap.get("ROOT")!);
   // generate the scope overlay SVG here
@@ -154,7 +175,7 @@ export function updateView(get: Getter, set: Setter) {
   // edges view
   // const edgesMap = get().getEdgesMap();
   // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
-  function generateEdge(nodes: Node[]) {
+  function generateEdge(nodes: AppNode[]) {
     const edges: Edge[] = [];
     nodes.forEach((node) => {
       node.data?.children?.map((id: string) => {
@@ -162,8 +183,20 @@ export function updateView(get: Getter, set: Setter) {
           id: `${node.id}-${id}`,
           source: node.id,
           target: id,
+          sourceHandle: "right",
+          targetHandle: "left",
         });
       });
+      node.type === "SCOPE" &&
+        node.data?.scopeChildren?.map((id: string) => {
+          edges.push({
+            id: `${node.id}-${id}`,
+            source: node.id,
+            target: id,
+            sourceHandle: "left",
+            targetHandle: "left",
+          });
+        });
     });
     return edges;
   }
@@ -183,7 +216,7 @@ function getParentIndex({
   anchorId,
   position,
 }: {
-  nodesMap: Y.Map<Node<NodeData>>;
+  nodesMap: Y.Map<AppNode>;
   anchorId: string;
   position: "top" | "bottom" | "right";
 }): { parentId: string; index: number } {
@@ -221,10 +254,222 @@ export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
       ...node.data,
       isScope: !node.data.isScope,
     },
-  });
+  } as typeof node);
   autoLayoutTree(get, set);
   updateView(get, set);
 });
+
+const addNode_top_bottom = (
+  get: Getter,
+  set: Setter,
+  {
+    anchorId,
+    position,
+    type,
+    lang,
+  }: {
+    anchorId: string;
+    position: "top" | "bottom";
+    type: "CODE" | "RICH";
+    lang?: "python" | "julia" | "javascript" | "racket";
+  }
+) => {
+  const nodesMap = get(ATOM_nodesMap);
+  const anchor = nodesMap.get(anchorId);
+  if (!anchor) {
+    throw new Error("Anchor node not found");
+  }
+  const parentId = anchor.data.parent;
+  if (!parentId) {
+    throw new Error("Anchor node has no parent");
+  }
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error(`Parent node not found: ${parentId}`);
+
+  const newNode = createNewNode(type, anchor.position);
+  switch (newNode.type) {
+    case "CODE":
+      get(ATOM_codeMap).set(newNode.id, new Y.Text());
+      if (lang) newNode.data.lang = lang;
+      break;
+    case "RICH":
+      get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+      break;
+  }
+
+  // add node
+  nodesMap.set(newNode.id, {
+    ...newNode,
+    data: {
+      ...newNode.data,
+      parent: parentId,
+    },
+  } as typeof newNode);
+
+  if (parent.type === "SCOPE") {
+    // check in scopeChildren
+    let index = parent.data.scopeChildren.indexOf(anchorId);
+    if (index !== -1) {
+      if (position === "bottom") {
+        index = index + 1;
+      }
+      // add the node to the children field at index
+      const scopeChildren = [...parent.data.scopeChildren];
+      if (index === -1) {
+        scopeChildren.push(newNode.id);
+      } else {
+        scopeChildren.splice(index, 0, newNode.id);
+      }
+      // update the parent node
+      nodesMap.set(parentId, {
+        ...parent,
+        data: {
+          ...parent.data,
+          scopeChildren,
+        },
+      } as typeof parent);
+      return;
+    }
+  }
+  let index = parent.data.children.indexOf(anchorId);
+  if (position == "bottom") {
+    index = index + 1;
+  }
+  if (index === -1) return;
+  // add the node to the children field at index
+  const children = [...parent.data.children];
+  children.splice(index, 0, newNode.id);
+  // update the parent node
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children,
+    },
+  } as typeof parent);
+
+  autoLayoutTree(get, set);
+  updateView(get, set);
+};
+
+export const addNode_top = (
+  get: Getter,
+  set: Setter,
+  {
+    anchorId,
+    type,
+    lang,
+  }: {
+    anchorId: string;
+    type: "CODE" | "RICH";
+    lang?: "python" | "julia" | "javascript" | "racket";
+  }
+) => {
+  addNode_top_bottom(get, set, {
+    anchorId,
+    position: "top",
+    type,
+    lang,
+  });
+};
+
+export const addNode_bottom = (
+  get: Getter,
+  set,
+  {
+    anchorId,
+    type,
+    lang,
+  }: {
+    anchorId: string;
+    type: "CODE" | "RICH";
+    lang?: "python" | "julia" | "javascript" | "racket";
+  }
+) => {
+  addNode_top_bottom(get, set, {
+    anchorId,
+    position: "bottom",
+    type,
+    lang,
+  });
+};
+
+const addNode_right = (
+  get: Getter,
+  set: Setter,
+  {
+    anchorId,
+    type,
+    lang,
+  }: {
+    anchorId: string;
+    type: "CODE" | "RICH";
+    lang?: "python" | "julia" | "javascript" | "racket";
+  }
+) => {
+  const nodesMap = get(ATOM_nodesMap);
+  const anchor = nodesMap.get(anchorId);
+  if (!anchor) {
+    throw new Error("Anchor node not found");
+  }
+  const parentId = anchorId;
+  const index = anchor.data.children.length;
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error(`Parent node not found: ${parentId}`);
+
+  const newNode = createNewNode(type, anchor.position);
+  switch (newNode.type) {
+    case "CODE":
+      if (lang) newNode.data.lang = lang;
+      get(ATOM_codeMap).set(newNode.id, new Y.Text());
+      break;
+    case "RICH":
+      get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+      break;
+  }
+  // add node
+  nodesMap.set(newNode.id, {
+    ...newNode,
+    data: {
+      ...newNode.data,
+      parent: parentId,
+    },
+  } as typeof newNode);
+
+  // add the node to the children field at index
+  const children = [...parent.data.children];
+  if (index === -1) {
+    children.push(newNode.id);
+  } else {
+    children.splice(index, 0, newNode.id);
+  }
+  // update the parent node
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children,
+    },
+  } as typeof parent);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+};
+
+export const addNode_left = (
+  get,
+  set,
+  {
+    anchorId,
+    type,
+    lang,
+  }: {
+    anchorId: string;
+    type: "CODE" | "RICH";
+    lang?: "python" | "julia" | "javascript" | "racket";
+  }
+) => {
+  wrap({ get, set, id: anchorId, type, lang });
+};
 
 export const ATOM_addNode = atom(
   null,
@@ -236,82 +481,69 @@ export const ATOM_addNode = atom(
     type: "CODE" | "RICH",
     lang?: "python" | "julia" | "javascript" | "racket"
   ) => {
-    if (position === "left") {
-      wrap({ get, set, id: anchorId, type, lang });
-      return;
-    }
-    const nodesMap = get(ATOM_nodesMap);
-    const { parentId, index } = getParentIndex({
-      nodesMap,
-      anchorId,
-      position,
-    });
-    // create new node
-    const newNode = createNewNode(type);
-    switch (type) {
-      case "CODE":
-        get(ATOM_codeMap).set(newNode.id, new Y.Text());
-        break;
-      case "RICH":
-        get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
-        break;
-    }
-    nodesMap.set(newNode.id, {
-      ...newNode,
-      data: {
-        ...newNode.data,
-        parent: parentId,
-        lang,
-      },
-    });
-    const parent = nodesMap.get(parentId);
-    if (!parent) throw new Error(`Parent node not found: ${parentId}`);
-    // add the node to the children field at index
-    const children = [...parent.data.children];
-    if (index === -1) {
-      children.push(newNode.id);
-    } else {
-      children.splice(index, 0, newNode.id);
-    }
-    // update the parent node
-    nodesMap.set(parentId, {
-      ...parent,
-      data: {
-        ...parent.data,
-        children,
-      },
-    });
-    autoLayoutTree(get, set);
-    updateView(get, set);
+    match(position)
+      .with("top", () => {
+        addNode_top(get, set, { anchorId, type, lang });
+      })
+      .with("bottom", () => {
+        addNode_bottom(get, set, { anchorId, type, lang });
+      })
+      .with("right", () => {
+        addNode_right(get, set, { anchorId, type, lang });
+      })
+      .with("left", () => {
+        addNode_left(get, set, { anchorId, type, lang });
+      })
+      .exhaustive();
   }
 );
 
-export const ATOM_moveCut = atom(
-  null,
-  (get, set, anchorId: string, position: "top" | "bottom" | "right") => {
-    const cutId = get(ATOM_cutId);
-    if (!cutId) throw new Error("No node to move");
-    if (anchorId === cutId) throw new Error("Cannot move a node to itself");
-    // move the node id to the new position
-    // get the parent node of the anchor node
-    const nodesMap = get(ATOM_nodesMap);
-    const { parentId, index } = getParentIndex({
-      nodesMap,
-      anchorId,
-      position,
+function moveCut_top_bottom(
+  get: Getter,
+  set: Setter,
+  anchorId: string,
+  position: "top" | "bottom"
+) {
+  const cutId = get(ATOM_cutId);
+  if (!cutId) throw new Error("No node to move");
+  if (anchorId === cutId) throw new Error("Cannot move a node to itself");
+  // move the node id to the new position
+  // get the parent node of the anchor node
+  const nodesMap = get(ATOM_nodesMap);
+  const anchor = nodesMap.get(anchorId);
+  if (!anchor) throw new Error("Anchor node not found");
+  // the new parent is the anchor's parent
+  const newParentId = anchor.data.parent;
+  if (!newParentId) throw new Error("Anchor node has no parent");
+  const newParent = nodesMap.get(newParentId);
+  if (!newParent) throw new Error("Parent not found");
+
+  // The cut node
+  const node = nodesMap.get(cutId);
+  if (!node) throw new Error("Node not found");
+  const oldParentId = node.data.parent;
+  if (!oldParentId) throw new Error("Node has no parent");
+  const oldParent = nodesMap.get(oldParentId);
+  if (!oldParent) throw new Error("Old parent not found");
+
+  // remove the node from the old parent
+  if (
+    oldParent.type === "SCOPE" &&
+    oldParent.data.scopeChildren.includes(cutId)
+  ) {
+    const oldScopeChildren = oldParent.data.scopeChildren;
+    const oldIndex = oldScopeChildren.indexOf(cutId);
+    oldScopeChildren.splice(oldIndex, 1);
+    nodesMap.set(oldParentId, {
+      ...oldParent,
+      data: {
+        ...oldParent.data,
+        scopeChildren: oldScopeChildren,
+      },
     });
-    const node = nodesMap.get(cutId);
-    if (!node) throw new Error("Node not found");
-    const oldParentId = node.data.parent;
-    if (!oldParentId) throw new Error("Node has no parent");
-    const oldParent = nodesMap.get(oldParentId);
-    if (!oldParent) throw new Error("Old parent not found");
-    const newParent = nodesMap.get(parentId);
-    if (!newParent) throw new Error("New parent not found");
-    // remove the node from the old parent
+  } else {
     const oldChildren = oldParent.data.children;
     const oldIndex = oldChildren.indexOf(cutId);
-    if (oldIndex === -1) throw new Error("Node not found in old parent");
     oldChildren.splice(oldIndex, 1);
     nodesMap.set(oldParentId, {
       ...oldParent,
@@ -319,40 +551,230 @@ export const ATOM_moveCut = atom(
         ...oldParent.data,
         children: oldChildren,
       },
-    });
-    // add the node to the new parent
-    const newChildren = newParent.data.children;
-    if (index === -1) {
-      newChildren.push(cutId);
+    } as typeof oldParent);
+  }
+  // add the node to the new parent
+  if (
+    newParent.type === "SCOPE" &&
+    newParent.data.scopeChildren.includes(anchorId)
+  ) {
+    const newScopeChildren = newParent.data.scopeChildren;
+    const index = newScopeChildren.indexOf(anchorId);
+    if (position === "top") {
+      newScopeChildren.splice(index, 0, cutId);
     } else {
-      newChildren.splice(index, 0, cutId);
+      newScopeChildren.splice(index + 1, 0, cutId);
     }
-    nodesMap.set(parentId, {
+    nodesMap.set(newParentId, {
+      ...newParent,
+      data: {
+        ...newParent.data,
+        scopeChildren: newScopeChildren,
+      },
+    });
+  } else {
+    const newChildren = newParent.data.children;
+    const index = newChildren.indexOf(anchorId);
+    if (position === "top") {
+      newChildren.splice(index, 0, cutId);
+    } else {
+      newChildren.splice(index + 1, 0, cutId);
+    }
+    nodesMap.set(newParentId, {
       ...newParent,
       data: {
         ...newParent.data,
         children: newChildren,
       },
-    });
+    } as typeof newParent);
+  }
 
-    // update the node's parent
-    nodesMap.set(cutId, {
-      ...node,
+  // update the node's parent
+  nodesMap.set(cutId, {
+    ...node,
+    data: {
+      ...node.data,
+      parent: newParentId,
+    },
+  } as typeof node);
+
+  // Do not clear the cutId, so that it can be explicit to the user which pod
+  // is being moved.
+
+  // set(ATOM_cutId, null);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+function moveCut_right(get: Getter, set: Setter, anchorId: string) {
+  const cutId = get(ATOM_cutId);
+  if (!cutId) throw new Error("No node to move");
+  if (anchorId === cutId) throw new Error("Cannot move a node to itself");
+  // move the node id to the new position
+  // get the parent node of the anchor node
+  const nodesMap = get(ATOM_nodesMap);
+  const anchor = nodesMap.get(anchorId);
+  if (!anchor) throw new Error("Anchor node not found");
+  // the new parent is the anchor's parent
+  const newParentId = anchorId;
+  const newParent = nodesMap.get(newParentId);
+  if (!newParent) throw new Error("Parent not found");
+
+  // The cut node
+  const node = nodesMap.get(cutId);
+  if (!node) throw new Error("Node not found");
+  const oldParentId = node.data.parent;
+  if (!oldParentId) throw new Error("Node has no parent");
+  const oldParent = nodesMap.get(oldParentId);
+  if (!oldParent) throw new Error("Old parent not found");
+
+  // remove the node from the old parent
+  if (
+    oldParent.type === "SCOPE" &&
+    oldParent.data.scopeChildren.includes(cutId)
+  ) {
+    const oldScopeChildren = oldParent.data.scopeChildren;
+    const oldIndex = oldScopeChildren.indexOf(cutId);
+    oldScopeChildren.splice(oldIndex, 1);
+    nodesMap.set(oldParentId, {
+      ...oldParent,
       data: {
-        ...node.data,
-        parent: parentId,
+        ...oldParent.data,
+        scopeChildren: oldScopeChildren,
       },
     });
+  } else {
+    const oldChildren = oldParent.data.children;
+    const oldIndex = oldChildren.indexOf(cutId);
+    oldChildren.splice(oldIndex, 1);
+    nodesMap.set(oldParentId, {
+      ...oldParent,
+      data: {
+        ...oldParent.data,
+        children: oldChildren,
+      },
+    } as typeof oldParent);
+  }
+  // add the node to the new parent
+  const newChildren = newParent.data.children;
+  newChildren.push(cutId);
+  nodesMap.set(newParentId, {
+    ...newParent,
+    data: {
+      ...newParent.data,
+      children: newChildren,
+    },
+  } as typeof newParent);
 
-    // Do not clear the cutId, so that it can be explicit to the user which pod
-    // is being moved.
+  // update the node's parent
+  nodesMap.set(cutId, {
+    ...node,
+    data: {
+      ...node.data,
+      parent: newParentId,
+    },
+  } as typeof node);
 
-    // set(ATOM_cutId, null);
+  // Do not clear the cutId, so that it can be explicit to the user which pod
+  // is being moved.
 
-    autoLayoutTree(get, set);
-    updateView(get, set);
+  // set(ATOM_cutId, null);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_moveCut = atom(
+  null,
+  (get, set, anchorId: string, position: "top" | "bottom" | "right") => {
+    match(position)
+      .with("top", () => {
+        moveCut_top_bottom(get, set, anchorId, "top");
+      })
+      .with("bottom", () => {
+        moveCut_top_bottom(get, set, anchorId, "bottom");
+      })
+      .with("right", () => {
+        moveCut_right(get, set, anchorId);
+      })
+      .exhaustive();
   }
 );
+
+export const ATOM_addScope = atom(null, (get, set, id: string) => {
+  // add a scope surrounding the node
+
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  const parentId = node.data.parent;
+  if (!parentId) throw new Error("Node has no parent");
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent not found");
+  // create a new scope node
+  const newScopeNode = createNewNode("SCOPE", node.position);
+  // put the new node in the parent's children field
+  if (parent.type === "SCOPE" && parent.data.scopeChildren.includes(id)) {
+    const parentScopeChildren = parent.data.scopeChildren;
+    const index = parentScopeChildren.indexOf(id);
+    parentScopeChildren.splice(index, 1, newScopeNode.id);
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        scopeChildren: parentScopeChildren,
+      },
+    } as typeof parent);
+  } else {
+    const parentChildren = parent.data.children;
+    const index = parentChildren.indexOf(id);
+    if (index === -1) throw new Error("Node not found in parent");
+    parentChildren.splice(index, 1, newScopeNode.id);
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        children: parentChildren,
+      },
+    } as typeof parent);
+  }
+
+  // update the scope node
+  // 1. the node will be the scopeChildren of the scope node
+  // 2. the children of the node will be the children of the scope node
+  nodesMap.set(newScopeNode.id, {
+    ...newScopeNode,
+    data: {
+      ...newScopeNode.data,
+      parent: parentId,
+      scopeChildren: [id],
+      children: node.data.children,
+    },
+  } as typeof newScopeNode);
+  // update the node children's parent to be this new scope node
+  node.data.children.forEach((childId) => {
+    const child = nodesMap.get(childId);
+    if (!child) throw new Error("Child not found");
+    nodesMap.set(childId, {
+      ...child,
+      data: {
+        ...child.data,
+        parent: newScopeNode.id,
+      },
+    } as typeof child);
+  });
+  // update the node
+  // 1. the scope node will be the parent of the node
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      parent: newScopeNode.id,
+      children: [],
+    },
+  } as typeof node);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
 
 function wrap({
   get,
@@ -376,9 +798,10 @@ function wrap({
   const parent = nodesMap.get(parentId);
   if (!parent) throw new Error("Parent not found");
   // create a new node
-  const newNode = createNewNode(type);
-  switch (type) {
+  const newNode = createNewNode(type, node.position);
+  switch (newNode.type) {
     case "CODE":
+      if (lang) newNode.data.lang = lang;
       get(ATOM_codeMap).set(newNode.id, new Y.Text());
       break;
     case "RICH":
@@ -394,19 +817,32 @@ function wrap({
       lang,
       children: [id],
     },
-  });
+  } as typeof newNode);
   // update the parent node
-  const parentChildren = parent.data.children;
-  const index = parentChildren.indexOf(id);
-  if (index === -1) throw new Error("Node not found in parent");
-  parentChildren.splice(index, 1, newNode.id);
-  nodesMap.set(parentId, {
-    ...parent,
-    data: {
-      ...parent.data,
-      children: parentChildren,
-    },
-  });
+  if (parent.type === "SCOPE" && parent.data.scopeChildren.includes(id)) {
+    const index = parent.data.scopeChildren.indexOf(id);
+    parent.data.scopeChildren.splice(index, 1, newNode.id);
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        scopeChildren: parent.data.scopeChildren,
+      },
+    } as typeof parent);
+  } else {
+    const parentChildren = parent.data.children;
+    const index = parentChildren.indexOf(id);
+    if (index === -1) throw new Error("Node not found in parent");
+    parentChildren.splice(index, 1, newNode.id);
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        children: parentChildren,
+      },
+    } as typeof parent);
+  }
+
   // update the node
   nodesMap.set(id, {
     ...node,
@@ -414,7 +850,7 @@ function wrap({
       ...node.data,
       parent: newNode.id,
     },
-  });
+  } as typeof node);
   autoLayoutTree(get, set);
   updateView(get, set);
 }
@@ -449,7 +885,7 @@ export const ATOM_raise = atom(null, (get, set, id: string) => {
       ...grandParent.data,
       children: grandParentChildren,
     },
-  });
+  } as typeof grandParent);
   // remove the parent node and its descendants
   const removeDescendants = (toremove: string) => {
     const node = nodesMap.get(toremove);
@@ -469,7 +905,7 @@ export const ATOM_raise = atom(null, (get, set, id: string) => {
       ...node.data,
       parent: grandParentId,
     },
-  });
+  } as typeof node);
   // update the grand parent node
   const grandParentChildren2 = grandParent.data.children;
   grandParentChildren2.splice(parentIndex, 0, id);
@@ -479,7 +915,7 @@ export const ATOM_raise = atom(null, (get, set, id: string) => {
       ...grandParent.data,
       children: grandParentChildren2,
     },
-  });
+  } as typeof grandParent);
   autoLayoutTree(get, set);
   updateView(get, set);
 });
@@ -509,7 +945,7 @@ export const ATOM_splice = atom(null, (get, set, id: string) => {
       ...parent.data,
       children: parentChildren,
     },
-  });
+  } as typeof parent);
   // update the children
   node.data.children.forEach((childId) => {
     const child = nodesMap.get(childId);
@@ -520,7 +956,7 @@ export const ATOM_splice = atom(null, (get, set, id: string) => {
         ...child.data,
         parent: parentId,
       },
-    });
+    } as typeof child);
   });
   // remove the node
   nodesMap.delete(id);
@@ -555,7 +991,7 @@ export const ATOM_slurp = atom(null, (get, set, id: string) => {
       ...parent.data,
       children: parentChildren,
     },
-  });
+  } as typeof parent);
   // add the sibling to the node
   const children = node.data.children;
   children.push(siblingId);
@@ -565,7 +1001,7 @@ export const ATOM_slurp = atom(null, (get, set, id: string) => {
       ...node.data,
       children,
     },
-  });
+  } as typeof node);
   // update the sibling
   nodesMap.set(siblingId, {
     ...sibling,
@@ -573,7 +1009,7 @@ export const ATOM_slurp = atom(null, (get, set, id: string) => {
       ...sibling.data,
       parent: id,
     },
-  });
+  } as typeof sibling);
   autoLayoutTree(get, set);
   updateView(get, set);
 });
@@ -588,7 +1024,7 @@ function toggleFold(get: Getter, set: Setter, id: string) {
       ...node.data,
       folded: !node.data.folded,
     },
-  });
+  } as typeof node);
   if (!node.data.folded) {
     // This is a fold operation. This doesn't trigger auto-layout because
     // nodesMap sees no change.
@@ -627,13 +1063,13 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
     const distance = 10;
     const helperLines = getHelperLines(
       changes[0],
-      nodes.filter((n) => n.parentNode === movingNode.parentNode),
+      nodes.filter((n) => n.parentId === movingNode.parentId),
       distance
     );
 
     // adjust the position into absolute position
-    if (movingNode.parentNode) {
-      const parent = nodesMap.get(movingNode.parentNode)!;
+    if (movingNode.parentId) {
+      const parent = nodesMap.get(movingNode.parentId)!;
       // const offset = parent?.positionAbsolute;
       // const offset = parent?.position;
       const offset = getAbsPos(parent, nodesMap);
@@ -661,8 +1097,6 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
 
   changes.forEach((change) => {
     switch (change.type) {
-      case "reset":
-        break;
       case "add":
         throw new Error("Add node should not be handled here");
       case "select":
@@ -679,14 +1113,14 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           // is changed due to content height changes.
           const node = nextNodes.find((n) => n.id === change.id);
           if (!node) throw new Error(`Node not found: ${change.id}`);
-          nodesMap.set(change.id, node);
+          nodesMap.set(change.id, node as AppNode);
         }
         break;
       case "position":
         {
           const node = nextNodes.find((n) => n.id === change.id);
           if (!node) throw new Error(`Node not found: ${change.id}`);
-          nodesMap.set(change.id, node);
+          nodesMap.set(change.id, node as AppNode);
         }
 
         break;
@@ -735,10 +1169,16 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
         break;
       default:
         // should not reach here.
-        throw new Error("Unknown change type");
+        throw new Error(`Unknown change type: ${change.type}`);
     }
   });
-  debouncedAutoLayoutTree(get, set);
+  const effectiveChanges = changes
+    .map((c) => c.type)
+    .filter((t) => t !== "select");
+  if (effectiveChanges.length > 0) {
+    // console.log("effectiveChanges", effectiveChanges);
+    debouncedAutoLayoutTree(get, set);
+  }
   updateView(get, set);
 }
 
@@ -746,6 +1186,7 @@ const debouncedAutoLayoutTree = debounce(
   (get, set) => {
     // console.log("debounced autoLayoutTree");
     autoLayoutTree(get, set);
+    // console.log("DEBUG skip autoLayoutTree");
   },
   10,
   { maxWait: 50 }
@@ -754,9 +1195,38 @@ const debouncedAutoLayoutTree = debounce(
 export const ATOM_onNodesChange = atom(null, onNodesChange);
 
 /**
+ * Starting from the node id, do postorder dfs traversal and do auto-layout on scope node.
+ */
+function dfsForScope(
+  get: Getter,
+  set: Setter,
+  nodesMap: Y.Map<AppNode>,
+  id: string
+) {
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  node.data.children.forEach((childId) => {
+    dfsForScope(get, set, nodesMap, childId);
+  });
+  if (node.type === "SCOPE") {
+    node.data.scopeChildren.forEach((childId) => {
+      dfsForScope(get, set, nodesMap, childId);
+    });
+  }
+  if (node.type === "SCOPE" || id === "ROOT") {
+    // if (node.type === "SCOPE") {
+    layoutSubTree(nodesMap, id);
+    updateView(get, set);
+  }
+}
+
+const scopeSizeMap = new Map<string, { width: number; height: number }>();
+
+/**
  * Auto layout.
  */
-function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
+function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
+  // console.log("Layout subtree for", id);
   // const data = subtree("1");
   const rootNode = nodesMap.get(id);
   // console.log("RootNode", rootNode);
@@ -767,12 +1237,29 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
     const children = node.data.children;
     return {
       id: node.id,
-      width: node.width!,
-      height: node.height!,
-      children: node.data.folded ? [] : children ? children.map(subtree) : [],
+      width: node.measured?.width || 0,
+      height: node.measured?.height || 0,
+      ...(scopeSizeMap.has(id) ? scopeSizeMap.get(id) : {}),
+      children: node.data.folded ? [] : children.map(subtree),
     };
   }
-  const data = subtree(id);
+  function subtree_for_scope(node: ScopeNodeType) {
+    const children = [...node.data.scopeChildren];
+    return {
+      id: node.id,
+      width: 0,
+      height: 0,
+      children: node.data.folded ? [] : children.map(subtree),
+    };
+  }
+  let data;
+  if (rootNode.type === "SCOPE") {
+    data = subtree_for_scope(rootNode);
+  } else {
+    if (id !== "ROOT") throw new Error(`Unexpected node id ${id}`);
+    data = subtree(id);
+  }
+  // const data = subtree(id);
   // console.log("Data", data);
   const paddingX = 100;
   const paddingY = 50;
@@ -788,11 +1275,20 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
   });
   const tree = layout.hierarchy(data);
   layout(tree);
-  // console.log("Layout Result", layout.dump(tree)); //=> prints the results
-  // console.log("Tree", tree);
+  let x1 = Infinity;
+  let x2 = -Infinity;
+  let y1 = Infinity;
+  let y2 = -Infinity;
+  tree.each((node) => {
+    x1 = Math.min(x1, node.x);
+    x2 = Math.max(x2, node.x + node.data.height);
+    y1 = Math.min(y1, node.y);
+    y2 = Math.max(y2, node.y + node.data.width);
+  });
   // tree.each((node) => console.log(`(${node.x}, ${node.y})`));
   // update the nodesMap
   tree.each((node) => {
+    // console.log("update pos", node.data.id, node.x, node.y);
     const n = nodesMap.get(node.data.id)!;
     // horizontal
     nodesMap.set(node.data.id, {
@@ -802,23 +1298,33 @@ function layoutSubTree(nodesMap: Y.Map<Node<NodeData>>, id: string) {
         // center the node
         y:
           rootNode.position.y +
-          rootNode.height! / 2 +
+          // (rootNode.measured?.height || 0) / 2 +
+          (scopeSizeMap.get(id)?.height || rootNode.measured?.height || 0) / 2 +
           node.x -
           node.data.height / 2,
-        // y: node.x,
       },
     });
   });
+  if (rootNode.type === "SCOPE") {
+    scopeSizeMap.set(id, { width: y2 - y1 + 50, height: x2 - x1 + 50 });
+    nodesMap.set(id, {
+      ...rootNode,
+      width: y2 - y1 + 50,
+      height: x2 - x1 + 50,
+    });
+  }
 }
 
 function autoLayoutTree(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
-  layoutSubTree(nodesMap, "ROOT");
+  scopeSizeMap.clear();
+  // layoutSubTree(nodesMap, "ROOT");
+  dfsForScope(get, set, nodesMap, "ROOT");
   updateView(get, set);
 }
 
 // DEPRECATED
-const ATOM_autoLayoutTree = atom(null, autoLayoutTree);
+export const ATOM_autoLayoutTree = atom(null, autoLayoutTree);
 
 // DEPRECATED
 function messUp(get: Getter, set: Setter) {

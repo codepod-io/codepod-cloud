@@ -13,7 +13,9 @@ import {
   useReactFlow,
   NodeResizeControl,
   ResizeControlVariant,
-} from "reactflow";
+  Handle,
+  Position,
+} from "@xyflow/react";
 import Ansi from "ansi-to-react";
 
 import jsx from "refractor/lang/jsx.js";
@@ -118,6 +120,7 @@ import {
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { env } from "@/lib/vars";
+import { ATOM_addScope } from "@/lib/store/canvasSlice";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -388,6 +391,7 @@ const MyRemirror = ({
 function MyPodToolbar({ id }) {
   const reactFlowInstance = useReactFlow();
   const node = useAtomValue(ATOM_nodesMap).get(id);
+  const addScope = useSetAtom(ATOM_addScope);
   return (
     <PodToolbar id={id}>
       {/* The "more" button */}
@@ -407,6 +411,13 @@ function MyPodToolbar({ id }) {
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
             {/* Structural edit */}
+            <DropdownMenu.Item
+              onSelect={() => {
+                addScope(id);
+              }}
+            >
+              Add Scope
+            </DropdownMenu.Item>
             {node?.data.parent !== "ROOT" && <RaiseButton id={id} />}
             <SlurpButton id={id} />
             <DropdownMenu.Separator />
@@ -423,30 +434,7 @@ function MyPodToolbar({ id }) {
  * The React Flow node.
  */
 
-interface Props {
-  data: any;
-  id: string;
-  isConnectable: boolean;
-  selected: boolean;
-  // note that xPos and yPos are the absolute position of the node
-  xPos: number;
-  yPos: number;
-}
-
-export const RichNode = memo<Props>(function ({
-  data,
-  id,
-  isConnectable,
-  selected,
-  xPos,
-  yPos,
-}) {
-  // A helper state to allow single-click a selected pod and enter edit mode.
-  const [singleClickEdit, setSingleClickEdit] = useState(false);
-  useEffect(() => {
-    if (!selected) setSingleClickEdit(false);
-  }, [selected, setSingleClickEdit]);
-
+export const RichNode = function ({ id }: { id: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const reactFlowInstance = useReactFlow();
@@ -510,7 +498,9 @@ export const RichNode = memo<Props>(function ({
 
         <SymbolTable id={id} />
 
-        <Handles id={id} hover={hover} />
+        {/* <Handles id={id} hover={hover} /> */}
+        <Handle id="left" type="source" position={Position.Left} />
+        <Handle id="right" type="source" position={Position.Right} />
 
         <NodeResizeControl
           minWidth={300}
@@ -527,7 +517,9 @@ export const RichNode = memo<Props>(function ({
               });
             }
           }}
-          variant={ResizeControlVariant.Line}
+          // FIXME
+          variant={"line" as any}
+          // variant={ResizeControlVariant.Line}
           color="transparent"
           style={{
             border: "10px solid transparent",
@@ -537,7 +529,7 @@ export const RichNode = memo<Props>(function ({
       </div>
     </div>
   );
-});
+};
 
 function prosemirrorToPlainText(prosemirrorJson) {
   let plainText = "";

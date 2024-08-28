@@ -35,6 +35,9 @@ importers:
       '@trpc/server':
         specifier: ^10.45.2
         version: 10.45.2
+      '@xyflow/react':
+        specifier: ^12.1.1
+        version: 12.1.1(@types/react@18.3.3)(immer@10.0.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       apollo-server:
         specifier: ^3.5.0
         version: 3.5.0(graphql@16.6.0)
@@ -104,9 +107,6 @@ importers:
       prosemirror-view:
         specifier: ^1.31.7
         version: 1.31.7
-      reactflow:
-        specifier: '11.8'
-        version: 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       remirror:
         specifier: ^2.0.31
         version: 2.0.31(@remirror/pm@2.0.5)(@types/node@18.11.2)(jsdom@22.1.0)
@@ -297,6 +297,9 @@ importers:
       '@trpc/server':
         specifier: ^10.45.2
         version: 10.45.2
+      '@xyflow/react':
+        specifier: ^12.1.1
+        version: 12.1.1(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       ansi-to-react:
         specifier: ^6.1.6
         version: 6.1.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -396,9 +399,6 @@ importers:
       react-toastify:
         specifier: ^10.0.5
         version: 10.0.5(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      reactflow:
-        specifier: '11.8'
-        version: 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       refractor:
         specifier: ^4.8.1
         version: 4.8.1
@@ -2308,42 +2308,6 @@ packages:
   '@reach/observe-rect@1.2.0':
     resolution: {integrity: sha512-Ba7HmkFgfQxZqqaeIWWkNK0rEhpxVQHIoVyW1YDSkGsGIXzcaW4deC8B0pZrNSSyLTdIk7y+5olKt5+g0GmFIQ==}
 
-  '@reactflow/background@11.2.5':
-    resolution: {integrity: sha512-2pwYX7yM5K3K1uf7veC9VvfjUjS9gzkSLXy7SZ4CInHob6DTAGL6IUdtyDo2Xv5FrBX9BukYq+Rcb6U8UYyriQ==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
-
-  '@reactflow/controls@11.1.16':
-    resolution: {integrity: sha512-sG0PjjD/E4dpqH7s7ijbrsf7jmiCRdI398DlpMslZslpeoU2FP7Gkd5gVyb4UG1Q0DTcsyNqj7fgqMPGjgvAoQ==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
-
-  '@reactflow/core@11.8.0':
-    resolution: {integrity: sha512-myTSqVq2HFsxixqwV9Q7rsfPbUN/eY33obLUC1LQyLh7td/42ez80OeInjM+YAR+qnXY1+5CLrxmYl0TvVLeNA==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
-
-  '@reactflow/minimap@11.6.0':
-    resolution: {integrity: sha512-h+MZH701ecsGPY/SCqLrMa2yN27sgcq0OEnkAJHo4x1xY188fjKuTP9mXaNgmwB7P1x0ebdagcP9xlw7ntP5Ow==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
-
-  '@reactflow/node-resizer@2.1.2':
-    resolution: {integrity: sha512-eJNnQmeSAcygRrNcHDr/7CxRAEwUIuSUzFaxs1KPp263iR4SltzJ2P3AOXLIOqiK/q2EoCHwss+6TRkZOCi71A==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
-
-  '@reactflow/node-toolbar@1.2.4':
-    resolution: {integrity: sha512-qsKHyTSTK5WQLQu9WmutqJuDXRCBCIXqrkEjzAVRp76E2uAYHcbcGaHinQh50slm3FDhVuE0Ui328E4QEkkjbA==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
-
   '@remirror/core-constants@2.0.2':
     resolution: {integrity: sha512-dyHY+sMF0ihPus3O27ODd4+agdHMEmuRdyiZJ2CCWjPV5UFmn17ZbElvk6WOGVE4rdCJKZQCrPV2BcikOMLUGQ==}
 
@@ -3127,98 +3091,23 @@ packages:
   '@types/cors@2.8.12':
     resolution: {integrity: sha512-vt+kDhq/M2ayberEtJcIN/hxXy1Pk+59g2FV/ZQceeaTyCtCucjL2Q7FXlFjtWn4n15KCr1NE2lNNFhp0lEThw==}
 
-  '@types/d3-array@3.0.9':
-    resolution: {integrity: sha512-mZowFN3p64ajCJJ4riVYlOjNlBJv3hctgAY01pjw3qTnJePD8s9DZmYDzhHKvzfCYvdjwylkU38+Vdt7Cu2FDA==}
-
-  '@types/d3-axis@3.0.5':
-    resolution: {integrity: sha512-ufDAV3SQzju+uB3Jlty7SUb/jMigjpIlvDDcSGvGmmO6OT/sNO93UE0dRzwWOZeBLzrLSA0CQM4bf3iq1std3A==}
-
-  '@types/d3-brush@3.0.5':
-    resolution: {integrity: sha512-JROQXZNq1X6QdWstESDUv1VilwZ2hBCQnWB91yal+5yZvYwGQvYsGCjrkHGfKK/8/AcX1JnERmpQzdDDuLRUsA==}
-
-  '@types/d3-chord@3.0.5':
-    resolution: {integrity: sha512-rs26AIhJjtc+XLR4YQU8IjPTLOlDVO4PR1y+pVFYEHzKh2tE5tYz3MF4QV6iz7HboXQEaYpJQt8dH9uUkne8yA==}
-
   '@types/d3-color@3.1.2':
     resolution: {integrity: sha512-At+Ski7dL8Bs58E8g8vPcFJc8tGcaC12Z4m07+p41+DRqnZQcAlp3NfYjLrhNYv+zEyQitU1CUxXNjqUyf+c0g==}
 
-  '@types/d3-contour@3.0.5':
-    resolution: {integrity: sha512-wLvjwdOQVd1NL1IcW90CCt1VtpeZ3V20p/OTXlkT8uAiprrJnq2PNNnRNe1QCez4U9aMU29Z14zpJQVLW1+Lcg==}
-
-  '@types/d3-delaunay@6.0.3':
-    resolution: {integrity: sha512-+Lf5NPKZ4JBC9tbudVkKceQXRxU3jJs0el9aKQvinMtdnFSOG84eVXyhCNgIFuXNQO3iIcYs7sgzN359FEOZnQ==}
-
-  '@types/d3-dispatch@3.0.5':
-    resolution: {integrity: sha512-hxvq2kc+9hydVppo21JCGfcM0tLTh1DXnG3MLN0KlxsNZJH4bsdl1iXDuWtXFpWWlBrCMwSqlnoLPDxNAZU3Bg==}
-
-  '@types/d3-drag@3.0.5':
-    resolution: {integrity: sha512-arHyAGvO0NEGGPCU2jTb31TlXeSxwty1bIxr5wOFOCVqVjgriXloLWXoRp39Oa0Y/qXxcAVMIonAWLrtLxUZAQ==}
-
-  '@types/d3-dsv@3.0.5':
-    resolution: {integrity: sha512-73WZR3QFOaSRVz9iOrebTbTnbo7xjcgS/i0Cq5zy0jMXPO3v/JbkTD3Zqii1eYE6v4EJ78g5VP407rm+p8fdlA==}
-
-  '@types/d3-ease@3.0.1':
-    resolution: {integrity: sha512-VZofjpEt8HWv3nxUAosj5o/+4JflnJ7Bbv07k17VO3T2WRuzGdZeookfaF60iVh5RdhVG49LE5w6LIshVUC6rg==}
-
-  '@types/d3-fetch@3.0.5':
-    resolution: {integrity: sha512-Rc8pb6H0RRLpAV2hEXduykUgcDUOhjSLTLmCIeo6ejzgs4SaITh/EteMb3p5Env3Hqjsqw0fCksyqopHHzMkMg==}
-
-  '@types/d3-force@3.0.7':
-    resolution: {integrity: sha512-rsok4CEvPLyVWRPsFiBhanJc3up03H/EARVz4d8soPh8drv82YMuAckYy4yv8g4/81JwCng5U5/o9aj9d0T6bQ==}
-
-  '@types/d3-format@3.0.3':
-    resolution: {integrity: sha512-kxuLXSAEJykTeL/EI3tUiEfGqru7PRdqEy099YBnqFl+fF167UVSB4+wntlZv86ZdoYf0DHjsRHnTIm8kcH7qw==}
-
-  '@types/d3-geo@3.0.6':
-    resolution: {integrity: sha512-wblAES3b+C3hvp4VakwECEKtHquT/xc6K4HOna95LM1j1fd7s7WmU4V+JMQZfKhNCMkV2vWD+ZUgY2Uj6gqfuA==}
-
-  '@types/d3-hierarchy@3.1.5':
-    resolution: {integrity: sha512-DEcBUj1IL3WyPLDlh4m2nsNXnMLITXM5Vwcu4G85yJHtf2cVGPBjgky3L11WBnT+ayHKf06Tchk5mY1eGmd4WQ==}
+  '@types/d3-drag@3.0.7':
+    resolution: {integrity: sha512-HE3jVKlzU9AaMazNufooRJ5ZpWmLIoc90A37WU2JMmeq28w1FQqCZswHZ3xR+SuxYftzHq6WU6KJHvqxKzTxxQ==}
 
   '@types/d3-interpolate@3.0.3':
     resolution: {integrity: sha512-6OZ2EIB4lLj+8cUY7I/Cgn9Q+hLdA4DjJHYOQDiHL0SzqS1K9DL5xIOVBSIHgF+tiuO9MU1D36qvdIvRDRPh+Q==}
 
-  '@types/d3-path@3.0.1':
-    resolution: {integrity: sha512-blRhp7ki7pVznM8k6lk5iUU9paDbVRVq+/xpf0RRgSJn5gr6SE7RcFtxooYGMBOc1RZiGyqRpVdu5AD0z0ooMA==}
+  '@types/d3-selection@3.0.10':
+    resolution: {integrity: sha512-cuHoUgS/V3hLdjJOLTT691+G2QoqAjCVLmr4kJXR4ha56w1Zdu8UUQ5TxLRqudgNjwXeQxKMq4j+lyf9sWuslg==}
 
-  '@types/d3-polygon@3.0.1':
-    resolution: {integrity: sha512-nrcWPk7B9qs6xnpq60Cls44zm9eDmFAv65qi/N/emh/oftnG6uYz49aIS0mdFaGeJxVN8H3pHneMuZMV8EwFdw==}
+  '@types/d3-transition@3.0.8':
+    resolution: {integrity: sha512-ew63aJfQ/ms7QQ4X7pk5NxQ9fZH/z+i24ZfJ6tJSfqxJMrYLiK01EAs2/Rtw/JreGUsS3pLPNV644qXFGnoZNQ==}
 
-  '@types/d3-quadtree@3.0.4':
-    resolution: {integrity: sha512-B725MopFDIOQ6njFbeOxIEf42HVO2Xv+FmcxQISdOKErvLbFqWz3Riu+OWujUYoogreqqyHBHcGGL/JzzXQYsw==}
-
-  '@types/d3-random@3.0.2':
-    resolution: {integrity: sha512-8QhsqkKs6mymAZMrg3ZFXPxKA34rdgp3ZrtB8o6mhFsKAd1gOvR1gocWnca+kmXypQdwgnzKm9gZE2Uw8NjjKw==}
-
-  '@types/d3-scale-chromatic@3.0.1':
-    resolution: {integrity: sha512-Ob7OrwiTeQXY/WBBbRHGZBOn6rH1h7y3jjpTSKYqDEeqFjktql6k2XSgNwLrLDmAsXhEn8P9NHDY4VTuo0ZY1w==}
-
-  '@types/d3-scale@4.0.6':
-    resolution: {integrity: sha512-lo3oMLSiqsQUovv8j15X4BNEDOsnHuGjeVg7GRbAuB2PUa1prK5BNSOu6xixgNf3nqxPl4I1BqJWrPvFGlQoGQ==}
-
-  '@types/d3-selection@3.0.8':
-    resolution: {integrity: sha512-pxCZUfQyedq/DIlPXIR5wE1mIH37omOdx1yxRudL3KZ4AC+156jMjOv1z5RVlGq62f8WX2kyO0hTVgEx627QFg==}
-
-  '@types/d3-shape@3.1.4':
-    resolution: {integrity: sha512-M2/xsWPsjaZc5ifMKp1EBp0gqJG0eO/zlldJNOC85Y/5DGsBQ49gDkRJ2h5GY7ZVD6KUumvZWsylSbvTaJTqKg==}
-
-  '@types/d3-time-format@4.0.2':
-    resolution: {integrity: sha512-wr08C1Gh77qaN8JIkrn5Rz/bdt5M9bdEqFmEOcYhUSq2t2sHvLTBfb4XAtGB3D4hm0ubj50NXWWXoXyp5tPXDg==}
-
-  '@types/d3-time@3.0.2':
-    resolution: {integrity: sha512-kbdRXTmUgNfw5OTE3KZnFQn6XdIc4QGroN5UixgdrXATmYsdlPQS6pEut9tVlIojtzuFD4txs/L+Rq41AHtLpg==}
-
-  '@types/d3-timer@3.0.1':
-    resolution: {integrity: sha512-GGTvzKccVEhxmRfJEB6zhY9ieT4UhGVUIQaBzFpUO9OXy2ycAlnPCSJLzmGGgqt3KVjqN3QCQB4g1rsZnHsWhg==}
-
-  '@types/d3-transition@3.0.6':
-    resolution: {integrity: sha512-K0To23B5UxNwFtKORnS5JoNYvw/DnknU5MzhHIS9czJ/lTqFFDeU6w9lArOdoTl0cZFNdNrMJSFCbRCEHccH2w==}
-
-  '@types/d3-zoom@3.0.6':
-    resolution: {integrity: sha512-dGZQaXEu7aNcCL71LPpjB58IjoQNM9oDPfQuMUJ7N/fbkcIWGX2PnmUWO1jPJ+RLbZBpRUggJUX8twKRvo2hKQ==}
-
-  '@types/d3@7.4.2':
-    resolution: {integrity: sha512-Y4g2Yb30ZJmmtqAJTqMRaqXwRawfvpdpVmyEYEcyGNhrQI/Zvkq3k7yE1tdN07aFSmNBfvmegMQ9Fe2qy9ZMhw==}
+  '@types/d3-zoom@3.0.8':
+    resolution: {integrity: sha512-iqMC4/YlFCSlO8+2Ii1GGGliCAY4XdeG748w5vQUbevlbDu0zSjH/+jojorQVBK/se0j6DUFNPBGSqD3YWYnDw==}
 
   '@types/direction@1.0.0':
     resolution: {integrity: sha512-et1wmqXm/5smJ8lTJfBnwD12/2Y7eVJLKbuaRT0h2xaKAoo1h8Dz2Io22GObDLFwxY1ddXRTLH3Gq5v44Fl/2w==}
@@ -3237,9 +3126,6 @@ packages:
 
   '@types/express@4.17.14':
     resolution: {integrity: sha512-TEbt+vaPFQ+xpxFLFssxUDXj5cWCxZJjIcB7Yg0k0GMHGtgtQgpvx/MUQUeAkNbA9AAGrwkAsoeItdTgS7FMyg==}
-
-  '@types/geojson@7946.0.12':
-    resolution: {integrity: sha512-uK2z1ZHJyC0nQRbuovXFt4mzXDwf27vQeUWNhfKGwRcWW429GOhP8HxUHlM6TLH4bzmlv/HlEjpvJh3JfmGsAA==}
 
   '@types/graceful-fs@4.1.8':
     resolution: {integrity: sha512-NhRH7YzWq8WiNKVavKPBmtLYZHxNY19Hh+az28O/phfp68CF45pMFud+ZzJ8ewnxnC5smIdF3dqFeiSUQ5I+pw==}
@@ -3477,6 +3363,15 @@ packages:
   '@wry/trie@0.4.3':
     resolution: {integrity: sha512-I6bHwH0fSf6RqQcnnXLJKhkSXG45MFral3GxPaY4uAl0LYDZM+YDVDAiU9bYwjTuysy1S0IeecWtmq1SZA3M1w==}
     engines: {node: '>=8'}
+
+  '@xyflow/react@12.1.1':
+    resolution: {integrity: sha512-0/ToFd7YY6fKAWdz+NstK5K190xONpdEBPGTWIcNT0CjiCZ6Wj8qRPlg4oxYHtKkTyBQfsEvBWayJaxhwDIOGw==}
+    peerDependencies:
+      react: '>=17'
+      react-dom: '>=17'
+
+  '@xyflow/system@0.0.39':
+    resolution: {integrity: sha512-0WSdTCoA6kF/BqIFyUVinoK32Qj8scfLVxPdDahW1eYBKi5F1SYSouzVjpF2loYskyRbGl4KgxwaHiCgrBYFmA==}
 
   '@zxing/text-encoding@0.9.0':
     resolution: {integrity: sha512-U/4aVJ2mxI0aDNI8Uq0wEhMgY+u4CNtEb0om3+y3+niDAsoTCOB33UF0sxpzqzdqXLqmvc+vZyAt4O8pPdfkwA==}
@@ -4966,9 +4861,6 @@ packages:
   immer@10.0.2:
     resolution: {integrity: sha512-Rx3CqeqQ19sxUtYV9CU911Vhy8/721wRFnJv3REVGWUmoAcIwzifTsdmJte/MV+0/XpM35LZdQMBGkRIoLPwQA==}
 
-  immer@10.1.1:
-    resolution: {integrity: sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==}
-
   import-fresh@3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
     engines: {node: '>=6'}
@@ -6418,12 +6310,6 @@ packages:
     resolution: {integrity: sha512-KiwVUcFu1RErkI97ywr8nvx8dNOpT03rbnma0SSalTYjkrPYaEajR4a/MRt6DZ46K6arDRbWMNHF+xH7G7n/8A==}
     peerDependencies:
       react: '*'
-
-  reactflow@11.8.0:
-    resolution: {integrity: sha512-6JV0BmxQaC/X6doMLQSdF0/pX3fLkl03OJJxsAk23GLIoVIQjkSiyrbwUMyP7TmhUIlghdyuhniRalfl72wXXw==}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
 
   read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
@@ -9942,162 +9828,6 @@ snapshots:
 
   '@reach/observe-rect@1.2.0': {}
 
-  '@reactflow/background@11.2.5(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      classcat: 5.0.4
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/background@11.2.5(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/controls@11.1.16(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      classcat: 5.0.4
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/controls@11.1.16(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/core@11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@types/d3': 7.4.2
-      '@types/d3-drag': 3.0.5
-      '@types/d3-selection': 3.0.8
-      '@types/d3-zoom': 3.0.6
-      classcat: 5.0.4
-      d3-drag: 3.0.0
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/core@11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@types/d3': 7.4.2
-      '@types/d3-drag': 3.0.5
-      '@types/d3-selection': 3.0.8
-      '@types/d3-zoom': 3.0.6
-      classcat: 5.0.4
-      d3-drag: 3.0.0
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/minimap@11.6.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@types/d3-selection': 3.0.8
-      '@types/d3-zoom': 3.0.6
-      classcat: 5.0.4
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/minimap@11.6.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/d3-selection': 3.0.8
-      '@types/d3-zoom': 3.0.6
-      classcat: 5.0.4
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/node-resizer@2.1.2(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      classcat: 5.0.4
-      d3-drag: 3.0.0
-      d3-selection: 3.0.0
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/node-resizer@2.1.2(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      d3-drag: 3.0.0
-      d3-selection: 3.0.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/node-toolbar@1.2.4(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      classcat: 5.0.4
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  '@reactflow/node-toolbar@1.2.4(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      classcat: 5.0.4
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      zustand: 4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
   '@remirror/core-constants@2.0.2': {}
 
   '@remirror/core-helpers@2.0.4':
@@ -12425,122 +12155,26 @@ snapshots:
 
   '@types/cors@2.8.12': {}
 
-  '@types/d3-array@3.0.9': {}
-
-  '@types/d3-axis@3.0.5':
-    dependencies:
-      '@types/d3-selection': 3.0.8
-
-  '@types/d3-brush@3.0.5':
-    dependencies:
-      '@types/d3-selection': 3.0.8
-
-  '@types/d3-chord@3.0.5': {}
-
   '@types/d3-color@3.1.2': {}
 
-  '@types/d3-contour@3.0.5':
+  '@types/d3-drag@3.0.7':
     dependencies:
-      '@types/d3-array': 3.0.9
-      '@types/geojson': 7946.0.12
-
-  '@types/d3-delaunay@6.0.3': {}
-
-  '@types/d3-dispatch@3.0.5': {}
-
-  '@types/d3-drag@3.0.5':
-    dependencies:
-      '@types/d3-selection': 3.0.8
-
-  '@types/d3-dsv@3.0.5': {}
-
-  '@types/d3-ease@3.0.1': {}
-
-  '@types/d3-fetch@3.0.5':
-    dependencies:
-      '@types/d3-dsv': 3.0.5
-
-  '@types/d3-force@3.0.7': {}
-
-  '@types/d3-format@3.0.3': {}
-
-  '@types/d3-geo@3.0.6':
-    dependencies:
-      '@types/geojson': 7946.0.12
-
-  '@types/d3-hierarchy@3.1.5': {}
+      '@types/d3-selection': 3.0.10
 
   '@types/d3-interpolate@3.0.3':
     dependencies:
       '@types/d3-color': 3.1.2
 
-  '@types/d3-path@3.0.1': {}
+  '@types/d3-selection@3.0.10': {}
 
-  '@types/d3-polygon@3.0.1': {}
-
-  '@types/d3-quadtree@3.0.4': {}
-
-  '@types/d3-random@3.0.2': {}
-
-  '@types/d3-scale-chromatic@3.0.1': {}
-
-  '@types/d3-scale@4.0.6':
+  '@types/d3-transition@3.0.8':
     dependencies:
-      '@types/d3-time': 3.0.2
+      '@types/d3-selection': 3.0.10
 
-  '@types/d3-selection@3.0.8': {}
-
-  '@types/d3-shape@3.1.4':
-    dependencies:
-      '@types/d3-path': 3.0.1
-
-  '@types/d3-time-format@4.0.2': {}
-
-  '@types/d3-time@3.0.2': {}
-
-  '@types/d3-timer@3.0.1': {}
-
-  '@types/d3-transition@3.0.6':
-    dependencies:
-      '@types/d3-selection': 3.0.8
-
-  '@types/d3-zoom@3.0.6':
+  '@types/d3-zoom@3.0.8':
     dependencies:
       '@types/d3-interpolate': 3.0.3
-      '@types/d3-selection': 3.0.8
-
-  '@types/d3@7.4.2':
-    dependencies:
-      '@types/d3-array': 3.0.9
-      '@types/d3-axis': 3.0.5
-      '@types/d3-brush': 3.0.5
-      '@types/d3-chord': 3.0.5
-      '@types/d3-color': 3.1.2
-      '@types/d3-contour': 3.0.5
-      '@types/d3-delaunay': 6.0.3
-      '@types/d3-dispatch': 3.0.5
-      '@types/d3-drag': 3.0.5
-      '@types/d3-dsv': 3.0.5
-      '@types/d3-ease': 3.0.1
-      '@types/d3-fetch': 3.0.5
-      '@types/d3-force': 3.0.7
-      '@types/d3-format': 3.0.3
-      '@types/d3-geo': 3.0.6
-      '@types/d3-hierarchy': 3.1.5
-      '@types/d3-interpolate': 3.0.3
-      '@types/d3-path': 3.0.1
-      '@types/d3-polygon': 3.0.1
-      '@types/d3-quadtree': 3.0.4
-      '@types/d3-random': 3.0.2
-      '@types/d3-scale': 4.0.6
-      '@types/d3-scale-chromatic': 3.0.1
-      '@types/d3-selection': 3.0.8
-      '@types/d3-shape': 3.1.4
-      '@types/d3-time': 3.0.2
-      '@types/d3-time-format': 4.0.2
-      '@types/d3-timer': 3.0.1
-      '@types/d3-transition': 3.0.6
-      '@types/d3-zoom': 3.0.6
+      '@types/d3-selection': 3.0.10
 
   '@types/direction@1.0.0': {}
 
@@ -12572,8 +12206,6 @@ snapshots:
       '@types/express-serve-static-core': 4.17.39
       '@types/qs': 6.9.9
       '@types/serve-static': 1.15.4
-
-  '@types/geojson@7946.0.12': {}
 
   '@types/graceful-fs@4.1.8':
     dependencies:
@@ -12841,6 +12473,38 @@ snapshots:
   '@wry/trie@0.4.3':
     dependencies:
       tslib: 2.6.3
+
+  '@xyflow/react@12.1.1(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+    dependencies:
+      '@xyflow/system': 0.0.39
+      classcat: 5.0.4
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      zustand: 4.4.5(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
+  '@xyflow/react@12.1.1(@types/react@18.3.3)(immer@10.0.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@xyflow/system': 0.0.39
+      classcat: 5.0.4
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      zustand: 4.4.5(@types/react@18.3.3)(immer@10.0.2)(react@18.3.1)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
+  '@xyflow/system@0.0.39':
+    dependencies:
+      '@types/d3-drag': 3.0.7
+      '@types/d3-selection': 3.0.10
+      '@types/d3-transition': 3.0.8
+      '@types/d3-zoom': 3.0.8
+      d3-drag: 3.0.0
+      d3-selection: 3.0.0
+      d3-zoom: 3.0.0
 
   '@zxing/text-encoding@0.9.0':
     optional: true
@@ -14539,9 +14203,6 @@ snapshots:
     optional: true
 
   immer@10.0.2: {}
-
-  immer@10.1.1:
-    optional: true
 
   import-fresh@3.3.0:
     dependencies:
@@ -16387,34 +16048,6 @@ snapshots:
       lodash: 4.17.21
       react: 18.3.1
 
-  reactflow@11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
-    dependencies:
-      '@reactflow/background': 11.2.5(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@reactflow/controls': 11.1.16(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@reactflow/core': 11.8.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@reactflow/minimap': 11.6.0(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@reactflow/node-resizer': 2.1.2(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@reactflow/node-toolbar': 1.2.4(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
-  reactflow@11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      '@reactflow/background': 11.2.5(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/controls': 11.1.16(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/core': 11.8.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/minimap': 11.6.0(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/node-resizer': 2.1.2(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@reactflow/node-toolbar': 1.2.4(@types/react@18.3.3)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-
   read-cache@1.0.0:
     dependencies:
       pify: 2.3.0
@@ -17754,10 +17387,10 @@ snapshots:
       immer: 10.0.2
       react: 18.2.0
 
-  zustand@4.4.5(@types/react@18.3.3)(immer@10.1.1)(react@18.3.1):
+  zustand@4.4.5(@types/react@18.3.3)(immer@10.0.2)(react@18.3.1):
     dependencies:
       use-sync-external-store: 1.2.0(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.3
-      immer: 10.1.1
+      immer: 10.0.2
       react: 18.3.1

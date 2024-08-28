@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
-import ReactFlow, {
+import {
+  ReactFlow,
   Background,
   BackgroundVariant,
   MiniMap,
@@ -10,13 +11,16 @@ import ReactFlow, {
   ReactFlowProvider,
   useViewport,
   SelectionMode,
-} from "reactflow";
-import "reactflow/dist/style.css";
+} from "@xyflow/react";
+
+// you also need to adjust the style import
+import "@xyflow/react/dist/style.css";
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
+import { ScopeNode } from "./nodes/Scope";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
@@ -48,11 +52,12 @@ import { Box, Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 import { env } from "../lib/vars";
-import { SvgNode } from "./Scope";
+import { SvgNode } from "./nodes/Scope";
 
 const nodeTypes = {
   CODE: CodeNode,
   RICH: RichNode,
+  SCOPE: ScopeNode,
   SVG: SvgNode,
 };
 
@@ -206,7 +211,8 @@ function CanvasImpl() {
         edgeTypes={edgeTypes}
         defaultEdgeOptions={{
           style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
-          type: "floating",
+          // type: "floating",
+          type: "simplebezier",
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,
           //   color: "black",

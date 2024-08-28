@@ -4,8 +4,7 @@ import {
   Node,
   XYPosition,
   useStore as useRfStore,
-} from "reactflow";
-import "reactflow/dist/style.css";
+} from "@xyflow/react";
 
 import { timer } from "d3-timer";
 
@@ -66,7 +65,7 @@ export function useCopyPaste() {
     if (rfDomNode) {
       const onMouseMove = (event: MouseEvent) => {
         const bounds = rfDomNode.getBoundingClientRect();
-        const position = reactFlowInstance.project({
+        const position = reactFlowInstance.screenToFlowPosition({
           x: event.clientX - (bounds?.left ?? 0),
           y: event.clientY - (bounds?.top ?? 0),
         });

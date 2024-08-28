@@ -1,12 +1,12 @@
 import {
   Position,
-  internalsSymbol,
   Node,
   NodePositionChange,
   XYPosition,
   Handle,
   useReactFlow,
-} from "reactflow";
+  InternalNode,
+} from "@xyflow/react";
 
 import { useContext, useRef, useState } from "react";
 
@@ -85,7 +85,7 @@ export function ResizeIcon() {
 }
 
 // returns the position (top,right,bottom or right) passed node compared to
-function getParams(nodeA, nodeB) {
+function getParams(nodeA: InternalNode, nodeB: InternalNode) {
   const centerA = getNodeCenter(nodeA);
   const centerB = getNodeCenter(nodeB);
 
@@ -111,7 +111,7 @@ function getParams(nodeA, nodeB) {
   return [x, y, position];
 }
 
-export function sortNodes(nodeIds, nodesMap) {
+function sortNodes(nodeIds, nodesMap) {
   nodeIds.sort((id1, id2) => {
     const node1 = nodesMap.get(id1);
     const node2 = nodesMap.get(id2);
@@ -127,11 +127,13 @@ export function sortNodes(nodeIds, nodesMap) {
   });
 }
 
-function getHandleCoordsByPosition(node, handlePosition) {
+function getHandleCoordsByPosition(node: InternalNode, handlePosition) {
   // all handles are from type source, that's why we use handleBounds.source here
-  const handle = node[internalsSymbol].handleBounds.source.find(
+  const handle = node.internals.handleBounds?.source?.find(
     (h) => h.position === handlePosition
   );
+
+  if (!handle) return [0, 0];
 
   let offsetX = handle.width / 2;
   let offsetY = handle.height / 2;
@@ -144,7 +146,7 @@ function getHandleCoordsByPosition(node, handlePosition) {
       offsetX = 0;
       break;
     case Position.Right:
-      offsetX = handle.width;
+      offsetX = handle?.width || 0;
       break;
     case Position.Top:
       offsetY = 0;
@@ -154,16 +156,16 @@ function getHandleCoordsByPosition(node, handlePosition) {
       break;
   }
 
-  const x = node.positionAbsolute.x + handle.x + offsetX;
-  const y = node.positionAbsolute.y + handle.y + offsetY;
+  const x = node.internals.positionAbsolute.x + handle.x + offsetX;
+  const y = node.internals.positionAbsolute.y + handle.y + offsetY;
 
   return [x, y];
 }
 
 function getNodeCenter(node) {
   return {
-    x: node.positionAbsolute.x + node.width / 2,
-    y: node.positionAbsolute.y + node.height / 2,
+    x: node.internals.positionAbsolute.x + node.measured.width / 2,
+    y: node.internals.positionAbsolute.y + node.measured.height / 2,
   };
 }
 
@@ -460,10 +462,10 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
     let children: string[] = [];
     if (curScore === "0.0") {
       // fetch top-level nodes
-      children = nodes.filter((n) => !n.parentNode).map((node) => node.id);
+      children = nodes.filter((n) => !n.parentId).map((node) => node.id);
     } else {
       children = nodes
-        .filter((n) => n.parentNode === curPod?.id)
+        .filter((n) => n.parentId === curPod?.id)
         .map((n) => n.id);
     }
 
@@ -702,7 +704,7 @@ export function ToolbarAddPod({
       <DropdownMenu.Content variant="soft">
         <DropdownMenu.Item
           shortcut="⌘ D"
-          onClick={() => {
+          onSelect={() => {
             addNode(id, position, "RICH");
             cb();
           }}
@@ -712,7 +714,7 @@ export function ToolbarAddPod({
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           shortcut="⌘ E"
-          onClick={() => {
+          onSelect={() => {
             addNode(id, position, "CODE", "python");
             cb();
           }}
@@ -727,7 +729,7 @@ export function ToolbarAddPod({
         </DropdownMenu.Item>
         <DropdownMenu.Item
           shortcut="⌘ E"
-          onClick={() => {
+          onSelect={() => {
             addNode(id, position, "CODE", "julia");
             cb();
           }}
@@ -743,7 +745,7 @@ export function ToolbarAddPod({
 
         <DropdownMenu.Item
           shortcut="⌘ E"
-          onClick={() => {
+          onSelect={() => {
             addNode(id, position, "CODE", "javascript");
             cb();
           }}
@@ -759,7 +761,7 @@ export function ToolbarAddPod({
 
         <DropdownMenu.Item
           shortcut="⌘ E"
-          onClick={() => {
+          onSelect={() => {
             addNode(id, position, "CODE", "racket");
             cb();
           }}
@@ -774,7 +776,7 @@ export function ToolbarAddPod({
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          onClick={() => {
+          onSelect={() => {
             // addNode(id, position, "CODE", "racket");
             if (position === "left") throw new Error("Cannot paste to left.");
             moveCut(id, position);
@@ -907,7 +909,7 @@ export function RaiseButton({ id }) {
   return (
     <ConfirmedDelete
       color="black"
-      onClick={() => {
+      onSelect={() => {
         // replace the parent with the current pod.
         raise(id);
       }}
@@ -928,7 +930,7 @@ export function SlurpButton({ id }) {
   const slurp = useSetAtom(ATOM_slurp);
   return (
     <DropdownMenu.Item
-      onClick={() => {
+      onSelect={() => {
         // move its next sibling to its children
         slurp(id);
       }}
@@ -942,7 +944,7 @@ export function SlurpButton({ id }) {
 // Ref: https://github.com/radix-ui/primitives/discussions/1830#discussioncomment-10300947
 function ConfirmedDelete({
   color,
-  onClick,
+  onSelect,
   trigger,
   title,
   description,
@@ -955,7 +957,7 @@ function ConfirmedDelete({
       {/* Try 3 (which works):  use a ref and trigger the click on the inner from the outer. */}
       <DropdownMenu.Item
         color={color}
-        onClick={(e) => {
+        onSelect={(e) => {
           e.preventDefault();
           ref?.current?.click();
         }}
@@ -984,7 +986,7 @@ function ConfirmedDelete({
             </Button>
           </Dialog.Close>
           <Dialog.Close>
-            <DropdownMenu.Item color={color} onClick={onClick}>
+            <DropdownMenu.Item color={color} onSelect={onSelect}>
               {confirm}
             </DropdownMenu.Item>
           </Dialog.Close>
@@ -1000,7 +1002,7 @@ export function SpliceButton({ id }) {
   return (
     <ConfirmedDelete
       color="orange"
-      onClick={() => {
+      onSelect={() => {
         // remove this pod, place its parent in place of it.
         splice(id);
       }}
@@ -1022,7 +1024,7 @@ export function DeleteButton({ id }) {
   return (
     <ConfirmedDelete
       color="red"
-      onClick={() => {
+      onSelect={() => {
         // Delete all edges connected to the node.
         reactFlowInstance.deleteElements({ nodes: [{ id }] });
       }}

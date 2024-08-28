@@ -35,7 +35,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 
-import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
+import { downloadLink, repo2ipynb } from "./nodes/utils";
 
 import * as Y from "yjs";
 
@@ -57,6 +57,7 @@ import {
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
+  ATOM_autoLayoutTree,
   ATOM_centerSelection,
   ATOM_nodes,
   ATOM_selectedPods,
@@ -81,6 +82,7 @@ import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
+import { CodeNodeType } from "@/lib/store/types";
 
 function SidebarSettings() {
   const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
@@ -506,7 +508,7 @@ function PodTreeItem({ id }) {
         <Box>
           {match(node.type)
             .with("CODE", () =>
-              match(node.data.lang)
+              match((node as CodeNodeType).data.lang)
                 .with("python", () => (
                   <img
                     src={pythonLogo}
@@ -704,6 +706,7 @@ function MyTabs({
 }
 
 export function SidebarLeft() {
+  const autoLayout = useSetAtom(ATOM_autoLayoutTree);
   return (
     <MyTabs
       side="left"
@@ -717,6 +720,15 @@ export function SidebarLeft() {
               <YjsSyncStatus />
               <Heading size="2">Export to ..</Heading>
               <ExportButtons />
+              <Separator my="3" size="4" />
+              <Button
+                onClick={() => {
+                  autoLayout();
+                }}
+              >
+                Layout
+              </Button>
+
               <Separator my="3" size="4" />
               <Runtime />
               <Separator my="3" size="4" />

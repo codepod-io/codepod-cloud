@@ -1,6 +1,5 @@
 import { useState, useEffect, ChangeEvent } from "react";
-import { useKeyPress } from "reactflow";
-import "reactflow/dist/style.css";
+import { useKeyPress } from "@xyflow/react";
 
 import { Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useSetAtom } from "jotai";

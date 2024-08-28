@@ -1,5 +1,5 @@
 import { CSSProperties, useEffect, useRef } from "react";
-import { ReactFlowState, useStore } from "reactflow";
+import { ReactFlowState, useStore } from "@xyflow/react";
 
 const canvasStyle: CSSProperties = {
   width: "100%",

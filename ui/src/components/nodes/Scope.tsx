@@ -1,7 +1,17 @@
-import "reactflow/dist/style.css";
-
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { ScopeNodeType } from "@/lib/store/types";
+import { ATOM_addScope } from "@/lib/store/canvasSlice";
+import {
+  DeleteButton,
+  PodToolbar,
+  RaiseButton,
+  SlurpButton,
+  SpliceButton,
+} from "./utils";
+import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
+import { Ellipsis } from "lucide-react";
+import { Handle, Position } from "@xyflow/react";
 
 function getCoordinates(id: string, nodesMap): { x: number; y: number }[] {
   const node = nodesMap.get(id);
@@ -140,3 +150,67 @@ export function SvgNode({ data }) {
     </div>
   );
 }
+
+function ScopeToolbar({ node }: { node: ScopeNodeType }) {
+  const addScope = useSetAtom(ATOM_addScope);
+  const id = node.id;
+
+  return (
+    <PodToolbar id={id}>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <IconButton
+            variant="ghost"
+            radius="small"
+            style={{
+              margin: 3,
+              padding: 0,
+            }}
+          >
+            <Ellipsis />
+          </IconButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          {/* Structural edit */}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={() => {
+              addScope(id);
+            }}
+          >
+            Add Scope
+          </DropdownMenu.Item>
+          {node?.data.parent !== "ROOT" && <RaiseButton id={id} />}
+          <SlurpButton id={id} />
+          <DropdownMenu.Separator />
+          <SpliceButton id={id} />
+          <DeleteButton id={id} />
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </PodToolbar>
+  );
+}
+
+export const ScopeNode = function ({ id }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) return null;
+  if (node.type !== "SCOPE") throw new Error("Invalid node type");
+  // node.data.scopeChildren
+  return (
+    <div
+      style={{
+        color: "red",
+        width: "100%",
+        height: "100%",
+        border: "1px solid red",
+        backgroundColor: "rgba(255, 0, 0, 0.1)",
+      }}
+    >
+      Scope
+      <ScopeToolbar node={node} />
+      <Handle id="left" type="source" position={Position.Left} />
+      <Handle id="right" type="source" position={Position.Right} />
+    </div>
+  );
+};
