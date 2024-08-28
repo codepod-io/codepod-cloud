@@ -774,18 +774,18 @@ export function ToolbarAddPod({
           Racket
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          onSelect={() => {
-            // addNode(id, position, "CODE", "racket");
-            if (position === "left") throw new Error("Cannot paste to left.");
-            moveCut(id, position);
-          }}
-          disabled={!cutId || cutId === id || position === "left"}
-          color="orange"
-        >
-          <Clipboard />
-          Paste
-        </DropdownMenu.Item>
+        {position !== "left" && (
+          <DropdownMenu.Item
+            onSelect={() => {
+              moveCut(id, position);
+            }}
+            disabled={!cutId || cutId === id}
+            color="orange"
+          >
+            <Clipboard />
+            Paste
+          </DropdownMenu.Item>
+        )}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
