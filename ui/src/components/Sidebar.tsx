@@ -266,7 +266,7 @@ function KernelStatus({
               <DropdownMenu.Content>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item
-                  onClick={() => {
+                  onSelect={() => {
                     status.mutate({ repoId, kernelName });
                   }}
                   color="blue"
@@ -274,7 +274,7 @@ function KernelStatus({
                   <RefreshCcw /> Refresh
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  onClick={() => {
+                  onSelect={() => {
                     interrupt.mutate({ repoId, kernelName });
                   }}
                   color="pink"
@@ -283,7 +283,7 @@ function KernelStatus({
                   Interrupt
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  onClick={() => {
+                  onSelect={() => {
                     usageStatus.mutate({ repoId, kernelName });
                   }}
                 >
@@ -292,7 +292,7 @@ function KernelStatus({
 
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item
-                  onClick={() => {
+                  onSelect={() => {
                     stop.mutate({ repoId, kernelName });
                   }}
                   color="red"
