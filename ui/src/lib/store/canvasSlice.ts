@@ -935,6 +935,55 @@ export const ATOM_slurp = atom(null, (get, set, id: string) => {
   updateView(get, set);
 });
 
+export const ATOM_unslurp = atom(null, (get, set, id: string) => {
+  // move its last child to its sibling
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  const parentId = node.data.parent;
+  if (!parentId) throw new Error("Should not unslurp ROOT node");
+  const parent = nodesMap.get(parentId);
+  if (!parent) throw new Error("Parent not found");
+  const index = parent.data.children.indexOf(id);
+  if (index === -1) throw new Error("Node not found in parent");
+  const lastChildId = node.data.children.pop();
+  if (!lastChildId) {
+    toast.error("No child to unslurp");
+    return;
+  }
+  const lastChild = nodesMap.get(lastChildId);
+  if (!lastChild) throw new Error("Child not found");
+  // remove the last child
+  nodesMap.set(id, {
+    ...node,
+    data: {
+      ...node.data,
+      children: node.data.children,
+    },
+  } as typeof node);
+  // add the last child to the parent
+  const parentChildren = parent.data.children;
+  parentChildren.splice(index + 1, 0, lastChildId);
+  nodesMap.set(parentId, {
+    ...parent,
+    data: {
+      ...parent.data,
+      children: parentChildren,
+    },
+  } as typeof parent);
+  // update the last child
+  nodesMap.set(lastChildId, {
+    ...lastChild,
+    data: {
+      ...lastChild.data,
+      parent: parentId,
+    },
+  } as typeof lastChild);
+
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
+
 function toggleFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);

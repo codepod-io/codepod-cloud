@@ -104,6 +104,7 @@ import {
   SlurpButton,
   SymbolTable,
   ToolbarAddPod,
+  UnslurpButton,
 } from "./utils";
 
 import { MyLexical } from "./rich/MyLexical";
@@ -417,6 +418,7 @@ function MyPodToolbar({ id }) {
               Add Scope
             </DropdownMenu.Item>
             <SlurpButton id={id} />
+            <UnslurpButton id={id} />
             <DropdownMenu.Separator />
             <DeleteButton id={id} />
           </DropdownMenu.Content>
