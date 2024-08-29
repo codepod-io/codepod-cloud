@@ -7,6 +7,8 @@ import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
 import { Ellipsis } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
 import { ATOM_cutId } from "@/lib/store/atom";
+import { motion } from "framer-motion";
+import { useState } from "react";
 
 function getCoordinates(id: string, nodesMap): { x: number; y: number }[] {
   const node = nodesMap.get(id);
@@ -189,6 +191,7 @@ export const ScopeNode = function ({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   const cutId = useAtomValue(ATOM_cutId);
+  const [hover, setHover] = useState(false);
   if (!node) return null;
   if (node.type !== "SCOPE") throw new Error("Invalid node type");
   // node.data.scopeChildren
@@ -201,9 +204,18 @@ export const ScopeNode = function ({ id }) {
         border: cutId === id ? "3px dashed red" : "3px solid transparent",
         backgroundColor: "rgba(255, 0, 0, 0.1)",
       }}
+      className="nodrag"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
       Scope
-      <ScopeToolbar node={node} />
+      <motion.div
+        animate={{
+          opacity: hover ? 1 : 0,
+        }}
+      >
+        <ScopeToolbar node={node} />
+      </motion.div>
       <Handle id="left" type="source" position={Position.Left} />
       <Handle id="right" type="source" position={Position.Right} />
     </div>

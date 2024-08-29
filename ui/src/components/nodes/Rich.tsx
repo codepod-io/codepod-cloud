@@ -120,6 +120,7 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { env } from "@/lib/vars";
 import { ATOM_addScope } from "@/lib/store/canvasSlice";
+import { motion } from "framer-motion";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -388,8 +389,6 @@ const MyRemirror = ({
 };
 
 function MyPodToolbar({ id }) {
-  const reactFlowInstance = useReactFlow();
-  const node = useAtomValue(ATOM_nodesMap).get(id);
   const addScope = useSetAtom(ATOM_addScope);
   return (
     <PodToolbar id={id}>
@@ -479,7 +478,15 @@ export const RichNode = function ({ id }: { id: string }) {
           borderRadius: "5px",
         }}
       >
-        {!env.READ_ONLY && <MyPodToolbar id={id} />}
+        {!env.READ_ONLY && (
+          <motion.div
+            animate={{
+              opacity: hover ? 1 : 0,
+            }}
+          >
+            <MyPodToolbar id={id} />
+          </motion.div>
+        )}
         {/* Two alternative editors */}
 
         {/* <MyLexical id={id} /> */}
