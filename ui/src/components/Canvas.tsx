@@ -137,8 +137,8 @@ function CanvasImpl() {
       const pos = getAbsPos(nodesMap.get(node)!, nodesMap);
 
       reactFlowInstance.setCenter(
-        pos.x + nodesMap.get(node)!.width! / 2,
-        pos.y + nodesMap.get(node)!.height! / 2,
+        pos.x + (nodesMap.get(node)?.measured?.width || 0) / 2,
+        pos.y + (nodesMap.get(node)?.measured?.height || 0) / 2,
         {
           zoom: reactFlowInstance.getZoom(),
           duration: 800,
