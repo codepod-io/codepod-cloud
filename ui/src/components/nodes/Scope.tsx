@@ -2,7 +2,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { ScopeNodeType } from "@/lib/store/types";
 import { ATOM_addScope } from "@/lib/store/canvasSlice";
-import { DeleteButton, PodToolbar, SlurpButton } from "./utils";
+import { DeleteButton, PodToolbar, SlurpButton, UnslurpButton } from "./utils";
 import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
 import { Ellipsis } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
@@ -176,6 +176,7 @@ function ScopeToolbar({ node }: { node: ScopeNodeType }) {
             Add Scope
           </DropdownMenu.Item>
           <SlurpButton id={id} />
+          <UnslurpButton id={id} />
           <DropdownMenu.Separator />
           <DeleteButton id={id} />
         </DropdownMenu.Content>

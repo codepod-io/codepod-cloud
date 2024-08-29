@@ -15,8 +15,9 @@ import {
   ScissorsLineDashed,
   Trash,
   Trash2,
-  CalendarArrowUp,
   Wrench,
+  CornerRightUp,
+  CornerDownLeft,
 } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -26,6 +27,7 @@ import {
   ATOM_slurp,
   ATOM_toggleFold,
   ATOM_toggleScope,
+  ATOM_unslurp,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
@@ -912,8 +914,23 @@ export function SlurpButton({ id }) {
         slurp(id);
       }}
     >
-      <CalendarArrowUp />
+      <CornerRightUp />
       Slurp
+    </DropdownMenu.Item>
+  );
+}
+
+export function UnslurpButton({ id }) {
+  const unslurp = useSetAtom(ATOM_unslurp);
+  return (
+    <DropdownMenu.Item
+      onSelect={() => {
+        // move its children to its next sibling
+        unslurp(id);
+      }}
+    >
+      <CornerDownLeft />
+      Unslurp
     </DropdownMenu.Item>
   );
 }

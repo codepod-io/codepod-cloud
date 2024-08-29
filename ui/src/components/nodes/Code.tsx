@@ -29,6 +29,7 @@ import {
   SlurpButton,
   SymbolTable,
   ToolbarAddPod,
+  UnslurpButton,
 } from "./utils";
 import { timeDifference } from "@/lib/utils/utils";
 
@@ -369,6 +370,7 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
             Add Scope
           </DropdownMenu.Item>
           <SlurpButton id={id} />
+          <UnslurpButton id={id} />
           <DropdownMenu.Separator />
           <DeleteButton id={id} />
         </DropdownMenu.Content>
