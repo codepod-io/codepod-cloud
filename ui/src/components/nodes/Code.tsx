@@ -71,6 +71,7 @@ import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType, ScopeNodeType } from "@/lib/store/types";
 import { ATOM_addScope } from "@/lib/store/canvasSlice";
+import { motion } from "framer-motion";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -452,6 +453,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   let ref = useRunKey({ node });
   const cutId = useAtomValue(ATOM_cutId);
   const nodesMap = useAtomValue(ATOM_nodesMap);
+  const [hover, setHover] = useState(false);
 
   return (
     <div
@@ -477,6 +479,8 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
       }}
       className="nodrag"
       ref={ref}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
       <div
         style={{
@@ -492,7 +496,15 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
           borderRadius: "4px",
         }}
       >
-        {!env.READ_ONLY && <MyPodToolbar node={node} />}
+        {!env.READ_ONLY && (
+          <motion.div
+            animate={{
+              opacity: hover ? 1 : 0,
+            }}
+          >
+            <MyPodToolbar node={node} />
+          </motion.div>
+        )}
         <div
           style={{
             paddingTop: "5px",

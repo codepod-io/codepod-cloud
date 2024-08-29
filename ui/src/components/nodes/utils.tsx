@@ -654,11 +654,9 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
 export function ToolbarAddPod({
   id,
   position,
-  cb = () => {},
 }: {
   id: string;
   position: "left" | "top" | "bottom" | "right";
-  cb: () => void;
 }) {
   const addNode = useSetAtom(ATOM_addNode);
   const cutId = useAtomValue(ATOM_cutId);
@@ -707,7 +705,6 @@ export function ToolbarAddPod({
           shortcut="⌘ D"
           onSelect={() => {
             addNode(id, position, "RICH");
-            cb();
           }}
         >
           <NotebookPen /> Doc
@@ -717,7 +714,6 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onSelect={() => {
             addNode(id, position, "CODE", "python");
-            cb();
           }}
         >
           <img
@@ -732,7 +728,6 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onSelect={() => {
             addNode(id, position, "CODE", "julia");
-            cb();
           }}
         >
           <img
@@ -748,7 +743,6 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onSelect={() => {
             addNode(id, position, "CODE", "javascript");
-            cb();
           }}
         >
           <img
@@ -764,7 +758,6 @@ export function ToolbarAddPod({
           shortcut="⌘ E"
           onSelect={() => {
             addNode(id, position, "CODE", "racket");
-            cb();
           }}
         >
           <img
@@ -800,7 +793,6 @@ export function PodToolbar({
   id: string;
   children: React.ReactNode;
 }) {
-  const [hover, setHover] = useState(false);
   const [cutId, setCutId] = useAtom(ATOM_cutId);
 
   const nodesMap = useAtomValue(ATOM_nodesMap);
@@ -810,33 +802,22 @@ export function PodToolbar({
   const toggleScope = useSetAtom(ATOM_toggleScope);
 
   return (
-    <motion.div
-      animate={{
-        opacity: hover ? 1 : 0,
-      }}
-      onMouseEnter={() => {
-        setHover(true);
-      }}
-      onMouseLeave={() => {
-        setHover(false);
+    <Flex
+      align="center"
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        // border: "solid 1px var(--gray-8)",
+        transform: "translateY(-120%)",
+        backgroundColor: "white",
+        borderRadius: "5px",
+        boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+        cursor: "auto",
       }}
     >
-      <Flex
-        align="center"
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          // border: "solid 1px var(--gray-8)",
-          transform: "translateY(-120%)",
-          backgroundColor: "white",
-          borderRadius: "5px",
-          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-          cursor: "auto",
-        }}
-      >
-        {/* scope switch */}
-        {/* <Tooltip content="Scope">
+      {/* scope switch */}
+      {/* <Tooltip content="Scope">
           <Switch
             checked={node.data.isScope}
             onClick={() => {
@@ -845,63 +826,32 @@ export function PodToolbar({
             }}
           />
         </Tooltip> */}
-        {/* Toolbar for adding new pod top/bottom/right */}
-        {id !== "ROOT" && (
-          <ToolbarAddPod
-            id={id}
-            position="left"
-            cb={() => {
-              setHover(false);
-            }}
-          />
-        )}
-        {id !== "ROOT" && (
-          <ToolbarAddPod
-            id={id}
-            position="top"
-            cb={() => {
-              setHover(false);
-            }}
-          />
-        )}
-        {id !== "ROOT" && (
-          <ToolbarAddPod
-            id={id}
-            position="bottom"
-            cb={() => {
-              setHover(false);
-            }}
-          />
-        )}
-        <ToolbarAddPod
-          id={id}
-          position="right"
-          cb={() => {
-            setHover(false);
+      {/* Toolbar for adding new pod top/bottom/right */}
+      {id !== "ROOT" && <ToolbarAddPod id={id} position="left" />}
+      {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
+      {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
+      <ToolbarAddPod id={id} position="right" />
+      {id !== "ROOT" && (
+        <IconButton
+          variant="ghost"
+          radius="small"
+          style={{
+            margin: 3,
+            padding: 0,
           }}
-        />
-        {id !== "ROOT" && (
-          <IconButton
-            variant="ghost"
-            radius="small"
-            style={{
-              margin: 3,
-              padding: 0,
-            }}
-            onClick={() => {
-              if (cutId === id) {
-                setCutId(null);
-              } else {
-                setCutId(id);
-              }
-            }}
-          >
-            <ScissorsLineDashed />
-          </IconButton>
-        )}
-        {children}
-      </Flex>
-    </motion.div>
+          onClick={() => {
+            if (cutId === id) {
+              setCutId(null);
+            } else {
+              setCutId(id);
+            }
+          }}
+        >
+          <ScissorsLineDashed />
+        </IconButton>
+      )}
+      {children}
+    </Flex>
   );
 }
 
