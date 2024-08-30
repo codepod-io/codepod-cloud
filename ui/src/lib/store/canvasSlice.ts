@@ -416,7 +416,7 @@ const addNode_in = (
   if (anchor.type !== "SCOPE") {
     throw new Error("Anchor node is not a scope");
   }
-  if (anchor.data.children.length > 0 || anchor.data.scopeChildren.length > 0) {
+  if (anchor.data.scopeChildren.length > 0) {
     throw new Error("Scope node is not empty");
   }
   const newNode = createNewNode(type, anchor.position);
