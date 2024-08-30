@@ -222,6 +222,7 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
             updateView(get, set);
             break;
           case "update":
+            updateView(get, set);
             break;
           default:
             console.warn("unhandled change action", change.action);
