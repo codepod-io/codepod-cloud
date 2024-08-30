@@ -1209,7 +1209,7 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
             // Need to set height to undefined to let reactflow grow
             // automatically according to the content. Even a width change will
             // set the height.
-            height: undefined,
+            height: node.type === "SCOPE" ? node.height : undefined,
           } as AppNode);
         }
         break;
