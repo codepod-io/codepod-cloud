@@ -37,6 +37,19 @@ import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 
+export const JuliaLogo = () => (
+  <img src={juliaLogo} style={{ height: "1.5em" }} />
+);
+export const PythonLogo = () => (
+  <img src={pythonLogo} style={{ height: "1.5em" }} />
+);
+export const JavaScriptLogo = () => (
+  <img src={javascriptLogo} style={{ height: "1.5em" }} />
+);
+export const RacketLogo = () => (
+  <img src={racketLogo} style={{ height: "1.5em" }} />
+);
+
 import { NotebookPen, Clipboard } from "lucide-react";
 
 import { ATOM_addNode } from "@/lib/store/canvasSlice";
@@ -704,7 +717,7 @@ export function ToolbarAddPod({
         <DropdownMenu.Item
           shortcut="⌘ D"
           onSelect={() => {
-            addNode(id, position, "RICH");
+            addNode({ anchorId: id, position, type: "RICH" });
           }}
         >
           <NotebookPen /> Doc
@@ -713,59 +726,44 @@ export function ToolbarAddPod({
         <DropdownMenu.Item
           shortcut="⌘ E"
           onSelect={() => {
-            addNode(id, position, "CODE", "python");
+            addNode({ anchorId: id, position, type: "CODE", lang: "python" });
           }}
         >
-          <img
-            src={pythonLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
+          <PythonLogo />
           Python
         </DropdownMenu.Item>
         <DropdownMenu.Item
           shortcut="⌘ E"
           onSelect={() => {
-            addNode(id, position, "CODE", "julia");
+            addNode({ anchorId: id, position, type: "CODE", lang: "julia" });
           }}
         >
-          <img
-            src={juliaLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
+          <JuliaLogo />
           Julia
         </DropdownMenu.Item>
 
         <DropdownMenu.Item
           shortcut="⌘ E"
           onSelect={() => {
-            addNode(id, position, "CODE", "javascript");
+            addNode({
+              anchorId: id,
+              position,
+              type: "CODE",
+              lang: "javascript",
+            });
           }}
         >
-          <img
-            src={javascriptLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
+          <JavaScriptLogo />
           JavaScript
         </DropdownMenu.Item>
 
         <DropdownMenu.Item
           shortcut="⌘ E"
           onSelect={() => {
-            addNode(id, position, "CODE", "racket");
+            addNode({ anchorId: id, position, type: "CODE", lang: "racket" });
           }}
         >
-          <img
-            src={racketLogo}
-            style={{
-              height: "1.5em",
-            }}
-          />{" "}
+          <RacketLogo />
           Racket
         </DropdownMenu.Item>
         <DropdownMenu.Separator />

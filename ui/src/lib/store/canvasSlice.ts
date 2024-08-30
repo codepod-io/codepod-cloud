@@ -142,18 +142,18 @@ export function updateView(get: Getter, set: Setter) {
   let selectedPods = get(ATOM_selectedPods);
   // let nodes = Array.from<Node>(nodesMap.values());
   // follow the tree order, skip folded nodes
-  function dfs(node: AppNode): AppNode[] {
+  function dfs(id: string): AppNode[] {
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found: ${id}`);
     if (node.data.folded) return [node];
-    let res = node.data.children.map((id) => nodesMap.get(id)!);
+    let res = [node];
+    res = [...res, ...node.data.children.flatMap(dfs)];
     if (node.type === "SCOPE") {
-      const scopeChildren = node.data.scopeChildren.map(
-        (id) => nodesMap.get(id)!
-      );
-      res = [...res, ...scopeChildren];
+      res = [...res, ...node.data.scopeChildren.flatMap(dfs)];
     }
-    return [node, ...res.flatMap(dfs)];
+    return res;
   }
-  let nodes = dfs(nodesMap.get("ROOT")!);
+  let nodes = dfs("ROOT");
   // generate the scope overlay SVG here
   // for each node, start a SVG drawing covering it and all its children.
   // node: {x,y,width,height}
@@ -394,6 +394,61 @@ export const addNode_bottom = (
   });
 };
 
+const addNode_in = (
+  get: Getter,
+  set: Setter,
+  {
+    anchorId,
+    type,
+    lang,
+  }: {
+    anchorId: string;
+    type: "CODE" | "RICH";
+    lang?: "python" | "julia" | "javascript" | "racket";
+  }
+) => {
+  // add node inside the scope (which must be a scope with no children or scopeChildren)
+  const nodesMap = get(ATOM_nodesMap);
+  const anchor = nodesMap.get(anchorId);
+  if (!anchor) {
+    throw new Error("Anchor node not found");
+  }
+  if (anchor.type !== "SCOPE") {
+    throw new Error("Anchor node is not a scope");
+  }
+  if (anchor.data.children.length > 0 || anchor.data.scopeChildren.length > 0) {
+    throw new Error("Scope node is not empty");
+  }
+  const newNode = createNewNode(type, anchor.position);
+  switch (newNode.type) {
+    case "CODE":
+      if (lang) newNode.data.lang = lang;
+      get(ATOM_codeMap).set(newNode.id, new Y.Text());
+      break;
+    case "RICH":
+      get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+      break;
+  }
+  // add node
+  nodesMap.set(newNode.id, {
+    ...newNode,
+    data: {
+      ...newNode.data,
+      parent: anchorId,
+    },
+  } as typeof newNode);
+  // update the parent node
+  nodesMap.set(anchorId, {
+    ...anchor,
+    data: {
+      ...anchor.data,
+      scopeChildren: [newNode.id],
+    },
+  } as typeof anchor);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+};
+
 const addNode_right = (
   get: Getter,
   set: Setter,
@@ -476,10 +531,17 @@ export const ATOM_addNode = atom(
   (
     get,
     set,
-    anchorId: string,
-    position: "top" | "bottom" | "right" | "left",
-    type: "CODE" | "RICH",
-    lang?: "python" | "julia" | "javascript" | "racket"
+    {
+      anchorId,
+      position,
+      type,
+      lang,
+    }: {
+      anchorId: string;
+      position: "top" | "bottom" | "right" | "left" | "in";
+      type: "CODE" | "RICH";
+      lang?: "python" | "julia" | "javascript" | "racket";
+    }
   ) => {
     match(position)
       .with("top", () => {
@@ -493,6 +555,9 @@ export const ATOM_addNode = atom(
       })
       .with("left", () => {
         addNode_left(get, set, { anchorId, type, lang });
+      })
+      .with("in", () => {
+        addNode_in(get, set, { anchorId, type, lang });
       })
       .exhaustive();
   }
@@ -1044,12 +1109,23 @@ export const ATOM_deleteSubtree = atom(
     if (!parentId) return;
     const parent = nodesMap.get(parentId);
     if (!parent) return;
-    nodesMap.set(
-      parentId,
-      produce(parent, (draft) => {
-        draft.data.children.splice(draft.data.children.indexOf(todelete), 1);
-      })
-    );
+
+    nodesMap.set(parentId, {
+      ...parent,
+      data: {
+        ...parent.data,
+        children: parent.data.children.filter(
+          (childId) => childId !== todelete
+        ),
+        ...(parent.type === "SCOPE"
+          ? {
+              scopeChildren: parent.data.scopeChildren.filter(
+                (childId) => childId !== todelete
+              ),
+            }
+          : {}),
+      },
+    } as typeof parent);
     autoLayoutTree(get, set);
     updateView(get, set);
   }
@@ -1108,6 +1184,12 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   }
 
   // I think this place update the node's width/height
+  //
+  // NOTE: If any part of the node is produced by immer, this line may throw this error:
+  // - Uncaught TypeError: Cannot assign to read only property 'width' of object '#<Object>'
+  // The solution is to not use immer to produce the node object. Refs:
+  // - https://github.com/xyflow/xyflow/issues/4528
+  // - https://github.com/xyflow/xyflow/issues/4253
   const nextNodes = applyNodeChanges(changes, nodes);
 
   // console.log(
@@ -1297,11 +1379,18 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
     }
   });
   if (rootNode.type === "SCOPE") {
-    scopeSizeMap.set(id, { width: y2 - y1 + 50, height: x2 - x1 + 50 });
+    let width = y2 - y1 + 50;
+    let height = x2 - x1 + 50;
+    if (rootNode.data.scopeChildren.length === 0) {
+      // If the scope is empty, give it some minimum size.
+      width = 200;
+      height = 100;
+    }
+    scopeSizeMap.set(id, { width, height });
     nodesMap.set(id, {
       ...rootNode,
-      width: y2 - y1 + 50,
-      height: x2 - x1 + 50,
+      width,
+      height,
     });
   }
 }
