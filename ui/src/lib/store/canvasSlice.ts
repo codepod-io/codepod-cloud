@@ -1370,6 +1370,7 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
     if (n.type === "SCOPE" && n.id !== rootNode.id) {
       const dx = rootNode.position.x + node.y - n.position.x;
       const dy =
+        rootNode.position.y +
         (scopeSizeMap.get(id)?.height || rootNode.measured?.height || 0) / 2 +
         node.x -
         node.data.height / 2 -
