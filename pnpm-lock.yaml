@@ -387,9 +387,6 @@ importers:
       react-hotkeys-hook:
         specifier: ^4.5.0
         version: 4.5.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      react-monaco-editor:
-        specifier: ^0.50.1
-        version: 0.50.1(@types/react@18.2.15)(monaco-editor@0.50.0)(react@18.2.0)
       react-resizable:
         specifier: ^3.0.4
         version: 3.0.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -6215,13 +6212,6 @@ packages:
 
   react-is@18.2.0:
     resolution: {integrity: sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==}
-
-  react-monaco-editor@0.50.1:
-    resolution: {integrity: sha512-qvYdJhQdkPIrPDMxCrEl0T2x9TfBB+aUbrpFv69FwoTybeyfAjxgJ219MYSsgn3c/g06BgyLX4ENrXM4niZ9ag==}
-    peerDependencies:
-      '@types/react': '>=17 <= 18'
-      monaco-editor: ^0.34.0
-      react: '>=17 <= 18'
 
   react-remove-scroll-bar@2.3.4:
     resolution: {integrity: sha512-63C4YQBUt0m6ALadE9XV56hV8BgJWDmmTPY758iIJjfQKt2nYwoUrPk0LXRXcB/yIj82T1/Ixfdpdk68LwIB0A==}
@@ -15937,13 +15927,6 @@ snapshots:
   react-is@16.13.1: {}
 
   react-is@18.2.0: {}
-
-  react-monaco-editor@0.50.1(@types/react@18.2.15)(monaco-editor@0.50.0)(react@18.2.0):
-    dependencies:
-      '@types/react': 18.2.15
-      monaco-editor: 0.50.0
-      prop-types: 15.8.1
-      react: 18.2.0
 
   react-remove-scroll-bar@2.3.4(@types/react@18.2.15)(react@18.2.0):
     dependencies:

@@ -80,12 +80,7 @@ libraries, built-in keywords. */
 
 /* The style of current line highlight in Monaco */
 .focused .remirror-line-highlight {
-  background-color: rgba(223, 243, 205, 0.5);
-}
-
-/* The style of current line highlight in Monaco */
-.monaco-editor .view-overlays .current-line {
-  background-color: rgba(223, 243, 205, 0.5) !important;
+  background-color: #00ff3320;
 }
 
 .suggestions {
@@ -138,15 +133,6 @@ https://codepen.io/stevenlewis/pen/jOKvMx */
   border-radius: 8px;
   border: 2px solid white; /* should match background, can't be transparent */
   background-color: rgba(0, 0, 0, 0.5);
-}
-
-/* Set border radius for monaco-editor */
-.overflow-guard {
-  border-radius: 10px;
-}
-
-.monaco-editor {
-  border-radius: 10px;
 }
 
 /* Make lucide icons respect current fontSize. */

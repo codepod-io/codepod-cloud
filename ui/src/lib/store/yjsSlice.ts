@@ -187,26 +187,9 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     // load initial nodes
     const nodesMap = getNodesMap(get);
     const edgesMap = getEdgesMap(get);
-    const codeMap = getCodeMap(get);
-    const richMap = getRichMap(get);
     // init nodesMap
     if (nodesMap.size == 0) {
-      nodesMap.set("ROOT", {
-        id: "ROOT",
-        type: "RICH",
-        position: { x: 0, y: 0 },
-        data: {
-          level: 0,
-          children: [],
-          folded: false,
-          isScope: false,
-        },
-        style: {
-          width: 300,
-          // height: 100,
-        },
-      });
-      richMap.set("ROOT", new Y.XmlFragment());
+      throw new Error("nodesMap is empty");
     }
 
     updateView(get, set);
@@ -239,6 +222,7 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
             updateView(get, set);
             break;
           case "update":
+            updateView(get, set);
             break;
           default:
             console.warn("unhandled change action", change.action);

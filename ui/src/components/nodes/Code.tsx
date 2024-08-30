@@ -460,7 +460,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
       // className="nodrag"
       style={{
         width: "100%",
-        minWidth: "300px",
         // This is the key to let the node auto-resize w.r.t. the content.
         height: "auto",
         // minHeight: "50px",
@@ -474,7 +473,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         borderRadius: "8px",
         // border: isCutting ? "3px dash" : "3px solid",
         // borderColor: focused ? "black" : "transparent",
-        border: cutId === id ? "3px dashed red" : "3px solid transparent",
+        border: cutId === id ? "5px dashed red" : "5px solid transparent",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
       }}
       className="nodrag"
@@ -482,20 +481,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-
-          // border: "solid 1px black",
-          backgroundColor: "white",
-
-          // NOTE: monaco editor has a overflow-guard that needs to have border
-          // radius as well. See .overflow-guard and .monaco-editor in
-          // custom.css.
-          borderRadius: "4px",
-        }}
-      >
+      <Flex direction="column">
         {!env.READ_ONLY && (
           <motion.div
             animate={{
@@ -505,14 +491,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
             <MyPodToolbar node={node} />
           </motion.div>
         )}
-        <div
-          style={{
-            paddingTop: "5px",
-            cursor: "auto",
-          }}
-        >
-          <MyMonaco node={node} />
-        </div>
+        <MyMonaco node={node} />
         <ResultBlock id={id} />
         <SymbolTable id={id} />
 
@@ -570,16 +549,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
           minHeight={50}
           // this allows the resize happens in X-axis only.
           position="right"
-          onResizeEnd={() => {
-            // remove style.height so that the node auto-resizes.
-            const node = nodesMap.get(id);
-            if (node) {
-              nodesMap.set(id, {
-                ...node,
-                style: { ...node.style, height: undefined },
-              });
-            }
-          }}
           // FIXME couldn't get the variant to work.
           variant={"line" as any}
           // variant={ResizeControlVariant.Line}
@@ -589,7 +558,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
             transform: "translateX(-30%)",
           }}
         />
-      </div>
+      </Flex>
     </div>
   );
 }

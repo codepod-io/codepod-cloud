@@ -508,16 +508,6 @@ export const RichNode = function ({ id }: { id: string }) {
           minHeight={50}
           // this allows the resize happens in X-axis only.
           position="right"
-          onResizeEnd={() => {
-            // remove style.height so that the node auto-resizes.
-            const node = nodesMap.get(id);
-            if (node) {
-              nodesMap.set(id, {
-                ...node,
-                style: { ...node.style, height: undefined },
-              });
-            }
-          }}
           // FIXME
           variant={"line" as any}
           // variant={ResizeControlVariant.Line}

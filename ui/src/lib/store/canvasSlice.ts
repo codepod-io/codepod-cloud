@@ -14,25 +14,12 @@ import { useCallback } from "react";
 import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
-import { level2color, myNanoId } from "../utils/utils";
+import { myNanoId } from "../utils/utils";
 import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
 
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
 import { toast } from "react-toastify";
-
-const newScopeNodeShapeConfig = {
-  width: 600,
-  height: 600,
-};
-
-export const newNodeShapeConfig = {
-  width: 300,
-  // NOTE for import ipynb: we need to specify some reasonable height so that
-  // the imported pods can be properly laid-out. 130 is a good one.
-  // This number is also used in Canvas.tsx (refer to "A BIG HACK" in Canvas.tsx).
-  height: 100,
-};
 
 /**
  * Create a new node. The node will start from the given position. Typically
@@ -53,6 +40,7 @@ function createNewNode(
     id,
     type,
     position,
+    width: 300,
     dragHandle: ".custom-drag-handle",
   };
   switch (type) {
@@ -1215,7 +1203,14 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           // is changed due to content height changes.
           const node = nextNodes.find((n) => n.id === change.id);
           if (!node) throw new Error(`Node not found: ${change.id}`);
-          nodesMap.set(change.id, node as AppNode);
+          nodesMap.set(change.id, {
+            ...node,
+            width: node.width,
+            // Need to set height to undefined to let reactflow grow
+            // automatically according to the content. Even a width change will
+            // set the height.
+            height: undefined,
+          } as AppNode);
         }
         break;
       case "position":

@@ -164,10 +164,6 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
         isScope: false,
         folded: false,
       },
-      style: {
-        width: 300,
-        // height: 100,
-      },
     };
     nodesMap.set("ROOT", rootNode);
 
@@ -177,6 +173,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       type: "CODE",
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: -74 },
+      width: 300,
       data: {
         children: [],
         parent: "ROOT",
@@ -190,6 +187,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       // a python code pod
       id: pod2_id,
       type: "CODE",
+      width: 300,
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: 97 },
       data: {
