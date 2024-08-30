@@ -1,15 +1,7 @@
 import { Position } from "monaco-editor";
-import {
-  useState,
-  useContext,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-} from "react";
+import { useState, useEffect, useRef } from "react";
 
-import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
-import { monaco } from "react-monaco-editor";
+import * as monaco from "monaco-editor";
 
 import { MonacoBinding } from "y-monaco";
 import { copilotTrpc } from "@/lib/trpc";
@@ -44,6 +36,7 @@ import { ATOM_editMode } from "@/lib/store/atom";
 import { env } from "@/lib/vars";
 import { ParseResult } from "@/lib/parser";
 import { CodeNodeType } from "@/lib/store/types";
+import { css } from "@emotion/css";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -69,7 +62,7 @@ const theme: monaco.editor.IStandaloneThemeData = {
   rules: [],
   colors: {
     // "editor.background": "#f3f3f340",
-    "editor.lineHighlightBackground": "#f3f3f340",
+    "editor.lineHighlightBackground": "#00ff3320",
   },
 };
 monaco.editor.defineTheme("codepod", theme);
@@ -124,7 +117,7 @@ function decide_indent_open(line) {
   }
 }
 
-function racket_format(model) {
+function racket_format(model: monaco.editor.ITextModel) {
   // console.log("executing formatting");
   // 1. scan from pos 1,1
   // record current indent, from 0
@@ -134,12 +127,19 @@ function racket_format(model) {
   // - if n_open < n_close: find the last close, and find the match brackets
   let indent = 0;
   let shifts: { [key: number]: number } = {};
+
   for (let linum = 1; linum <= model.getLineCount(); linum += 1) {
     let line = model.getLineContent(linum);
-    if (line.trim().length === 0) {
-      // console.log("line empty");
-      continue;
-    }
+
+    // Trim trailing whitespace
+    // let trimmedLine = line.trimRight();
+    // trim trailing whitespace
+    // if (trimmedLine.length !== line.length) {
+    //   res.push({
+    //     range: new monaco.Range(linum, 1, linum, line.length + 1),
+    //     text: trimmedLine,
+    //   });
+    // }
     // console.log("indent:", linum, indent);
     let old_indent = line.length - line.trimLeft().length;
     if (indent !== old_indent) {
@@ -156,15 +156,35 @@ function racket_format(model) {
       // find the last close
       // CAUTION I have to have the "new" keyword here, otherwise Error
       let end_pos = new Position(linum, model.getLineMaxColumn(linum));
-      let range = model.findPreviousMatch(")", end_pos, false).range;
-      let pos = new Position(range.endLineNumber, range.endColumn);
-      let match = model.matchBracket(pos);
-      // this is actually a unmatched parenthesis
-      if (!match) {
+      let range = model.findPreviousMatch(
+        ")",
+        end_pos,
+        false,
+        false,
+        null,
+        false
+      )?.range;
+      if (!range) {
         console.log("warning: unmatched parens");
         return [];
       }
-      let openPos = match[1];
+      let pos = new Position(range.endLineNumber, range.endColumn);
+      // bracketPairs is an internal method. Defined here:
+      // https://github.com/microsoft/vscode/blob/11ad426fe21df1d2a51b46200fb126cfdc2cb531/src/vs/editor/common/model.ts#L1311
+      // https://github.com/microsoft/vscode/blob/11ad426fe21df1d2a51b46200fb126cfdc2cb531/src/vs/editor/common/textModelBracketPairs.ts#L66
+      let match = (model as any).bracketPairs.matchBracket(pos);
+      // this is actually a unmatched parenthesis
+      if (!match) {
+        console.log("warning: unmatched parens");
+        // return [];
+
+        // Instead of returning, we just skip further passing, and return the
+        // edits so far. This is useful when users are editing in the middle of
+        // the program, and may need to just delete remaining code.
+        break;
+      }
+      // match[0] is the open position, match[1] is the close position
+      let openPos = match[0];
       let shift = shifts[openPos.startLineNumber] || 0;
 
       // detect (define (XXX)
@@ -172,7 +192,7 @@ function racket_format(model) {
       let match2 = line2
         .substring(0, openPos.startColumn)
         .match(/\((define|lambda|let\*?|for|for\/list)\s*\($/);
-      if (match2) {
+      if (match2 && match2.index) {
         indent = match2.index + 2 + shift;
       } else {
         indent = openPos.startColumn - 1 + shift;
@@ -181,7 +201,7 @@ function racket_format(model) {
   }
   // console.log("shifts:", shifts);
   // console.log("computing edits ..");
-  let res: any[] = [];
+  let res: monaco.languages.ProviderResult<monaco.languages.TextEdit[]> = [];
   for (const [linum, shift] of Object.entries(shifts)) {
     let edit = {
       range: {
@@ -202,96 +222,25 @@ monaco.languages.registerDocumentFormattingEditProvider("scheme", {
   // CAUTION this won't give error feedback
   provideDocumentFormattingEdits: racket_format,
 });
-
-export function MyMonacoDiff({ from, to }) {
-  return (
-    <MonacoDiffEditor
-      // width="800"
-      // height="600"
-      language="javascript"
-      original={from || ""}
-      value={to || ""}
-      options={{
-        selectOnLineNumbers: true,
-        scrollBeyondLastLine: false,
-        folding: false,
-        lineNumbersMinChars: 3,
-        wordWrap: "on",
-        wrappingStrategy: "advanced",
-        minimap: {
-          enabled: false,
-        },
-        renderOverviewRuler: false,
-        scrollbar: {
-          alwaysConsumeMouseWheel: false,
-        },
-        renderSideBySide: false,
-        readOnly: true,
-      }}
-      editorDidMount={(editor, monaco) => {
-        // const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight)
-        // const lineCount = editor.getModel()?.getLineCount() || 1
-        // const height = editor.getTopForLineNumber(lineCount + 1) + lineHeight
-        const updateHeight = () => {
-          const one = editor.getOriginalEditor();
-          const two = editor.getModifiedEditor();
-          // console.log(
-          //   "one, two",
-          //   one.getContentHeight(),
-          //   two.getContentHeight()
-          // );
-
-          // max height: 400
-          const contentHeight = Math.min(
-            400,
-            Math.max(one.getContentHeight(), two.getContentHeight())
-          );
-          // console.log("target height:", contentHeight);
-          const editorElement = editor.getContainerDomNode();
-          if (!editorElement) {
-            return;
-          }
-          editorElement.style.height = `${contentHeight}px`;
-          // console.log("do the updating ..");
-          editor.layout();
-        };
-
-        editor.onDidUpdateDiff(() => {
-          // console.log("updating diff ..");
-          updateHeight();
-        });
-      }}
-    />
-  );
-}
-
-async function computeDiff(
-  original,
-  modified
-): Promise<monaco.editor.ILineChange[] | null> {
-  return new Promise((resolve, reject) => {
-    // 1. get a diff editor
-    // 2. onDidUpdateDiff
-    // 3. get the diff and return
-    const originalModel = monaco.editor.createModel(original);
-    const modifiedModel = monaco.editor.createModel(modified);
-    // a dummy element just for creating the diff editor
-    let elem = document.createElement("div");
-    var diffEditor = monaco.editor.createDiffEditor(elem, {
-      // You can optionally disable the resizing
-      enableSplitViewResizing: false,
+monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
+  autoFormatTriggerCharacters: ["(", ")", "\n"], // You can add more trigger characters if needed
+  provideOnTypeFormattingEdits: (model, position, ch, options, token) => {
+    // use the logic from racket_format
+    let edits = racket_format(model);
+    // find the line number
+    let linum = position.lineNumber;
+    let edit = edits.find((edit) => {
+      return (
+        edit.range.startLineNumber <= linum && edit.range.endLineNumber >= linum
+      );
     });
-    diffEditor.setModel({
-      original: originalModel,
-      modified: modifiedModel,
-    });
-    diffEditor.onDidUpdateDiff(() => {
-      // this is the result
-      let res = diffEditor.getLineChanges();
-      resolve(res);
-    });
-  });
-}
+    if (edit) {
+      return [edit];
+    } else {
+      return [];
+    }
+  },
+});
 
 /**
  * Highlight the given symbol table annotations in the editor, including
@@ -369,75 +318,13 @@ function highlightAnnotations(
   );
 }
 
-async function updateGitGutter(editor) {
-  if (!editor.oldDecorations) {
-    editor.oldDecorations = [];
-  }
-  const gitvalue = editor.staged;
-  const value = editor.getValue();
-  // console.log("computing diff with", gitvalue, "value:", value);
-  // console.log("editor.staged", editor.staged);
-  let diffs = await computeDiff(gitvalue, value);
-  // console.log("original", gitvalue);
-  // console.log("modified", value);
-  // console.log("diffs:", diffs);
-  let decorations: any[] = [];
-  for (const diff of diffs || []) {
-    // newly added lines
-    if (diff.originalStartLineNumber > diff.originalEndLineNumber) {
-      // newly added
-      decorations.push({
-        range: new monaco.Range(
-          diff.modifiedStartLineNumber,
-          1,
-          diff.modifiedEndLineNumber,
-          1
-        ),
-        options: {
-          isWholeLine: true,
-          linesDecorationsClassName: "myLineDecoration-add",
-        },
-      });
-    } else {
-      if (diff.modifiedStartLineNumber > diff.modifiedEndLineNumber) {
-        // deleted
-        decorations.push({
-          range: new monaco.Range(
-            diff.modifiedStartLineNumber,
-            1,
-            diff.modifiedStartLineNumber,
-            1
-          ),
-          options: {
-            isWholeLine: true,
-            linesDecorationsClassName: "myLineDecoration-delete",
-          },
-        });
-      } else {
-        // modified
-        decorations.push({
-          range: new monaco.Range(
-            diff.modifiedStartLineNumber,
-            1,
-            diff.modifiedEndLineNumber,
-            1
-          ),
-          options: {
-            isWholeLine: true,
-            linesDecorationsClassName: "myLineDecoration-modified",
-          },
-        });
-      }
-    }
-  }
-  // FIXME this is delta, so need to get previous decos.
-  editor.oldDecorations = editor.deltaDecorations(
-    editor.oldDecorations,
-    decorations
-  );
-}
-
-export const MyMonaco = function MyMonaco({ node }: { node: CodeNodeType }) {
+function useInitEditor({
+  node,
+  editor,
+}: {
+  node: CodeNodeType;
+  editor: monaco.editor.IStandaloneCodeEditor | null;
+}) {
   // there's no racket language support
   const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
   const id = node.id;
@@ -452,8 +339,6 @@ export const MyMonaco = function MyMonaco({ node }: { node: CodeNodeType }) {
 
   // TODO support other languages.
   let lang = node.data.lang;
-  let [editor, setEditor] =
-    useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -467,72 +352,85 @@ export const MyMonaco = function MyMonaco({ node }: { node: CodeNodeType }) {
 
   const { client } = copilotTrpc.useUtils();
 
-  // FIXME useCallback?
-  function onEditorDidMount(
-    editor: monaco.editor.IStandaloneCodeEditor,
-    monaco
-  ) {
-    setEditor(editor);
-    // console.log(Math.min(1000, editor.getContentHeight()));
-    const updateHeight = ({ contentHeight }) => {
-      const editorElement = editor.getDomNode();
-      if (!editorElement) {
-        return;
+  useEffect(() => {
+    if (editor && editor.getModel()) {
+      const updateHeight = ({ contentHeight }) => {
+        const editorElement = editor?.getDomNode();
+        if (!editorElement) {
+          return;
+        }
+        // Set a minimum height of 50px for the code editor.
+        editorElement.style.height = `${Math.max(40, contentHeight)}px`;
+        editor?.layout();
+      };
+      editor.onDidContentSizeChange(updateHeight);
+      // Set the height for the first time.
+      updateHeight({ contentHeight: editor.getContentHeight() });
+      editor.addAction({
+        id: "trigger-inline-suggest",
+        label: "Trigger Suggest",
+        keybindings: [
+          monaco.KeyMod.WinCtrl | monaco.KeyMod.Shift | monaco.KeyCode.Space,
+        ],
+        run: () => {
+          editor?.trigger(null, "editor.action.inlineSuggest.trigger", null);
+        },
+      });
+
+      // editor.onDidChangeModelContent(async (e) => {
+      //   // content is value?
+      //   updateGitGutter(editor);
+      // });
+
+      const llamaCompletionProvider = new llamaInlineCompletionProvider(
+        id,
+        editor,
+        client,
+        copilotManualMode || false
+      );
+      monaco.languages.registerInlineCompletionsProvider(
+        "python",
+        llamaCompletionProvider
+      );
+
+      // bind it to the ytext with pod id
+      if (!codeMap.has(id)) {
+        throw new Error("codeMap doesn't have pod " + id);
       }
-      // Set a minimum height of 50px for the code editor.
-      editorElement.style.height = `${Math.max(100, contentHeight)}px`;
-      editor.layout();
-    };
-    editor.onDidContentSizeChange(updateHeight);
-    editor.addAction({
-      id: "trigger-inline-suggest",
-      label: "Trigger Suggest",
-      keybindings: [
-        monaco.KeyMod.WinCtrl | monaco.KeyMod.Shift | monaco.KeyCode.Space,
-      ],
-      run: () => {
-        editor.trigger(null, "editor.action.inlineSuggest.trigger", null);
-      },
-    });
-
-    // editor.onDidChangeModelContent(async (e) => {
-    //   // content is value?
-    //   updateGitGutter(editor);
-    // });
-
-    const llamaCompletionProvider = new llamaInlineCompletionProvider(
-      id,
-      editor,
-      client,
-      copilotManualMode || false
-    );
-    monaco.languages.registerInlineCompletionsProvider(
-      "python",
-      llamaCompletionProvider
-    );
-
-    // bind it to the ytext with pod id
-    if (!codeMap.has(id)) {
-      throw new Error("codeMap doesn't have pod " + id);
+      const ytext = codeMap.get(id)!;
+      new MonacoBinding(
+        ytext,
+        editor.getModel()!,
+        new Set([editor]),
+        provider?.awareness
+      );
     }
-    const ytext = codeMap.get(id)!;
-    new MonacoBinding(
-      ytext,
-      editor.getModel()!,
-      new Set([editor]),
-      provider?.awareness
-    );
+  }, [editor]);
+}
 
-    // FIXME: make sure the provider.wsconnected is true or it won't display any content.
-  }
+export function MyMonaco({ node }: { node: CodeNodeType }) {
+  const editorRef = useRef(null);
 
+  let [editor, setEditor] =
+    useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
+  const id = node.id;
+
+  // TODO support other languages.
+  let lang = node.data.lang;
   const editMode = useAtomValue(ATOM_editMode);
 
-  return (
-    <MonacoEditor
-      language={lang === "racket" ? "scheme" : lang}
-      theme="codepod"
-      options={{
+  useInitEditor({ node, editor });
+
+  useEffect(() => {
+    if (editorRef.current) {
+      const editor = monaco.editor.create(editorRef.current, {
+        // value: `function hello() {
+        //   alert('Hello world!');
+        // }`,
+        language: lang === "racket" ? "scheme" : lang,
+        theme: "codepod",
         selectOnLineNumbers: true,
         readOnly: env.READ_ONLY || editMode !== "edit",
         fontSize: 14,
@@ -559,8 +457,31 @@ export const MyMonaco = function MyMonaco({ node }: { node: CodeNodeType }) {
         },
         renderLineHighlight: "line",
         renderLineHighlightOnlyWhenFocus: true,
-      }}
-      editorDidMount={onEditorDidMount}
+      });
+
+      setEditor(editor);
+
+      return () => {
+        if (editor) {
+          editor.dispose();
+        }
+        setEditor(null);
+      };
+    }
+  }, []);
+
+  return (
+    <div
+      className={css`
+        .monaco-editor {
+          outline: 0;
+          border-radius: 4px;
+        }
+        .overflow-guard {
+          border-radius: 4px;
+        }
+      `}
+      ref={editorRef}
     />
   );
-};
+}
