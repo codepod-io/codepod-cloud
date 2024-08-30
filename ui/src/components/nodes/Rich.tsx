@@ -432,18 +432,14 @@ function MyPodToolbar({ id }) {
  */
 
 export const RichNode = function ({ id }: { id: string }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const nodesMap = useAtomValue(ATOM_nodesMap);
-  const reactFlowInstance = useReactFlow();
 
   const [hover, setHover] = useState(false);
-
   const [focused, setFocused] = useState(false);
 
   const node = nodesMap.get(id);
-  if (!node) return null;
-
   const cutId = useAtomValue(ATOM_cutId);
+  if (!node) return null;
 
   return (
     <div

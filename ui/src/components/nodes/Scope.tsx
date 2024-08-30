@@ -1,10 +1,19 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { ScopeNodeType } from "@/lib/store/types";
-import { ATOM_addScope } from "@/lib/store/canvasSlice";
-import { DeleteButton, PodToolbar, SlurpButton, UnslurpButton } from "./utils";
+import { ATOM_addNode, ATOM_addScope } from "@/lib/store/canvasSlice";
+import {
+  DeleteButton,
+  JavaScriptLogo,
+  JuliaLogo,
+  PodToolbar,
+  PythonLogo,
+  RacketLogo,
+  SlurpButton,
+  UnslurpButton,
+} from "./utils";
 import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, NotebookPen } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
 import { ATOM_cutId } from "@/lib/store/atom";
 import { motion } from "framer-motion";
@@ -192,6 +201,7 @@ export const ScopeNode = function ({ id }) {
   const node = nodesMap.get(id);
   const cutId = useAtomValue(ATOM_cutId);
   const [hover, setHover] = useState(false);
+  const addNode = useSetAtom(ATOM_addNode);
   if (!node) return null;
   if (node.type !== "SCOPE") throw new Error("Invalid node type");
   // node.data.scopeChildren
@@ -218,6 +228,86 @@ export const ScopeNode = function ({ id }) {
       </motion.div>
       <Handle id="left" type="source" position={Position.Left} />
       <Handle id="right" type="source" position={Position.Right} />
+      {node.data.scopeChildren.length === 0 && (
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger
+            style={{
+              // align to the center
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <Button variant="outline">+</Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content variant="soft">
+            <DropdownMenu.Item
+              shortcut="⌘ D"
+              onSelect={() => {
+                addNode({ anchorId: id, position: "in", type: "RICH" });
+              }}
+            >
+              <NotebookPen /> Doc
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({
+                  anchorId: id,
+                  position: "in",
+                  type: "CODE",
+                  lang: "python",
+                });
+              }}
+            >
+              <PythonLogo /> Python
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({
+                  anchorId: id,
+                  position: "in",
+                  type: "CODE",
+                  lang: "julia",
+                });
+              }}
+            >
+              <JuliaLogo /> Julia
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({
+                  anchorId: id,
+                  position: "in",
+                  type: "CODE",
+                  lang: "javascript",
+                });
+              }}
+            >
+              <JavaScriptLogo /> JavaScript
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({
+                  anchorId: id,
+                  position: "in",
+                  type: "CODE",
+                  lang: "racket",
+                });
+              }}
+            >
+              <RacketLogo /> Racket
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      )}
     </div>
   );
 };
