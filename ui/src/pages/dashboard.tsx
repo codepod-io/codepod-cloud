@@ -295,7 +295,7 @@ function Pagination({ totalPages, currentPage, onPageChange }) {
 
 function PaginatedRepoLists({ repos }: { repos: RepoType[] }) {
   const [page, setPage] = useState(1);
-  const [reposPerPage, setReposPerPage] = useState(10);
+  const [reposPerPage, setReposPerPage] = useState(20);
   const indexOfLastRepo = page * reposPerPage;
   const indexOfFirstRepo = indexOfLastRepo - reposPerPage;
   const currentRepos = repos.slice(indexOfFirstRepo, indexOfLastRepo);
