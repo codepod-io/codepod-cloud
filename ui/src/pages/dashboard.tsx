@@ -8,8 +8,10 @@ import {
   Box,
   Button,
   Card,
+  DropdownMenu,
   Flex,
   IconButton,
+  Select,
   Spinner,
   Tooltip,
 } from "@radix-ui/themes";
@@ -182,21 +184,19 @@ const DeleteRepoButton = ({ repo }) => {
   );
 };
 
-const RepoCard = ({
-  repo,
-}: {
-  repo: {
-    id: string;
-    userId: string;
-    createdAt: string;
-    updatedAt: string;
-    public: boolean;
-    numLikes: number;
-    yDocBlobSize: number;
-    name: string | null;
-    accessedAt: string;
-  };
-}) => {
+type RepoType = {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  public: boolean;
+  numLikes: number;
+  yDocBlobSize: number;
+  name: string | null;
+  accessedAt: string;
+};
+
+const RepoCard = ({ repo }: { repo: RepoType }) => {
   const me = trpc.user.me.useQuery();
   // peiredically re-render so that the "last viwed time" and "lact active time"
   // are updated every second.
@@ -246,6 +246,112 @@ const RepoCard = ({
     </Card>
   );
 };
+
+function Pagination({ totalPages, currentPage, onPageChange }) {
+  const [page, setPage] = useState(currentPage);
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    onPageChange(newPage);
+  };
+
+  return (
+    <Flex align="center" gap="8">
+      <Button
+        variant="ghost"
+        onClick={() => handlePageChange(Math.max(1, page - 1))}
+        disabled={page === 1}
+      >
+        Previous
+      </Button>
+
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <Button variant="ghost">{`Page ${page} of ${totalPages}`}</Button>
+        </DropdownMenu.Trigger>
+
+        <DropdownMenu.Content>
+          {Array.from({ length: totalPages }).map((_, index) => (
+            <DropdownMenu.Item
+              key={index}
+              onSelect={() => handlePageChange(index + 1)}
+            >
+              {`Page ${index + 1}`}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+
+      <Button
+        variant="ghost"
+        onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+        disabled={page === totalPages}
+      >
+        Next
+      </Button>
+    </Flex>
+  );
+}
+
+function PaginatedRepoLists({ repos }: { repos: RepoType[] }) {
+  const [page, setPage] = useState(1);
+  const [reposPerPage, setReposPerPage] = useState(10);
+  const indexOfLastRepo = page * reposPerPage;
+  const indexOfFirstRepo = indexOfLastRepo - reposPerPage;
+  const currentRepos = repos.slice(indexOfFirstRepo, indexOfLastRepo);
+
+  const paginate = (pageNumber) => setPage(pageNumber);
+
+  return (
+    <>
+      <Flex
+        align="center"
+        justify="center"
+        gap="9"
+        style={{
+          padding: "10px",
+        }}
+      >
+        <Pagination
+          totalPages={Math.ceil(repos.length / reposPerPage)}
+          currentPage={page}
+          onPageChange={paginate}
+        />
+        <Flex align="center" gap="3">
+          <Select.Root
+            defaultValue="20"
+            onValueChange={(value: string) => {
+              setReposPerPage(parseInt(value));
+            }}
+          >
+            <Select.Trigger />
+            <Select.Content
+              // Do not auto focus when an item is selected.
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+              }}
+            >
+              <Select.Group>
+                <Select.Label>Per Page</Select.Label>
+                <Select.Item value="20">20</Select.Item>
+                <Select.Item value="30">30</Select.Item>
+                <Select.Item value="50">50</Select.Item>
+              </Select.Group>
+            </Select.Content>
+          </Select.Root>
+          per page
+        </Flex>
+      </Flex>
+      <Flex wrap="wrap">
+        {currentRepos.map((repo) => (
+          <Box style={{ margin: 1 }} key={repo.id}>
+            <RepoCard repo={repo} />
+          </Box>
+        ))}
+      </Flex>
+    </>
+  );
+}
 
 const RepoLists = () => {
   const getDashboardRepos = trpc.repo.getDashboardRepos.useQuery();
@@ -308,13 +414,7 @@ const RepoLists = () => {
           started.
         </Box>
       )}
-      <Flex wrap="wrap">
-        {repos.map((repo) => (
-          <Box style={{ margin: 1 }} key={repo.id}>
-            <RepoCard repo={repo} />
-          </Box>
-        ))}
-      </Flex>
+      <PaginatedRepoLists repos={repos} />
     </>
   );
 };
