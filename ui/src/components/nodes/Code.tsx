@@ -24,7 +24,6 @@ import { MyMonaco } from "../MyMonaco";
 
 import {
   DeleteButton,
-  Handles,
   PodToolbar,
   SlurpButton,
   SymbolTable,
@@ -381,21 +380,6 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
 }
 
 /**
- * Hover on the handle and show different variants.
- */
-function HandleWithHover({ id }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
-      <Handles id={id} hover={hover} />
-    </div>
-  );
-}
-
-/**
  * Listen to Shift+Enter key press and run the code.
  * @param id the ID of the pod.
  * @returns a ref to be attached to a React component so that the hotkey is
@@ -495,7 +479,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         <ResultBlock id={id} />
         <SymbolTable id={id} />
 
-        {/* <HandleWithHover id={id} /> */}
         <Handle id="left" type="source" position={Position.Left} />
         <Handle id="right" type="source" position={Position.Right} />
 

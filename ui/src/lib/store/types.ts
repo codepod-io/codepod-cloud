@@ -2,32 +2,25 @@ import { Node } from "@xyflow/react";
 
 export type NodeData = CodeNodeData | RichNodeData | ScopeNodeData;
 
-export type CodeNodeData = {
+type CommonData = {
   // common data
-  children: string[];
-  parent?: string;
+  treeChildrenIds: string[];
+  treeParentId?: string;
+  scopeParentId?: string;
   folded: boolean;
   isScope: boolean;
+};
+
+export type CodeNodeData = CommonData & {
   // special data
   lang: "python" | "julia" | "javascript" | "racket";
 };
 
-export type RichNodeData = {
-  // common data
-  children: string[];
-  parent?: string;
-  folded: boolean;
-  isScope: boolean;
-};
+export type RichNodeData = CommonData & {};
 
-export type ScopeNodeData = {
-  // common data
-  children: string[];
-  parent?: string;
-  folded: boolean;
-  isScope: boolean;
+export type ScopeNodeData = CommonData & {
   // special data
-  scopeChildren: string[];
+  scopeChildrenIds: string[];
 };
 
 export type CodeNodeType = Node<CodeNodeData, "CODE">;
