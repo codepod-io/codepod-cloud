@@ -14,7 +14,7 @@ import { useCallback } from "react";
 import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
-import { myNanoId } from "../utils/utils";
+import { myassert, myNanoId } from "../utils/utils";
 import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
 
 import debounce from "lodash/debounce";
@@ -32,7 +32,7 @@ function createNewNode(
 ): AppNode {
   let id = myNanoId();
   const commonData = {
-    children: [],
+    treeChildrenIds: [],
     folded: false,
     isScope: false,
   };
@@ -71,7 +71,7 @@ function createNewNode(
           ...commonAttrs,
           data: {
             ...commonData,
-            scopeChildren: [],
+            scopeChildrenIds: [],
           },
         } as ScopeNodeType;
       }
@@ -135,9 +135,9 @@ export function updateView(get: Getter, set: Setter) {
     if (!node) throw new Error(`Node not found: ${id}`);
     if (node.data.folded) return [node];
     let res = [node];
-    res = [...res, ...node.data.children.flatMap(dfs)];
+    res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
     if (node.type === "SCOPE") {
-      res = [...res, ...node.data.scopeChildren.flatMap(dfs)];
+      res = [...res, ...node.data.scopeChildrenIds.flatMap(dfs)];
     }
     return res;
   }
@@ -166,7 +166,7 @@ export function updateView(get: Getter, set: Setter) {
   function generateEdge(nodes: AppNode[]) {
     const edges: Edge[] = [];
     nodes.forEach((node) => {
-      node.data?.children?.map((id: string) => {
+      node.data?.treeChildrenIds?.map((id: string) => {
         edges.push({
           id: `${node.id}-${id}`,
           source: node.id,
@@ -176,7 +176,7 @@ export function updateView(get: Getter, set: Setter) {
         });
       });
       node.type === "SCOPE" &&
-        node.data?.scopeChildren?.map((id: string) => {
+        node.data?.scopeChildrenIds?.map((id: string) => {
           edges.push({
             id: `${node.id}-${id}`,
             source: node.id,
@@ -192,45 +192,6 @@ export function updateView(get: Getter, set: Setter) {
 }
 
 export const ATOM_updateView = atom(null, updateView);
-
-/**
- * Given the anchor node and the handle position, return the insertion position
- * of the new node.
- * @returns {parentId: string, index: number} the parent node id and the index
- * of the new node in the parent's children field.
- */
-function getParentIndex({
-  nodesMap,
-  anchorId,
-  position,
-}: {
-  nodesMap: Y.Map<AppNode>;
-  anchorId: string;
-  position: "top" | "bottom" | "right";
-}): { parentId: string; index: number } {
-  const anchor = nodesMap.get(anchorId);
-  if (!anchor) {
-    throw new Error("Anchor node not found");
-  }
-  if (position === "right") {
-    // add to the end of children
-    return { parentId: anchorId, index: anchor.data.children.length };
-  }
-  const anchorParentId = anchor.data.parent;
-  if (!anchorParentId) {
-    throw new Error("Anchor node has no parent");
-  }
-  const parent = nodesMap.get(anchorParentId)!;
-  const index = parent.data.children.indexOf(anchorId);
-  switch (position) {
-    case "top":
-      return { parentId: anchorParentId, index };
-    case "bottom":
-      return { parentId: anchorParentId, index: index + 1 };
-    default:
-      throw new Error("unknown position");
-  }
-}
 
 export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
   const nodesMap = get(ATOM_nodesMap);
@@ -264,15 +225,9 @@ const addNode_top_bottom = (
 ) => {
   const nodesMap = get(ATOM_nodesMap);
   const anchor = nodesMap.get(anchorId);
-  if (!anchor) {
-    throw new Error("Anchor node not found");
-  }
-  const parentId = anchor.data.parent;
-  if (!parentId) {
-    throw new Error("Anchor node has no parent");
-  }
-  const parent = nodesMap.get(parentId);
-  if (!parent) throw new Error(`Parent node not found: ${parentId}`);
+  myassert(anchor);
+  const treeParentId = anchor.data.treeParentId;
+  const scopeParentId = anchor.data.scopeParentId;
 
   const newNode = createNewNode(type, anchor.position);
   switch (newNode.type) {
@@ -290,51 +245,53 @@ const addNode_top_bottom = (
     ...newNode,
     data: {
       ...newNode.data,
-      parent: parentId,
+      treeParentId: treeParentId,
+      scopeParentId: scopeParentId,
     },
   } as typeof newNode);
 
-  if (parent.type === "SCOPE") {
+  if (scopeParentId) {
     // check in scopeChildren
-    let index = parent.data.scopeChildren.indexOf(anchorId);
-    if (index !== -1) {
-      if (position === "bottom") {
-        index = index + 1;
-      }
-      // add the node to the children field at index
-      const scopeChildren = [...parent.data.scopeChildren];
-      if (index === -1) {
-        scopeChildren.push(newNode.id);
-      } else {
-        scopeChildren.splice(index, 0, newNode.id);
-      }
-      // update the parent node
-      nodesMap.set(parentId, {
-        ...parent,
-        data: {
-          ...parent.data,
-          scopeChildren,
-        },
-      } as typeof parent);
-      return;
+    const scopeParent = nodesMap.get(scopeParentId);
+    myassert(scopeParent);
+    myassert(scopeParent.type === "SCOPE");
+    let index = scopeParent.data.scopeChildrenIds.indexOf(anchorId);
+    myassert(index !== -1);
+    if (position === "bottom") {
+      index = index + 1;
     }
+    // add the node to the children field at index
+    const scopeChildren = [...scopeParent.data.scopeChildrenIds];
+    scopeChildren.splice(index, 0, newNode.id);
+    // update the parent node
+    nodesMap.set(scopeParentId, {
+      ...scopeParent,
+      data: {
+        ...scopeParent.data,
+        scopeChildrenIds: scopeChildren,
+      },
+    } as typeof scopeParent);
+  } else {
+    myassert(treeParentId);
+    const treeParent = nodesMap.get(treeParentId);
+    myassert(treeParent);
+    let index = treeParent.data.treeChildrenIds.indexOf(anchorId);
+    myassert(index !== -1);
+    if (position == "bottom") {
+      index = index + 1;
+    }
+    // add the node to the children field at index
+    const treeChildrenIds = [...treeParent.data.treeChildrenIds];
+    treeChildrenIds.splice(index, 0, newNode.id);
+    // update the parent node
+    nodesMap.set(treeParentId, {
+      ...treeParent,
+      data: {
+        ...treeParent.data,
+        treeChildrenIds,
+      },
+    } as typeof treeParent);
   }
-  let index = parent.data.children.indexOf(anchorId);
-  if (position == "bottom") {
-    index = index + 1;
-  }
-  if (index === -1) return;
-  // add the node to the children field at index
-  const children = [...parent.data.children];
-  children.splice(index, 0, newNode.id);
-  // update the parent node
-  nodesMap.set(parentId, {
-    ...parent,
-    data: {
-      ...parent.data,
-      children,
-    },
-  } as typeof parent);
 
   autoLayoutTree(get, set);
   updateView(get, set);
@@ -398,15 +355,9 @@ const addNode_in = (
   // add node inside the scope (which must be a scope with no children or scopeChildren)
   const nodesMap = get(ATOM_nodesMap);
   const anchor = nodesMap.get(anchorId);
-  if (!anchor) {
-    throw new Error("Anchor node not found");
-  }
-  if (anchor.type !== "SCOPE") {
-    throw new Error("Anchor node is not a scope");
-  }
-  if (anchor.data.scopeChildren.length > 0) {
-    throw new Error("Scope node is not empty");
-  }
+  myassert(anchor);
+  myassert(anchor.type === "SCOPE");
+  myassert(anchor.data.scopeChildrenIds.length === 0);
   const newNode = createNewNode(type, anchor.position);
   switch (newNode.type) {
     case "CODE":
@@ -422,7 +373,7 @@ const addNode_in = (
     ...newNode,
     data: {
       ...newNode.data,
-      parent: anchorId,
+      scopeParentId: anchorId,
     },
   } as typeof newNode);
   // update the parent node
@@ -430,9 +381,9 @@ const addNode_in = (
     ...anchor,
     data: {
       ...anchor.data,
-      scopeChildren: [newNode.id],
+      scopeChildrenIds: [newNode.id],
     },
-  } as typeof anchor);
+  });
   autoLayoutTree(get, set);
   updateView(get, set);
 };
@@ -452,14 +403,7 @@ const addNode_right = (
 ) => {
   const nodesMap = get(ATOM_nodesMap);
   const anchor = nodesMap.get(anchorId);
-  if (!anchor) {
-    throw new Error("Anchor node not found");
-  }
-  const parentId = anchorId;
-  const index = anchor.data.children.length;
-  const parent = nodesMap.get(parentId);
-  if (!parent) throw new Error(`Parent node not found: ${parentId}`);
-
+  myassert(anchor);
   const newNode = createNewNode(type, anchor.position);
   switch (newNode.type) {
     case "CODE":
@@ -475,25 +419,18 @@ const addNode_right = (
     ...newNode,
     data: {
       ...newNode.data,
-      parent: parentId,
+      treeParentId: anchorId,
     },
   } as typeof newNode);
 
-  // add the node to the children field at index
-  const children = [...parent.data.children];
-  if (index === -1) {
-    children.push(newNode.id);
-  } else {
-    children.splice(index, 0, newNode.id);
-  }
   // update the parent node
-  nodesMap.set(parentId, {
-    ...parent,
+  nodesMap.set(anchorId, {
+    ...anchor,
     data: {
-      ...parent.data,
-      children,
+      ...anchor.data,
+      treeChildrenIds: [...anchor.data.treeChildrenIds, newNode.id],
     },
-  } as typeof parent);
+  } as typeof anchor);
   autoLayoutTree(get, set);
   updateView(get, set);
 };
@@ -564,11 +501,11 @@ function checkCutValid({
   // loop through the subtree of cutId, if we find anchorId, return false.
   const dfs = (id: string): boolean => {
     const node = nodesMap.get(id);
-    if (!node) throw new Error("Node not found");
+    myassert(node);
     if (id === anchorId) return false;
     return [
-      ...node.data.children,
-      ...(node.type === "SCOPE" ? node.data.scopeChildren : []),
+      ...node.data.treeChildrenIds,
+      ...(node.type === "SCOPE" ? node.data.scopeChildrenIds : []),
     ].every((childId) => dfs(childId));
   };
   return dfs(cutId);
@@ -589,90 +526,101 @@ function moveCut_top_bottom(
   const anchor = nodesMap.get(anchorId);
   if (!anchor) throw new Error("Anchor node not found");
   // the new parent is the anchor's parent
-  const newParentId = anchor.data.parent;
-  if (!newParentId) throw new Error("Anchor node has no parent");
-  const newParent = nodesMap.get(newParentId);
-  if (!newParent) throw new Error("Parent not found");
+  const new_treeParentId = anchor.data.treeParentId;
+  const new_scopeParentId = anchor.data.scopeParentId;
 
   // The cut node
   const node = nodesMap.get(cutId);
-  if (!node) throw new Error("Node not found");
-  const oldParentId = node.data.parent;
-  if (!oldParentId) throw new Error("Node has no parent");
-  const oldParent = nodesMap.get(oldParentId);
-  if (!oldParent) throw new Error("Old parent not found");
+  myassert(node);
+  const old_treeParentId = node.data.treeParentId;
+  const old_scopeParentId = node.data.scopeParentId;
 
   // remove the node from the old parent
-  if (
-    oldParent.type === "SCOPE" &&
-    oldParent.data.scopeChildren.includes(cutId)
-  ) {
-    const oldScopeChildren = oldParent.data.scopeChildren;
-    const oldIndex = oldScopeChildren.indexOf(cutId);
-    oldScopeChildren.splice(oldIndex, 1);
-    nodesMap.set(oldParentId, {
-      ...oldParent,
+  if (old_scopeParentId) {
+    const old_scopeParent = nodesMap.get(old_scopeParentId);
+    myassert(old_scopeParent);
+    myassert(old_scopeParent.type === "SCOPE");
+    const oldScopeChildrenIds = old_scopeParent.data.scopeChildrenIds;
+    const oldIndex = oldScopeChildrenIds.indexOf(cutId);
+    oldScopeChildrenIds.splice(oldIndex, 1);
+    nodesMap.set(old_scopeParentId, {
+      ...old_scopeParent,
       data: {
-        ...oldParent.data,
-        scopeChildren: oldScopeChildren,
+        ...old_scopeParent.data,
+        scopeChildrenIds: oldScopeChildrenIds,
       },
     });
   } else {
-    const oldChildren = oldParent.data.children;
+    myassert(old_treeParentId);
+    const old_treeParent = nodesMap.get(old_treeParentId);
+    myassert(old_treeParent);
+    const oldChildren = old_treeParent.data.treeChildrenIds;
     const oldIndex = oldChildren.indexOf(cutId);
     oldChildren.splice(oldIndex, 1);
-    nodesMap.set(oldParentId, {
-      ...oldParent,
+    nodesMap.set(old_treeParentId, {
+      ...old_treeParent,
       data: {
-        ...oldParent.data,
-        children: oldChildren,
+        ...old_treeParent.data,
+        treeChildrenIds: oldChildren,
       },
-    } as typeof oldParent);
+    } as typeof old_treeParent);
   }
   // add the node to the new parent
-  if (
-    newParent.type === "SCOPE" &&
-    newParent.data.scopeChildren.includes(anchorId)
-  ) {
-    const newScopeChildren = newParent.data.scopeChildren;
-    const index = newScopeChildren.indexOf(anchorId);
+  if (new_scopeParentId) {
+    const new_scopeParent = nodesMap.get(new_scopeParentId);
+    myassert(new_scopeParent);
+    myassert(new_scopeParent.type === "SCOPE");
+    const scopeChildrenIds = new_scopeParent.data.scopeChildrenIds;
+    const index = scopeChildrenIds.indexOf(anchorId);
     if (position === "top") {
-      newScopeChildren.splice(index, 0, cutId);
+      scopeChildrenIds.splice(index, 0, cutId);
     } else {
-      newScopeChildren.splice(index + 1, 0, cutId);
+      scopeChildrenIds.splice(index + 1, 0, cutId);
     }
-    nodesMap.set(newParentId, {
-      ...newParent,
+    nodesMap.set(new_scopeParentId, {
+      ...new_scopeParent,
       data: {
-        ...newParent.data,
-        scopeChildren: newScopeChildren,
+        ...new_scopeParent.data,
+        scopeChildrenIds: scopeChildrenIds,
       },
     });
-  } else {
-    const newChildren = newParent.data.children;
-    const index = newChildren.indexOf(anchorId);
-    if (position === "top") {
-      newChildren.splice(index, 0, cutId);
-    } else {
-      newChildren.splice(index + 1, 0, cutId);
-    }
-    nodesMap.set(newParentId, {
-      ...newParent,
+    // update the node's parent
+    nodesMap.set(cutId, {
+      ...node,
       data: {
-        ...newParent.data,
-        children: newChildren,
+        ...node.data,
+        scopeParentId: new_scopeParentId,
+        treeParentId: undefined,
       },
-    } as typeof newParent);
+    } as typeof node);
+  } else {
+    myassert(new_treeParentId);
+    const new_treeParent = nodesMap.get(new_treeParentId);
+    myassert(new_treeParent);
+    const treeChildrenIds = new_treeParent.data.treeChildrenIds;
+    const index = treeChildrenIds.indexOf(anchorId);
+    if (position === "top") {
+      treeChildrenIds.splice(index, 0, cutId);
+    } else {
+      treeChildrenIds.splice(index + 1, 0, cutId);
+    }
+    nodesMap.set(new_treeParentId, {
+      ...new_treeParent,
+      data: {
+        ...new_treeParent.data,
+        treeChildrenIds,
+      },
+    } as typeof new_treeParent);
+    // update the node's parent
+    nodesMap.set(cutId, {
+      ...node,
+      data: {
+        ...node.data,
+        treeParentId: new_treeParentId,
+        scopeParentId: undefined,
+      },
+    } as typeof node);
   }
-
-  // update the node's parent
-  nodesMap.set(cutId, {
-    ...node,
-    data: {
-      ...node.data,
-      parent: newParentId,
-    },
-  } as typeof node);
 
   // Do not clear the cutId, so that it can be explicit to the user which pod
   // is being moved.
@@ -684,70 +632,72 @@ function moveCut_top_bottom(
 
 function moveCut_right(get: Getter, set: Setter, anchorId: string) {
   const cutId = get(ATOM_cutId);
-  if (!cutId) throw new Error("No node to move");
-  if (anchorId === cutId) throw new Error("Cannot move a node to itself");
+  myassert(cutId);
+  myassert(anchorId !== cutId);
   // move the node id to the new position
   // get the parent node of the anchor node
   const nodesMap = get(ATOM_nodesMap);
   const anchor = nodesMap.get(anchorId);
-  if (!anchor) throw new Error("Anchor node not found");
+  myassert(anchor);
   // the new parent is the anchor's parent
-  const newParentId = anchorId;
-  const newParent = nodesMap.get(newParentId);
-  if (!newParent) throw new Error("Parent not found");
+  const new_treeParentId = anchorId;
+  const new_treeParent = nodesMap.get(new_treeParentId);
+  myassert(new_treeParent);
 
   // The cut node
   const node = nodesMap.get(cutId);
-  if (!node) throw new Error("Node not found");
-  const oldParentId = node.data.parent;
-  if (!oldParentId) throw new Error("Node has no parent");
-  const oldParent = nodesMap.get(oldParentId);
-  if (!oldParent) throw new Error("Old parent not found");
+  myassert(node);
 
+  const old_treeParentId = node.data.treeParentId;
   // remove the node from the old parent
-  if (
-    oldParent.type === "SCOPE" &&
-    oldParent.data.scopeChildren.includes(cutId)
-  ) {
-    const oldScopeChildren = oldParent.data.scopeChildren;
+  if (node.data.scopeParentId) {
+    const old_scopeParentId = node.data.scopeParentId;
+    const old_scopeParent = nodesMap.get(old_scopeParentId);
+    myassert(old_scopeParent);
+    myassert(old_scopeParent.type === "SCOPE");
+    const oldScopeChildren = old_scopeParent.data.scopeChildrenIds;
     const oldIndex = oldScopeChildren.indexOf(cutId);
     oldScopeChildren.splice(oldIndex, 1);
-    nodesMap.set(oldParentId, {
-      ...oldParent,
+    nodesMap.set(old_scopeParentId, {
+      ...old_scopeParent,
       data: {
-        ...oldParent.data,
+        ...old_scopeParent.data,
         scopeChildren: oldScopeChildren,
       },
     });
   } else {
-    const oldChildren = oldParent.data.children;
+    const old_treeParentId = node.data.treeParentId;
+    myassert(old_treeParentId);
+    const old_treeParent = nodesMap.get(old_treeParentId);
+    myassert(old_treeParent);
+    const oldChildren = old_treeParent.data.treeChildrenIds;
     const oldIndex = oldChildren.indexOf(cutId);
     oldChildren.splice(oldIndex, 1);
-    nodesMap.set(oldParentId, {
-      ...oldParent,
+    nodesMap.set(old_treeParentId, {
+      ...old_treeParent,
       data: {
-        ...oldParent.data,
-        children: oldChildren,
+        ...old_treeParent.data,
+        treeChildrenIds: oldChildren,
       },
-    } as typeof oldParent);
+    } as typeof old_treeParent);
   }
   // add the node to the new parent
-  const newChildren = newParent.data.children;
+  const newChildren = new_treeParent.data.treeChildrenIds;
   newChildren.push(cutId);
-  nodesMap.set(newParentId, {
-    ...newParent,
+  nodesMap.set(new_treeParentId, {
+    ...new_treeParent,
     data: {
-      ...newParent.data,
-      children: newChildren,
+      ...new_treeParent.data,
+      treeChildrenIds: newChildren,
     },
-  } as typeof newParent);
+  } as typeof new_treeParent);
 
   // update the node's parent
   nodesMap.set(cutId, {
     ...node,
     data: {
       ...node.data,
-      parent: newParentId,
+      treeParentId: new_treeParentId,
     },
   } as typeof node);
 
@@ -788,77 +738,87 @@ export const ATOM_addScope = atom(null, (get, set, id: string) => {
 
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  if (!node) throw new Error("Node not found");
-  const parentId = node.data.parent;
-  if (!parentId) throw new Error("Node has no parent");
-  const parent = nodesMap.get(parentId);
-  if (!parent) throw new Error("Parent not found");
-  // create a new scope node
+  myassert(node);
   const newScopeNode = createNewNode("SCOPE", node.position);
-  // put the new node in the parent's children field
-  if (parent.type === "SCOPE" && parent.data.scopeChildren.includes(id)) {
-    const parentScopeChildren = parent.data.scopeChildren;
-    const index = parentScopeChildren.indexOf(id);
-    parentScopeChildren.splice(index, 1, newScopeNode.id);
-    nodesMap.set(parentId, {
-      ...parent,
-      data: {
-        ...parent.data,
-        scopeChildren: parentScopeChildren,
-      },
-    } as typeof parent);
-  } else {
-    const parentChildren = parent.data.children;
-    const index = parentChildren.indexOf(id);
-    if (index === -1) throw new Error("Node not found in parent");
-    parentChildren.splice(index, 1, newScopeNode.id);
-    nodesMap.set(parentId, {
-      ...parent,
-      data: {
-        ...parent.data,
-        children: parentChildren,
-      },
-    } as typeof parent);
-  }
-
-  // update the scope node
-  // 1. the node will be the scopeChildren of the scope node
-  // 2. the children of the node will be the children of the scope node
-  nodesMap.set(newScopeNode.id, {
-    ...newScopeNode,
-    data: {
-      ...newScopeNode.data,
-      parent: parentId,
-      scopeChildren: [id],
-      children: node.data.children,
-    },
-  } as typeof newScopeNode);
-  // update the node children's parent to be this new scope node
-  node.data.children.forEach((childId) => {
-    const child = nodesMap.get(childId);
-    if (!child) throw new Error("Child not found");
-    nodesMap.set(childId, {
-      ...child,
-      data: {
-        ...child.data,
-        parent: newScopeNode.id,
-      },
-    } as typeof child);
-  });
-  // update the node
-  // 1. the scope node will be the parent of the node
+  const scopeParentId = node.data.scopeParentId;
+  const treeParentId = node.data.treeParentId;
+  // Connect the new scope node to this node.
   nodesMap.set(id, {
     ...node,
     data: {
       ...node.data,
-      parent: newScopeNode.id,
-      children: [],
+      scopeParentId: newScopeNode.id,
     },
   } as typeof node);
+
+  // put the new node in the parent's children field
+  if (scopeParentId) {
+    // The parent is a scope.
+    const scopeParent = nodesMap.get(scopeParentId);
+    myassert(scopeParent);
+    myassert(scopeParent.type === "SCOPE");
+    const parentScopeChildrenIds = scopeParent.data.scopeChildrenIds;
+    const index = parentScopeChildrenIds.indexOf(id);
+    parentScopeChildrenIds.splice(index, 1, newScopeNode.id);
+    nodesMap.set(scopeParentId, {
+      ...scopeParent,
+      data: {
+        ...scopeParent.data,
+        scopeChildren: parentScopeChildrenIds,
+      },
+    } as typeof scopeParent);
+    // update the scope node
+    // 1. the node will be the scopeChildren of the scope node
+    // 2. the children of the node will be the children of the scope node
+    nodesMap.set(newScopeNode.id, {
+      ...newScopeNode,
+      data: {
+        ...newScopeNode.data,
+        scopeParentId: scopeParentId,
+        scopeChildrenIds: [id],
+        treeChildrenIds: node.data.treeChildrenIds,
+      },
+    } as typeof newScopeNode);
+  } else {
+    // The parent is a tree node.
+    myassert(treeParentId);
+    const treeParent = nodesMap.get(treeParentId);
+    myassert(treeParent);
+    const treeChildrenIds = treeParent.data.treeChildrenIds;
+    const index = treeChildrenIds.indexOf(id);
+    myassert(index !== -1);
+    treeChildrenIds.splice(index, 1, newScopeNode.id);
+    nodesMap.set(treeParentId, {
+      ...treeParent,
+      data: {
+        ...treeParent.data,
+        treeChildrenIds: treeChildrenIds,
+      },
+    } as typeof treeParent);
+    // update the scope node
+    // 1. the node will be the scopeChildren of the scope node
+    // 2. the children of the node will be the children of the scope node
+    nodesMap.set(newScopeNode.id, {
+      ...newScopeNode,
+      data: {
+        ...newScopeNode.data,
+        treeParentId,
+        scopeChildrenIds: [id],
+        treeChildrenIds: node.data.treeChildrenIds,
+      },
+    } as typeof newScopeNode);
+  }
+
   autoLayoutTree(get, set);
   updateView(get, set);
 });
 
+/**
+ * Add a node to the left.
+ * The new node will be the parent of the anchor node.
+ * The anchor node will be the only child of the new node.
+ * The anchorNode can be a children or a scopeChildren of its parent node. We need to update the parent node accordingly.
+ */
 function wrap({
   get,
   set,
@@ -875,11 +835,7 @@ function wrap({
   // wrap the node with a new parent node, i.e., add a node between the node and its parent.
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  if (!node) throw new Error("Node not found");
-  const parentId = node.data.parent;
-  if (!parentId) return;
-  const parent = nodesMap.get(parentId);
-  if (!parent) throw new Error("Parent not found");
+  myassert(node);
   // create a new node
   const newNode = createNewNode(type, node.position);
   switch (newNode.type) {
@@ -896,34 +852,42 @@ function wrap({
     ...newNode,
     data: {
       ...newNode.data,
-      parent: parentId,
+      treeParentId: node.data.treeParentId,
       lang,
-      children: [id],
+      treeChildrenIds: [id],
     },
   } as typeof newNode);
   // update the parent node
-  if (parent.type === "SCOPE" && parent.data.scopeChildren.includes(id)) {
-    const index = parent.data.scopeChildren.indexOf(id);
-    parent.data.scopeChildren.splice(index, 1, newNode.id);
-    nodesMap.set(parentId, {
-      ...parent,
+  if (node.data.scopeParentId) {
+    const scopeParent = nodesMap.get(node.data.scopeParentId);
+    myassert(scopeParent);
+    myassert(scopeParent.type === "SCOPE");
+    const index = scopeParent.data.scopeChildrenIds.indexOf(id);
+    myassert(index !== -1);
+    scopeParent.data.scopeChildrenIds.splice(index, 1, newNode.id);
+    nodesMap.set(node.data.scopeParentId, {
+      ...scopeParent,
       data: {
-        ...parent.data,
-        scopeChildren: parent.data.scopeChildren,
+        ...scopeParent.data,
+        scopeChildrenIds: scopeParent.data.scopeChildrenIds,
       },
-    } as typeof parent);
+    } as typeof scopeParent);
   } else {
-    const parentChildren = parent.data.children;
+    const treeParentId = node.data.treeParentId;
+    myassert(treeParentId);
+    const treeParent = nodesMap.get(treeParentId);
+    myassert(treeParent);
+    const parentChildren = treeParent.data.treeChildrenIds;
     const index = parentChildren.indexOf(id);
-    if (index === -1) throw new Error("Node not found in parent");
+    myassert(index !== -1);
     parentChildren.splice(index, 1, newNode.id);
-    nodesMap.set(parentId, {
-      ...parent,
+    nodesMap.set(treeParentId, {
+      ...treeParent,
       data: {
-        ...parent.data,
-        children: parentChildren,
+        ...treeParent.data,
+        treeChildrenIds: parentChildren,
       },
-    } as typeof parent);
+    } as typeof treeParent);
   }
 
   // update the node
@@ -931,7 +895,7 @@ function wrap({
     ...node,
     data: {
       ...node.data,
-      parent: newNode.id,
+      treeParentId: newNode.id,
     },
   } as typeof node);
   autoLayoutTree(get, set);
@@ -943,37 +907,37 @@ export const ATOM_slurp = atom(null, (get, set, id: string) => {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) throw new Error("Node not found");
-  const parentId = node.data.parent;
+  const parentId = node.data.treeParentId;
   if (!parentId) throw new Error("Should not slurp ROOT node");
   const parent = nodesMap.get(parentId);
   if (!parent) throw new Error("Parent not found");
-  const index = parent.data.children.indexOf(id);
+  const index = parent.data.treeChildrenIds.indexOf(id);
   if (index === -1) throw new Error("Node not found in parent");
-  if (index === parent.data.children.length - 1) {
+  if (index === parent.data.treeChildrenIds.length - 1) {
     toast.error("No next sibling to slurp");
     return;
   }
-  const siblingId = parent.data.children[index + 1];
+  const siblingId = parent.data.treeChildrenIds[index + 1];
   const sibling = nodesMap.get(siblingId);
   if (!sibling) throw new Error("Sibling not found");
   // remove the sibling
-  const parentChildren = parent.data.children;
+  const parentChildren = parent.data.treeChildrenIds;
   parentChildren.splice(index + 1, 1);
   nodesMap.set(parentId, {
     ...parent,
     data: {
       ...parent.data,
-      children: parentChildren,
+      treeChildrenIds: parentChildren,
     },
   } as typeof parent);
   // add the sibling to the node
-  const children = node.data.children;
+  const children = node.data.treeChildrenIds;
   children.push(siblingId);
   nodesMap.set(id, {
     ...node,
     data: {
       ...node.data,
-      children,
+      treeChildrenIds: children,
     },
   } as typeof node);
   // update the sibling
@@ -981,7 +945,7 @@ export const ATOM_slurp = atom(null, (get, set, id: string) => {
     ...sibling,
     data: {
       ...sibling.data,
-      parent: id,
+      treeParentId: id,
     },
   } as typeof sibling);
   autoLayoutTree(get, set);
@@ -993,13 +957,14 @@ export const ATOM_unslurp = atom(null, (get, set, id: string) => {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) throw new Error("Node not found");
-  const parentId = node.data.parent;
+  const parentId = node.data.treeParentId;
   if (!parentId) throw new Error("Should not unslurp ROOT node");
   const parent = nodesMap.get(parentId);
   if (!parent) throw new Error("Parent not found");
-  const index = parent.data.children.indexOf(id);
+  const index = parent.data.treeChildrenIds.indexOf(id);
   if (index === -1) throw new Error("Node not found in parent");
-  const lastChildId = node.data.children.pop();
+  // remove the last child
+  const lastChildId = node.data.treeChildrenIds.pop();
   if (!lastChildId) {
     toast.error("No child to unslurp");
     return;
@@ -1007,21 +972,15 @@ export const ATOM_unslurp = atom(null, (get, set, id: string) => {
   const lastChild = nodesMap.get(lastChildId);
   if (!lastChild) throw new Error("Child not found");
   // remove the last child
-  nodesMap.set(id, {
-    ...node,
-    data: {
-      ...node.data,
-      children: node.data.children,
-    },
-  } as typeof node);
+  nodesMap.set(id, node);
   // add the last child to the parent
-  const parentChildren = parent.data.children;
+  const parentChildren = parent.data.treeChildrenIds;
   parentChildren.splice(index + 1, 0, lastChildId);
   nodesMap.set(parentId, {
     ...parent,
     data: {
       ...parent.data,
-      children: parentChildren,
+      treeChildrenIds: parentChildren,
     },
   } as typeof parent);
   // update the last child
@@ -1029,7 +988,7 @@ export const ATOM_unslurp = atom(null, (get, set, id: string) => {
     ...lastChild,
     data: {
       ...lastChild.data,
-      parent: parentId,
+      treeParentId: parentId,
     },
   } as typeof lastChild);
 
@@ -1070,7 +1029,7 @@ export const ATOM_deleteSubtree = atom(
     const removeDescendants = (id: string) => {
       const node = nodesMap.get(id);
       if (!node) throw new Error("Node not found");
-      node.data.children.forEach((childId) => {
+      node.data.treeChildrenIds.forEach((childId) => {
         removeDescendants(childId);
         nodesMap.delete(childId);
         // remove from codeMap or richMap
@@ -1078,7 +1037,7 @@ export const ATOM_deleteSubtree = atom(
         if (richMap.has(childId)) richMap.delete(childId);
       });
       if (node.type === "SCOPE") {
-        node.data.scopeChildren.forEach((childId) => {
+        node.data.scopeChildrenIds.forEach((childId) => {
           removeDescendants(childId);
           nodesMap.delete(childId);
           // remove from codeMap or richMap
@@ -1093,27 +1052,34 @@ export const ATOM_deleteSubtree = atom(
     if (codeMap.has(todelete)) codeMap.delete(todelete);
     if (richMap.has(todelete)) richMap.delete(todelete);
     // update parent node's children field.
-    const parentId = node.data.parent;
-    if (!parentId) return;
-    const parent = nodesMap.get(parentId);
-    if (!parent) return;
+    if (node.data.treeParentId) {
+      const treeParent = nodesMap.get(node.data.treeParentId);
+      myassert(treeParent);
+      nodesMap.set(node.data.treeParentId, {
+        ...treeParent,
+        data: {
+          ...treeParent.data,
+          treeChildrenIds: treeParent.data.treeChildrenIds.filter(
+            (childId) => childId !== todelete
+          ),
+        },
+      } as typeof treeParent);
+    } else {
+      myassert(node.data.scopeParentId);
+      const scopeParent = nodesMap.get(node.data.scopeParentId);
+      myassert(scopeParent);
+      myassert(scopeParent.type === "SCOPE");
+      nodesMap.set(node.data.scopeParentId, {
+        ...scopeParent,
+        data: {
+          ...scopeParent.data,
+          scopeChildrenIds: scopeParent.data.scopeChildrenIds.filter(
+            (childId) => childId !== todelete
+          ),
+        },
+      } as typeof scopeParent);
+    }
 
-    nodesMap.set(parentId, {
-      ...parent,
-      data: {
-        ...parent.data,
-        children: parent.data.children.filter(
-          (childId) => childId !== todelete
-        ),
-        ...(parent.type === "SCOPE"
-          ? {
-              scopeChildren: parent.data.scopeChildren.filter(
-                (childId) => childId !== todelete
-              ),
-            }
-          : {}),
-      },
-    } as typeof parent);
     autoLayoutTree(get, set);
     updateView(get, set);
   }
@@ -1260,11 +1226,11 @@ function dfsForScope(
 ) {
   const node = nodesMap.get(id);
   if (!node) throw new Error("Node not found");
-  node.data.children.forEach((childId) => {
+  node.data.treeChildrenIds.forEach((childId) => {
     dfsForScope(get, set, nodesMap, childId);
   });
   if (node.type === "SCOPE") {
-    node.data.scopeChildren.forEach((childId) => {
+    node.data.scopeChildrenIds.forEach((childId) => {
       dfsForScope(get, set, nodesMap, childId);
     });
   }
@@ -1288,7 +1254,7 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   function subtree(id: string) {
     const node = nodesMap.get(id);
     if (!node) throw new Error(`Node not found: ${id}`);
-    const children = node.data.children;
+    const children = node.data.treeChildrenIds;
     return {
       id: node.id,
       width: node.measured?.width || 0,
@@ -1298,7 +1264,7 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
     };
   }
   function subtree_for_scope(node: ScopeNodeType) {
-    const scopeChildren = [...node.data.scopeChildren];
+    const scopeChildren = [...node.data.scopeChildrenIds];
     return {
       id: node.id,
       width: 0,
@@ -1377,7 +1343,7 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   if (rootNode.type === "SCOPE") {
     let width = y2 - y1 + 50;
     let height = x2 - x1 + 50;
-    if (rootNode.data.scopeChildren.length === 0) {
+    if (rootNode.data.scopeChildrenIds.length === 0) {
       // If the scope is empty, give it some minimum size.
       width = 200;
       height = 100;
@@ -1399,7 +1365,7 @@ function shiftChildren(
 ) {
   const node = nodesMap.get(id);
   if (!node) throw new Error("Node not found");
-  node.data.children.forEach((childId) => {
+  node.data.treeChildrenIds.forEach((childId) => {
     const child = nodesMap.get(childId);
     if (!child) throw new Error("Child not found");
     nodesMap.set(childId, {
@@ -1412,7 +1378,7 @@ function shiftChildren(
     shiftChildren(nodesMap, childId, dx, dy);
   });
   if (node.type === "SCOPE") {
-    node.data.scopeChildren.forEach((childId) => {
+    node.data.scopeChildrenIds.forEach((childId) => {
       const child = nodesMap.get(childId);
       if (!child) throw new Error("Child not found");
       nodesMap.set(childId, {

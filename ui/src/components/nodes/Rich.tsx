@@ -99,7 +99,6 @@ import { BlockHandleExtension } from "./extensions/blockHandle";
 
 import {
   DeleteButton,
-  Handles,
   PodToolbar,
   SlurpButton,
   SymbolTable,
@@ -499,7 +498,6 @@ export const RichNode = function ({ id }: { id: string }) {
 
         <SymbolTable id={id} />
 
-        {/* <Handles id={id} hover={hover} /> */}
         <Handle id="left" type="source" position={Position.Left} />
         <Handle id="right" type="source" position={Position.Right} />
 

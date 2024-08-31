@@ -1,6 +1,12 @@
 import { customAlphabet } from "nanoid";
 import { lowercase, numbers } from "nanoid-dictionary";
 
+export function myassert(condition: any, msg?: string): asserts condition {
+  if (!condition) {
+    throw new Error(msg);
+  }
+}
+
 // FIXME performance for reading this from localstorage
 export const getAuthHeaders = () => {
   let authToken = localStorage.getItem("token") || null;

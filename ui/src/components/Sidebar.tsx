@@ -562,7 +562,7 @@ function PodTreeItem({ id }) {
         </Button>
 
         {/* fold button */}
-        {node.data.children?.length ? (
+        {node.data.treeChildrenIds?.length ? (
           <Button
             variant="ghost"
             size="1"

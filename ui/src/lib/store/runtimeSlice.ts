@@ -175,7 +175,7 @@ function generateSymbolTable(get: Getter, set: Setter, id: string) {
       });
   }
 
-  const children = nodesMap.get(id)?.data.children || [];
+  const children = nodesMap.get(id)?.data.treeChildrenIds || [];
   children.forEach((childId) => {
     const child = nodesMap.get(childId);
     if (!child) throw new Error(`Child not found for id: ${childId}`);
@@ -247,12 +247,12 @@ function parsePod(get: Getter, set: Setter, id: string) {
   set(getOrCreate_ATOM_parseResult(id), parseResult);
   // this only for updating selfSt
   generateSymbolTable(get, set, id);
-  const parentId = node.data.parent;
+  const parentId = node.data.treeParentId;
   if (!parentId) return;
   generateSymbolTable(get, set, parentId);
   const parent = nodesMap.get(parentId);
   if (!parent) return;
-  const grandParentId = parent.data.parent;
+  const grandParentId = parent.data.treeParentId;
   if (!grandParentId) return;
   generateSymbolTable(get, set, grandParentId);
 }
@@ -302,8 +302,8 @@ function resolveUtility(get: Getter, id: string, resolveResult: ResolveResult) {
   if (resolveResult.unresolved.size === 0) return;
   const node = get(ATOM_nodesMap).get(id);
   if (!node) throw new Error(`Node not found for id: ${id}`);
-  if (!node.data.parent) return;
-  resolveUtility(get, node.data.parent, resolveResult);
+  if (!node.data.treeParentId) return;
+  resolveUtility(get, node.data.treeParentId, resolveResult);
 }
 
 export const ATOM_resolvePod = atom(null, resolvePod);
@@ -350,10 +350,13 @@ function resolvePod(get: Getter, set: Setter, id: string) {
   if (resolveResult.unresolved.size > 0) {
     const node = get(ATOM_nodesMap).get(id);
     if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
-    const st = get(getOrCreate_ATOM_privateST(node.data.parent));
+    if (!node.data.treeParentId)
+      throw new Error(`Parent not found for id: ${id}`);
+    const st = get(getOrCreate_ATOM_privateST(node.data.treeParentId));
     if (!st)
-      throw new Error(`Symbol table not found for id: ${node.data.parent}`);
+      throw new Error(
+        `Symbol table not found for id: ${node.data.treeParentId}`
+      );
     resolveResult.unresolved.forEach((symbol) => {
       if (st.has(symbol)) {
         resolveResult.resolved.set(symbol, st.get(symbol)!);
@@ -369,10 +372,11 @@ function resolvePod(get: Getter, set: Setter, id: string) {
   if (resolveResult.unresolved.size > 0) {
     const node = get(ATOM_nodesMap).get(id);
     if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
-    const parent = get(ATOM_nodesMap).get(node.data.parent);
+    if (!node.data.treeParentId)
+      throw new Error(`Parent not found for id: ${id}`);
+    const parent = get(ATOM_nodesMap).get(node.data.treeParentId);
     if (!parent) throw new Error(`Parent not found for id: ${id}`);
-    const grandParentId = parent.data.parent;
+    const grandParentId = parent.data.treeParentId;
     if (grandParentId) {
       resolveUtility(get, grandParentId, resolveResult);
     }
