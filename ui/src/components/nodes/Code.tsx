@@ -422,7 +422,7 @@ function useRunKey({ node }: { node: CodeNodeType }) {
   );
 }
 
-export const CodeNode = memo<NodeProps>(function ({ id }) {
+export const CodeNode = function ({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) return null;
@@ -430,7 +430,7 @@ export const CodeNode = memo<NodeProps>(function ({ id }) {
     throw new Error("Should not reach here");
   }
   return <CodeNodeImpl node={node} />;
-});
+};
 
 function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   const id = node.id;
