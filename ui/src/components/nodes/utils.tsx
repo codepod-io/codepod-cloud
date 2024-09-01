@@ -718,6 +718,8 @@ export function PodToolbar({
   children: React.ReactNode;
 }) {
   const [cutId, setCutId] = useAtom(ATOM_cutId);
+  const slurp = useSetAtom(ATOM_slurp);
+  const unslurp = useSetAtom(ATOM_unslurp);
 
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -773,6 +775,42 @@ export function PodToolbar({
         >
           <ScissorsLineDashed />
         </IconButton>
+      )}
+      {id !== "ROOT" && (
+        <Tooltip content="Slurp">
+          <IconButton
+            variant="ghost"
+            radius="small"
+            style={{
+              margin: 3,
+              padding: 0,
+            }}
+            onClick={() => {
+              // move its next sibling to its children
+              slurp(id);
+            }}
+          >
+            <CornerRightUp />
+          </IconButton>
+        </Tooltip>
+      )}
+      {id !== "ROOT" && (
+        <Tooltip content="Unslurp">
+          <IconButton
+            variant="ghost"
+            radius="small"
+            style={{
+              margin: 3,
+              padding: 0,
+            }}
+            onClick={() => {
+              // move its children to its next sibling
+              unslurp(id);
+            }}
+          >
+            <CornerDownLeft />
+          </IconButton>
+        </Tooltip>
       )}
       {children}
     </Flex>
