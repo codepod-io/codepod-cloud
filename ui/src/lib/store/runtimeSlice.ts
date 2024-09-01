@@ -16,6 +16,7 @@ import { match } from "ts-pattern";
 import { ParseResult } from "../parser";
 import { parseJavascript } from "../parserJavascript";
 import { parseJulia } from "../parserJulia";
+import { myassert } from "../utils/utils";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -139,94 +140,12 @@ export function getOrCreate_ATOM_publicST(id: string) {
   return res;
 }
 
-// ---- utility symbol table
-const id2_ATOM_utilityST = new Map<
-  string,
-  PrimitiveAtom<Map<string, string>>
->();
-export function getOrCreate_ATOM_utilityST(id: string) {
-  if (id2_ATOM_utilityST.has(id)) {
-    return id2_ATOM_utilityST.get(id)!;
-  }
-  const res = atom(new Map<string, string>());
-  id2_ATOM_utilityST.set(id, res);
-  return res;
-}
-
-// generate symbol table for a pod.
-function generateSymbolTable(get: Getter, set: Setter, id: string) {
-  // private table: all symbols defined in its children
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  if (!node) throw new Error(`Node not found for id: ${id}`);
-
-  // compute the symbol table with its children
-  const privateSt = new Map<string, string>();
-  const publicSt = new Map<string, string>();
-  const utilitySt = new Map<string, string>();
-  const selfSt = new Map<string, string>();
-
-  {
-    const parseResult = get(getOrCreate_ATOM_parseResult(id));
-    parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-      .forEach((annotation) => {
-        selfSt.set(annotation.name, id);
-      });
-  }
-
-  const children = nodesMap.get(id)?.data.treeChildrenIds || [];
-  children.forEach((childId) => {
-    const child = nodesMap.get(childId);
-    if (!child) throw new Error(`Child not found for id: ${childId}`);
-    const parseResult = get(getOrCreate_ATOM_parseResult(childId));
-
-    parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-      .forEach((annotation) => {
-        privateSt.set(annotation.name, childId);
-      });
-
-    if (parseResult.ispublic) {
-      parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-        .forEach((annotation) => {
-          publicSt.set(annotation.name, childId);
-        });
-    }
-    if (parseResult.isutility) {
-      parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-        .forEach((annotation) => {
-          utilitySt.set(annotation.name, childId);
-        });
-    }
-    // If a child has public ST, merge it to the parent's private ST
-    const childPubSt = get(getOrCreate_ATOM_publicST(childId));
-    childPubSt.forEach((value, key) => {
-      privateSt.set(key, value);
-    });
-    // If a child has symbol in BOTH utility and public ST (i.e., public
-    // utility), merge it to the parent's utility ST.
-    const childUtilSt = get(getOrCreate_ATOM_utilityST(childId));
-    childUtilSt.forEach((value, key) => {
-      if (childPubSt.has(key)) {
-        utilitySt.set(key, value);
-      }
-    });
-  });
-
-  set(getOrCreate_ATOM_selfST(id), selfSt);
-  set(getOrCreate_ATOM_privateST(id), privateSt);
-  set(getOrCreate_ATOM_publicST(id), publicSt);
-  set(getOrCreate_ATOM_utilityST(id), utilitySt);
-}
-
 /**
  * Parse the code for defined variables and functions.
  * @param id paod
  */
 function parsePod(get: Getter, set: Setter, id: string) {
+  console.log("parsePod", id);
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) throw new Error(`Node not found for id: ${id}`);
@@ -245,27 +164,97 @@ function parsePod(get: Getter, set: Setter, id: string) {
   }
   const parseResult = analyzeCode(codeMap.get(id)?.toString() || "");
   set(getOrCreate_ATOM_parseResult(id), parseResult);
-  // this only for updating selfSt
-  generateSymbolTable(get, set, id);
-  const parentId = node.data.treeParentId;
-  if (!parentId) return;
-  generateSymbolTable(get, set, parentId);
-  const parent = nodesMap.get(parentId);
-  if (!parent) return;
-  const grandParentId = parent.data.treeParentId;
-  if (!grandParentId) return;
-  generateSymbolTable(get, set, grandParentId);
 }
 
-export const ATOM_parsePod = atom(null, parsePod);
+function propagateST(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error(`Node not found for id: ${id}`);
+  if (node.type !== "CODE") return;
+  const parseResult = get(getOrCreate_ATOM_parseResult(id));
+  // this only for updating selfSt
+  const selfSt = new Map<string, string>();
+  parseResult.annotations
+    .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+    .forEach((annotation) => {
+      selfSt.set(annotation.name, id);
+    });
+  set(getOrCreate_ATOM_selfST(id), selfSt);
+
+  function passUp(tmpId: string) {
+    const tmpNode = nodesMap.get(tmpId);
+    if (!tmpNode) return;
+    if (!tmpNode.data.parent) return;
+    const parent = nodesMap.get(tmpNode.data.parent.id);
+    if (!parent) return;
+    if (tmpNode.data.parent.relation === "TREE" && parent.type !== "RICH") {
+      // terminate
+      const treeParent = nodesMap.get(tmpNode.data.parent.id);
+      myassert(treeParent);
+      const st = get(getOrCreate_ATOM_privateST(treeParent.id));
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          // TODO support multiple definitions with map to array (multi-map).
+          st.set(annotation.name, id);
+        });
+      set(getOrCreate_ATOM_privateST(treeParent.id), st);
+      return;
+    }
+    const scopeParent = nodesMap.get(tmpNode.data.parent.id);
+    myassert(scopeParent);
+    const parent_privateSt = get(getOrCreate_ATOM_publicST(scopeParent.id));
+    parseResult.annotations
+      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .forEach((annotation) => {
+        // TODO support multiple definitions with map to array (multi-map).
+        parent_privateSt.set(annotation.name, id);
+      });
+    set(getOrCreate_ATOM_publicST(scopeParent.id), parent_privateSt);
+    passUp(tmpNode.data.parent.id);
+  }
+
+  myassert(node.data.parent);
+  const parent = nodesMap.get(node.data.parent.id);
+  myassert(parent);
+  passUp(id);
+}
+
+export const ATOM_parsePod = atom(null, (get, set, id: string) => {
+  parsePod(get, set, id);
+  propagateST(get, set, id);
+});
 
 function parseAllPods(get: Getter, set: Setter) {
+  const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
     if (node.type === "CODE") {
       parsePod(get, set, node.id);
     }
   });
+  const t2 = performance.now();
+  console.log("[perf] parseAllPods took " + (t2 - t1) + " milliseconds.");
+
+  // clear all symbol tables
+  id2_ATOM_privateST.forEach((atom) => {
+    set(atom, new Map<string, string>());
+  });
+  id2_ATOM_publicST.forEach((atom) => {
+    set(atom, new Map<string, string>());
+  });
+  id2_ATOM_selfST.forEach((atom) => {
+    set(atom, new Map<string, string>());
+  });
+
+  // propagate symbol tables
+  nodesMap.forEach((node) => {
+    if (node.type === "CODE") {
+      propagateST(get, set, node.id);
+    }
+  });
+  const t3 = performance.now();
+  console.log("[perf] propagateST took " + (t3 - t2) + " milliseconds.");
 }
 
 export const ATOM_parseAllPods = atom(null, parseAllPods);
@@ -286,24 +275,6 @@ export function getOrCreate_ATOM_resolveResult(id: string) {
   const res = atom(resolveResult);
   id2_ATOM_resolveResult.set(id, res);
   return res;
-}
-
-function resolveUtility(get: Getter, id: string, resolveResult: ResolveResult) {
-  const st = get(getOrCreate_ATOM_utilityST(id));
-  if (!st) throw new Error(`Symbol table not found for id: ${id}`);
-  resolveResult.unresolved.forEach((symbol) => {
-    if (st.has(symbol)) {
-      resolveResult.resolved.set(symbol, st.get(symbol)!);
-    }
-  });
-  resolveResult.resolved.forEach((_, key) =>
-    resolveResult.unresolved.delete(key)
-  );
-  if (resolveResult.unresolved.size === 0) return;
-  const node = get(ATOM_nodesMap).get(id);
-  if (!node) throw new Error(`Node not found for id: ${id}`);
-  if (!node.data.treeParentId) return;
-  resolveUtility(get, node.data.treeParentId, resolveResult);
 }
 
 export const ATOM_resolvePod = atom(null, resolvePod);
@@ -346,47 +317,23 @@ function resolvePod(get: Getter, set: Setter, id: string) {
       resolveResult.unresolved.delete(key)
     );
   }
-  // 2.3 try the parent's private ST, i.e., from its siblings
+  // 2.3 try the parent's private and public ST, i.e., from its siblings
   if (resolveResult.unresolved.size > 0) {
     const node = get(ATOM_nodesMap).get(id);
     if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (!node.data.treeParentId)
-      throw new Error(`Parent not found for id: ${id}`);
-    const st = get(getOrCreate_ATOM_privateST(node.data.treeParentId));
-    if (!st)
-      throw new Error(
-        `Symbol table not found for id: ${node.data.treeParentId}`
-      );
+    if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
+    const privateSt = get(getOrCreate_ATOM_privateST(node.data.parent.id));
+    const publicSt = get(getOrCreate_ATOM_publicST(node.data.parent.id));
+    myassert(privateSt);
+    myassert(publicSt);
     resolveResult.unresolved.forEach((symbol) => {
-      if (st.has(symbol)) {
-        resolveResult.resolved.set(symbol, st.get(symbol)!);
+      const target = privateSt.get(symbol) || publicSt.get(symbol);
+      if (target) {
+        resolveResult.resolved.set(symbol, target);
       }
     });
     resolveResult.resolved.forEach((_, key) =>
       resolveResult.unresolved.delete(key)
-    );
-  }
-  // 2.4 ancestors' the utility scopes. The parent's utility is already included
-  //    in parent's private ST. Therefore we should start with grandparent's
-  //    utility.
-  if (resolveResult.unresolved.size > 0) {
-    const node = get(ATOM_nodesMap).get(id);
-    if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (!node.data.treeParentId)
-      throw new Error(`Parent not found for id: ${id}`);
-    const parent = get(ATOM_nodesMap).get(node.data.treeParentId);
-    if (!parent) throw new Error(`Parent not found for id: ${id}`);
-    const grandParentId = parent.data.treeParentId;
-    if (grandParentId) {
-      resolveUtility(get, grandParentId, resolveResult);
-    }
-  }
-  if (resolveResult.unresolved.size > 0) {
-    console.log(
-      "resolvePod: Unresolved symbols in pod " +
-        id +
-        ": " +
-        [...resolveResult.unresolved].join(",")
     );
   }
   set(getOrCreate_ATOM_resolveResult(id), resolveResult);
