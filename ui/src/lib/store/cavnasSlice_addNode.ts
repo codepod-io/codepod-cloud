@@ -441,6 +441,7 @@ export const ATOM_addScope = atom(null, (get, set, id: string) => {
     id,
     produce(node, (draft) => {
       draft.data.parent = { id: newScopeNode.id, relation: "SCOPE" };
+      draft.data.treeChildrenIds = [];
     })
   );
 
