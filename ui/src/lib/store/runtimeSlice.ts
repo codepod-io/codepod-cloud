@@ -58,6 +58,12 @@ function rewriteCode(id: string, get: Getter): string | null {
   let index = 0;
   parseResult.annotations?.forEach((annotation) => {
     newcode += code.slice(index, annotation.startIndex);
+    index = annotation.endIndex;
+    if (annotation.name.startsWith("CODEPOD_RAW_")) {
+      // do not replace
+      newcode += annotation.name;
+      return;
+    }
     switch (annotation.type) {
       case "vardef":
       case "function":
@@ -81,7 +87,6 @@ function rewriteCode(id: string, get: Getter): string | null {
       default:
         throw new Error("unknown annotation type: " + annotation.type);
     }
-    index = annotation.endIndex;
   });
   newcode += code.slice(index);
   // console.debug("newcode", newcode);
