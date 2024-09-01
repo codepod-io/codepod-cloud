@@ -225,7 +225,10 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
             updateView(get, set);
             break;
           default:
-            console.warn("unhandled change action", change.action);
+            console.warn(
+              "unhandled nodesMap peer change action",
+              change.action
+            );
             break;
         }
       });
