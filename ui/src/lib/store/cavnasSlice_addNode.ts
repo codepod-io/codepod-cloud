@@ -235,13 +235,12 @@ const addNode_in = (
   newNode.data.parent = { id: anchorId, relation: "SCOPE" };
   nodesMap.set(newNode.id, newNode);
   // update the parent node
-  nodesMap.set(anchorId, {
-    ...anchor,
-    data: {
-      ...anchor.data,
-      scopeChildrenIds: [newNode.id],
-    },
-  });
+  nodesMap.set(
+    anchorId,
+    produce(anchor, (draft) => {
+      draft.data.scopeChildrenIds = [newNode.id];
+    })
+  );
   autoLayoutTree(get, set);
   updateView(get, set);
 };
@@ -457,24 +456,22 @@ export const ATOM_addScope = atom(null, (get, set, id: string) => {
       produce(scopeParent, (draft) => {
         const children = draft.data.scopeChildrenIds;
         const index = children.indexOf(id);
+        myassert(index !== -1);
         children.splice(index, 1, newScopeNode.id);
       })
     );
     // update the scope node
     // 1. the node will be the scopeChildren of the scope node
     // 2. the children of the node will be the children of the scope node
-    nodesMap.set(newScopeNode.id, {
-      ...newScopeNode,
-      data: {
-        ...newScopeNode.data,
-        parent: {
-          id: node.data.parent.id,
-          relation: "SCOPE",
-        },
-        scopeChildrenIds: [id],
-        treeChildrenIds: node.data.treeChildrenIds,
-      },
-    });
+    nodesMap.set(
+      newScopeNode.id,
+      produce(newScopeNode, (draft) => {
+        myassert(node.data.parent);
+        draft.data.parent = { id: node.data.parent.id, relation: "SCOPE" };
+        draft.data.scopeChildrenIds = [id];
+        draft.data.treeChildrenIds = node.data.treeChildrenIds;
+      })
+    );
   } else {
     // The parent is a tree node.
     const treeParent = nodesMap.get(node.data.parent.id);
@@ -484,25 +481,34 @@ export const ATOM_addScope = atom(null, (get, set, id: string) => {
       produce(treeParent, (draft) => {
         const children = draft.data.treeChildrenIds;
         const index = children.indexOf(id);
+        myassert(index !== -1);
         children.splice(index, 1, newScopeNode.id);
       })
     );
     // update the scope node
     // 1. the node will be the scopeChildren of the scope node
     // 2. the children of the node will be the children of the scope node
-    nodesMap.set(newScopeNode.id, {
-      ...newScopeNode,
-      data: {
-        ...newScopeNode.data,
-        parent: {
-          id: node.data.parent.id,
-          relation: "TREE",
-        },
-        scopeChildrenIds: [id],
-        treeChildrenIds: node.data.treeChildrenIds,
-      },
-    });
+    nodesMap.set(
+      newScopeNode.id,
+      produce(newScopeNode, (draft) => {
+        myassert(node.data.parent);
+        draft.data.parent = { id: node.data.parent.id, relation: "TREE" };
+        draft.data.scopeChildrenIds = [id];
+        draft.data.treeChildrenIds = node.data.treeChildrenIds;
+      })
+    );
   }
+  // the tree children of the node will be the children of the scope node
+  node.data.treeChildrenIds.forEach((childId) => {
+    const n = nodesMap.get(childId);
+    myassert(n);
+    nodesMap.set(
+      childId,
+      produce(n, (draft) => {
+        draft.data.parent = { id: newScopeNode.id, relation: "TREE" };
+      })
+    );
+  });
 
   autoLayoutTree(get, set);
   updateView(get, set);
