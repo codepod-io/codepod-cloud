@@ -171,6 +171,12 @@ function parsePod(get: Getter, set: Setter, id: string) {
   set(getOrCreate_ATOM_parseResult(id), parseResult);
 }
 
+export const ATOM_parsePod = atom(null, parsePod);
+
+/**
+ * TODO this is nlogn, can be improved to n. But this is not a bottleneck, i.e.,
+ * runs in sub millisecond.
+ */
 function propagateST(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -225,11 +231,6 @@ function propagateST(get: Getter, set: Setter, id: string) {
   passUp(id);
 }
 
-export const ATOM_parsePod = atom(null, (get, set, id: string) => {
-  parsePod(get, set, id);
-  propagateST(get, set, id);
-});
-
 function parseAllPods(get: Getter, set: Setter) {
   const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
@@ -239,8 +240,12 @@ function parseAllPods(get: Getter, set: Setter) {
     }
   });
   const t2 = performance.now();
-  console.log("[perf] parseAllPods took " + (t2 - t1) + " milliseconds.");
+  console.log("[perf] parseAllPods took " + (t2 - t1).toFixed(2) + " ms.");
+}
 
+export function propagateAllST(get: Getter, set: Setter) {
+  const t2 = performance.now();
+  const nodesMap = get(ATOM_nodesMap);
   // clear all symbol tables
   id2_ATOM_privateST.forEach((atom) => {
     set(atom, new Map<string, string>());
@@ -251,7 +256,6 @@ function parseAllPods(get: Getter, set: Setter) {
   id2_ATOM_selfST.forEach((atom) => {
     set(atom, new Map<string, string>());
   });
-
   // propagate symbol tables
   nodesMap.forEach((node) => {
     if (node.type === "CODE") {
@@ -259,8 +263,10 @@ function parseAllPods(get: Getter, set: Setter) {
     }
   });
   const t3 = performance.now();
-  console.log("[perf] propagateST took " + (t3 - t2) + " milliseconds.");
+  console.log("[perf] propagateST took " + (t3 - t2).toFixed(2) + " ms.");
 }
+
+export const ATOM_propagateAllST = atom(null, propagateAllST);
 
 export const ATOM_parseAllPods = atom(null, parseAllPods);
 

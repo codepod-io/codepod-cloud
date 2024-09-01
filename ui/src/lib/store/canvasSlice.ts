@@ -21,6 +21,7 @@ import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
 import { toast } from "react-toastify";
 import { autoLayoutTree } from "./canvasSlice_autoLayout";
+import { propagateAllST } from "./runtimeSlice";
 
 // export the APIs defined in canvas_XXX.ts
 export * from "./canvasSlice_autoLayout";
@@ -69,6 +70,20 @@ function selectPod(
 
 export const ATOM_selectPod = atom(null, selectPod);
 
+let oldStructure = new Map<string, string>();
+
+function compareMaps(map1: Map<string, string>, map2: Map<string, string>) {
+  if (map1.size !== map2.size) {
+    return false;
+  }
+  for (let [key, val] of map1) {
+    if (val !== map2.get(key)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * This function handles the real updates to the reactflow nodes to render.
  */
@@ -76,11 +91,16 @@ export function updateView(get: Getter, set: Setter) {
   const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
   let selectedPods = get(ATOM_selectedPods);
+  const newStructure = new Map<string, string>();
   // let nodes = Array.from<Node>(nodesMap.values());
   // follow the tree order, skip folded nodes
   function dfs(id: string): AppNode[] {
     const node = nodesMap.get(id);
     if (!node) throw new Error(`Node not found: ${id}`);
+    newStructure.set(
+      id,
+      "" + node.data.parent?.id + node.data.parent?.relation
+    );
     if (node.data.folded) return [node];
     let res = [node];
     res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
@@ -90,6 +110,12 @@ export function updateView(get: Getter, set: Setter) {
     return res;
   }
   const nodes = structuredClone(dfs("ROOT"));
+  // compare old  and new structure, if changed, propagate symbol table
+  // FIXME performance
+  if (!compareMaps(oldStructure, newStructure)) {
+    propagateAllST(get, set);
+    oldStructure = newStructure;
+  }
 
   // generate the scope overlay SVG here
   // for each node, start a SVG drawing covering it and all its children.
