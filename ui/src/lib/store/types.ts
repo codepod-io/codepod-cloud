@@ -5,8 +5,7 @@ export type NodeData = CodeNodeData | RichNodeData | ScopeNodeData;
 type CommonData = {
   // common data
   treeChildrenIds: string[];
-  treeParentId?: string;
-  scopeParentId?: string;
+  parent?: { id: string; relation: "TREE" | "SCOPE" };
   folded: boolean;
   isScope: boolean;
 };

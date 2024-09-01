@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
-import { ScopeNodeType } from "@/lib/store/types";
+import { AppNode, ScopeNodeType } from "@/lib/store/types";
 import { ATOM_addNode, ATOM_addScope } from "@/lib/store/canvasSlice";
 import {
   DeleteButton,
@@ -10,6 +10,7 @@ import {
   PythonLogo,
   RacketLogo,
   SlurpButton,
+  SymbolTable,
   UnslurpButton,
 } from "./utils";
 import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
@@ -18,21 +19,25 @@ import { Handle, Position } from "@xyflow/react";
 import { ATOM_cutId } from "@/lib/store/atom";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import * as Y from "yjs";
 
-function getCoordinates(id: string, nodesMap): { x: number; y: number }[] {
+function getCoordinates(
+  id: string,
+  nodesMap: Y.Map<AppNode>
+): { x: number; y: number }[] {
   const node = nodesMap.get(id);
   if (!node) return [];
   const x = node.position.x;
   const y = node.position.y;
-  const width = node.width!;
-  const height = node.height!;
+  const width = node.measured?.width || 0;
+  const height = node.measured?.height || 0;
   const res1 = [
     { x, y },
     { x: x + width, y },
     { x: x + width, y: y + height },
     { x, y: y + height },
   ];
-  const res2 = node.data.children
+  const res2 = node.data.treeChildrenIds
     .map((childId) => getCoordinates(childId, nodesMap))
     .flat();
   return [...res1, ...res2];
@@ -228,7 +233,8 @@ export const ScopeNode = function ({ id }) {
       </motion.div>
       <Handle id="left" type="source" position={Position.Left} />
       <Handle id="right" type="source" position={Position.Right} />
-      {node.data.scopeChildren.length === 0 && (
+      <SymbolTable id={id} />
+      {node.data.scopeChildrenIds.length === 0 && (
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
             style={{

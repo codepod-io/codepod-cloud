@@ -18,11 +18,11 @@ export function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   function subtree(id: string) {
     const node = nodesMap.get(id);
     if (!node) throw new Error("Node not found");
-    const children = node.data.children;
+    const children = node.data.treeChildrenIds;
     return {
       id: node.id,
-      width: node.width!,
-      height: node.height!,
+      width: node.width,
+      height: node.height,
       children: node.data.folded ? [] : children ? children.map(subtree) : [],
     };
   }
@@ -136,7 +136,7 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
         })
         .exhaustive() as "CODE" | "RICH",
       data: {
-        children: node2children.get(pod.id) || [],
+        treeChildrenIds: node2children.get(pod.id) || [],
         lang: (pod.lang || "python") as
           | "python"
           | "julia"
@@ -163,8 +163,7 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
     id: "ROOT",
     type: "RICH",
     data: {
-      level: 0,
-      children: node2children.get("ROOT") || [],
+      treeChildrenIds: node2children.get("ROOT") || [],
       folded: false,
       isScope: false,
     },

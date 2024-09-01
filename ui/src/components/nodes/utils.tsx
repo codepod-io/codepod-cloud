@@ -72,8 +72,9 @@ import ArrowLeftToLine from "@/assets/ArrowLeftToLine.svg";
 import {
   getOrCreate_ATOM_privateST,
   getOrCreate_ATOM_publicST,
-  getOrCreate_ATOM_utilityST,
+  getOrCreate_ATOM_selfST,
 } from "@/lib/store/runtimeSlice";
+import { myassert } from "@/lib/utils/utils";
 
 export function ResizeIcon() {
   return (
@@ -886,52 +887,83 @@ export function DeleteButton({ id }) {
 export function SymbolTable({ id }) {
   const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
   const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
-  const utilitySt = useAtomValue(getOrCreate_ATOM_utilityST(id));
+  const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  if (!node) throw new Error(`Node ${id} not found.`);
   const reactFlowInstance = useReactFlow();
+  if (!node) throw new Error(`Node ${id} not found.`);
   return (
-    <Box
-      style={{
-        // place it on the right
-        position: "absolute",
-        top: 0,
-        right: 0,
-        transform: "translateX(100%) translateX(10px)",
-      }}
-    >
-      {[...privateSt.keys()].map((key) => (
-        <Flex align="center" key={key}>
-          <Button
-            onClick={() => {
-              // jump to the node
-              const targetId = privateSt.get(key)!;
-              const targetNode = nodesMap.get(targetId);
-              if (!targetNode) return;
-              const pos = getAbsPos(targetNode, nodesMap);
-              reactFlowInstance.setCenter(
-                pos.x + targetNode.width! / 2,
-                pos.y + targetNode.height! / 2,
-                {
-                  zoom: reactFlowInstance.getZoom(),
-                  duration: 800,
-                }
-              );
-            }}
-            variant="ghost"
-          >
-            <code
-              style={{
-                color: publicSt.has(key) ? "green" : "black",
+    <>
+      <Box
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translateX(-100%) translateX(-10px)",
+        }}
+      >
+        {[...selfSt.keys(), ...publicSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const targetId = publicSt.get(key) || selfSt.get(key);
+                myassert(targetId);
+                const targetNode = nodesMap.get(targetId);
+                if (!targetNode) return;
+                const pos = getAbsPos(targetNode, nodesMap);
+                reactFlowInstance.setCenter(
+                  pos.x + (targetNode.measured?.width || 0) / 2,
+                  pos.y + (targetNode.measured?.height || 0) / 2,
+                  {
+                    zoom: reactFlowInstance.getZoom(),
+                    duration: 800,
+                  }
+                );
               }}
+              variant="ghost"
             >
-              {key}
-            </code>
-          </Button>
-          {utilitySt.has(key) ? <Wrench /> : ""}
-        </Flex>
-      ))}
-    </Box>
+              <code>{key}</code>
+            </Button>
+          </Flex>
+        ))}
+      </Box>
+
+      <Box
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          right: 0,
+          transform: "translateX(100%) translateX(10px)",
+        }}
+      >
+        {[...privateSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const targetId = privateSt.get(key)!;
+                const targetNode = nodesMap.get(targetId);
+                if (!targetNode) return;
+                const pos = getAbsPos(targetNode, nodesMap);
+                reactFlowInstance.setCenter(
+                  pos.x + (targetNode.measured?.width || 0) / 2,
+                  pos.y + (targetNode.measured?.height || 0) / 2,
+                  {
+                    zoom: reactFlowInstance.getZoom(),
+                    duration: 800,
+                  }
+                );
+              }}
+              variant="ghost"
+            >
+              <code>{key}</code>
+            </Button>
+          </Flex>
+        ))}
+      </Box>
+    </>
   );
 }
