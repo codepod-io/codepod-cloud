@@ -84,6 +84,11 @@ import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
 import { CodeNodeType } from "@/lib/store/types";
+import {
+  ATOM_parseAllPods,
+  ATOM_propagateAllST,
+  ATOM_resolveAllPods,
+} from "@/lib/store/runtimeSlice";
 
 function SidebarSettings() {
   const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
@@ -716,6 +721,9 @@ function MyTabs({
 
 export function SidebarLeft() {
   const autoLayout = useSetAtom(ATOM_autoLayoutTree);
+  const parseAllPods = useSetAtom(ATOM_parseAllPods);
+  const propagateAllSt = useSetAtom(ATOM_propagateAllST);
+  const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
   return (
     <MyTabs
       side="left"
@@ -725,7 +733,7 @@ export function SidebarLeft() {
           icon: <Files />,
           // content: "Make changes to your account.".repeat(10),
           content: (
-            <Flex direction="column">
+            <Flex direction="column" gap="1">
               <YjsSyncStatus />
               <Heading size="2">Export to ..</Heading>
               <ExportButtons />
@@ -734,8 +742,18 @@ export function SidebarLeft() {
                 onClick={() => {
                   autoLayout();
                 }}
+                variant="outline"
               >
                 Layout
+              </Button>
+              <Button onClick={() => parseAllPods()} variant="outline">
+                Parse All
+              </Button>
+              <Button onClick={() => propagateAllSt()} variant="outline">
+                Propagate All
+              </Button>
+              <Button onClick={() => resolveAllPods()} variant="outline">
+                Resolve All
               </Button>
 
               <Separator my="3" size="4" />

@@ -380,6 +380,12 @@ function preprocessChain(get: Getter, set: Setter, ids: string[]) {
     // Actually send the run request.
     // Analyze code and set symbol table
     parsePod(get, set, id);
+    // FIXME performance. I'm propagating all STs for all pods when parsing a single pod, so that I can avoid:
+    // 1. remove old symbols from ST
+    // 2. there was a delay in the symbol to be appear in the ST UI of parent node.
+    //
+    // propagateST(get, set, id);
+    propagateAllST(get, set);
     // update anontations according to st
     resolvePod(get, set, id);
     const newcode = rewriteCode(id, get);

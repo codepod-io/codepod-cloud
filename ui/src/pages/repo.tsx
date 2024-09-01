@@ -57,6 +57,7 @@ import {
 } from "@/lib/store/atom";
 import {
   ATOM_parseAllPods,
+  ATOM_propagateAllST,
   ATOM_resolveAllPods,
 } from "@/lib/store/runtimeSlice";
 import { MyKBar } from "@/components/MyKBar";
@@ -143,7 +144,7 @@ function RepoLoader({ children }) {
  */
 function ParserWrapper({ children }) {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
-  // const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
+  const propagateAllST = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
 
   const loadParser_python = useSetAtom(ATOM_loadParser_python);
@@ -170,6 +171,7 @@ function ParserWrapper({ children }) {
       parserReady_julia
     ) {
       parseAllPods();
+      propagateAllST();
       resolveAllPods();
     }
   }, [
