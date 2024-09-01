@@ -33,6 +33,7 @@ import {
   ChevronRight,
   ChevronDown,
   NotebookPen,
+  Package,
 } from "lucide-react";
 
 import { downloadLink, repo2ipynb } from "./nodes/utils";
@@ -544,6 +545,7 @@ function PodTreeItem({ id }) {
                 .otherwise(() => <Box>???</Box>)
             )
             .with("RICH", () => <NotebookPen size={15} />)
+            .with("SCOPE", () => <Package />)
             .otherwise(() => (
               <Box>???</Box>
             ))}
@@ -589,8 +591,15 @@ function PodTreeItem({ id }) {
 
       {!node.data.folded && (
         <Flex>
+          {node.type === "SCOPE" && (
+            <Flex direction="column" style={{ paddingLeft: "15px" }}>
+              {node.data.scopeChildrenIds?.map((child) => (
+                <PodTreeItem key={child} id={child} />
+              ))}
+            </Flex>
+          )}
           <Flex direction="column" style={{ paddingLeft: "15px" }}>
-            {node.data.children?.map((child) => (
+            {node.data.treeChildrenIds?.map((child) => (
               <PodTreeItem key={child} id={child} />
             ))}
           </Flex>
@@ -735,10 +744,6 @@ export function SidebarLeft() {
               <Heading mb="2" size="2">
                 Experimental
               </Heading>
-              <Heading mb="2" size="2">
-                Performance
-              </Heading>
-              <FpsMeter />
             </Flex>
           ),
         },
@@ -810,6 +815,10 @@ export function SidebarRight() {
                 Right Sidebar
               </Heading>
               <FpsMeter />
+              <Heading size="2">ToC</Heading>
+              <TableofPods />
+              <Separator my="3" size="4" />
+              <Heading size="2">Meta data</Heading>
               <RepoSize />
             </Flex>
           ),
