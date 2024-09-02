@@ -303,11 +303,13 @@ function highlightAnnotations(
           (resolveResult?.unresolved.has(name)
             ? " myDecoration-unresolved"
             : ""),
-        hoverMessage: {
-          value: `${name} -> ${resolveResult?.resolved
-            .get(name)
-            ?.substring(0, 6)}`,
-        },
+        hoverMessage: ["callsite", "varuse"].includes(type)
+          ? {
+              value: `${name} -> ${resolveResult?.resolved
+                .get(name)
+                ?.substring(0, 6)}`,
+            }
+          : undefined,
       },
     });
   }

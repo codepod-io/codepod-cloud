@@ -303,12 +303,13 @@ function resolvePod(get: Getter, set: Setter, id: string) {
       resolveResult.unresolved.add(annotation.name);
     });
   // 2.1 self ST
-  {
+  if (resolveResult.unresolved.size > 0) {
     const st = get(getOrCreate_ATOM_selfST(id));
     if (!st) throw new Error(`Symbol table not found for id: ${id}`);
     resolveResult.unresolved.forEach((symbol) => {
-      if (st.has(symbol)) {
-        resolveResult.resolved.set(symbol, st.get(symbol)!);
+      const target = st.get(symbol);
+      if (target) {
+        resolveResult.resolved.set(symbol, target);
       }
     });
     resolveResult.resolved.forEach((_, key) =>
@@ -316,12 +317,13 @@ function resolvePod(get: Getter, set: Setter, id: string) {
     );
   }
   // 2.2 try this pod's private ST, i.e. from its children
-  {
+  if (resolveResult.unresolved.size > 0) {
     const st = get(getOrCreate_ATOM_privateST(id));
     if (!st) throw new Error(`Symbol table not found for id: ${id}`);
     resolveResult.unresolved.forEach((symbol) => {
-      if (st.has(symbol)) {
-        resolveResult.resolved.set(symbol, st.get(symbol)!);
+      const target = st.get(symbol);
+      if (target) {
+        resolveResult.resolved.set(symbol, target);
       }
     });
     resolveResult.resolved.forEach((_, key) =>
@@ -347,7 +349,41 @@ function resolvePod(get: Getter, set: Setter, id: string) {
       resolveResult.unresolved.delete(key)
     );
   }
+  // 2.4 go up, find scopes, and try their private ST
+  resolveUp(get, set, id, resolveResult);
   set(getOrCreate_ATOM_resolveResult(id), resolveResult);
+}
+
+function resolveUp(
+  get: Getter,
+  set: Setter,
+  id: string,
+  resolveResult: ResolveResult
+) {
+  if (resolveResult.unresolved.size == 0) return;
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) return;
+  if (!node.data.parent) return;
+  const parent = nodesMap.get(node.data.parent.id);
+  if (!parent) return;
+  if (node.data.parent.relation === "SCOPE") {
+    // try the parent's private ST
+    const scopeParent = nodesMap.get(node.data.parent.id);
+    myassert(scopeParent);
+    const st = get(getOrCreate_ATOM_privateST(scopeParent.id));
+    resolveResult.unresolved.forEach((symbol) => {
+      const target = st.get(symbol);
+      if (target) {
+        resolveResult.resolved.set(symbol, target);
+      }
+    });
+    resolveResult.resolved.forEach((_, key) =>
+      resolveResult.unresolved.delete(key)
+    );
+  }
+  // continue go up until root
+  resolveUp(get, set, node.data.parent.id, resolveResult);
 }
 
 export const ATOM_resolveAllPods = atom(null, (get, set) => {
