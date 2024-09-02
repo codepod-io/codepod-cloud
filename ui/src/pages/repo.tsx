@@ -64,7 +64,7 @@ import { MyKBar } from "@/components/MyKBar";
 import { Container, Flex } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { ShareProjDialog } from "@/components/ShareProjDialog";
-import { StarButton } from "./dashboard";
+import { StarButton } from "./dashboard_buttons";
 import { env } from "@/lib/vars";
 import { Header } from "@/components/Header";
 
