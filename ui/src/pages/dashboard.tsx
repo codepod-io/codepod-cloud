@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   DropdownMenu,
   Flex,
   IconButton,
@@ -20,6 +21,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
 import { Earth, FileText, ThumbsUp, Trash2, Users } from "lucide-react";
 import { toast } from "react-toastify";
+import { atom, useAtom } from "jotai";
 
 function CreateRepoForm(props) {
   const createRepo = trpc.repo.createRepo.useMutation({
@@ -92,7 +94,7 @@ export const StarButton = ({
             }}
             disabled={unstar.isLoading}
           >
-            <ThumbsUp color="red" size={16} fill="pink" />
+            <ThumbsUp color="red" fill="pink" />
             <Box
               style={{
                 // Make the different numbers fixed width.
@@ -114,7 +116,7 @@ export const StarButton = ({
             }}
             disabled={star.isLoading}
           >
-            <ThumbsUp size={16} />
+            <ThumbsUp />
             <Box
               style={{
                 fontVariant: "tabular-nums",
@@ -196,11 +198,16 @@ type RepoType = {
   accessedAt: string;
 };
 
+const ATOM_selectMode = atom(false);
+const ATOM_selectedRepos = atom<RepoType[]>([]);
+
 const RepoCard = ({ repo }: { repo: RepoType }) => {
   const me = trpc.user.me.useQuery();
   // peiredically re-render so that the "last viwed time" and "lact active time"
   // are updated every second.
   const [counter, setCounter] = useState(0);
+  const [selectMode, setSelectMode] = useAtom(ATOM_selectMode);
+  const [selectedRepos, setSelectedRepos] = useAtom(ATOM_selectedRepos);
   useEffect(() => {
     const interval = setInterval(() => {
       setCounter(counter + 1);
@@ -208,7 +215,18 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
     return () => clearInterval(interval);
   }, [counter]);
   return (
-    <Card style={{ minWidth: 275, maxWidth: 275 }}>
+    <Card
+      style={{ minWidth: 275, maxWidth: 275 }}
+      onClick={() => {
+        if (selectMode) {
+          if (selectedRepos.map((repo) => repo.id).includes(repo.id)) {
+            setSelectedRepos(selectedRepos.filter(({ id }) => id !== repo.id));
+          } else {
+            setSelectedRepos([...selectedRepos, repo]);
+          }
+        }
+      }}
+    >
       <Flex>
         <ReactLink
           to={`/repo/${repo.id}`}
@@ -230,7 +248,7 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
         {/* the size */}
         {prettyPrintBytes(repo.yDocBlobSize)}
       </Flex>
-      <Flex>
+      <Flex gap="2" align="center">
         {repo.userId !== me.data?.id && (
           <Tooltip content="Shared with me">
             <Users color="blue" />
@@ -240,6 +258,12 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
           <Tooltip content="public">
             <Earth color="green" />
           </Tooltip>
+        )}
+        {selectMode && (
+          <Checkbox
+            id={repo.id}
+            checked={selectedRepos.map((repo) => repo.id).includes(repo.id)}
+          />
         )}
         <DeleteRepoButton repo={repo} />
       </Flex>
@@ -293,12 +317,93 @@ function Pagination({ totalPages, currentPage, onPageChange }) {
   );
 }
 
+const DeleteSelectedButton = () => {
+  const utils = trpc.useUtils();
+  const [selectMode, setSelectMode] = useAtom(ATOM_selectMode);
+  const [selectedRepos, setSelectedRepos] = useAtom(ATOM_selectedRepos);
+  const deleteRepos = trpc.repo.deleteRepos.useMutation({
+    onSuccess(input) {
+      toast.success("Successfully deleted repo");
+      utils.repo.getDashboardRepos.invalidate();
+      setSelectedRepos([]);
+      setSelectMode(false);
+    },
+    onError() {
+      toast.error("Failed to delete repo");
+    },
+  });
+  return (
+    <AlertDialog.Root>
+      <AlertDialog.Trigger>
+        <Button color="red" variant="ghost" disabled={deleteRepos.isLoading}>
+          Delete Selected
+        </Button>
+      </AlertDialog.Trigger>
+      <AlertDialog.Content maxWidth="450px">
+        <AlertDialog.Title>Delete Selected Repository</AlertDialog.Title>
+        <AlertDialog.Description size="2">
+          Th following repos will be deleted:
+          {selectedRepos
+            .sort((a, b) => {
+              if (a.createdAt && b.createdAt) {
+                return (
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime()
+                );
+              } else if (a.createdAt) {
+                return -1;
+              } else if (b.createdAt) {
+                return 1;
+              } else {
+                return 0;
+              }
+            })
+            .map((repo) => (
+              <div
+                key={repo.id}
+                style={{
+                  paddingLeft: "10px",
+                  // weight bold
+                  fontWeight: "bold",
+                }}
+              >
+                {repo.name || "Untitled"}
+              </div>
+            ))}
+          Are you sure?
+        </AlertDialog.Description>
+
+        <Flex gap="3" mt="4" justify="end">
+          <AlertDialog.Cancel>
+            <Button variant="soft" color="gray">
+              Cancel
+            </Button>
+          </AlertDialog.Cancel>
+          <AlertDialog.Action>
+            <Button
+              variant="solid"
+              color="red"
+              onClick={() => {
+                deleteRepos.mutate({ ids: selectedRepos.map(({ id }) => id) });
+              }}
+            >
+              Delete Selected Repositories
+            </Button>
+          </AlertDialog.Action>
+        </Flex>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
+  );
+};
+
 function PaginatedRepoLists({ repos }: { repos: RepoType[] }) {
   const [page, setPage] = useState(1);
   const [reposPerPage, setReposPerPage] = useState(20);
   const indexOfLastRepo = page * reposPerPage;
   const indexOfFirstRepo = indexOfLastRepo - reposPerPage;
   const currentRepos = repos.slice(indexOfFirstRepo, indexOfLastRepo);
+  const [selectMode, setSelectMode] = useAtom(ATOM_selectMode);
+  const [selectedRepos, setSelectedRepos] = useAtom(ATOM_selectedRepos);
 
   const paginate = (pageNumber) => setPage(pageNumber);
 
@@ -341,12 +446,23 @@ function PaginatedRepoLists({ repos }: { repos: RepoType[] }) {
           </Select.Root>
           per page
         </Flex>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setSelectedRepos([]);
+            setSelectMode(!selectMode);
+          }}
+        >
+          {selectMode ? "Cancel" : "Select"}
+        </Button>
+        {selectMode && <DeleteSelectedButton />}
       </Flex>
+
       <Flex wrap="wrap">
         {currentRepos.map((repo) => (
-          <Box style={{ margin: 1 }} key={repo.id}>
+          <Flex style={{ margin: 1 }} key={repo.id}>
             <RepoCard repo={repo} />
-          </Box>
+          </Flex>
         ))}
       </Flex>
     </>

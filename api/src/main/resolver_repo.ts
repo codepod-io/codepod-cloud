@@ -313,6 +313,54 @@ const deleteRepo = protectedProcedure
     return true;
   });
 
+const deleteRepos = protectedProcedure
+  .input(z.object({ ids: z.array(z.string()) }))
+  .mutation(async ({ input: { ids }, ctx: { userId } }) => {
+    if (!userId) throw Error("Unauthenticated");
+    if (env.READ_ONLY) throw Error("Read only mode");
+    // only a repo owner can delete a repo.
+    const repos = await prisma.repo.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+        owner: {
+          id: userId,
+        },
+      },
+    });
+    if (repos.length !== ids.length) throw new Error("Some repos not found");
+    // 1. delete all pods
+    await prisma.pod.deleteMany({
+      where: {
+        repo: {
+          id: {
+            in: repos.map((repo) => repo.id),
+          },
+        },
+      },
+    });
+    // 2. delete UserRepoData
+    await prisma.userRepoData.deleteMany({
+      where: {
+        repo: {
+          id: {
+            in: repos.map((repo) => repo.id),
+          },
+        },
+      },
+    });
+    // 3. delete the repo itself
+    await prisma.repo.deleteMany({
+      where: {
+        id: {
+          in: repos.map((repo) => repo.id),
+        },
+      },
+    });
+    return true;
+  });
+
 const addCollaborator = protectedProcedure
   .input(z.object({ repoId: z.string(), email: z.string() }))
   .mutation(async ({ input: { repoId, email }, ctx: { userId } }) => {
@@ -474,6 +522,7 @@ export const repoRouter = router({
   createRepo,
   updateRepo,
   deleteRepo,
+  deleteRepos,
   copyRepo,
   addCollaborator,
   updateVisibility,
