@@ -85,7 +85,7 @@ function Timer({ lastExecutedAt }) {
   );
 }
 
-export const ResultBlock = memo<any>(function ResultBlock({ id }) {
+export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
   const [resultScroll, setResultScroll] = useState(false);
 
   const clearResults = useSetAtom(ATOM_clearResults);
