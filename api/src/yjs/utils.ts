@@ -13,6 +13,5 @@ export async function getInitYXml() {
 
 Let's get started!
 `);
-  console.log("init blocks", blocks[0].content);
   return editor.blocksToYXmlFragment(blocks);
 }
