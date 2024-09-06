@@ -11,6 +11,7 @@ import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
 import { ATOM_repoId } from "./atom";
+import { addAwarenessStyle } from "../utils/utils";
 
 // The atoms
 
@@ -116,7 +117,27 @@ function setRuntimeReady(
   });
 }
 
-const ATOM_clients = atom(new Map<string, any>());
+const ATOM_clients = atom(new Map<string, { name: string; color: string }>());
+function getRandomLightColor() {
+  // Generate a random number between 128+64 and 255 for each color component
+  const r = Math.floor(Math.random() * 64 + 128 + 64)
+    .toString(16)
+    .padStart(2, "0");
+  const g = Math.floor(Math.random() * 64 + 128 + 64)
+    .toString(16)
+    .padStart(2, "0");
+  const b = Math.floor(Math.random() * 64 + 128 + 64)
+    .toString(16)
+    .padStart(2, "0");
+
+  // Return the color in hex format
+  return `#${r}${g}${b}`;
+}
+// generate a light color string
+const mycolor = getRandomLightColor();
+
+// BlockNote didn't use provider.awareness.
+export const ATOM_simpleAwareness = atom({ name: "", color: "" });
 
 /**
  * Connect to Yjs websocket server.
@@ -124,6 +145,10 @@ const ATOM_clients = atom(new Map<string, any>());
 export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
   if (get(ATOM_yjsConnecting)) return;
   if (get(ATOM_provider)) return;
+  const repoId = get(ATOM_repoId);
+  if (!repoId) {
+    throw new Error("repoId not found");
+  }
   set(ATOM_yjsConnecting, true);
   const yjsWsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${
     window.location.host
@@ -132,7 +157,7 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
   const ydoc = new Doc();
   const provider: WebsocketProvider = new WebsocketProvider(
     yjsWsUrl,
-    get(ATOM_repoId),
+    repoId,
     ydoc,
     {
       // resyncInterval: 2000,
@@ -144,10 +169,10 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
       },
     }
   );
-  const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+  set(ATOM_simpleAwareness, { name, color: mycolor });
   provider.awareness.setLocalStateField("user", {
     name,
-    color,
+    color: mycolor,
   });
   provider.awareness.on("update", (change) => {
     const states = provider.awareness.getStates();
@@ -156,10 +181,11 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
       const user = states.get(clientID)?.user;
       if (user) {
         // add client
+        addAwarenessStyle(clientID, user.color, user.name);
         set(
           ATOM_clients,
           produce((clients: Map<string, any>) => {
-            clients.set(clientID, { name, color });
+            clients.set(clientID, { name: user.name, color: user.color });
           })
         );
       }
