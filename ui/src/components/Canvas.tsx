@@ -213,6 +213,7 @@ function CanvasImpl() {
           style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
           // type: "floating",
           type: "simplebezier",
+          selectable: false,
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,
           //   color: "black",

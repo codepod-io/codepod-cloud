@@ -102,14 +102,16 @@ export function updateView(get: Getter, set: Setter) {
       "" + node.data.parent?.id + node.data.parent?.relation
     );
     if (node.data.folded) return [node];
-    let res = [node];
+    const node2 = structuredClone(node);
+    node2.selected = selectedPods.has(id);
+    let res = [node2];
     res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
     if (node.type === "SCOPE") {
       res = [...res, ...node.data.scopeChildrenIds.flatMap(dfs)];
     }
     return res;
   }
-  const nodes = structuredClone(dfs("ROOT"));
+  const nodes = dfs("ROOT");
   // compare old  and new structure, if changed, propagate symbol table
   // FIXME performance
   if (!compareMaps(oldStructure, newStructure)) {

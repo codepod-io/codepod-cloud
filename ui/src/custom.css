@@ -1,3 +1,11 @@
+body {
+  margin: 0;
+  /* display: flex; */
+  place-items: center;
+  min-width: 320px;
+  /* min-height: 100vh; */
+}
+
 .myLineDecoration-modified {
   background: lightblue;
   width: 5px !important;
@@ -55,32 +63,6 @@ libraries, built-in keywords. */
 
 .react-flow__handle {
   z-index: 100;
-}
-
-/* Remove the right scrollbar on Remirror. */
-.remirror-editor.ProseMirror {
-  overflow-y: hidden !important;
-}
-
-.mention {
-  background: #7963d266;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
-.remirror-theme {
-  /* Provide sufficient space to see the popup */
-  --rmr-space-6: 400px;
-}
-
-/* remove the box-shadow that cause weird border corner. */
-.remirror-theme .ProseMirror {
-  box-shadow: none !important;
-}
-
-/* The style of current line highlight in Monaco */
-.focused .remirror-line-highlight {
-  background-color: #00ff3320;
 }
 
 .suggestions {

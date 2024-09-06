@@ -640,9 +640,9 @@ const MyTabsRoot = ({
     <Tabs.Root
       defaultValue={tabs[0].key}
       orientation="vertical"
-      className="flex"
       value={value}
       style={{
+        display: "flex",
         flexDirection: "row",
         // The sidebar tabs should be scrollable.
         overflow: "scroll",
@@ -662,9 +662,9 @@ const MyTabsRoot = ({
           <Tabs.Trigger
             key={key}
             value={key}
-            className="justify-start"
             style={{
               ...(key === value ? { color: "red" } : {}),
+              justifyContent: "flex-start",
             }}
             onClick={(event) => {
               event.preventDefault();
@@ -698,13 +698,13 @@ function MyTabs({
   return (
     <MyTabsRoot tabs={tabs} side={side}>
       <Box
-        className="px-4 pt-3 pb-2"
         style={{
           border: "1px solid black",
           width: "200px",
           backgroundColor: gray.gray1,
           // The sidebar panel should be scrollable.
           overflow: "scroll",
+          padding: "1rem",
         }}
       >
         <>

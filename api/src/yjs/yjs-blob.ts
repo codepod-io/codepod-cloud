@@ -28,7 +28,7 @@ import {
   CodeNodeType,
   RichNodeType,
 } from "@/../../ui/src/lib/store/types";
-import { json2yxml, myNanoId } from "./utils";
+import { getInitYXml, myNanoId } from "./utils";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -159,6 +159,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       id: "ROOT",
       type: "RICH",
       position: { x: 0, y: 0 },
+      width: 300,
       data: {
         treeChildrenIds: [pod1_id, pod2_id],
         isScope: false,
@@ -199,26 +200,10 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       },
     };
     nodesMap.set(pod2_id, pod2);
-    const welcome = {
-      type: "doc",
-      content: [
-        {
-          type: "heading",
-          attrs: { level: 4 },
-          content: [{ type: "text", text: "Welcome to CodePod IDE" }],
-        },
-        { type: "paragraph" },
-        {
-          type: "paragraph",
-          content: [{ type: "text", text: "Let's get started!" }],
-        },
-        { type: "paragraph" },
-      ],
-    };
-    const yxml = json2yxml(welcome);
+    const yxml = await getInitYXml();
     richMap.set("ROOT", yxml);
-    codeMap.set(pod1_id, new Y.Text("def foo():\n    pass\n"));
-    codeMap.set(pod2_id, new Y.Text("def bar():\n    pass\n"));
+    codeMap.set(pod1_id, new Y.Text("def foo(x):\n    return x+1\n"));
+    codeMap.set(pod2_id, new Y.Text("foo(3)\n"));
   }
 }
 
