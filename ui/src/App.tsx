@@ -32,7 +32,6 @@ import {
 } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 
-import "./App.css";
 import "./custom.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
