@@ -41,6 +41,8 @@ import { WebsocketProvider } from "@/../../api/src/runtime/y-websocket";
 import { css } from "@emotion/css";
 import { Extension } from "@tiptap/core";
 import { MyDropcursor } from "./MyDropCursor_tiptap";
+import { useAtomValue } from "jotai";
+import { ATOM_simpleAwareness } from "@/lib/store/yjsSlice";
 
 // import { WebrtcProvider } from "y-webrtc";
 
@@ -99,6 +101,7 @@ export function RichEditor({
   yXml: Y.XmlFragment;
   provider: WebsocketProvider;
 }) {
+  const simpleAwareness = useAtomValue(ATOM_simpleAwareness);
   const editor = useCreateBlockNote({
     schema,
     dictionary: {
@@ -146,8 +149,8 @@ export function RichEditor({
       fragment: yXml,
       // Information (name and color) for this user:
       user: {
-        name: "My Username",
-        color: "#ff0000",
+        name: simpleAwareness.name,
+        color: simpleAwareness.color,
       },
     },
   });

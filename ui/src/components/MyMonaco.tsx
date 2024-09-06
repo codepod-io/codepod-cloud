@@ -37,6 +37,7 @@ import { env } from "@/lib/vars";
 import { ParseResult } from "@/lib/parser";
 import { CodeNodeType } from "@/lib/store/types";
 import { css } from "@emotion/css";
+import { myassert } from "@/lib/utils/utils";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -350,6 +351,7 @@ function useInitEditor({
   }, [parseResult, resolveResult, editor, showAnnotations, scopedVars]);
 
   const provider = useAtomValue(ATOM_provider);
+  myassert(provider);
   const codeMap = useAtomValue(ATOM_codeMap);
 
   const { client } = copilotTrpc.useUtils();
@@ -404,7 +406,7 @@ function useInitEditor({
         ytext,
         editor.getModel()!,
         new Set([editor]),
-        provider?.awareness
+        provider.awareness
       );
     }
   }, [editor]);
@@ -436,6 +438,10 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
         selectOnLineNumbers: true,
         readOnly: env.READ_ONLY || editMode !== "edit",
         fontSize: 14,
+        // Add padding for showing user awareness.
+        padding: {
+          top: 12,
+        },
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.
         scrollBeyondLastLine: false,
