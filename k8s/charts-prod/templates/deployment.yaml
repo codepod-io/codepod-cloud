@@ -6,7 +6,6 @@ metadata:
 stringData:
   GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
   JWT_SECRET: "{{ .Values.jwtSecret }}"
-  ROACH_PASSWORD: "{{ .Values.roachPassword }}"
 
 # UI
 ---
@@ -103,13 +102,13 @@ spec:
           env:
             - name: READ_ONLY
               value: "{{ .Values.READ_ONLY }}"
-            - name: ROACH_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: ROACH_PASSWORD
+                  name: database-superuser
+                  key: password
             - name: DATABASE_URL
-              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -165,13 +164,13 @@ spec:
         - name: psql
           image: postgres:10.1
           env:
-            - name: ROACH_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: ROACH_PASSWORD
+                  name: database-superuser
+                  key: password
             - name: DATABASE_URL
-              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
         - name: prisma
           image: lihebi/codepod-cloud-api:{{ .Chart.AppVersion }}
           workingDir: /app/api
@@ -185,13 +184,13 @@ spec:
           ports:
             - containerPort: 5555
           env:
-            - name: ROACH_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: ROACH_PASSWORD
+                  name: database-superuser
+                  key: password
             - name: DATABASE_URL
-              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
           resources:
             limits:
               memory: 2048Mi
@@ -250,13 +249,13 @@ spec:
           env:
             - name: READ_ONLY
               value: "{{ .Values.READ_ONLY }}"
-            - name: ROACH_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: ROACH_PASSWORD
+                  name: database-superuser
+                  key: password
             - name: DATABASE_URL
-              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -321,13 +320,13 @@ spec:
           env:
             - name: READ_ONLY
               value: "{{ .Values.READ_ONLY }}"
-            - name: ROACH_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: ROACH_PASSWORD
+                  name: database-superuser
+                  key: password
             - name: DATABASE_URL
-              value: "postgresql://roach:$(ROACH_PASSWORD)@cockroachdb-public:26257/codepod?sslmode=require"
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
             - name: YJS_WS_URL
               value: "ws://codepod-yjs-service:4233/yjs"
             - name: RUNTIME_NS

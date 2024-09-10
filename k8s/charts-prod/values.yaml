@@ -2,7 +2,6 @@
 googleClientId:
 # openssl rand -base64 12
 jwtSecret:
-roachPassword:
 # The AWS access key id and secret access key for S3
 awsAccessKeyId:
 awsSecretAccessKey:

@@ -2,7 +2,6 @@ srcDir: "/path/to/codepod-cloud/src/dir"
 googleClientId:
 # openssl rand -base64 12
 jwtSecret: 
-roachPassword: 
 READ_ONLY: false
 BANNER:
 host:
