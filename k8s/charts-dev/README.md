@@ -50,15 +50,6 @@ helm upgrade codepod . -n codepod-dev --values=./.values/dev.yaml
 helm uninstall codepod -n codepod-dev
 ```
 
-5. create cockroachdb user
-
-```sh
-# create user
-echo "CREATE USER roach WITH PASSWORD '$ROACH_PASSWORD'; GRANT admin TO roach;" | cockroach sql \
- --certs-dir=/cockroach/cockroach-certs \
- --host=cockroachdb-public
-```
-
 5. First time pnpm package install
 
 Open a terminal in the `codepod-init` pod and run:

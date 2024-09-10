@@ -68,12 +68,7 @@ helm upgrade --install ingress-nginx ingress-nginx \
   --namespace ingress-nginx --create-namespace
 ```
 
-Install cockroachdb CRDs and operator:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/crds.yaml
-kubectl apply -f https://raw.githubusercontent.com/cockroachdb/cockroach-operator/v2.14.0/install/operator.yaml
-```
+Install CNPG operator.
 
 ## Install the app
 
@@ -116,16 +111,7 @@ helm upgrade --install ingress-nginx ingress-nginx \
   --namespace ingress-nginx --create-namespace
 ```
 
-4. create cockroachdb user
-
-```sh
-# create user
-echo "CREATE USER roach WITH PASSWORD '$ROACH_PASSWORD'; GRANT admin TO roach;" | cockroach sql \
- --certs-dir=/cockroach/cockroach-certs \
- --host=cockroachdb-public
-```
-
-5. prisma migrate deploy
+4. prisma migrate deploy
 
 # Maintainence
 
