@@ -43,6 +43,10 @@ import { Extension } from "@tiptap/core";
 import { MyDropcursor } from "./MyDropCursor_tiptap";
 import { useAtomValue } from "jotai";
 import { ATOM_simpleAwareness } from "@/lib/store/yjsSlice";
+import { trpc } from "@/lib/trpc";
+import { myassert, myNanoId } from "@/lib/utils/utils";
+import { ATOM_repoId } from "@/lib/store/atom";
+import { toast } from "react-toastify";
 
 // import { WebrtcProvider } from "y-webrtc";
 
@@ -94,6 +98,8 @@ const ArrowConversionExtension = Extension.create({
   },
 });
 
+const urlResolveCache = new Map<string, { value: string; createdAt: Date }>();
+
 export function RichEditor({
   yXml,
   provider,
@@ -102,6 +108,9 @@ export function RichEditor({
   provider: WebsocketProvider;
 }) {
   const simpleAwareness = useAtomValue(ATOM_simpleAwareness);
+  const repoId = useAtomValue(ATOM_repoId);
+  myassert(repoId);
+  const utils = trpc.useUtils();
   const editor = useCreateBlockNote({
     schema,
     dictionary: {
@@ -152,6 +161,80 @@ export function RichEditor({
         name: simpleAwareness.name,
         color: simpleAwareness.color,
       },
+    },
+    uploadFile: async (file) => {
+      // Safety guards:
+      // 1. the file must be an image
+      if (!file.type.startsWith("image/")) {
+        toast.error("Only images are allowed");
+        throw new Error("Only images are allowed");
+      }
+      // 2. the file must be less than 10MB
+      const maxSize = 10 * 1024 * 1024;
+      // For debug: set maxsize to 100k
+      // const maxSize = 100 * 1024;
+      if (file.size > maxSize) {
+        toast.error("File is too large, max 10MB");
+        throw new Error("File is too large");
+      }
+      const key = `${myNanoId()}-${file.name}`;
+
+      // Get a URL to upload to from the server.
+      const signedUrl = await utils.client.repo.createPresignedUrlPUT.mutate({
+        repoId,
+        key,
+      });
+
+      const headers: any = {};
+      if (file?.type) {
+        // S3 requires setting the correct content type.
+        headers["Content-Type"] = file!.type || "application/octet-stream";
+      }
+
+      // Actually upload the file.
+      const uploaded = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers,
+      });
+
+      if (!uploaded.ok) {
+        toast.error("Failed to upload file");
+        throw new Error("Failed to upload file");
+      }
+
+      // We store the URL in a custom format, in this case s3://bucket/key.
+      // We'll subsequently parse this URL in the resolveFileUrl function.
+      return `s3://${repoId}/${key}`;
+    },
+    resolveFileUrl: async (url) => {
+      if (url.startsWith("s3:")) {
+        // it's our custom format, request a signed url from the backend
+        const [, , repoId, key] = url.split("/", 4);
+        if (!repoId || !key) {
+          throw new Error("Invalid file URL");
+        }
+        if (urlResolveCache.has(url)) {
+          const cached = urlResolveCache.get(url);
+          if (
+            cached &&
+            new Date().getTime() - cached.createdAt.getTime() < 1000 * 3590
+          ) {
+            return cached.value;
+          }
+        }
+        const presignedUrl =
+          await utils.client.repo.createPresignedUrlGET.mutate({
+            repoId,
+            key,
+          });
+        urlResolveCache.set(url, {
+          value: presignedUrl,
+          createdAt: new Date(),
+        });
+        return presignedUrl;
+      }
+      return url;
     },
   });
 
@@ -220,6 +303,7 @@ okay
         }
         .bn-side-menu .bn-button {
           background-color: var(--sky-3);
+          transform: translateX(-5px);
         }
         .bn-side-menu .bn-button svg {
           color: var(--blue-9);
@@ -231,12 +315,14 @@ okay
         slashMenu={false}
         formattingToolbar={false}
         onChange={async () => {
-          setBlocks(editor.document);
-          const markdown = await editor.blocksToMarkdownLossy(editor.document);
-          setMarkdown(markdown);
-          // Converts the editor's contents from Block objects to HTML and store to state.
-          const html = await editor.blocksToHTMLLossy(editor.document);
-          setHTML(html);
+          // Disable for now. Converting to markdown doesn't resolve s3:// urls.
+          //
+          // setBlocks(editor.document);
+          // const markdown = await editor.blocksToMarkdownLossy(editor.document);
+          // setMarkdown(markdown);
+          // // Converts the editor's contents from Block objects to HTML and store to state.
+          // const html = await editor.blocksToHTMLLossy(editor.document);
+          // setHTML(html);
         }}
       >
         <SuggestionMenuController

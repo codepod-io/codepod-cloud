@@ -5,6 +5,10 @@ jwtSecret:
 READ_ONLY: false
 BANNER:
 host:
+AWS_ACCESS_KEY_ID:
+AWS_SECRET_ACCESS_KEY:
+AWS_REGION: us-west-1
+S3_BUCKET:
 kernelImages:
   python: lihebi/codepod-kernel-python:0.5.1-alpha.2
   julia: lihebi/codepod-kernel-julia:0.5.1-alpha.2
