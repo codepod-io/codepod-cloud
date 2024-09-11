@@ -1,0 +1,202 @@
+# redis cache for yjs blob
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.2
+          ports:
+            - containerPort: 6379
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: "0.5"
+            requests:
+              memory: 512Mi
+              cpu: "0.1"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+
+# Yjs flush worker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-yjs-flush-deployment
+  labels:
+    app: codepod-yjs-flush
+spec:
+  # There should be only one replica of the flush worker.
+  # TODO I should monitor the flush worker to see if it's working properly.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-yjs-flush
+  template:
+    metadata:
+      labels:
+        app: codepod-yjs-flush
+    spec:
+      containers:
+        - name: codepod-yjs-flush
+          image: node:20
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:yjs"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run dev:yjs-flush
+          ports:
+            - containerPort: 4233
+          volumeMounts:
+            - mountPath: /app
+              name: src
+              readOnly: false
+          env:
+            - name: READ_ONLY
+              value: "{{ .Values.READ_ONLY }}"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-superuser
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
+            - name: AWS_ACCESS_KEY_ID
+              value: "{{ .Values.AWS_ACCESS_KEY_ID }}"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "{{ .Values.AWS_SECRET_ACCESS_KEY }}"
+            - name: AWS_REGION
+              value: "{{ .Values.AWS_REGION }}"
+            - name: S3_BUCKET
+              value: "{{ .Values.S3_BUCKET }}"
+          resources:
+            limits:
+              memory: 6Gi
+              cpu: "4"
+            requests:
+              memory: 1Gi
+              cpu: "0.5"
+      volumes:
+        - name: src
+          hostPath:
+            path: "{{ .Values.srcDir }}"
+
+# Yjs server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-yjs-deployment
+  labels:
+    app: codepod-yjs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-yjs
+  template:
+    metadata:
+      labels:
+        app: codepod-yjs
+    spec:
+      containers:
+        - name: codepod-yjs
+          image: node:20
+          workingDir: /app/api
+          # command: ["pnpm", "run", "dev:yjs"]
+          # command: ["tail", "-f", "/dev/null"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - >-
+              corepack enable &&
+              pnpm run dev:yjs
+          ports:
+            - containerPort: 4233
+          volumeMounts:
+            - mountPath: /app
+              name: src
+              readOnly: false
+          env:
+            - name: READ_ONLY
+              value: "{{ .Values.READ_ONLY }}"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-superuser
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
+            - name: AWS_ACCESS_KEY_ID
+              value: "{{ .Values.awsAccessKeyId }}"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "{{ .Values.awsSecretAccessKey }}"
+            # - name: AWS_REGION
+            #   value: "{{ .Values.awsRegion }}"
+            # - name: S3_BUCKET
+            #   value: "{{ .Values.s3Bucket }}"
+            # - name: S3_ENDPOINT
+            #   value: "{{ .Values.s3Endpoint }}"
+          resources:
+            limits:
+              memory: 6Gi
+              cpu: "4"
+            requests:
+              memory: 1Gi
+              cpu: "0.5"
+      volumes:
+        - name: src
+          hostPath:
+            path: "{{ .Values.srcDir }}"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-yjs-service
+spec:
+  selector:
+    app: codepod-yjs
+  ports:
+    - protocol: TCP
+      port: 4233
+      targetPort: 4233
