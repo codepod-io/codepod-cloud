@@ -646,7 +646,7 @@ export function ToolbarAddPod({
             addNode({ anchorId: id, position, type: "RICH" });
           }}
         >
-          <NotebookPen /> Doc
+          <NotebookPen /> Note
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item

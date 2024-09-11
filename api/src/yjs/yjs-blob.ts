@@ -58,7 +58,13 @@ function getDebouncedCallback(key) {
   return debounceRegistry.get(key);
 }
 
-async function handleSaveBlob({ repoId, yDocBlob }) {
+async function handleSaveBlob({
+  repoId,
+  yDocBlob,
+}: {
+  repoId: string;
+  yDocBlob: Buffer;
+}) {
   console.log("save blob", repoId, yDocBlob.length);
   // calculate the size of yDocBlob
   const size = Buffer.byteLength(yDocBlob);
@@ -85,12 +91,12 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
       return;
     }
     // FIXME the waiting time could be used to reduce the cost of saving to DB.
-    getDebouncedCallback(`update-blob-${repoId}`)(() => {
+    getDebouncedCallback(`update-blob-${repoId}`)(async () => {
       // encode state as update
       // FIXME it may be too expensive to update the entire doc.
       // FIXME history is discarded
       const update = Y.encodeStateAsUpdate(ydoc);
-      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
+      await handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
     });
   }
   const rootMap = ydoc.getMap("rootMap");
