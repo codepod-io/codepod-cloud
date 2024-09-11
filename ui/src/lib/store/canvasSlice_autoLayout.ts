@@ -195,7 +195,7 @@ export function autoLayoutTree(get: Getter, set: Setter) {
   updateView(get, set);
   const end = performance.now();
   // round to 2 decimal places
-  console.log("[perf] autoLayoutTree took", (end - start).toFixed(2), "ms");
+  console.debug("[perf] autoLayoutTree took", (end - start).toFixed(2), "ms");
 }
 
 // DEPRECATED

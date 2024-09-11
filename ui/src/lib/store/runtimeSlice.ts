@@ -150,7 +150,7 @@ export function getOrCreate_ATOM_publicST(id: string) {
  * @param id paod
  */
 function parsePod(get: Getter, set: Setter, id: string) {
-  console.log("parsePod", id);
+  // console.log("parsePod", id);
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) throw new Error(`Node not found for id: ${id}`);
@@ -240,7 +240,7 @@ function parseAllPods(get: Getter, set: Setter) {
     }
   });
   const t2 = performance.now();
-  console.log("[perf] parseAllPods took " + (t2 - t1).toFixed(2) + " ms.");
+  console.debug("[perf] parseAllPods took " + (t2 - t1).toFixed(2) + " ms.");
 }
 
 export function propagateAllST(get: Getter, set: Setter) {
@@ -263,7 +263,7 @@ export function propagateAllST(get: Getter, set: Setter) {
     }
   });
   const t3 = performance.now();
-  console.log("[perf] propagateST took " + (t3 - t2).toFixed(2) + " ms.");
+  console.debug("[perf] propagateST took " + (t3 - t2).toFixed(2) + " ms.");
 }
 
 export const ATOM_propagateAllST = atom(null, propagateAllST);
