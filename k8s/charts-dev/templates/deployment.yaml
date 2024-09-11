@@ -6,6 +6,10 @@ metadata:
 stringData:
   GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
   JWT_SECRET: "{{ .Values.jwtSecret }}"
+  AWS_ACCESS_KEY_ID: "{{ .Values.AWS_ACCESS_KEY_ID }}"
+  AWS_SECRET_ACCESS_KEY: "{{ .Values.AWS_SECRET_ACCESS_KEY }}"
+  AWS_REGION: "{{ .Values.AWS_REGION }}"
+  S3_BUCKET: "{{ .Values.S3_BUCKET }}"
 data:
   # Use automatically generated secret.
   # JWT_SECRET: "{{ randAlphaNum 16 | b64enc }}"
@@ -50,21 +54,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: codepod-ui
+  name: ui-codepod
   labels:
-    app: codepod-ui
+    app: ui-codepod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: codepod-ui
+      app: ui-codepod
   template:
     metadata:
       labels:
-        app: codepod-ui
+        app: ui-codepod
     spec:
       containers:
-        - name: codepod-ui
+        - name: ui-codepod
           image: node:20
           workingDir: /app/ui
           # command: ["tail", "-f", "/dev/null"]
@@ -109,10 +113,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: codepod-ui-service
+  name: ui-codepod-service
 spec:
   selector:
-    app: codepod-ui
+    app: ui-codepod
   ports:
     - protocol: TCP
       port: 80
@@ -123,22 +127,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: codepod-api
+  name: api-codepod
   labels:
-    app: codepod-api
+    app: api-codepod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: codepod-api
+      app: api-codepod
   template:
     metadata:
       labels:
-        app: codepod-api
+        app: api-codepod
     spec:
       # serviceAccountName: api-account
       containers:
-        - name: codepod-api
+        - name: api-codepod
           image: node:20
           workingDir: /app/api
           # command: ["pnpm", "run", "dev:main"]
@@ -175,6 +179,28 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: GOOGLE_CLIENT_ID
+            # S3 configuration
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: AWS_REGION
+            - name: S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: S3_BUCKET
+
           resources:
             limits:
               memory: 6Gi
@@ -190,10 +216,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: codepod-api-service
+  name: api-codepod-service
 spec:
   selector:
-    app: codepod-api
+    app: api-codepod
   ports:
     - protocol: TCP
       port: 4000
@@ -282,21 +308,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: codepod-yjs
+  name: yjs-codepod
   labels:
-    app: codepod-yjs
+    app: yjs-codepod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: codepod-yjs
+      app: yjs-codepod
   template:
     metadata:
       labels:
-        app: codepod-yjs
+        app: yjs-codepod
     spec:
       containers:
-        - name: codepod-yjs
+        - name: yjs-codepod
           image: node:20
           workingDir: /app/api
           # command: ["pnpm", "run", "dev:yjs"]
@@ -344,10 +370,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: codepod-yjs-service
+  name: yjs-codepod-service
 spec:
   selector:
-    app: codepod-yjs
+    app: yjs-codepod
   ports:
     - protocol: TCP
       port: 4233
@@ -358,22 +384,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: codepod-runtime
+  name: runtime-codepod
   labels:
-    app: codepod-runtime
+    app: runtime-codepod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: codepod-runtime
+      app: runtime-codepod
   template:
     metadata:
       labels:
-        app: codepod-runtime
+        app: runtime-codepod
     spec:
       serviceAccountName: api-account
       containers:
-        - name: codepod-runtime
+        - name: runtime-codepod
           image: node:20
           workingDir: /app/api
           # command: ["pnpm", "run", "dev:runtime"]
@@ -401,7 +427,7 @@ spec:
             - name: DATABASE_URL
               value: "postgresql://postgres:$(DB_PASSWORD)@database-rw:5432/app"
             - name: YJS_WS_URL
-              value: "ws://codepod-yjs-service:4233/yjs"
+              value: "ws://yjs-codepod-service:4233/yjs"
             - name: RUNTIME_NS
               value: "{{ .Release.Namespace }}-runtime"
             - name: KERNEL_IMAGE_PYTHON
@@ -428,10 +454,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: codepod-runtime-service
+  name: runtime-codepod-service
 spec:
   selector:
-    app: codepod-runtime
+    app: runtime-codepod
   ports:
     - protocol: TCP
       port: 4001

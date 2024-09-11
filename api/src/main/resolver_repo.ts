@@ -8,6 +8,8 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { env } from "./vars";
 
+import { createPresignedUrlGET, createPresignedUrlPUT } from "./s3utils";
+
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
 async function ensureRepoEditAccess({ repoId, userId }) {
@@ -17,6 +19,24 @@ async function ensureRepoEditAccess({ repoId, userId }) {
       OR: [
         { owner: { id: userId } },
         { collaborators: { some: { id: userId } } },
+      ],
+    },
+  });
+  if (!repo) {
+    // this might be caused by creating a pod and update it too soon before it
+    // is created on server, which is a time sequence bug
+    throw new Error("Repo not exists.");
+  }
+}
+
+async function ensureRepoReadAccess({ repoId, userId }) {
+  let repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+      OR: [
+        { owner: { id: userId } },
+        { collaborators: { some: { id: userId } } },
+        { public: true },
       ],
     },
   });
@@ -529,4 +549,26 @@ export const repoRouter = router({
   deleteCollaborator,
   star,
   unstar,
+  createPresignedUrlPUT: protectedProcedure
+    .input(z.object({ repoId: z.string(), key: z.string() }))
+    .mutation(async ({ input: { repoId, key }, ctx: { userId } }) => {
+      if (!userId) throw new Error("Not authenticated.");
+      if (env.READ_ONLY) throw Error("Read only mode");
+      // check if the user has access to the repo
+      await ensureRepoEditAccess({ repoId, userId });
+      return createPresignedUrlPUT({
+        key: `repoUploads/${repoId}/${key}`,
+      });
+    }),
+  createPresignedUrlGET: protectedProcedure
+    .input(z.object({ repoId: z.string(), key: z.string() }))
+    .mutation(async ({ input: { repoId, key }, ctx: { userId } }) => {
+      if (!userId) throw new Error("Not authenticated.");
+      if (env.READ_ONLY) throw Error("Read only mode");
+      // check if the user has access to the repo
+      await ensureRepoReadAccess({ repoId, userId });
+      return createPresignedUrlGET({
+        key: `repoUploads/${repoId}/${key}`,
+      });
+    }),
 });
