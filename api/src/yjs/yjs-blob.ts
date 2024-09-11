@@ -29,6 +29,7 @@ import {
   RichNodeType,
 } from "@/../../ui/src/lib/store/types";
 import { getInitYXml, myNanoId } from "./utils";
+import { handleSaveBlobToRedis, loadBlobFromCache } from "./yjs-blob-cache";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -85,12 +86,14 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
       return;
     }
     // FIXME the waiting time could be used to reduce the cost of saving to DB.
-    getDebouncedCallback(`update-blob-${repoId}`)(() => {
+    getDebouncedCallback(`update-blob-${repoId}`)(async () => {
       // encode state as update
       // FIXME it may be too expensive to update the entire doc.
       // FIXME history is discarded
       const update = Y.encodeStateAsUpdate(ydoc);
-      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
+      await handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
+      // await handleSaveBlobToS3({ repoId, yDocBlob: Buffer.from(update) });
+      // await handleSaveBlobToRedis({ repoId, yDocBlob: Buffer.from(update) });
     });
   }
   const rootMap = ydoc.getMap("rootMap");
@@ -134,8 +137,10 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     throw new Error("repo not found");
   }
 
-  if (repo.yDocBlob) {
-    Y.applyUpdate(ydoc, repo.yDocBlob);
+  const yDocBlob = await loadBlobFromCache(repoId);
+
+  if (yDocBlob) {
+    Y.applyUpdate(ydoc, yDocBlob);
   } else {
     // init the ydoc
     const rootMap = ydoc.getMap("rootMap");

@@ -9,6 +9,7 @@
     "dev:main": "node-dev src/main/run.ts",
     "start:main": "node build/main/run.js",
     "dev:yjs": "node-dev src/yjs/run.ts",
+    "dev:yjs-flush": "node-dev src/yjs/flush-worker.ts",
     "start:yjs": "node build/yjs/run.js",
     "dev:copilot": "node-dev src/copilot/run.ts",
     "dev:runtime": "node-dev src/runtime/run.ts",
