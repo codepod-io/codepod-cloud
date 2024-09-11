@@ -167,7 +167,7 @@ export function updateView(get: Getter, set: Setter) {
   }
   set(ATOM_edges, generateEdge(nodes));
   const t2 = performance.now();
-  console.log("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
+  console.debug("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
 }
 
 export const ATOM_updateView = atom(null, updateView);
