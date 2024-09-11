@@ -3,7 +3,7 @@ import * as k8s from "@kubernetes/client-node";
 import * as Y from "yjs";
 import { RuntimeInfo } from "../yjs/types";
 import prisma from "../prisma";
-import { env, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
+import { myenv, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -74,7 +74,7 @@ async function doRecycleKernel() {
     try {
       await k8sAppsApi.deleteNamespacedDeployment(
         `rt-${kernel.repoId}-${kernel.name}`,
-        env.RUNTIME_NS
+        myenv.RUNTIME_NS
       );
     } catch (e) {
       if (e instanceof k8s.HttpError) {
@@ -88,7 +88,7 @@ async function doRecycleKernel() {
     try {
       await k8sApi.deleteNamespacedService(
         `svc-${kernel.repoId}-${kernel.name}`,
-        env.RUNTIME_NS
+        myenv.RUNTIME_NS
       );
     } catch (e) {
       if (e instanceof k8s.HttpError) {

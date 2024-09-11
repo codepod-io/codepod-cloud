@@ -6,7 +6,6 @@ import { startWsServer } from "./yjs-server";
 //     env $(cat .env | grep -v \"#\" | xargs)
 
 startWsServer({
-  jwtSecret: z.string().parse(process.env.JWT_SECRET),
   port: 4233,
 });
 // startAPIServer({ port: 4234 });

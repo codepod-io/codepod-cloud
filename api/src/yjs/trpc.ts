@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { inferAsyncReturnType } from "@trpc/server";
 
@@ -24,7 +23,6 @@ export const createContext = async ({
     userId,
   };
 };
-
 const t = initTRPC.context<typeof createContext>().create();
 export const router = t.router;
 export const publicProcedure = t.procedure;

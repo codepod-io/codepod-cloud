@@ -10,8 +10,8 @@ import { AppNode } from "./types";
 import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
-import { ATOM_repoId } from "./atom";
-import { addAwarenessStyle } from "../utils/utils";
+import { ATOM_repoData } from "./atom";
+import { addAwarenessStyle, myassert } from "../utils/utils";
 
 // The atoms
 
@@ -145,10 +145,9 @@ export const ATOM_simpleAwareness = atom({ name: "", color: "" });
 export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
   if (get(ATOM_yjsConnecting)) return;
   if (get(ATOM_provider)) return;
-  const repoId = get(ATOM_repoId);
-  if (!repoId) {
-    throw new Error("repoId not found");
-  }
+  const repoData = get(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
   set(ATOM_yjsConnecting, true);
   const yjsWsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${
     window.location.host

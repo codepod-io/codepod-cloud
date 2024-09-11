@@ -47,13 +47,8 @@ import {
 import {
   ATOM_collaborators,
   ATOM_editMode,
-  ATOM_isPublic,
-  ATOM_repoId,
-  ATOM_repoName,
-  ATOM_repoX,
-  ATOM_repoY,
-  ATOM_repoZoom,
-  ATOM_shareOpen,
+  ATOM_repoData,
+  INIT_ZOOM,
 } from "@/lib/store/atom";
 import {
   ATOM_parseAllPods,
@@ -67,6 +62,7 @@ import { ShareProjDialog } from "@/components/ShareProjDialog";
 import { StarButton } from "./dashboard_buttons";
 import { env } from "@/lib/vars";
 import { Header } from "@/components/Header";
+import { myassert } from "@/lib/utils/utils";
 
 function NotFoundAlert({}) {
   return (
@@ -88,43 +84,37 @@ function NotFoundAlert({}) {
 function RepoLoader({ children }) {
   const { id } = useParams();
   if (!id) throw "Id is null";
-  const setRepoId = useSetAtom(ATOM_repoId);
-  setRepoId(id);
+  // NOTE: do not get the value of ATOM_repoData here, as it will trigger
+  // infinite loop of re-rendering.
+  const setRepoData = useSetAtom(ATOM_repoData);
+  const [loaded, setLoaded] = useState(false);
 
   // load the repo
   // FIXME this should be a mutation as it changes the last access time.
   const repoQuery = trpc.repo.repo.useQuery({ id }, { retry: false });
-  const setRepoName = useSetAtom(ATOM_repoName);
-  const setRepoZoom = useSetAtom(ATOM_repoZoom);
-  const setRepoX = useSetAtom(ATOM_repoX);
-  const setRepoY = useSetAtom(ATOM_repoY);
 
   const me = trpc.user.me.useQuery();
   const setEditMode = useSetAtom(ATOM_editMode);
-  const setIsPublic = useSetAtom(ATOM_isPublic);
   const setCollaborators = useSetAtom(ATOM_collaborators);
 
   useEffect(() => {
     if (repoQuery.data && me.data) {
-      setRepoName(repoQuery.data.name);
-      setIsPublic(repoQuery.data.public);
       setCollaborators(repoQuery.data.collaborators);
       // set initial viewport zoom and position
       const userRepoData = repoQuery.data.UserRepoData;
-      if (userRepoData.length > 0) {
-        const zoom = userRepoData[0].zoom;
-        if (zoom) setRepoZoom(zoom);
-        const x = userRepoData[0].x;
-        if (x) setRepoX(x);
-        const y = userRepoData[0].y;
-        if (y) setRepoY(y);
-      }
+      setRepoData({
+        ...repoQuery.data,
+        x: userRepoData[0]?.x || 0,
+        y: userRepoData[0]?.y || 0,
+        zoom: userRepoData[0]?.zoom || INIT_ZOOM,
+      });
       if (
-        me.data?.id === repoQuery.data.userId ||
-        repoQuery.data.collaborators.map(({ id }) => id).includes(me.data?.id)
+        me.data.id === repoQuery.data.userId ||
+        repoQuery.data.collaborators.map(({ id }) => id).includes(me.data.id)
       ) {
         setEditMode("edit");
       }
+      setLoaded(true);
     }
   }, [repoQuery, me]);
   if (repoQuery.isLoading) return <>Loading</>;
@@ -136,6 +126,8 @@ function RepoLoader({ children }) {
     console.log("repoQuery.data is null");
     return <NotFoundAlert />;
   }
+  // FIXME set data in useEffect is buggy, the children might be rendered before the data is set.
+  if (!loaded) return null;
   return children;
 }
 
@@ -212,9 +204,8 @@ function WaitForProvider({ children }) {
  * A editable text field.
  */
 function Title() {
-  const [repoName, setRepoName] = useAtom(ATOM_repoName);
-  const [repoId] = useAtom(ATOM_repoId);
-  if (!repoId) return null;
+  const [repoData, setRepoData] = useAtom(ATOM_repoData);
+  if (!repoData) return null;
 
   const utils = trpc.useUtils();
   const updateRepo = trpc.repo.updateRepo.useMutation({
@@ -226,7 +217,7 @@ function Title() {
     debounce(
       (name: string) => {
         console.log("update repo", name);
-        updateRepo.mutate({ id: repoId, name });
+        updateRepo.mutate({ id: repoData.id, name });
       },
       1000,
       { maxWait: 5000 }
@@ -236,11 +227,11 @@ function Title() {
   return (
     <TextField.Root
       variant="surface"
-      value={repoName || ""}
+      value={repoData.name || ""}
       placeholder="Untitled"
       onChange={(e) => {
         const name = e.target.value;
-        setRepoName(name);
+        setRepoData({ ...repoData, name });
         debouncedUpdateRepo(name);
       }}
     />
@@ -301,18 +292,8 @@ function ActiveEditors() {
 }
 
 function HeaderWithItems() {
-  const repoId = useAtomValue(ATOM_repoId);
-  if (!repoId) throw "repoId is null";
-  const {
-    isLoading,
-    isError,
-    isSuccess,
-    data: repo,
-  } = trpc.repo.repo.useQuery({ id: repoId }, { retry: false });
-  if (isLoading) return <>Loading</>;
-  if (isError) return <>Error</>;
-  if (!isSuccess) return <>No data</>;
-  if (!repo) return <>Repo not found</>;
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
   return (
     <Header>
       <RadixLink asChild>
@@ -325,7 +306,7 @@ function HeaderWithItems() {
       {/* <HeaderItem /> */}
       <Title />
       {/* thumbsup */}
-      <StarButton repo={repo} />
+      <StarButton repo={repoData} />
 
       <Flex flexGrow="1" />
 

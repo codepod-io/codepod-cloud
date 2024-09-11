@@ -5,13 +5,9 @@ import * as awarenessProtocol from "y-protocols/awareness";
 import * as syncProtocol from "y-protocols/sync";
 
 import { encoding, decoding, map } from "lib0";
-
-let writeState = () => {
-  throw new Error("writeState not set");
-};
-let bindState = async (doc: Y.Doc, repoId: string) => {
-  throw new Error("bindState not set");
-};
+import { WebSocket } from "ws";
+import http from "http";
+import { bindState, writeState } from "./yjs-blob";
 
 const wsReadyStateConnecting = 0;
 const wsReadyStateOpen = 1;
@@ -22,7 +18,7 @@ const gcEnabled = process.env.GC !== "false" && process.env.GC !== "0";
 /**
  * @type {Map<string,WSSharedDoc>}
  */
-const docs: Map<string, WSSharedDoc> = new Map();
+export const docs: Map<string, WSSharedDoc> = new Map();
 // exporting docs so that others can use it
 
 const messageSync = 0;
@@ -98,23 +94,24 @@ class WSSharedDoc extends Y.Doc {
 /**
  * Gets a Y.Doc by name, whether in memory or on disk
  *
- * @param {string} docname - the name of the Y.Doc to find or create
- * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
- * @return {WSSharedDoc}
+ * @param docname - the name of the Y.Doc to find or create
+ * @param  gc - whether to allow gc on the doc (applies only when created)
  */
-export const getYDoc = (docname, gc = true) => {
-  let doc = docs.get(docname);
+export function getYDoc(
+  repoId: string,
+  gc = true
+): { doc: WSSharedDoc; docLoadedPromise: Promise<any> | null } {
+  let doc = docs.get(repoId);
   let docLoadedPromise: Promise<any> | null = null;
   if (doc === undefined) {
-    const repoId = docname.split("/")[1];
-    doc = new WSSharedDoc(docname);
+    doc = new WSSharedDoc(repoId);
     doc.gc = gc;
     // await bindState(doc, repoId);
     docLoadedPromise = bindState(doc, repoId);
-    docs.set(docname, doc);
+    docs.set(repoId, doc);
   }
   return { doc, docLoadedPromise };
-};
+}
 
 // 0,1,2 are used
 // FIXME this is error-prone.
@@ -199,17 +196,14 @@ const messageListener = (conn, doc, message, readOnly) => {
 
 const scheduledDelete = new Map();
 
-/**
- * @param {WSSharedDoc} doc
- * @param {any} conn
- */
-const closeConn = (doc, conn) => {
+const closeConn = (doc: WSSharedDoc, conn: WebSocket) => {
   if (doc.conns.has(conn)) {
     /**
      * @type {Set<number>}
      */
     // @ts-ignore
     const controlledIds = doc.conns.get(conn);
+    if (!controlledIds) throw new Error("This should not happen");
     doc.conns.delete(conn);
     awarenessProtocol.removeAwarenessStates(
       doc.awareness,
@@ -218,7 +212,7 @@ const closeConn = (doc, conn) => {
     );
     console.log("=== closeConn, renaming conn size", doc.conns.size);
     if (doc.conns.size === 0) {
-      writeState();
+      writeState(doc.name);
       console.log("=== scheduled to destroy ydoc", doc.name, "in 3 seconds");
       // schedule to destroy the document if no new connections are made within 30 seconds
       if (scheduledDelete.has(doc.name)) throw new Error("should not happen");
@@ -241,7 +235,7 @@ const closeConn = (doc, conn) => {
  * @param {any} conn
  * @param {Uint8Array} m
  */
-const send = (doc, conn, m) => {
+const send = (doc: WSSharedDoc, conn: WebSocket, m: Uint8Array) => {
   if (
     conn.readyState !== wsReadyStateConnecting &&
     conn.readyState !== wsReadyStateOpen
@@ -267,109 +261,110 @@ const pingTimeout = 30000;
  * @param {any} req
  * @param {any} opts
  */
-export const createSetupWSConnection = (_bindState, _writeState) => {
-  // set the writeState and bindState functions
-  writeState = _writeState;
-  bindState = _bindState;
-  // return the setupWSConnection function
-  return async (
-    conn,
-    req,
-    {
-      docName = req.url.slice(1).split("?")[0],
-      gc = true,
-      readOnly = false,
-    } = {}
-  ) => {
-    conn.binaryType = "arraybuffer";
-    console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
-    // get doc, initialize if it does not exist yet
-    const { doc, docLoadedPromise } = getYDoc(docName, gc);
-    doc.conns.set(conn, new Set());
-    if (scheduledDelete.has(doc.name)) {
-      console.log("=== cancel previous scheduled destroy ydoc", doc.name);
-      clearTimeout(scheduledDelete.get(doc.name));
-      scheduledDelete.delete(doc.name);
+export function setupWSConnection(
+  conn: WebSocket,
+  req: http.IncomingMessage,
+  {
+    repoId,
+    gc = true,
+    readOnly = false,
+  }: {
+    repoId: string;
+    gc: boolean;
+    readOnly: boolean;
+  }
+) {
+  conn.binaryType = "arraybuffer";
+  console.log(`setupWSConnection for repo ${repoId}, read-only=${readOnly}`);
+  // get doc, initialize if it does not exist yet
+  const { doc, docLoadedPromise } = getYDoc(repoId, gc);
+  doc.conns.set(conn, new Set());
+  if (scheduledDelete.has(doc.name)) {
+    console.log("=== cancel previous scheduled destroy ydoc", doc.name);
+    clearTimeout(scheduledDelete.get(doc.name));
+    scheduledDelete.delete(doc.name);
+  }
+
+  // It might take some time to load the doc, but before then we still need to
+  // listen for websocket events, Ref:
+  // https://github.com/yjs/y-websocket/issues/81#issuecomment-1453185788
+  let isDocLoaded = docLoadedPromise ? false : true;
+  let queuedMessages: Uint8Array[] = [];
+  let isConnectionAlive = true;
+
+  // listen and reply to events
+  conn.on(
+    "message",
+    /** @param {ArrayBuffer} message */
+    // FIXME message had type WebSocket.RawData, but I have to specify
+    // ArrayBuffer here to avoid ts type error.
+    (message: ArrayBuffer) => {
+      if (isDocLoaded)
+        messageListener(conn, doc, new Uint8Array(message), readOnly);
+      else queuedMessages.push(new Uint8Array(message));
     }
+  );
 
-    // It might take some time to load the doc, but before then we still need to
-    // listen for websocket events, Ref:
-    // https://github.com/yjs/y-websocket/issues/81#issuecomment-1453185788
-    let isDocLoaded = docLoadedPromise ? false : true;
-    let queuedMessages: Uint8Array[] = [];
-    let isConnectionAlive = true;
-
-    // listen and reply to events
-    conn.on(
-      "message",
-      /** @param {ArrayBuffer} message */ (message) => {
-        if (isDocLoaded)
-          messageListener(conn, doc, new Uint8Array(message), readOnly);
-        else queuedMessages.push(new Uint8Array(message));
+  // Check if connection is still alive
+  let pongReceived = true;
+  const pingInterval = setInterval(() => {
+    if (!pongReceived) {
+      if (doc.conns.has(conn)) {
+        closeConn(doc, conn);
+        isConnectionAlive = false;
       }
-    );
-
-    // Check if connection is still alive
-    let pongReceived = true;
-    const pingInterval = setInterval(() => {
-      if (!pongReceived) {
-        if (doc.conns.has(conn)) {
-          closeConn(doc, conn);
-          isConnectionAlive = false;
-        }
-        clearInterval(pingInterval);
-      } else if (doc.conns.has(conn)) {
-        pongReceived = false;
-        try {
-          conn.ping();
-        } catch (e) {
-          closeConn(doc, conn);
-          isConnectionAlive = false;
-          clearInterval(pingInterval);
-        }
-      }
-    }, pingTimeout);
-    conn.on("close", () => {
-      closeConn(doc, conn);
-      isConnectionAlive = false;
       clearInterval(pingInterval);
-    });
-    conn.on("pong", () => {
-      pongReceived = true;
-    });
-    // put the following in a variables in a block so the interval handlers don't keep in in
-    // scope
-    const sendSyncStep1 = () => {
-      // send sync step 1
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, messageSync);
-      syncProtocol.writeSyncStep1(encoder, doc);
-      send(doc, conn, encoding.toUint8Array(encoder));
-      const awarenessStates = doc.awareness.getStates();
-      if (awarenessStates.size > 0) {
-        const encoder = encoding.createEncoder();
-        encoding.writeVarUint(encoder, messageAwareness);
-        encoding.writeVarUint8Array(
-          encoder,
-          awarenessProtocol.encodeAwarenessUpdate(
-            doc.awareness,
-            Array.from(awarenessStates.keys())
-          )
-        );
-        send(doc, conn, encoding.toUint8Array(encoder));
+    } else if (doc.conns.has(conn)) {
+      pongReceived = false;
+      try {
+        conn.ping();
+      } catch (e) {
+        closeConn(doc, conn);
+        isConnectionAlive = false;
+        clearInterval(pingInterval);
       }
-    };
-    if (docLoadedPromise) {
-      docLoadedPromise.then(() => {
-        if (!isConnectionAlive) return;
-
-        isDocLoaded = true;
-        queuedMessages.forEach((message) =>
-          messageListener(conn, doc, message, readOnly)
-        );
-        queuedMessages = [];
-        sendSyncStep1();
-      });
+    }
+  }, pingTimeout);
+  conn.on("close", () => {
+    closeConn(doc, conn);
+    isConnectionAlive = false;
+    clearInterval(pingInterval);
+  });
+  conn.on("pong", () => {
+    pongReceived = true;
+  });
+  // put the following in a variables in a block so the interval handlers don't keep in in
+  // scope
+  const sendSyncStep1 = () => {
+    // send sync step 1
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageSync);
+    syncProtocol.writeSyncStep1(encoder, doc);
+    send(doc, conn, encoding.toUint8Array(encoder));
+    const awarenessStates = doc.awareness.getStates();
+    if (awarenessStates.size > 0) {
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, messageAwareness);
+      encoding.writeVarUint8Array(
+        encoder,
+        awarenessProtocol.encodeAwarenessUpdate(
+          doc.awareness,
+          Array.from(awarenessStates.keys())
+        )
+      );
+      send(doc, conn, encoding.toUint8Array(encoder));
     }
   };
-};
+  if (docLoadedPromise) {
+    docLoadedPromise.then(() => {
+      if (!isConnectionAlive) return;
+
+      isDocLoaded = true;
+      queuedMessages.forEach((message) =>
+        messageListener(conn, doc, message, readOnly)
+      );
+      queuedMessages = [];
+      sendSyncStep1();
+    });
+  }
+}

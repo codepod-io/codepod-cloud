@@ -16,7 +16,7 @@ import {
   Spinner,
   Tooltip,
 } from "@radix-ui/themes";
-import { prettyPrintBytes, timeDifference } from "@/lib/utils/utils";
+import { prettyPrintBytes, timeDifference, useTick } from "@/lib/utils/utils";
 import { trpc } from "@/lib/trpc";
 import { Earth, FileText, ThumbsUp, Trash2, Users } from "lucide-react";
 import { toast } from "react-toastify";
@@ -32,15 +32,9 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
   const me = trpc.user.me.useQuery();
   // peiredically re-render so that the "last viwed time" and "lact active time"
   // are updated every second.
-  const [counter, setCounter] = useState(0);
   const [selectMode, setSelectMode] = useAtom(ATOM_selectMode);
   const [selectedRepos, setSelectedRepos] = useAtom(ATOM_selectedRepos);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCounter(counter + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [counter]);
+  useTick(1000);
   return (
     <Card
       style={{ minWidth: 275, maxWidth: 275 }}
@@ -73,7 +67,7 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
         Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
         <Flex flexGrow={"1"}></Flex>
         {/* the size */}
-        {prettyPrintBytes(repo.yDocBlobSize)}
+        {prettyPrintBytes(repo.yDocBlob?.size || 0)}
       </Flex>
       <Flex gap="2" align="center">
         {repo.userId !== me.data?.id && (

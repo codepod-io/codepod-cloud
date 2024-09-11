@@ -8,6 +8,8 @@ import {
   copilotContext,
   copilotTrpc,
   trpc,
+  yjsTrpc,
+  yjsContext,
 } from "@/lib/trpc";
 
 function RuntimeTrpcProvider({ children }) {
@@ -16,7 +18,6 @@ function RuntimeTrpcProvider({ children }) {
   const trpcClient = runtimeTrpc.createClient({
     links: [
       httpBatchLink({
-        // FIXME add auth
         url: "/runtime",
         headers: getAuthHeaders(),
       }),
@@ -37,7 +38,6 @@ function CopilotTrpcProvider({ children }) {
   const trpcClient = copilotTrpc.createClient({
     links: [
       httpBatchLink({
-        // FIXME add auth
         url: "/copilot",
         headers: getAuthHeaders(),
       }),
@@ -49,6 +49,26 @@ function CopilotTrpcProvider({ children }) {
         {children}
       </QueryClientProvider>
     </copilotTrpc.Provider>
+  );
+}
+
+function YjsTrpcProvider({ children }) {
+  const { getAuthHeaders } = useAuth();
+  const queryClient = new QueryClient();
+  const trpcClient = yjsTrpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "/yjs",
+        headers: getAuthHeaders(),
+      }),
+    ],
+  });
+  return (
+    <yjsTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={yjsContext}>
+        {children}
+      </QueryClientProvider>
+    </yjsTrpc.Provider>
   );
 }
 
@@ -80,7 +100,9 @@ export function AuthProvider({ children }) {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <RuntimeTrpcProvider>
-            <CopilotTrpcProvider>{children}</CopilotTrpcProvider>
+            <CopilotTrpcProvider>
+              <YjsTrpcProvider>{children}</YjsTrpcProvider>
+            </CopilotTrpcProvider>
           </RuntimeTrpcProvider>
         </QueryClientProvider>
       </trpc.Provider>

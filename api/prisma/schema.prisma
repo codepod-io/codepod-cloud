@@ -73,24 +73,47 @@ model UserRepoData {
 }
 
 model Repo {
-    id            String         @id
+    id            String            @id
     name          String?
     // fullname String  @unique
-    owner         User           @relation("OWNER", fields: [userId], references: [id])
+    owner         User              @relation("OWNER", fields: [userId], references: [id])
     userId        String
-    pods          Pod[]          @relation("BELONG")
+    pods          Pod[]             @relation("BELONG")
     edges         Edge[]
-    public        Boolean        @default(false)
-    collaborators User[]         @relation("COLLABORATOR")
-    createdAt     DateTime       @default(now())
+    public        Boolean           @default(false)
+    collaborators User[]            @relation("COLLABORATOR")
+    createdAt     DateTime          @default(now())
     // Edit pod content likely won't update this updatedAt field.
-    updatedAt     DateTime       @default(now()) @updatedAt
+    updatedAt     DateTime          @default(now()) @updatedAt
     UserRepoData  UserRepoData[]
-    stargazers    User[]         @relation("STAR")
-    numLikes      Int            @default(0)
-    yDocBlob      Bytes?
-    yDocBlobSize  Int            @default(0)
+    stargazers    User[]            @relation("STAR")
+    numLikes      Int               @default(0)
+    yDocBlob      YDocBlob?         @relation(fields: [yDocBlobId], references: [id])
+    yDocBlobId    String?           @unique
+    versions      YDocBlobVersion[]
     Kernel        Kernel[]
+}
+
+model YDocBlobVersion {
+    id         String   @id
+    // data
+    time       DateTime
+    message    String
+    yDocBlob   YDocBlob @relation(fields: [yDocBlobId], references: [id])
+    yDocBlobId String   @unique
+
+    repo   Repo   @relation(fields: [repoId], references: [id])
+    repoId String
+}
+
+model YDocBlob {
+    id        String           @id
+    createdAt DateTime         @default(now())
+    updatedAt DateTime         @updatedAt
+    blob      Bytes
+    size      Int
+    repo      Repo?
+    version   YDocBlobVersion?
 }
 
 model Kernel {

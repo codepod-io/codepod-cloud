@@ -6,46 +6,12 @@ import prisma from "../prisma";
 import { z } from "zod";
 
 import { protectedProcedure, publicProcedure, router } from "./trpc";
-import { env } from "./vars";
+import { myenv } from "./vars";
 
 import { createPresignedUrlGET, createPresignedUrlPUT } from "./s3utils";
+import { ensureRepoEditAccess, ensureRepoReadAccess } from "../utils";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
-
-async function ensureRepoEditAccess({ repoId, userId }) {
-  let repo = await prisma.repo.findFirst({
-    where: {
-      id: repoId,
-      OR: [
-        { owner: { id: userId } },
-        { collaborators: { some: { id: userId } } },
-      ],
-    },
-  });
-  if (!repo) {
-    // this might be caused by creating a pod and update it too soon before it
-    // is created on server, which is a time sequence bug
-    throw new Error("Repo not exists.");
-  }
-}
-
-async function ensureRepoReadAccess({ repoId, userId }) {
-  let repo = await prisma.repo.findFirst({
-    where: {
-      id: repoId,
-      OR: [
-        { owner: { id: userId } },
-        { collaborators: { some: { id: userId } } },
-        { public: true },
-      ],
-    },
-  });
-  if (!repo) {
-    // this might be caused by creating a pod and update it too soon before it
-    // is created on server, which is a time sequence bug
-    throw new Error("Repo not exists.");
-  }
-}
 
 async function ensurePodEditAccess({ id, userId }) {
   let pod = await prisma.pod.findFirst({
@@ -84,13 +50,15 @@ const getDashboardRepos = protectedProcedure.query(
           },
         ],
       },
-      omit: {
-        yDocBlob: true,
-      },
       include: {
         UserRepoData: {
           where: {
             userId: userId,
+          },
+        },
+        yDocBlob: {
+          select: {
+            size: true,
           },
         },
       },
@@ -151,7 +119,7 @@ const saveViewPort = protectedProcedure
   )
   .mutation(async ({ input: { repoId, zoom, x, y }, ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     await ensureRepoEditAccess({ repoId, userId });
     await prisma.userRepoData.updateMany({
       where: {
@@ -167,6 +135,8 @@ const saveViewPort = protectedProcedure
     return true;
   });
 
+// ------------------ Repo CRUD ------------------
+// Load the repository data.
 const repo = publicProcedure
   .input(z.object({ id: z.string() }))
   .query(async ({ input: { id }, ctx: { userId } }) => {
@@ -202,20 +172,22 @@ const repo = publicProcedure
             repoId: id,
           },
         },
-      },
-      omit: {
-        yDocBlob: true,
+        versions: {
+          orderBy: {
+            time: "desc",
+          },
+        },
       },
     });
     if (!repo) throw Error("Repo not found");
-    if (!env.READ_ONLY) {
+    if (!myenv.READ_ONLY && userId) {
       await updateUserRepoData({ userId, repoId: id });
     }
     return repo;
   });
 
 async function doCreateRepo({ userId }) {
-  if (env.READ_ONLY) throw Error("Read only mode");
+  if (myenv.READ_ONLY) throw Error("Read only mode");
   const repo = await prisma.repo.create({
     data: {
       id: await nanoid(),
@@ -241,7 +213,7 @@ async function doCreateRepo({ userId }) {
 
 const createRepo = protectedProcedure.mutation(async ({ ctx: { userId } }) => {
   if (!userId) throw Error("Unauthenticated");
-  if (env.READ_ONLY) throw Error("Read only mode");
+  if (myenv.READ_ONLY) throw Error("Read only mode");
   return doCreateRepo({ userId });
 });
 
@@ -249,7 +221,7 @@ const updateVisibility = protectedProcedure
   .input(z.object({ repoId: z.string(), isPublic: z.boolean() }))
   .mutation(async ({ input: { repoId, isPublic }, ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     const repo = await prisma.repo.findFirst({
       where: {
         id: repoId,
@@ -272,7 +244,7 @@ const updateRepo = protectedProcedure
   .input(z.object({ id: z.string(), name: z.string() }))
   .mutation(async ({ input: { id, name }, ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     const repo = await prisma.repo.findFirst({
       where: {
         id,
@@ -297,7 +269,7 @@ const deleteRepo = protectedProcedure
   .input(z.object({ id: z.string() }))
   .mutation(async ({ input: { id }, ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     // only a repo owner can delete a repo.
     const repo = await prisma.repo.findFirst({
       where: {
@@ -337,7 +309,7 @@ const deleteRepos = protectedProcedure
   .input(z.object({ ids: z.array(z.string()) }))
   .mutation(async ({ input: { ids }, ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     // only a repo owner can delete a repo.
     const repos = await prisma.repo.findMany({
       where: {
@@ -386,7 +358,7 @@ const addCollaborator = protectedProcedure
   .mutation(async ({ input: { repoId, email }, ctx: { userId } }) => {
     // make sure the repo is writable by this user
     if (!userId) throw new Error("Not authenticated.");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     // 1. find the repo
     const repo = await prisma.repo.findFirst({
       where: {
@@ -424,7 +396,7 @@ const deleteCollaborator = protectedProcedure
   .input(z.object({ repoId: z.string(), collaboratorId: z.string() }))
   .mutation(async ({ input: { repoId, collaboratorId }, ctx: { userId } }) => {
     if (!userId) throw new Error("Not authenticated.");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     // 1. find the repo
     const repo = await prisma.repo.findFirst({
       where: {
@@ -450,7 +422,7 @@ const star = protectedProcedure
   .mutation(async ({ input: { repoId }, ctx: { userId } }) => {
     // make sure the repo is visible by this user
     if (!userId) throw new Error("Not authenticated.");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     let repo = await prisma.repo.findFirst({
       where: {
         id: repoId,
@@ -479,7 +451,7 @@ const unstar = protectedProcedure
   .input(z.object({ repoId: z.string() }))
   .mutation(async ({ input: { repoId }, ctx: { userId } }) => {
     if (!userId) throw new Error("Not authenticated.");
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     // 1. find the repo
     const repo = await prisma.repo.findFirst({
       where: {
@@ -501,40 +473,6 @@ const unstar = protectedProcedure
     return true;
   });
 
-const copyRepo = protectedProcedure
-  .input(z.object({ repoId: z.string() }))
-  .mutation(async ({ input: { repoId }, ctx: { userId } }) => {
-    // Find the repo
-    if (env.READ_ONLY) throw Error("Read only mode");
-    const repo = await prisma.repo.findFirst({
-      where: {
-        id: repoId,
-      },
-      include: {
-        pods: {
-          include: {
-            parent: true,
-          },
-        },
-      },
-    });
-    if (!repo) throw new Error("Repo not found");
-
-    // Create a new repo
-    const { id } = await doCreateRepo({ userId });
-    // update the repo name
-    await prisma.repo.update({
-      where: {
-        id,
-      },
-      data: {
-        name: repo.name ? `Copy of ${repo.name}` : `Copy of ${repo.id}`,
-        yDocBlob: repo.yDocBlob,
-      },
-    });
-    return id;
-  });
-
 export const repoRouter = router({
   repo,
   saveViewPort,
@@ -543,7 +481,6 @@ export const repoRouter = router({
   updateRepo,
   deleteRepo,
   deleteRepos,
-  copyRepo,
   addCollaborator,
   updateVisibility,
   deleteCollaborator,
@@ -553,7 +490,7 @@ export const repoRouter = router({
     .input(z.object({ repoId: z.string(), key: z.string() }))
     .mutation(async ({ input: { repoId, key }, ctx: { userId } }) => {
       if (!userId) throw new Error("Not authenticated.");
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       // check if the user has access to the repo
       await ensureRepoEditAccess({ repoId, userId });
       return createPresignedUrlPUT({
@@ -564,7 +501,7 @@ export const repoRouter = router({
     .input(z.object({ repoId: z.string(), key: z.string() }))
     .mutation(async ({ input: { repoId, key }, ctx: { userId } }) => {
       if (!userId) throw new Error("Not authenticated.");
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       // check if the user has access to the repo
       await ensureRepoReadAccess({ repoId, userId });
       return createPresignedUrlGET({

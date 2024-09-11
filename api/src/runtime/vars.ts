@@ -6,7 +6,7 @@ import { ZmqWire } from "./k8s-zmq";
 
 import * as Y from "yjs";
 
-export const env = z
+export const myenv = z
   .object({
     KERNEL_IMAGE_PYTHON: z.string(),
     KERNEL_IMAGE_JULIA: z.string(),

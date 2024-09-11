@@ -22,8 +22,6 @@ export const StarButton = ({
 }: {
   repo: {
     id: string;
-    userId: string;
-    public: boolean;
     numLikes: number;
   };
 }) => {

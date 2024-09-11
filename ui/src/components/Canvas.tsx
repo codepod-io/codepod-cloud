@@ -41,10 +41,7 @@ import {
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
   ATOM_editMode,
-  ATOM_repoId,
-  ATOM_repoX,
-  ATOM_repoY,
-  ATOM_repoZoom,
+  ATOM_repoData,
   ATOM_shareOpen,
   INIT_ZOOM,
 } from "@/lib/store/atom";
@@ -53,6 +50,7 @@ import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 import { env } from "../lib/vars";
 import { SvgNode } from "./nodes/Scope";
+import { myassert } from "@/lib/utils/utils";
 
 const nodeTypes = {
   CODE: CodeNode,
@@ -119,8 +117,9 @@ function CanvasImpl() {
 
   const reactFlowInstance = useReactFlow();
 
-  // const repoId = useStore(store, (state) => state.repoId);
-  const repoId = useAtomValue(ATOM_repoId)!;
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
 
   const [editMode] = useAtom(ATOM_editMode);
 
@@ -170,10 +169,6 @@ function CanvasImpl() {
   const debouncedSaveViewPort = debounce(saveViewPort.mutate, 50, {
     maxWait: 5000,
   });
-
-  const zoom = useAtomValue(ATOM_repoZoom);
-  const x = useAtomValue(ATOM_repoX);
-  const y = useAtomValue(ATOM_repoY);
 
   return (
     <Flex
@@ -241,10 +236,10 @@ function CanvasImpl() {
         multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         selectionMode={SelectionMode.Partial}
         // Restore previous viewport.
-        defaultViewport={{ zoom, x, y }}
+        defaultViewport={{ zoom: repoData.zoom, x: repoData.x, y: repoData.y }}
         // Center node on repo creation. INIT_ZOOM is a magic number (1.001) to
         // trigger initial centering.
-        fitView={zoom === INIT_ZOOM}
+        fitView={repoData.zoom === INIT_ZOOM}
         fitViewOptions={{ maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
         disableKeyboardA11y={true}

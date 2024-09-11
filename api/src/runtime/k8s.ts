@@ -16,7 +16,7 @@ import { WebsocketProvider } from "./y-websocket";
 import { PodResult, RuntimeInfo } from "../yjs/types";
 import prisma from "../prisma";
 
-import { env, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
+import { myenv, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
 import { registerKernelActivity } from "./recycle";
 
 const kc = new k8s.KubeConfig();
@@ -338,7 +338,7 @@ export const k8sRouter = router({
     )
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
       console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       if (!repoId2wireMap.has(repoId)) {
         repoId2wireMap.set(repoId, new Map());
       }
@@ -358,19 +358,19 @@ export const k8sRouter = router({
       runtimeMap.set(kernelName, { status: "starting" });
 
       // call k8s api to create a container
-      console.log("Using k8s ns:", env.RUNTIME_NS);
+      console.log("Using k8s ns:", myenv.RUNTIME_NS);
 
       // python kernel
       const wire = await createKernel({
         repoId,
         kernelName,
         image: match(kernelName)
-          .with("python", () => env.KERNEL_IMAGE_PYTHON)
-          .with("julia", () => env.KERNEL_IMAGE_JULIA)
-          .with("javascript", () => env.KERNEL_IMAGE_JAVASCRIPT)
-          .with("racket", () => env.KERNEL_IMAGE_RACKET)
+          .with("python", () => myenv.KERNEL_IMAGE_PYTHON)
+          .with("julia", () => myenv.KERNEL_IMAGE_JULIA)
+          .with("javascript", () => myenv.KERNEL_IMAGE_JAVASCRIPT)
+          .with("racket", () => myenv.KERNEL_IMAGE_RACKET)
           .exhaustive(),
-        ns: env.RUNTIME_NS,
+        ns: myenv.RUNTIME_NS,
       });
 
       console.log("binding zmq and yjs");
@@ -412,7 +412,7 @@ export const k8sRouter = router({
       })
     )
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       // remove zmq wire and ydoc
       console.log("deleting ZMQ wire ..");
       const wireMap = repoId2wireMap.get(repoId);
@@ -444,12 +444,12 @@ export const k8sRouter = router({
       try {
         await k8sAppsApi.deleteNamespacedDeployment(
           `rt-${repoId}-${kernelName}`,
-          env.RUNTIME_NS
+          myenv.RUNTIME_NS
         );
         console.log("Deleting service");
         await k8sApi.deleteNamespacedService(
           `svc-${repoId}-${kernelName}`,
-          env.RUNTIME_NS
+          myenv.RUNTIME_NS
         );
       } catch (e: any) {
         throw new Error("Error deleting k8s resources");
@@ -469,7 +469,7 @@ export const k8sRouter = router({
   usageStatus: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       console.log("usageStatus", repoId);
       const ydoc = await ensureYDoc({ repoId, token });
       const runtimeMap = ydoc
@@ -487,13 +487,13 @@ export const k8sRouter = router({
       // get the pod name of the kernel deployment
       // const deploy = await k8sAppsApi.readNamespacedDeployment(
       //   `rt-${repoId}-${kernelName}`,
-      //   env.RUNTIME_NS
+      //   myenv.RUNTIME_NS
       // );
       // deploy.body.spec?.template.spec?.containers[0].resources?.limits;
       // get the k8s pod resource usage
       console.log("--- list pods", `app=rt-${repoId}-${kernelName}`);
       const pods = await k8sApi.listNamespacedPod(
-        env.RUNTIME_NS,
+        myenv.RUNTIME_NS,
         undefined,
         undefined,
         undefined,
@@ -508,7 +508,7 @@ export const k8sRouter = router({
       console.log("pod name", podName);
 
       const metrics = await k8sMetricsClient.getPodMetrics(
-        env.RUNTIME_NS,
+        myenv.RUNTIME_NS,
         // "rt-jhhjqzbnmkpofcyu4cou-python-6784c59f99-xk956"
         podName
       );
@@ -525,7 +525,7 @@ export const k8sRouter = router({
   status: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       const ydoc = await ensureYDoc({ repoId, token });
       const runtimeMap = ydoc
         ?.getMap("rootMap")
@@ -554,7 +554,7 @@ export const k8sRouter = router({
   interrupt: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
     .mutation(async ({ input: { repoId, kernelName } }) => {
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       console.log("interrupt", repoId);
       const wire = repoId2wireMap.get(repoId)?.get(kernelName);
       if (!wire) return false;
@@ -577,7 +577,7 @@ export const k8sRouter = router({
     )
     .mutation(async ({ input: { repoId, specs }, ctx: { token } }) => {
       console.log("runChain", repoId);
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       const wireMap = repoId2wireMap.get(repoId);
       if (!wireMap) {
         console.error("wireMap not found for repo", repoId);
@@ -600,8 +600,8 @@ export async function getYDoc({ repoId, token }): Promise<Y.Doc> {
   return new Promise((resolve, reject) => {
     const ydoc = new Y.Doc();
     // connect to primary database
-    console.log("connecting to y-websocket provider", env.YJS_WS_URL);
-    const provider = new WebsocketProvider(env.YJS_WS_URL, repoId, ydoc, {
+    console.log("connecting to y-websocket provider", myenv.YJS_WS_URL);
+    const provider = new WebsocketProvider(myenv.YJS_WS_URL, repoId, ydoc, {
       // resyncInterval: 2000,
       //
       // BC is more complex to track our custom Uploading status and SyncDone events.
