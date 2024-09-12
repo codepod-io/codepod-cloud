@@ -117,7 +117,7 @@ function RepoLoader({ children }) {
       setLoaded(true);
     }
   }, [repoQuery, me]);
-  if (repoQuery.isLoading) return <>Loading</>;
+  if (repoQuery.isLoading) return <>Loading repo metadata</>;
   if (repoQuery.isError) {
     console.log("repoQuery.isError");
     return <NotFoundAlert />;
@@ -178,25 +178,32 @@ function ParserWrapper({ children }) {
   return children;
 }
 
-function WaitForProvider({ children }) {
+function WaitForYjs({ children }) {
   const [providerSynced] = useAtom(ATOM_providerSynced);
   const disconnectYjs = useSetAtom(ATOM_disconnectYjs);
   const connectYjs = useSetAtom(ATOM_connectYjs);
-  const me = trpc.user.me.useQuery(undefined, { retry: false });
+  const me = trpc.user.me.useQuery();
   useEffect(() => {
     connectYjs(me.data?.firstname || "Anonymous");
     return () => {
       disconnectYjs();
     };
   }, [connectYjs, disconnectYjs]);
-  if (!providerSynced)
+  if (!providerSynced) {
+    // show "Loading Yjs" at the center of screen.
     return (
-      <>
-        {/* Show the header while loading yjs doc. */}
-        <HeaderWithItems />
-        <>Loading Yjs Doc ..</>
-      </>
+      <Flex
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <Text>Loading Yjs</Text>
+      </Flex>
     );
+  }
   return children;
 }
 
@@ -331,28 +338,28 @@ export function Repo() {
   return (
     <Provider>
       <RepoLoader>
-        <WaitForProvider>
-          <ParserWrapper>
-            <Flex direction="column" height="100vh">
-              <Flex>
-                <HeaderWithItems />
-              </Flex>
-              <Flex
-                flexGrow={"1"}
-                // The main content is filled to the entire height.
-                // Overflow="hidden" is required to make the canvas full height
-                // without scroll.
-                overflow={"hidden"}
-              >
+        <Flex direction="column" height="100vh">
+          <Flex>
+            <HeaderWithItems />
+          </Flex>
+          <Flex
+            flexGrow={"1"}
+            // The main content is filled to the entire height.
+            // Overflow="hidden" is required to make the canvas full height
+            // without scroll.
+            overflow={"hidden"}
+          >
+            <WaitForYjs>
+              <ParserWrapper>
                 <MyKBar />
                 <SidebarLeft />
                 <Canvas />
                 {/* Right sidebar */}
                 <SidebarRight />
-              </Flex>
-            </Flex>
-          </ParserWrapper>
-        </WaitForProvider>
+              </ParserWrapper>
+            </WaitForYjs>
+          </Flex>
+        </Flex>
       </RepoLoader>
     </Provider>
   );
