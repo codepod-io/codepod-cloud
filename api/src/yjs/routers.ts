@@ -31,29 +31,15 @@ export const appRouter = router({
       if (!repo.yDocBlob) {
         throw new Error("yDocBlob not found");
       }
-      const newblob = await prisma.yDocBlob.create({
-        data: {
-          id: myNanoId(),
-          blob: repo.yDocBlob.blob,
-          size: repo.yDocBlob.size,
-        },
-      });
-      const version = await prisma.yDocBlobVersion.create({
+      await prisma.versionedYDocBlob.create({
         data: {
           id: myNanoId(),
           time: new Date(),
           message: message,
-          repo: { connect: { id: repoId } },
-          yDocBlob: {
-            connect: { id: newblob.id },
-          },
-        },
-      });
-      await prisma.repo.update({
-        where: { id: repoId },
-        data: {
-          versions: {
-            connect: { id: version.id },
+          blob: repo.yDocBlob.blob,
+          size: repo.yDocBlob.size,
+          repo: {
+            connect: { id: repoId },
           },
         },
       });

@@ -136,17 +136,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     include: {
       owner: true,
       collaborators: true,
-      pods: {
-        include: {
-          children: true,
-          parent: true,
-        },
-        orderBy: {
-          index: "asc",
-        },
-      },
       yDocBlob: true,
-      edges: true,
     },
   });
   if (!repo) {

@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { RuntimeInfo } from "../yjs/types";
 import prisma from "../prisma";
 import { myenv, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
+import { SupportedLanguage } from "./types";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -16,13 +17,13 @@ const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
  */
 export async function registerKernelActivity(
   repoId: string,
-  kernelName: string
+  kernelName: SupportedLanguage
 ) {
   // check if the kernel already exists
   const kernel = await prisma.kernel.findFirst({
     where: {
       name: kernelName,
-      Repo: {
+      repo: {
         id: repoId,
       },
     },
@@ -41,7 +42,7 @@ export async function registerKernelActivity(
   } else {
     await prisma.kernel.create({
       data: {
-        Repo: {
+        repo: {
           connect: {
             id: repoId,
           },
@@ -51,6 +52,42 @@ export async function registerKernelActivity(
     });
   }
   return true;
+}
+
+async function deleteK8sResource({
+  repoId,
+  kernelName,
+}: {
+  repoId: string;
+  kernelName: string;
+}) {
+  console.log(`deleting rt-${repoId}-${kernelName} ..`);
+  try {
+    await k8sAppsApi.deleteNamespacedDeployment(
+      `rt-${repoId}-${kernelName}`,
+      myenv.RUNTIME_NS
+    );
+  } catch (e) {
+    if (e instanceof k8s.HttpError) {
+      console.error("error deleting deployment", e.body.reason);
+    } else {
+      throw e;
+    }
+  }
+
+  console.log(`deleting svc-${repoId}-${kernelName} ..`);
+  try {
+    await k8sApi.deleteNamespacedService(
+      `svc-${repoId}-${kernelName}`,
+      myenv.RUNTIME_NS
+    );
+  } catch (e) {
+    if (e instanceof k8s.HttpError) {
+      console.error("error deleting service", e.body.reason);
+    } else {
+      throw e;
+    }
+  }
 }
 
 async function doRecycleKernel() {
@@ -70,33 +107,10 @@ async function doRecycleKernel() {
   console.log("recycling kernels", kernels.length);
   for (const kernel of kernels) {
     // delete the k8s resources
-    console.log(`deleting rt-${kernel.repoId}-${kernel.name} ..`);
-    try {
-      await k8sAppsApi.deleteNamespacedDeployment(
-        `rt-${kernel.repoId}-${kernel.name}`,
-        myenv.RUNTIME_NS
-      );
-    } catch (e) {
-      if (e instanceof k8s.HttpError) {
-        console.error("error deleting deployment", e.body.reason);
-      } else {
-        throw e;
-      }
-    }
-
-    console.log(`deleting svc-${kernel.repoId}-${kernel.name} ..`);
-    try {
-      await k8sApi.deleteNamespacedService(
-        `svc-${kernel.repoId}-${kernel.name}`,
-        myenv.RUNTIME_NS
-      );
-    } catch (e) {
-      if (e instanceof k8s.HttpError) {
-        console.error("error deleting service", e.body.reason);
-      } else {
-        throw e;
-      }
-    }
+    await deleteK8sResource({
+      repoId: kernel.repoId,
+      kernelName: kernel.name,
+    });
 
     console.log("clean up data structures ..");
     // remove the zmq wire

@@ -16,25 +16,6 @@ generator studio-client {
     binaryTargets   = ["native"]
 }
 
-model Post {
-    id        String   @id
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    // title     String   @db.VarChar(255)
-    title     String
-    content   String?
-    published Boolean  @default(false)
-    author    User     @relation(fields: [authorId], references: [id])
-    authorId  String
-}
-
-model Profile {
-    id     String  @id
-    bio    String?
-    user   User    @relation(fields: [userId], references: [id])
-    userId String  @unique
-}
-
 model User {
     id             String  @id
     email          String  @unique
@@ -47,9 +28,7 @@ model User {
 
     createdAt    DateTime       @default(now())
     updatedAt    DateTime       @default(now()) @updatedAt
-    posts        Post[]
-    profile      Profile?
-    Repo         Repo[]         @relation("OWNER")
+    repo         Repo[]         @relation("OWNER")
     sharedRepos  Repo[]         @relation("COLLABORATOR")
     stars        Repo[]         @relation("STAR")
     UserRepoData UserRepoData[]
@@ -58,7 +37,7 @@ model User {
 model UserRepoData {
     user       User     @relation(fields: [userId], references: [id])
     userId     String
-    repo       Repo     @relation(fields: [repoId], references: [id])
+    repo       Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
     repoId     String
     accessedAt DateTime @default(now()) @updatedAt
     dummyCount Int      @default(0)
@@ -73,129 +52,61 @@ model UserRepoData {
 }
 
 model Repo {
-    id            String            @id
+    id            String              @id
     name          String?
     // fullname String  @unique
-    owner         User              @relation("OWNER", fields: [userId], references: [id])
+    owner         User                @relation("OWNER", fields: [userId], references: [id])
     userId        String
-    pods          Pod[]             @relation("BELONG")
-    edges         Edge[]
-    public        Boolean           @default(false)
-    collaborators User[]            @relation("COLLABORATOR")
-    createdAt     DateTime          @default(now())
+    public        Boolean             @default(false)
+    collaborators User[]              @relation("COLLABORATOR")
+    createdAt     DateTime            @default(now())
     // Edit pod content likely won't update this updatedAt field.
-    updatedAt     DateTime          @default(now()) @updatedAt
+    updatedAt     DateTime            @default(now()) @updatedAt
     UserRepoData  UserRepoData[]
-    stargazers    User[]            @relation("STAR")
-    numLikes      Int               @default(0)
-    yDocBlob      YDocBlob?         @relation(fields: [yDocBlobId], references: [id])
-    yDocBlobId    String?           @unique
-    versions      YDocBlobVersion[]
-    Kernel        Kernel[]
+    stargazers    User[]              @relation("STAR")
+    numLikes      Int                 @default(0)
+    yDocBlob      YDocBlob?
+    versions      VersionedYDocBlob[]
+    kernel        Kernel[]
 }
 
-model YDocBlobVersion {
-    id         String   @id
+model VersionedYDocBlob {
+    id      String   @id
     // data
-    time       DateTime
-    message    String
-    yDocBlob   YDocBlob @relation(fields: [yDocBlobId], references: [id])
-    yDocBlobId String   @unique
-
-    repo   Repo   @relation(fields: [repoId], references: [id])
-    repoId String
+    time    DateTime
+    message String
+    blob    Bytes
+    size    Int
+    // relation
+    repo    Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
+    repoId  String
 }
 
 model YDocBlob {
-    id        String           @id
-    createdAt DateTime         @default(now())
-    updatedAt DateTime         @updatedAt
+    id        String   @id
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    // data
     blob      Bytes
     size      Int
-    repo      Repo?
-    version   YDocBlobVersion?
+    // relation
+    repo      Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
+    repoId    String   @unique
+}
+
+enum KernelLanguage {
+    python
+    julia
+    javascript
+    racket
 }
 
 model Kernel {
-    id         BigInt   @id @default(autoincrement())
-    name       String
-    dummyCount BigInt   @default(0)
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-    Repo       Repo     @relation(fields: [repoId], references: [id])
+    id         Int            @id @default(autoincrement())
+    name       KernelLanguage
+    dummyCount Int            @default(0)
+    createdAt  DateTime       @default(now())
+    updatedAt  DateTime       @updatedAt
+    repo       Repo           @relation(fields: [repoId], references: [id])
     repoId     String
-}
-
-enum PodType {
-    CODE
-    SCOPE
-    DECK
-    WYSIWYG
-    MD
-    REPL
-}
-
-model Edge {
-    source   Pod     @relation("SOURCE", fields: [sourceId], references: [id])
-    sourceId String
-    target   Pod     @relation("TARGET", fields: [targetId], references: [id])
-    targetId String
-    repo     Repo?   @relation(fields: [repoId], references: [id])
-    repoId   String?
-
-    @@id([sourceId, targetId])
-}
-
-model Pod {
-    id        String  @id
-    parent    Pod?    @relation("PARENT", fields: [parentId], references: [id])
-    parentId  String?
-    x         Float   @default(0)
-    y         Float   @default(0)
-    width     Float   @default(0)
-    height    Float   @default(0)
-    index     Int
-    // TODO how to specify the order of children
-    //
-    // Option 1:
-    // https://stackoverflow.com/questions/11094338/storing-item-positions-for-ordering-in-a-database-efficiently
-    // I can store a (position, timestamp). To udpate, just move the position, and
-    // use a new timestamp. The newer timestamp will ensure the correct order.
-    //
-    // What about
-    // - addition: OK
-    // - deletion: OK
-    // - deletion + insertion: seems OK
-    //
-    //
-    // Option 2:
-    // https://softwareengineering.stackexchange.com/questions/304593/how-to-store-ordered-information-in-a-relational-database
-    // Another option is to maintain the order of the pod, then, update all other
-    // pods after it.
-    children  Pod[]   @relation("PARENT")
-    content   String?
-    // the HEAD version and STAGED version of pod content
-    githead   String?
-    staged    String?
-    column    Int     @default(1)
-    fold      Boolean @default(false)
-    thundar   Boolean @default(false)
-    utility   Boolean @default(false)
-    name      String?
-    lang      String?
-    type      PodType
-    result    String?
-    stdout    String?
-    error     String?
-    imports   String?
-    exports   String?
-    midports  String?
-    reexports String?
-    // repo        Repo?    @relation("ROOT")
-    repo      Repo    @relation("BELONG", fields: [repoId], references: [id])
-
-    repoId String
-    // this is just a place holder. Not useful
-    source Edge[] @relation("SOURCE")
-    target Edge[] @relation("TARGET")
 }

@@ -15,6 +15,7 @@ export const myenv = z
     RUNTIME_NS: z.string(),
     YJS_WS_URL: z.string(),
     READ_ONLY: z.enum(["true", "false"]).transform((x) => x === "true"),
+    JWT_SECRET: z.string(),
   })
   .parse(process.env);
 

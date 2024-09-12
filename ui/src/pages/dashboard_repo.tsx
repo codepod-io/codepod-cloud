@@ -12,12 +12,13 @@ import {
   DropdownMenu,
   Flex,
   IconButton,
+  Popover,
   Select,
   Spinner,
   Tooltip,
 } from "@radix-ui/themes";
 import { prettyPrintBytes, timeDifference, useTick } from "@/lib/utils/utils";
-import { trpc } from "@/lib/trpc";
+import { runtimeTrpc, trpc } from "@/lib/trpc";
 import { Earth, FileText, ThumbsUp, Trash2, Users } from "lucide-react";
 import { toast } from "react-toastify";
 import { atom, useAtom } from "jotai";
@@ -27,6 +28,90 @@ import {
   DeleteSelectedButton,
   StarButton,
 } from "./dashboard_buttons";
+import { match } from "ts-pattern";
+import {
+  JavaScriptLogo,
+  JuliaLogo,
+  PythonLogo,
+  RacketLogo,
+} from "@/components/nodes/utils";
+import { SupportedLanguage } from "@/lib/store/types";
+
+function Kernel({
+  repoId,
+  kernelName,
+}: {
+  repoId: string;
+  kernelName: SupportedLanguage;
+}) {
+  const utils = runtimeTrpc.useUtils();
+  const stopKernel = runtimeTrpc.k8s.stop.useMutation({
+    onSuccess: () => {
+      toast.success("Kernel terminated");
+      utils.getKernels.invalidate({
+        repoId,
+      });
+    },
+  });
+  return (
+    <Popover.Root>
+      <Popover.Trigger>
+        <Button variant="ghost">
+          {match(kernelName)
+            .with("python", () => <PythonLogo />)
+            .with("julia", () => <JuliaLogo />)
+            .with("javascript", () => <JavaScriptLogo />)
+            .with("racket", () => <RacketLogo />)
+            .otherwise(() => "??")}
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content>
+        <Flex gap="3">
+          <Box flexGrow="1">
+            <Flex gap="3" mt="3" justify="between">
+              <Popover.Close>
+                <Button
+                  size="1"
+                  color="red"
+                  onClick={() => {
+                    stopKernel.mutate({
+                      repoId,
+                      kernelName: kernelName,
+                    });
+                  }}
+                >
+                  Terminate
+                </Button>
+              </Popover.Close>
+            </Flex>
+          </Box>
+        </Flex>
+      </Popover.Content>
+    </Popover.Root>
+  );
+}
+
+function ActiveRuntimes({ repo }: { repo: RepoType }) {
+  const kernels = runtimeTrpc.getKernels.useQuery({
+    repoId: repo.id,
+  });
+
+  if (kernels.isLoading) {
+    return <Spinner />;
+  }
+  if (kernels.isError) {
+    return <>ERROR: {kernels.error.message}</>;
+  }
+  return (
+    <Flex gap="2" align="center">
+      {kernels.data?.map((kernel) => (
+        <Box key={kernel.id}>
+          <Kernel repoId={repo.id} kernelName={kernel.name} />
+        </Box>
+      ))}
+    </Flex>
+  );
+}
 
 const RepoCard = ({ repo }: { repo: RepoType }) => {
   const me = trpc.user.me.useQuery();
@@ -87,6 +172,7 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
           />
         )}
         <DeleteRepoButton repo={repo} />
+        <ActiveRuntimes repo={repo} />
       </Flex>
     </Card>
   );

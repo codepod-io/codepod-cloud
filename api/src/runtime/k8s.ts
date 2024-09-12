@@ -18,6 +18,7 @@ import prisma from "../prisma";
 
 import { myenv, kernelMaxLifetime, repoId2wireMap, repoId2ydoc } from "./vars";
 import { registerKernelActivity } from "./recycle";
+import { SupportedLanguage } from "./types";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -276,7 +277,7 @@ async function createKernel({
   image,
   ns,
 }: {
-  kernelName: string;
+  kernelName: SupportedLanguage;
   ns: string;
   image: string;
   repoId: string;
@@ -382,7 +383,7 @@ export const k8sRouter = router({
       const kernel = await prisma.kernel.findFirst({
         where: {
           name: kernelName,
-          Repo: {
+          repo: {
             id: repoId,
           },
         },
@@ -459,7 +460,7 @@ export const k8sRouter = router({
       await prisma.kernel.deleteMany({
         where: {
           name: kernelName,
-          Repo: {
+          repo: {
             id: repoId,
           },
         },

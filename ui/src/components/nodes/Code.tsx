@@ -24,7 +24,11 @@ import { MyMonaco } from "../MyMonaco";
 
 import {
   DeleteButton,
+  JavaScriptLogo,
+  JuliaLogo,
   PodToolbar,
+  PythonLogo,
+  RacketLogo,
   SlurpButton,
   SymbolTable,
   ToolbarAddPod,
@@ -61,10 +65,6 @@ import {
 } from "@/lib/store/yjsSlice";
 import { ATOM_cutId, ATOM_repoData } from "@/lib/store/atom";
 
-import juliaLogo from "@/assets/julia.svg";
-import pythonLogo from "@/assets/python.svg";
-import javascriptLogo from "@/assets/javascript.svg";
-import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
@@ -490,38 +490,10 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         >
           {/* .py */}
           {match(node.data.lang)
-            .with("python", () => (
-              <img
-                src={pythonLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("julia", () => (
-              <img
-                src={juliaLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("javascript", () => (
-              <img
-                src={javascriptLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("racket", () => (
-              <img
-                src={racketLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
+            .with("python", () => <PythonLogo />)
+            .with("julia", () => <JuliaLogo />)
+            .with("javascript", () => <JavaScriptLogo />)
+            .with("racket", () => <RacketLogo />)
             .otherwise(() => "??")}{" "}
         </Box>
 

@@ -13,25 +13,6 @@ import { ensureRepoEditAccess, ensureRepoReadAccess } from "../utils";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
-async function ensurePodEditAccess({ id, userId }) {
-  let pod = await prisma.pod.findFirst({
-    where: {
-      id,
-      repo: {
-        OR: [
-          { owner: { id: userId } },
-          { collaborators: { some: { id: userId } } },
-        ],
-      },
-    },
-  });
-  if (!pod) {
-    // this might be caused by creating a pod and update it too soon before it
-    // is created on server, which is a time sequence bug
-    throw new Error("Pod not exists.");
-  }
-}
-
 const getDashboardRepos = protectedProcedure.query(
   async ({ ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
@@ -278,25 +259,22 @@ const deleteRepo = protectedProcedure
           id: userId,
         },
       },
+      include: {
+        yDocBlob: {
+          select: {
+            id: true,
+          },
+        },
+        versions: true,
+        kernel: true,
+      },
     });
     if (!repo) throw new Error("Repo not found");
-    // 1. delete all pods
-    await prisma.pod.deleteMany({
-      where: {
-        repo: {
-          id: repo.id,
-        },
-      },
-    });
-    // 2. delete UserRepoData
-    await prisma.userRepoData.deleteMany({
-      where: {
-        repo: {
-          id: repo.id,
-        },
-      },
-    });
-    // 3. delete the repo itself
+    console.log("kernel", repo.kernel);
+    if (repo.kernel.length > 0) {
+      throw new Error("Cannot delete a repo with a running kernel.");
+    }
+    // delete the repo itself
     await prisma.repo.delete({
       where: {
         id: repo.id,
@@ -320,28 +298,20 @@ const deleteRepos = protectedProcedure
           id: userId,
         },
       },
+      include: {
+        yDocBlob: {
+          select: {
+            id: true,
+          },
+        },
+        versions: true,
+        kernel: true,
+      },
     });
     if (repos.length !== ids.length) throw new Error("Some repos not found");
-    // 1. delete all pods
-    await prisma.pod.deleteMany({
-      where: {
-        repo: {
-          id: {
-            in: repos.map((repo) => repo.id),
-          },
-        },
-      },
-    });
-    // 2. delete UserRepoData
-    await prisma.userRepoData.deleteMany({
-      where: {
-        repo: {
-          id: {
-            in: repos.map((repo) => repo.id),
-          },
-        },
-      },
-    });
+    if (repos.some((repo) => repo.kernel.length > 0)) {
+      throw new Error("Cannot delete a repo with a running kernel.");
+    }
     // 3. delete the repo itself
     await prisma.repo.deleteMany({
       where: {

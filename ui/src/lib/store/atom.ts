@@ -13,7 +13,6 @@ type RepoData = {
     repoId: string;
     message: string;
     id: string;
-    yDocBlobId: string | null;
     time: string;
   }[];
 };

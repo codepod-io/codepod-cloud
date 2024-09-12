@@ -105,19 +105,14 @@ export const DeleteRepoButton = ({ repo }) => {
       toast.success("Successfully deleted repo");
       utils.repo.getDashboardRepos.invalidate();
     },
-    onError() {
-      toast.error("Failed to delete repo");
+    onError(err) {
+      toast.error(`Failed to delete repo: ${err.message}`);
     },
   });
   return (
     <AlertDialog.Root>
       <AlertDialog.Trigger>
-        <IconButton
-          size="1"
-          color="red"
-          variant="ghost"
-          disabled={deleteRepo.isLoading}
-        >
+        <IconButton color="red" variant="ghost" disabled={deleteRepo.isLoading}>
           {deleteRepo.isLoading ? <Spinner /> : <Trash2 />}
         </IconButton>
       </AlertDialog.Trigger>
@@ -163,8 +158,8 @@ export const DeleteSelectedButton = () => {
       setSelectedRepos([]);
       setSelectMode(false);
     },
-    onError() {
-      toast.error("Failed to delete repo");
+    onError(err) {
+      toast.error(`Failed to delete repo: ${err.message}`);
     },
   });
   return (
