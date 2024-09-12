@@ -9,6 +9,7 @@ import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
 
 import { updateView } from "./canvasSlice";
 import { autoLayoutTree } from "./canvasSlice_autoLayout";
+import { SupportedLanguage } from "./types";
 
 /**
  * Create a new node. The node will start from the given position. Typically
@@ -16,7 +17,7 @@ import { autoLayoutTree } from "./canvasSlice_autoLayout";
  * animation.
  */
 function createCodeNode(
-  lang: "python" | "julia" | "javascript" | "racket",
+  lang: SupportedLanguage,
   position: XYPosition
 ): CodeNodeType {
   let id = myNanoId();
@@ -97,7 +98,7 @@ const addNode_top_bottom = (
     anchorId: string;
     position: "top" | "bottom";
     type: "CODE" | "RICH";
-    lang?: "python" | "julia" | "javascript" | "racket";
+    lang?: SupportedLanguage;
   }
 ) => {
   const nodesMap = get(ATOM_nodesMap);
@@ -171,7 +172,7 @@ const addNode_top = (
   }: {
     anchorId: string;
     type: "CODE" | "RICH";
-    lang?: "python" | "julia" | "javascript" | "racket";
+    lang?: SupportedLanguage;
   }
 ) => {
   addNode_top_bottom(get, set, {
@@ -192,7 +193,7 @@ const addNode_bottom = (
   }: {
     anchorId: string;
     type: "CODE" | "RICH";
-    lang?: "python" | "julia" | "javascript" | "racket";
+    lang?: SupportedLanguage;
   }
 ) => {
   addNode_top_bottom(get, set, {
@@ -213,7 +214,7 @@ const addNode_in = (
   }: {
     anchorId: string;
     type: "CODE" | "RICH";
-    lang?: "python" | "julia" | "javascript" | "racket";
+    lang?: SupportedLanguage;
   }
 ) => {
   // add node inside the scope (which must be a scope with no children or scopeChildren)
@@ -255,7 +256,7 @@ const addNode_right = (
   }: {
     anchorId: string;
     type: "CODE" | "RICH";
-    lang?: "python" | "julia" | "javascript" | "racket";
+    lang?: SupportedLanguage;
   }
 ) => {
   const nodesMap = get(ATOM_nodesMap);
@@ -307,7 +308,7 @@ function wrap({
   set: Setter;
   id: string;
   type: "CODE" | "RICH";
-  lang?: "python" | "julia" | "javascript" | "racket";
+  lang?: SupportedLanguage;
 }) {
   // wrap the node with a new parent node, i.e., add a node between the node and its parent.
   const nodesMap = get(ATOM_nodesMap);
@@ -384,7 +385,7 @@ const addNode_left = (
   }: {
     anchorId: string;
     type: "CODE" | "RICH";
-    lang?: "python" | "julia" | "javascript" | "racket";
+    lang?: SupportedLanguage;
   }
 ) => {
   wrap({ get, set, id: anchorId, type, lang });
@@ -404,7 +405,7 @@ export const ATOM_addNode = atom(
       anchorId: string;
       position: "top" | "bottom" | "right" | "left" | "in";
       type: "CODE" | "RICH";
-      lang?: "python" | "julia" | "javascript" | "racket";
+      lang?: SupportedLanguage;
     }
   ) => {
     match(position)

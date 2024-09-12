@@ -5,19 +5,17 @@ import type { inferAsyncReturnType } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 
 import jwt from "jsonwebtoken";
+import { myenv } from "./vars";
 
 export const createContext = async ({
   req,
   res,
 }: CreateExpressContextOptions) => {
   const token = req?.headers?.authorization?.slice(7);
-  let userId;
+  let userId: string | undefined = undefined;
 
   if (token) {
-    const decoded = jwt.verify(
-      token,
-      z.string().parse(process.env.JWT_SECRET)
-    ) as {
+    const decoded = jwt.verify(token, myenv.JWT_SECRET) as {
       id: string;
     };
     userId = decoded.id;

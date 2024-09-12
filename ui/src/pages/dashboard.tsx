@@ -10,7 +10,9 @@ export type RepoType = {
   updatedAt: string;
   public: boolean;
   numLikes: number;
-  yDocBlobSize: number;
+  yDocBlob: {
+    size: number;
+  } | null;
   name: string | null;
   accessedAt: string;
 };

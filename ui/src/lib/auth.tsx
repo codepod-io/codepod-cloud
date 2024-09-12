@@ -8,15 +8,22 @@ import {
   copilotContext,
   copilotTrpc,
   trpc,
+  yjsTrpc,
+  yjsContext,
 } from "@/lib/trpc";
 
 function RuntimeTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = runtimeTrpc.createClient({
     links: [
       httpBatchLink({
-        // FIXME add auth
         url: "/runtime",
         headers: getAuthHeaders(),
       }),
@@ -33,11 +40,16 @@ function RuntimeTrpcProvider({ children }) {
 
 function CopilotTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = copilotTrpc.createClient({
     links: [
       httpBatchLink({
-        // FIXME add auth
         url: "/copilot",
         headers: getAuthHeaders(),
       }),
@@ -52,6 +64,32 @@ function CopilotTrpcProvider({ children }) {
   );
 }
 
+function YjsTrpcProvider({ children }) {
+  const { getAuthHeaders } = useAuth();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
+  const trpcClient = yjsTrpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "/yjs",
+        headers: getAuthHeaders(),
+      }),
+    ],
+  });
+  return (
+    <yjsTrpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient} context={yjsContext}>
+        {children}
+      </QueryClientProvider>
+    </yjsTrpc.Provider>
+  );
+}
+
 type AuthContextType = ReturnType<typeof useProvideAuth>;
 
 const authContext = createContext<AuthContextType | null>(null);
@@ -59,7 +97,15 @@ const authContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }) {
   const auth = useProvideAuth();
 
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Do not refetch queries when window is re-focused.
+        // https://github.com/TanStack/query/issues/273
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = trpc.createClient({
     links: [
       httpBatchLink({
@@ -80,7 +126,9 @@ export function AuthProvider({ children }) {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <RuntimeTrpcProvider>
-            <CopilotTrpcProvider>{children}</CopilotTrpcProvider>
+            <CopilotTrpcProvider>
+              <YjsTrpcProvider>{children}</YjsTrpcProvider>
+            </CopilotTrpcProvider>
           </RuntimeTrpcProvider>
         </QueryClientProvider>
       </trpc.Provider>

@@ -15,6 +15,8 @@ import {
   Button,
   Checkbox,
   DropdownMenu,
+  Dialog,
+  TextField,
 } from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
@@ -41,15 +43,17 @@ import { downloadLink, repo2ipynb } from "./nodes/utils";
 import * as Y from "yjs";
 
 import {
+  myassert,
   prettyPrintBytes,
   prettyPrintCPU,
   prettyPrintMemory,
   timeDifference,
+  useTick,
 } from "@/lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
-import { runtimeTrpc, trpc } from "@/lib/trpc";
+import { runtimeTrpc, trpc, yjsTrpc } from "@/lib/trpc";
 import {
   ATOM_copilotManualMode,
   ATOM_scopedVars,
@@ -69,13 +73,14 @@ import {
   ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_resultMap,
+  ATOM_richMap,
   ATOM_runtimeChanged,
   ATOM_runtimeMap,
   ATOM_ydoc,
   ATOM_yjsStatus,
   ATOM_yjsSyncStatus,
 } from "@/lib/store/yjsSlice";
-import { ATOM_repoId, ATOM_repoName } from "@/lib/store/atom";
+import { ATOM_repoData } from "@/lib/store/atom";
 import { FpsMeter } from "@/lib/FpsMeter";
 
 import juliaLogo from "@/assets/julia.svg";
@@ -172,8 +177,9 @@ function KernelStatus({
 }: {
   kernelName: "julia" | "python" | "javascript" | "racket";
 }) {
-  const [repoId] = useAtom(ATOM_repoId);
-  if (!repoId) throw new Error("repoId is null");
+  const repoData = useAtomValue(ATOM_repoData);
+  if (!repoData) throw new Error("repoId is null");
+  const repoId = repoData.id;
   // Observe runtime change
   useAtom(ATOM_runtimeChanged);
   // the status
@@ -338,14 +344,7 @@ function CreatedAt({
   createdAt?: number;
   recycledAt?: number;
 }) {
-  // refresh every second
-  const [b, setB] = useState(false);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setB((prev) => !prev);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  useTick(1000);
   return (
     <Flex wrap="wrap">
       {createdAt && (
@@ -359,9 +358,6 @@ function CreatedAt({
 }
 
 const Runtime = () => {
-  const [repoId] = useAtom(ATOM_repoId);
-  if (!repoId) throw new Error("repoId is null");
-
   return (
     <Flex direction={"column"} gap="2">
       <Heading size="2">runtime</Heading>
@@ -418,7 +414,9 @@ function YjsSyncStatus() {
 
 function ExportJupyterNB() {
   const { id: repoId } = useParams();
-  const [repoName] = useAtom(ATOM_repoName);
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoName = repoData.name;
   const [nodesMap] = useAtom(ATOM_nodesMap);
   const [resultMap] = useAtom(ATOM_resultMap);
   const [codeMap] = useAtom(ATOM_codeMap);
@@ -453,7 +451,9 @@ function ExportJupyterNB() {
 function ExportSVG() {
   // The name should contain the name of the repo, the ID of the repo, and the current date
   const { id: repoId } = useParams();
-  const [repoName] = useAtom(ATOM_repoName);
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoName = repoData.name;
   const filename = `${repoName?.replaceAll(
     " ",
     "-"
@@ -719,6 +719,76 @@ function MyTabs({
   );
 }
 
+function Versions() {
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const [message, setMessage] = useState("");
+  const utils = trpc.useUtils();
+  const createVersion = yjsTrpc.createVersion.useMutation({
+    onError(error) {
+      toast.error(error.message);
+    },
+    onSuccess() {
+      toast.success("Version created.");
+      utils.repo.repo.invalidate();
+    },
+  });
+  useTick(1000);
+  return (
+    <Flex direction="column">
+      Versions ({repoData.versions.length}):
+      {repoData.versions.map((v) => (
+        <Flex key={v.id} gap="3">
+          <Box>{v.message}</Box>
+          <Box>{timeDifference(new Date(), new Date(v.time))} ago</Box>
+        </Flex>
+      ))}
+      {/* Open a dialog for user to enter a commit message. */}
+      <Dialog.Root>
+        <Dialog.Trigger>
+          <Button>Commit</Button>
+        </Dialog.Trigger>
+
+        <Dialog.Content maxWidth="450px">
+          <Dialog.Title>Commit</Dialog.Title>
+          <Dialog.Description size="2" mb="4">
+            Enter a message to commit a new version.
+            {/* TODO show version history */}
+            {/* TODO show current changes (loc of changes) */}
+          </Dialog.Description>
+
+          <Flex direction="column" gap="3">
+            <TextField.Root
+              placeholder="Enter a commit message"
+              onChange={(e) => {
+                setMessage(e.target.value);
+              }}
+            />
+          </Flex>
+
+          <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Dialog.Close>
+              <Button
+                disabled={message.length === 0}
+                onClick={() => {
+                  createVersion.mutate({ repoId: repoData.id, message });
+                }}
+              >
+                Save
+              </Button>
+            </Dialog.Close>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+    </Flex>
+  );
+}
+
 export function SidebarLeft() {
   const autoLayout = useSetAtom(ATOM_autoLayoutTree);
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
@@ -734,6 +804,9 @@ export function SidebarLeft() {
           // content: "Make changes to your account.".repeat(10),
           content: (
             <Flex direction="column" gap="1">
+              {/* Experimental zone */}
+              <Versions />
+              <Separator my="3" size="4" />
               <YjsSyncStatus />
               <Heading size="2">Export to ..</Heading>
               <ExportButtons />
@@ -758,10 +831,6 @@ export function SidebarLeft() {
 
               <Separator my="3" size="4" />
               <Runtime />
-              <Separator my="3" size="4" />
-              <Heading mb="2" size="2">
-                Experimental
-              </Heading>
             </Flex>
           ),
         },
@@ -804,17 +873,7 @@ function RepoSize() {
   // Y.encodeStateAsUpdate(ydoc);
   const ydoc = useAtomValue(ATOM_ydoc);
   const size = Y.encodeStateAsUpdate(ydoc).byteLength;
-  const [b, setB] = useState(false);
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        setB(!b);
-      },
-      // update every 10s
-      10000
-    );
-    return () => clearInterval(interval);
-  }, [b]);
+  useTick(10000);
   return <Flex>Size: {prettyPrintBytes(size)}</Flex>;
 }
 

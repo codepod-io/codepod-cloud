@@ -55,7 +55,7 @@ function FieldInfoPassword({ field }: { field: FieldApi<any, any, any, any> }) {
         <>
           {/* <em style={{ color: "red" }}>{field.state.meta.errors.join(",")}</em> */}
           {Object.keys(result).map((key) => (
-            <Box>
+            <Box key={key}>
               <em
                 style={{
                   color: result[key] ? "red" : "green",

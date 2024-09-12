@@ -45,7 +45,7 @@ import { useAtomValue } from "jotai";
 import { ATOM_simpleAwareness } from "@/lib/store/yjsSlice";
 import { trpc } from "@/lib/trpc";
 import { myassert, myNanoId } from "@/lib/utils/utils";
-import { ATOM_repoId } from "@/lib/store/atom";
+import { ATOM_repoData } from "@/lib/store/atom";
 import { toast } from "react-toastify";
 
 // import { WebrtcProvider } from "y-webrtc";
@@ -108,8 +108,9 @@ export function RichEditor({
   provider: WebsocketProvider;
 }) {
   const simpleAwareness = useAtomValue(ATOM_simpleAwareness);
-  const repoId = useAtomValue(ATOM_repoId);
-  myassert(repoId);
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
   const utils = trpc.useUtils();
   const editor = useCreateBlockNote({
     schema,
