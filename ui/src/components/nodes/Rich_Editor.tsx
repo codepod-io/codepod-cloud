@@ -165,6 +165,10 @@ export function RichEditor({
     },
     uploadFile: async (file) => {
       // Safety guards:
+      if (!file) {
+        toast.error("No file provided");
+        throw new Error("No file provided");
+      }
       // 1. the file must be an image
       if (!file.type.startsWith("image/")) {
         toast.error("Only images are allowed");
@@ -187,9 +191,9 @@ export function RichEditor({
       });
 
       const headers: any = {};
-      if (file?.type) {
+      if (file.type) {
         // S3 requires setting the correct content type.
-        headers["Content-Type"] = file!.type || "application/octet-stream";
+        headers["Content-Type"] = file.type || "application/octet-stream";
       }
 
       // Actually upload the file.
@@ -203,6 +207,7 @@ export function RichEditor({
         toast.error("Failed to upload file");
         throw new Error("Failed to upload file");
       }
+      toast.success("File uploaded");
 
       // We store the URL in a custom format, in this case s3://bucket/key.
       // We'll subsequently parse this URL in the resolveFileUrl function.

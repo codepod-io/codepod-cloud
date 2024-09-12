@@ -59,7 +59,13 @@ function getDebouncedCallback(key) {
   return debounceRegistry.get(key);
 }
 
-async function handleSaveBlob({ repoId, yDocBlob }) {
+async function handleSaveBlob({
+  repoId,
+  yDocBlob,
+}: {
+  repoId: string;
+  yDocBlob: Buffer;
+}) {
   console.log("save blob", repoId, yDocBlob.length);
   // calculate the size of yDocBlob
   const size = Buffer.byteLength(yDocBlob);
