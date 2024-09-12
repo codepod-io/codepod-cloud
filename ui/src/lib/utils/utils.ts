@@ -1,5 +1,6 @@
 import { customAlphabet } from "nanoid";
 import { lowercase, numbers } from "nanoid-dictionary";
+import { useEffect, useState } from "react";
 
 export function myassert(condition: any, msg?: string): asserts condition {
   if (!condition) {
@@ -41,24 +42,6 @@ export function timeDifference(current: Date, previous: Date) {
   } else {
     return Math.round(elapsed / msPerYear) + " years";
   }
-}
-
-// pretty print the time difference
-export function prettyPrintTime(d) {
-  let year = d.getUTCFullYear() - 1970;
-  let month = d.getUTCMonth();
-  let day = d.getUTCDate() - 1;
-  let hour = d.getUTCHours();
-  let minute = d.getUTCMinutes();
-  let second = d.getUTCSeconds();
-  return (
-    (year > 0 ? year + "y" : "") +
-    (month > 0 ? month + "m" : "") +
-    (day > 0 ? day + "d" : "") +
-    (hour > 0 ? hour + "h" : "") +
-    (minute >= 0 ? minute + "m" : "") +
-    (second > 0 ? second + "s" : "")
-  );
 }
 
 export function prettyPrintBytes(bytes: number) {
@@ -106,14 +89,6 @@ export function prettyPrintMemory(memory: string) {
     let mi = gi * 1024;
     return `${gi.toFixed(2)}`;
   }
-}
-
-export function getUpTime(startedAt: string) {
-  let d1 = new Date(parseInt(startedAt));
-  let now = new Date();
-  let diff = new Date(now.getTime() - d1.getTime());
-  let prettyTime = prettyPrintTime(diff);
-  return prettyTime;
 }
 
 export const myNanoId = customAlphabet(lowercase + numbers, 20);
@@ -167,4 +142,15 @@ export function addAwarenessStyle(
   styles.append(yRemoteSelectionHeadStyle(clientID, color));
   styles.append(yRemoteSelectionHeadHoverStyle(clientID, color, name));
   document.head.append(styles);
+}
+
+export function useTick(ms: number) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((prev) => prev + 1);
+    }, ms);
+    return () => clearInterval(interval);
+  }, []);
+  return tick;
 }

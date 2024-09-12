@@ -29,6 +29,7 @@ import {
   RichNodeType,
 } from "@/../../ui/src/lib/store/types";
 import { getInitYXml, myNanoId } from "./utils";
+import { docs } from "./yjs-setupWS";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -62,13 +63,37 @@ async function handleSaveBlob({ repoId, yDocBlob }) {
   console.log("save blob", repoId, yDocBlob.length);
   // calculate the size of yDocBlob
   const size = Buffer.byteLength(yDocBlob);
-  await prisma.repo.update({
+  const repo = await prisma.repo.findFirst({
     where: { id: repoId },
-    data: {
-      yDocBlob,
-      yDocBlobSize: size,
+    include: {
+      yDocBlob: true,
     },
   });
+  if (!repo) {
+    throw new Error("repo not found");
+  }
+  let blobId: string;
+  if (repo.yDocBlob) {
+    blobId = repo.yDocBlob.id;
+  } else {
+    blobId = myNanoId();
+  }
+  await prisma.yDocBlob.upsert({
+    where: { id: blobId },
+    create: {
+      id: myNanoId(),
+      repo: {
+        connect: { id: repoId },
+      },
+      blob: yDocBlob,
+      size,
+    },
+    update: {
+      blob: yDocBlob,
+      size,
+    },
+  });
+  return true;
 }
 
 /**
@@ -84,14 +109,7 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
       console.log("[WARNING] Local update");
       return;
     }
-    // FIXME the waiting time could be used to reduce the cost of saving to DB.
-    getDebouncedCallback(`update-blob-${repoId}`)(() => {
-      // encode state as update
-      // FIXME it may be too expensive to update the entire doc.
-      // FIXME history is discarded
-      const update = Y.encodeStateAsUpdate(ydoc);
-      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
-    });
+    debouncedWriteState(repoId);
   }
   const rootMap = ydoc.getMap("rootMap");
   const nodesMap = rootMap.get("nodesMap") as Y.Map<any>;
@@ -118,16 +136,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     include: {
       owner: true,
       collaborators: true,
-      pods: {
-        include: {
-          children: true,
-          parent: true,
-        },
-        orderBy: {
-          index: "asc",
-        },
-      },
-      edges: true,
+      yDocBlob: true,
     },
   });
   if (!repo) {
@@ -135,7 +144,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
   }
 
   if (repo.yDocBlob) {
-    Y.applyUpdate(ydoc, repo.yDocBlob);
+    Y.applyUpdate(ydoc, repo.yDocBlob.blob);
   } else {
     // init the ydoc
     const rootMap = ydoc.getMap("rootMap");
@@ -221,8 +230,20 @@ export async function bindState(doc: Y.Doc, repoId: string) {
   }
 }
 
-export function writeState() {
+export async function writeState(repoId: string) {
   // FIXME IMPORTANT make sure the observer events are finished.
-  console.log("=== flushing allDebouncedCallbacks", debounceRegistry.size);
-  debounceRegistry.forEach((cb) => cb.flush());
+  const ydoc = docs.get(repoId);
+  if (!ydoc) {
+    throw new Error("repo not found");
+  }
+  // encode state as update
+  // FIXME it may be too expensive to update the entire doc.
+  // FIXME history is discarded
+  const update = Y.encodeStateAsUpdate(ydoc);
+  await handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
+}
+
+function debouncedWriteState(repoId: string) {
+  // FIXME the waiting time could be used to reduce the cost of saving to DB.
+  getDebouncedCallback(`update-blob-${repoId}`)(() => writeState(repoId));
 }

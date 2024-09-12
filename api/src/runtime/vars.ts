@@ -6,7 +6,7 @@ import { ZmqWire } from "./k8s-zmq";
 
 import * as Y from "yjs";
 
-export const env = z
+export const myenv = z
   .object({
     KERNEL_IMAGE_PYTHON: z.string(),
     KERNEL_IMAGE_JULIA: z.string(),
@@ -15,6 +15,7 @@ export const env = z
     RUNTIME_NS: z.string(),
     YJS_WS_URL: z.string(),
     READ_ONLY: z.enum(["true", "false"]).transform((x) => x === "true"),
+    JWT_SECRET: z.string(),
   })
   .parse(process.env);
 

@@ -10,15 +10,9 @@ import prisma from "../prisma";
 
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
-import { env } from "./vars";
+import { myenv } from "./vars";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
-
-const jwtSecret = z.string().parse(process.env.JWT_SECRET);
-
-// FIXME even if this is undefined, the token verification still works. Looks
-// like I only need to set client ID in the frontend?
-const googleClientId = z.string().parse(process.env.GOOGLE_CLIENT_ID);
 
 const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
   if (!userId) throw Error("Unauthenticated");
@@ -52,7 +46,7 @@ const signup = publicProcedure
     })
   )
   .mutation(async ({ input: { email, password, firstname, lastname } }) => {
-    if (env.READ_ONLY) throw Error("Read only mode");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
     // if user already exists, return error
@@ -74,7 +68,7 @@ const signup = publicProcedure
       },
     });
     return {
-      token: jwt.sign({ id: user.id }, jwtSecret, {
+      token: jwt.sign({ id: user.id }, myenv.JWT_SECRET, {
         expiresIn: "30d",
       }),
     };
@@ -91,7 +85,7 @@ const updateUser = protectedProcedure
   .mutation(
     async ({ ctx: { userId }, input: { email, firstname, lastname } }) => {
       if (!userId) throw Error("Unauthenticated");
-      if (env.READ_ONLY) throw Error("Read only mode");
+      if (myenv.READ_ONLY) throw Error("Read only mode");
       let user = await prisma.user.findFirst({
         where: {
           id: userId,
@@ -134,14 +128,16 @@ const login = publicProcedure
       return {
         id: user.id,
         email: user.email,
-        token: jwt.sign({ id: user.id }, jwtSecret, {
+        token: jwt.sign({ id: user.id }, myenv.JWT_SECRET, {
           expiresIn: "30d",
         }),
       };
     }
   });
 
-const client = new OAuth2Client(googleClientId);
+// FIXME even if this is undefined, the token verification still works. Looks
+// like I only need to set client ID in the frontend?
+const client = new OAuth2Client(myenv.GOOGLE_CLIENT_ID);
 
 const loginWithGoogle = publicProcedure
   .input(z.object({ idToken: z.string() }))
@@ -149,7 +145,7 @@ const loginWithGoogle = publicProcedure
     console.log("login with google");
     const ticket = await client.verifyIdToken({
       idToken: idToken,
-      audience: googleClientId, // Specify the CLIENT_ID of the app that accesses the backend
+      audience: myenv.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
       // Or, if multiple clients access the backend:
       //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
     });
@@ -177,7 +173,7 @@ const loginWithGoogle = publicProcedure
     return {
       id: user.id,
       email: user.email,
-      token: jwt.sign({ id: user.id }, jwtSecret, {
+      token: jwt.sign({ id: user.id }, myenv.JWT_SECRET, {
         expiresIn: "30d",
       }),
     };

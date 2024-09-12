@@ -24,13 +24,17 @@ import { MyMonaco } from "../MyMonaco";
 
 import {
   DeleteButton,
+  JavaScriptLogo,
+  JuliaLogo,
   PodToolbar,
+  PythonLogo,
+  RacketLogo,
   SlurpButton,
   SymbolTable,
   ToolbarAddPod,
   UnslurpButton,
 } from "./utils";
-import { timeDifference } from "@/lib/utils/utils";
+import { myassert, timeDifference, useTick } from "@/lib/utils/utils";
 
 import { runtimeTrpc, trpc } from "@/lib/trpc";
 import {
@@ -59,12 +63,8 @@ import {
   ATOM_resultMap,
   ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
-import { ATOM_cutId, ATOM_repoId } from "@/lib/store/atom";
+import { ATOM_cutId, ATOM_repoData } from "@/lib/store/atom";
 
-import juliaLogo from "@/assets/julia.svg";
-import pythonLogo from "@/assets/python.svg";
-import javascriptLogo from "@/assets/javascript.svg";
-import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
@@ -73,13 +73,7 @@ import { ATOM_addScope } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 
 function Timer({ lastExecutedAt }) {
-  const [counter, setCounter] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCounter(counter + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [counter]);
+  useTick(1000);
   return (
     <div> at {timeDifference(new Date(), new Date(lastExecutedAt))} ago</div>
   );
@@ -294,7 +288,9 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
     useAtomValue(
       React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
     );
-  const repoId = useAtomValue(ATOM_repoId)!;
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
   const addScope = useSetAtom(ATOM_addScope);
@@ -398,7 +394,9 @@ function useRunKey({ node }: { node: CodeNodeType }) {
         [node.id]
       )
     );
-  const repoId = useAtomValue(ATOM_repoId)!;
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
   // call useHotKeys library
   return useHotkeys<HTMLDivElement>(
     "shift+enter",
@@ -492,38 +490,10 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         >
           {/* .py */}
           {match(node.data.lang)
-            .with("python", () => (
-              <img
-                src={pythonLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("julia", () => (
-              <img
-                src={juliaLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("javascript", () => (
-              <img
-                src={javascriptLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
-            .with("racket", () => (
-              <img
-                src={racketLogo}
-                style={{
-                  height: "1em",
-                }}
-              />
-            ))
+            .with("python", () => <PythonLogo />)
+            .with("julia", () => <JuliaLogo />)
+            .with("javascript", () => <JavaScriptLogo />)
+            .with("racket", () => <RacketLogo />)
             .otherwise(() => "??")}{" "}
         </Box>
 

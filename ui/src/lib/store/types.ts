@@ -10,9 +10,11 @@ type CommonData = {
   isScope: boolean;
 };
 
+export type SupportedLanguage = "python" | "julia" | "javascript" | "racket";
+
 export type CodeNodeData = CommonData & {
   // special data
-  lang: "python" | "julia" | "javascript" | "racket";
+  lang: SupportedLanguage;
 };
 
 export type RichNodeData = CommonData & {};

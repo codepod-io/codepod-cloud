@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { trpc } from "@/lib/trpc";
-import { ATOM_repoId } from "@/lib/store/atom";
+import { ATOM_repoData } from "@/lib/store/atom";
 import { useAtom, useAtomValue } from "jotai";
 import {
   Dialog,
@@ -134,8 +134,9 @@ function CollaboratorList({
 }
 
 export function ShareProjDialog() {
-  const [repoId] = useAtom(ATOM_repoId);
-  if (!repoId) throw new Error("repoId is null");
+  const repoData = useAtomValue(ATOM_repoData);
+  if (!repoData) throw new Error("repoId is null");
+  const repoId = repoData.id;
 
   const { isLoading, isError, isSuccess, data } = trpc.repo.repo.useQuery(
     { id: repoId },
