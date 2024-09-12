@@ -113,13 +113,21 @@ function ActiveRuntimes({ repo }: { repo: RepoType }) {
   );
 }
 
-const RepoCard = ({ repo }: { repo: RepoType }) => {
-  const me = trpc.user.me.useQuery();
+function ViewedAt({ repo }: { repo: RepoType }) {
   // peiredically re-render so that the "last viwed time" and "lact active time"
   // are updated every second.
+  useTick(1000);
+  return (
+    <Flex>
+      Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
+    </Flex>
+  );
+}
+
+const RepoCard = ({ repo }: { repo: RepoType }) => {
+  const me = trpc.user.me.useQuery();
   const [selectMode, setSelectMode] = useAtom(ATOM_selectMode);
   const [selectedRepos, setSelectedRepos] = useAtom(ATOM_selectedRepos);
-  useTick(1000);
   return (
     <Card
       style={{ minWidth: 275, maxWidth: 275 }}
@@ -149,7 +157,7 @@ const RepoCard = ({ repo }: { repo: RepoType }) => {
         <StarButton repo={repo} />
       </Flex>
       <Flex style={{ color: "gray" }}>
-        Viewed {timeDifference(new Date(), new Date(repo.accessedAt))} ago
+        <ViewedAt repo={repo} />
         <Flex flexGrow={"1"}></Flex>
         {/* the size */}
         {prettyPrintBytes(repo.yDocBlob?.size || 0)}

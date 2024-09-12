@@ -38,24 +38,33 @@ import "react-toastify/dist/ReactToastify.css";
 
 function NoLogginErrorAlert() {
   return (
-    <Box style={{ maxWidth: "sm", alignItems: "center", margin: "auto" }}>
-      <Callout.Root color="red">
-        <Callout.Icon>
-          <InfoCircledIcon />
-        </Callout.Icon>
-        <Callout.Text>
-          Please <ReactLink to="/login">login</ReactLink> to view your
-          dashboard.
-        </Callout.Text>
-      </Callout.Root>
-    </Box>
+    <Callout.Root color="red">
+      <Callout.Icon>
+        <InfoCircledIcon />
+      </Callout.Icon>
+      <Callout.Text>
+        Please <ReactLink to="/login">login</ReactLink> to view this page.
+      </Callout.Text>
+    </Callout.Root>
   );
 }
 
 const RequireSignIn = ({ children }) => {
   const { isSignedIn } = useAuth();
   if (!isSignedIn()) {
-    return <NoLogginErrorAlert />;
+    return (
+      // put in the center of the screen
+      <Flex
+        direction="column"
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <NoLogginErrorAlert />;
+      </Flex>
+    );
   }
   return children;
 };

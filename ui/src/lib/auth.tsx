@@ -14,7 +14,13 @@ import {
 
 function RuntimeTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = runtimeTrpc.createClient({
     links: [
       httpBatchLink({
@@ -34,7 +40,13 @@ function RuntimeTrpcProvider({ children }) {
 
 function CopilotTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = copilotTrpc.createClient({
     links: [
       httpBatchLink({
@@ -54,7 +66,13 @@ function CopilotTrpcProvider({ children }) {
 
 function YjsTrpcProvider({ children }) {
   const { getAuthHeaders } = useAuth();
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = yjsTrpc.createClient({
     links: [
       httpBatchLink({
@@ -79,7 +97,15 @@ const authContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }) {
   const auth = useProvideAuth();
 
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Do not refetch queries when window is re-focused.
+        // https://github.com/TanStack/query/issues/273
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
   const trpcClient = trpc.createClient({
     links: [
       httpBatchLink({
