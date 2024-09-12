@@ -8,6 +8,8 @@ import { copilotTrpc } from "@/lib/trpc";
 
 import { llamaInlineCompletionProvider } from "@/lib/llamaCompletionProvider";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import * as Y from "yjs";
+
 import {
   ATOM_copilotManualMode,
   ATOM_scopedVars,
@@ -38,6 +40,7 @@ import { ParseResult } from "@/lib/parser";
 import { CodeNodeType } from "@/lib/store/types";
 import { css } from "@emotion/css";
 import { myassert } from "@/lib/utils/utils";
+import { ATOM_previousVersion } from "@/pages/repo";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -321,6 +324,105 @@ function highlightAnnotations(
   );
 }
 
+async function computeDiff(
+  original: string,
+  modified: string
+): Promise<monaco.editor.ILineChange[] | null> {
+  return new Promise((resolve, reject) => {
+    // 1. get a diff editor
+    // 2. onDidUpdateDiff
+    // 3. get the diff and return
+    const originalModel = monaco.editor.createModel(original);
+    const modifiedModel = monaco.editor.createModel(modified);
+    // a dummy element just for creating the diff editor
+    let elem = document.createElement("div");
+    var diffEditor = monaco.editor.createDiffEditor(elem, {
+      // You can optionally disable the resizing
+      enableSplitViewResizing: false,
+    });
+    diffEditor.setModel({
+      original: originalModel,
+      modified: modifiedModel,
+    });
+    diffEditor.onDidUpdateDiff(() => {
+      // this is the result
+      let res = diffEditor.getLineChanges();
+      resolve(res);
+    });
+  });
+}
+
+async function updateGitGutter(
+  editor: monaco.editor.IStandaloneCodeEditor & { oldDecorations?: any[] },
+  previousCode: string
+) {
+  if (!editor.oldDecorations) {
+    editor.oldDecorations = [];
+  }
+  const gitvalue = previousCode;
+  const value = editor.getValue();
+  // console.log("computing diff with", gitvalue, "value:", value);
+  // console.log("editor.staged", editor.staged);
+  let diffs = await computeDiff(gitvalue, value);
+  // console.log("original", gitvalue);
+  // console.log("modified", value);
+  // console.log("diffs:", diffs);
+  let decorations: any[] = [];
+  for (const diff of diffs || []) {
+    // newly added lines
+    if (diff.originalStartLineNumber > diff.originalEndLineNumber) {
+      // newly added
+      decorations.push({
+        range: new monaco.Range(
+          diff.modifiedStartLineNumber,
+          1,
+          diff.modifiedEndLineNumber,
+          1
+        ),
+        options: {
+          isWholeLine: true,
+          linesDecorationsClassName: "myLineDecoration-add",
+        },
+      });
+    } else {
+      if (diff.modifiedStartLineNumber > diff.modifiedEndLineNumber) {
+        // deleted
+        decorations.push({
+          range: new monaco.Range(
+            diff.modifiedStartLineNumber,
+            1,
+            diff.modifiedStartLineNumber,
+            1
+          ),
+          options: {
+            isWholeLine: true,
+            linesDecorationsClassName: "myLineDecoration-delete",
+          },
+        });
+      } else {
+        // modified
+        decorations.push({
+          range: new monaco.Range(
+            diff.modifiedStartLineNumber,
+            1,
+            diff.modifiedEndLineNumber,
+            1
+          ),
+          options: {
+            isWholeLine: true,
+            linesDecorationsClassName: "myLineDecoration-modified",
+          },
+        });
+      }
+    }
+  }
+  // FIXME this is delta, so need to get previous decos.
+  editor.oldDecorations = editor.deltaDecorations(
+    editor.oldDecorations,
+    decorations
+  );
+}
+
 function useInitEditor({
   node,
   editor,
@@ -356,6 +458,24 @@ function useInitEditor({
 
   const { client } = copilotTrpc.useUtils();
 
+  const previousVersion = useAtomValue(ATOM_previousVersion);
+  let previousCode: string = "";
+  if (previousVersion === null) {
+    // loading, no need to update
+    previousCode = "";
+  } else if (previousVersion === "init") {
+    previousCode = "";
+  } else {
+    const ydoc = previousVersion;
+    const codeMap = ydoc.getMap("rootMap").get("codeMap") as Y.Map<Y.Text>;
+    const str = codeMap.get(id);
+    if (str) {
+      previousCode = str.toString();
+    } else {
+      previousCode = "";
+    }
+  }
+
   useEffect(() => {
     if (editor && editor.getModel()) {
       const updateHeight = ({ contentHeight }) => {
@@ -381,10 +501,10 @@ function useInitEditor({
         },
       });
 
-      // editor.onDidChangeModelContent(async (e) => {
-      //   // content is value?
-      //   updateGitGutter(editor);
-      // });
+      editor.onDidChangeModelContent(async (e) => {
+        // content is value?
+        updateGitGutter(editor, previousCode);
+      });
 
       const llamaCompletionProvider = new llamaInlineCompletionProvider(
         id,

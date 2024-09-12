@@ -9,6 +9,8 @@ import { Canvas } from "@/components/Canvas";
 import { UserProfile } from "@/components/Header";
 import { SidebarLeft, SidebarRight } from "@/components/Sidebar";
 
+import * as Y from "yjs";
+
 import {
   Text,
   Link as RadixLink,
@@ -36,9 +38,9 @@ import {
   ATOM_parserReady as ATOM_parserReady_julia,
 } from "@/lib/parserJulia";
 
-import { trpc } from "@/lib/trpc";
+import { trpc, yjsTrpc } from "@/lib/trpc";
 import { useAuth } from "@/lib/auth";
-import { Provider, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { atom, Provider, useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_connectYjs,
   ATOM_disconnectYjs,
@@ -334,10 +336,42 @@ function HeaderWithItems() {
   );
 }
 
+export const ATOM_previousVersion = atom<Y.Doc | null | "init">(null);
+
+function PreviousVersionLoader() {
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const previousVersion = yjsTrpc.getPreviousVersion.useQuery({
+    repoId: repoData.id,
+  });
+  const setPreviousVersion = useSetAtom(ATOM_previousVersion);
+  useEffect(() => {
+    if (previousVersion.isSuccess) {
+      if (previousVersion.data) {
+        // setPreviousVersion(previousVersion.data);
+        // load into ydoc
+        const ydoc = new Y.Doc();
+        // The data was Buffer, but trpc converts it into {type: "Buffer"; data: number[];}.
+        // We need to convert it back to Buffer.
+        // const buf = Buffer.from(previousVersion.data.blob.data);
+        // but Buffer is not available in browser, so we use Uint8Array.
+        const buf = new Uint8Array(previousVersion.data.blob.data);
+        Y.applyUpdate(ydoc, buf);
+        // now this ydoc has codeMap ready to use.
+        setPreviousVersion(ydoc);
+      } else {
+        setPreviousVersion("init");
+      }
+    }
+  }, [previousVersion]);
+  return null;
+}
+
 export function Repo() {
   return (
     <Provider>
       <RepoLoader>
+        <PreviousVersionLoader />
         <Flex direction="column" height="100vh">
           <Flex>
             <HeaderWithItems />

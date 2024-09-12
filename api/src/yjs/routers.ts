@@ -45,6 +45,19 @@ export const appRouter = router({
       });
       return true;
     }),
+  getPreviousVersion: protectedProcedure
+    .input(z.object({ repoId: z.string() }))
+    .query(async ({ input: { repoId }, ctx: { userId } }) => {
+      const versions = await prisma.versionedYDocBlob.findMany({
+        where: { repoId },
+        orderBy: { time: "desc" },
+        take: 1,
+      });
+      if (versions.length == 0) {
+        return null;
+      }
+      return versions[0];
+    }),
 });
 
 export type YjsRouter = typeof appRouter;
