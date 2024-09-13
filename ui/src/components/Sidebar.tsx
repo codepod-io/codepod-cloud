@@ -570,6 +570,201 @@ function ExportPDF() {
   );
 }
 
+/**
+ * Download the ydoc, mainly for debugging.
+ */
+function DownloadYDoc() {
+  const ydoc = useAtomValue(ATOM_ydoc);
+  const [loading, setLoading] = useState(false);
+  const onClick = () => {
+    setLoading(true);
+    const update = Y.encodeStateAsUpdate(ydoc);
+    // update is a Uint8Array
+    const blob = new Blob([update], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    // const dataUrl =
+    // "data:text/plain;charset=utf-8," + encodeURIComponent(update.toString());
+    // const filename = `ydoc-${new Date().toISOString()}.json`;
+    // downloadLink(dataUrl, filename);
+    // setLoading(false);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ydoc-" + new Date().toISOString() + ".ydoc";
+    a.click();
+    setLoading(false);
+  };
+  return (
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
+      Download YDoc
+    </Button>
+  );
+}
+
+/**
+ * This opens a new window for printing. Not very desirable.
+ */
+function ExportPDF2() {
+  const { id: repoId } = useParams();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoName = repoData.name;
+  const [loading, setLoading] = useState(false);
+
+  const onClick = async () => {
+    setLoading(true);
+    try {
+      const elem = document.querySelector(".react-flow");
+      if (!elem) throw new Error("React Flow element not found");
+
+      // Generate SVG data URL using html-to-image
+      const svgDataUrl = await toSvg(elem as HTMLElement, {
+        filter: (node) => {
+          return !(
+            node?.classList?.contains("react-flow__minimap") ||
+            node?.classList?.contains("react-flow__controls")
+          );
+        },
+      });
+
+      // Create a new window with the SVG content
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) throw new Error("Failed to open print window");
+
+      // Write the SVG content to the new window
+      printWindow.document.write(`
+          <html>
+            <head>
+              <title>${repoName}-${repoId}</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${svgDataUrl}" alt="SVG Content" />
+            </body>
+          </html>
+        `);
+      printWindow.document.close();
+
+      // Wait for content to load
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Trigger print dialog
+      printWindow.print();
+
+      // Close the window after printing
+      printWindow.onafterprint = () => {
+        printWindow.close();
+        setLoading(false);
+      };
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
+      Export to PDF 3
+    </Button>
+  );
+}
+
+/**
+ * Use the size of the canvas. This is good for visualization. But user cannot
+ * change portrait/landscape mode or the size of the paper.
+ */
+function ExportPDF3() {
+  const { id: repoId } = useParams();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoName = repoData.name;
+  const [loading, setLoading] = useState(false);
+
+  const onClick = () => {
+    setLoading(true);
+    const elem = document.querySelector(".react-flow");
+    if (!elem) return;
+
+    // Get the actual dimensions of the React Flow canvas
+    const boundingRect = elem.getBoundingClientRect();
+    const canvasWidth = boundingRect.width;
+    const canvasHeight = boundingRect.height;
+
+    toSvg(elem as HTMLElement, {
+      filter: (node) => {
+        if (
+          node?.classList?.contains("react-flow__minimap") ||
+          node?.classList?.contains("react-flow__controls")
+        ) {
+          return false;
+        }
+        return true;
+      },
+    }).then((dataUrl) => {
+      // Create a new iframe element
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.left = "-9999px"; // Hide it off-screen
+
+      // Append the iframe to the document
+      document.body.appendChild(iframe);
+
+      const iframeWindow = iframe.contentWindow;
+      if (iframeWindow) {
+        // Write the image into the iframe document
+        iframeWindow.document.open();
+        iframeWindow.document.write(`
+            <html>
+              <head>
+                <title>Print</title>
+                <style>
+                  @page {
+                    size: ${canvasWidth}px ${canvasHeight}px;
+                    margin: 0;
+                  }
+                  body {
+                    margin: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                  }
+                  img {
+                    width: ${canvasWidth}px;
+                    height: ${canvasHeight}px;
+                  }
+                </style>
+              </head>
+              <body>
+                <img src="${dataUrl}" width="${canvasWidth}" height="${canvasHeight}">
+              </body>
+            </html>
+          `);
+        iframeWindow.document.close();
+
+        // Trigger the print dialog for the iframe
+        iframeWindow.focus();
+        iframeWindow.print();
+
+        // Clean up: remove the iframe after printing
+        iframeWindow.onafterprint = () => {
+          document.body.removeChild(iframe);
+        };
+      }
+
+      setLoading(false);
+    });
+  };
+
+  return (
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
+      Download as PDF 5
+    </Button>
+  );
+}
+
 function ExportButtons() {
   return (
     <Flex gap={"1"} direction={"column"}>
