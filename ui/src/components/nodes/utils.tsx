@@ -369,16 +369,6 @@ export function getHelperLines(
     }, defaultResult);
 }
 
-export function downloadLink(dataUrl, fileName) {
-  let element = document.createElement("a");
-  element.setAttribute("href", dataUrl);
-  element.setAttribute("download", fileName);
-
-  element.style.display = "none";
-  document.body.appendChild(element);
-  element.click();
-}
-
 export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
   const nodes = Array.from<Node>(nodesMap.values());
 
