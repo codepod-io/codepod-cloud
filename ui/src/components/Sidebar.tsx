@@ -38,7 +38,7 @@ import {
   Package,
 } from "lucide-react";
 
-import { downloadLink, repo2ipynb } from "./nodes/utils";
+import { repo2ipynb } from "./nodes/utils";
 
 import * as Y from "yjs";
 
@@ -412,6 +412,16 @@ function YjsSyncStatus() {
   );
 }
 
+function downloadLink(dataUrl, fileName) {
+  let element = document.createElement("a");
+  element.setAttribute("href", dataUrl);
+  element.setAttribute("download", fileName);
+
+  element.style.display = "none";
+  document.body.appendChild(element);
+  element.click();
+}
+
 function ExportJupyterNB() {
   const { id: repoId } = useParams();
   const repoData = useAtomValue(ATOM_repoData);
@@ -484,7 +494,78 @@ function ExportSVG() {
 
   return (
     <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
-      Download Image
+      Download SVG
+    </Button>
+  );
+}
+
+/**
+ * Use the default letter size. This is good for printing. User can adjust
+ * portrait/landscape mode and the size of the paper.
+ */
+function ExportPDF() {
+  const { id: repoId } = useParams();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoName = repoData.name;
+  const [loading, setLoading] = useState(false);
+
+  const onClick = () => {
+    setLoading(true);
+    const elem = document.querySelector(".react-flow");
+    if (!elem) return;
+
+    toSvg(elem as HTMLElement, {
+      filter: (node) => {
+        if (
+          node?.classList?.contains("react-flow__minimap") ||
+          node?.classList?.contains("react-flow__controls")
+        ) {
+          return false;
+        }
+        return true;
+      },
+    }).then((dataUrl) => {
+      // Create a new iframe element
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.left = "-9999px"; // Hide it off-screen
+
+      // Append the iframe to the document
+      document.body.appendChild(iframe);
+
+      // Get the iframe's contentWindow
+      const iframeWindow = iframe.contentWindow;
+      if (iframeWindow) {
+        // Write the SVG image into the iframe document
+        iframeWindow.document.open();
+        iframeWindow.document.write(`
+          <html>
+            <head><title>Print</title></head>
+            <body style="margin: 0;">
+              <img src="${dataUrl}" style="width: 100%;">
+            </body>
+          </html>
+        `);
+        iframeWindow.document.close();
+
+        // Trigger the print dialog for the iframe
+        iframeWindow.focus();
+        iframeWindow.print();
+
+        // Clean up: remove the iframe after printing
+        iframeWindow.onafterprint = () => {
+          document.body.removeChild(iframe);
+        };
+      }
+
+      setLoading(false);
+    });
+  };
+
+  return (
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
+      Download as PDF
     </Button>
   );
 }
@@ -492,8 +573,9 @@ function ExportSVG() {
 function ExportButtons() {
   return (
     <Flex gap={"1"} direction={"column"}>
-      <ExportJupyterNB />
-      <ExportSVG />
+      {/* <ExportJupyterNB /> */}
+      {/* <ExportSVG /> */}
+      <ExportPDF />
     </Flex>
   );
 }
