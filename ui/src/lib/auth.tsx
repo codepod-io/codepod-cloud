@@ -185,6 +185,7 @@ function useProvideAuth() {
   }
 
   return {
+    authToken,
     getAuthHeaders,
     signIn,
     signOut,

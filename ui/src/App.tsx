@@ -35,6 +35,7 @@ import { InfoCircledIcon } from "@radix-ui/react-icons";
 import "./custom.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { trpc } from "./lib/trpc";
 
 function NoLogginErrorAlert() {
   return (
@@ -159,9 +160,36 @@ const router = createBrowserRouter([
   },
 ]);
 
+function AuthValidationImpl() {
+  const { signOut } = useAuth();
+  trpc.user.me.useQuery(undefined, {
+    retry: false,
+    onError(error) {
+      // if the JWT token is invalid, sign out
+      // This will happen when:
+      // 1. we changed the JWT secret
+      // 2. TODO the JWT token is expired
+      if (error.message === "invalid signature") {
+        console.log("invalid token");
+        // sign out
+        signOut();
+      }
+    },
+  });
+  return null;
+}
+
+function AuthValidation() {
+  const { authToken } = useAuth();
+
+  if (!authToken) return null;
+  return <AuthValidationImpl />;
+}
+
 export function App() {
   return (
     <AuthProvider>
+      <AuthValidation />
       <RouterProvider router={router} />
       <ToastContainer pauseOnFocusLoss={false} />
     </AuthProvider>
