@@ -526,6 +526,18 @@ function ExportPDF() {
         return true;
       },
     }).then((dataUrl) => {
+      // Format the date as save-pdf_20240916-1118
+      const now = new Date();
+
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+
+      const dateString = `${year}${month}${day}-${hours}${minutes}`;
+
       // Create a new iframe element
       const iframe = document.createElement("iframe");
       iframe.style.position = "absolute";
@@ -537,6 +549,8 @@ function ExportPDF() {
       // Get the iframe's contentWindow
       const iframeWindow = iframe.contentWindow;
       if (iframeWindow) {
+        // Save the current title to restore it later
+        const originalTitle = document.title;
         // Write the SVG image into the iframe document
         iframeWindow.document.open();
         iframeWindow.document.write(`
@@ -553,10 +567,15 @@ function ExportPDF() {
         iframeWindow.focus();
         iframeWindow.print();
 
-        // Clean up: remove the iframe after printing
+        // Clean up: restore original title and remove the iframe after printing
         iframeWindow.onafterprint = () => {
-          document.body.removeChild(iframe);
+          document.title = originalTitle; // Restore the title
+          document.body.removeChild(iframe); // Remove the iframe
         };
+
+        // Add date to the document title for printing
+        document.title =
+          (repoData.name || "Untitled").replaceAll(" ", "-") + "_" + dateString;
       }
 
       setLoading(false);
