@@ -205,6 +205,9 @@ export function ShareProjDialog() {
               {name || "Untitled"}
             </span>
           </Dialog.Title>
+          <Dialog.Description size="2" mb="4">
+            Invite people to collaborate on this project.
+          </Dialog.Description>
 
           {/* ==== Add people by email */}
 
