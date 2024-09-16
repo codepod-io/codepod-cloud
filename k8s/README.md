@@ -26,6 +26,45 @@ Next, use rancher to privision the cluster:
 3. install longhorn in the VM
 4. install CNPG operator
 
+## Update v2: use rancher to provision
+
+1. run rancher-on-docker on a separate VM
+2. set server-url to local-network-ip
+3. create cluster, select k3s and deselect traefik
+   - master:
+     - select all roles
+     - set public IP and private IP
+   - runtime:
+     - set public IP and private IP
+     - select worker role only
+     - set runtime=true label and taint
+4. install nginx ingress
+
+```sh
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+```
+
+5. install longhorn
+
+```sh
+helm repo add longhorn https://charts.longhorn.io
+helm repo update
+helm install longhorn longhorn/longhorn --namespace longhorn-system --create-namespace --version 1.7.1
+kubectl -n longhorn-system get pod
+```
+
+6. install CNPG operator chart
+
+```sh
+helm repo add cnpg https://cloudnative-pg.github.io/charts
+helm upgrade --install cnpg \
+  --namespace cnpg-system \
+  --create-namespace \
+  cnpg/cloudnative-pg
+```
+
 ## Update: use k3s on baremetal without rancher provisioning
 
 ```sh
@@ -34,15 +73,24 @@ Next, use rancher to privision the cluster:
 openssl rand -hex 12
 
 # First server
-curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server --cluster-init --disable=traefik
+curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.30.4+k3s1 sh -s - server --cluster-init --disable=traefik --node-ip 10.0.0.x --node-external-ip 5.x.x.x
+
+# This is the auto-generated token
+cat /var/lib/rancher/k3s/server/token
+# This is the kubeconfig
+cat /etc/rancher/k3s/k3s.yaml
+
+curl -sfL https://get.k3s.io | sh -s - server --cluster-init --disable=traefik
 
 # other servers
 curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server --disable=traefik \
-    --server https://<ip or hostname of server1>:6443
+    --server https://x.x.x.x:6443
 
 # workers
-curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - agent \
-    --server https://<ip or hostname of server>:6443 \
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.30.4+k3s1 sh -s - agent \
+    --server https://10.0.0.x:6443 \
+    --node-ip 10.0.0.x --node-external-ip 5.x.x.x \
+    --token xxx \
     --node-label runtime=true \
     --node-taint runtime=true:NoSchedule
 
