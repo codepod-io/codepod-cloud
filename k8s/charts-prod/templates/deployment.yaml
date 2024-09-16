@@ -6,6 +6,10 @@ metadata:
 stringData:
   GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
   JWT_SECRET: "{{ .Values.jwtSecret }}"
+  AWS_ACCESS_KEY_ID: "{{ .Values.AWS_ACCESS_KEY_ID }}"
+  AWS_SECRET_ACCESS_KEY: "{{ .Values.AWS_SECRET_ACCESS_KEY }}"
+  AWS_REGION: "{{ .Values.AWS_REGION }}"
+  S3_BUCKET: "{{ .Values.S3_BUCKET }}"
 
 # UI
 ---
@@ -119,6 +123,27 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: GOOGLE_CLIENT_ID
+            # S3 configuration
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: AWS_REGION
+            - name: S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: S3_BUCKET
           resources:
             limits:
               memory: 2560Mi
@@ -320,6 +345,11 @@ spec:
           env:
             - name: READ_ONLY
               value: "{{ .Values.READ_ONLY }}"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: JWT_SECRET
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:

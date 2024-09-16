@@ -19,11 +19,22 @@ Now it is possible to access the rancher server from the public cloud VMs.
 
 Since I have a tunnel in front of rancher, I need to skip tls verification for
 rancher's self-generated cert. Add `insecure-skip-tls-verify: true` to the k8s
-yaml file. Ref: https://stackoverflow.com/a/48131508
+yaml file after server:xxx line, remove `certificate-authority-data:`. Ref:
+https://stackoverflow.com/a/48131508
 
 Otherwise, I have to specify `--insecure-skip-tls-verify` for every kubectl, and this flag doesn't work for helm.
 
 This is still secure because everything is inside cloudflare tunnel.
+
+```yaml
+apiVersion: v1
+kind: Config
+clusters:
+  - name: "xxx"
+    cluster:
+      server: "https://rancher/k8s/clusters/xxx"
+      insecure-skip-tls-verify: true
+```
 
 # Deploy
 
@@ -112,6 +123,16 @@ helm upgrade --install ingress-nginx ingress-nginx \
 ```
 
 4. prisma migrate deploy
+
+5. add cloudflare tunnel
+
+Use docker version, add the following options:
+
+```sh
+-d --restart unless-stopped
+```
+
+Redirect to http://10.0.0.x:80. http://localhost:80 doesn't work.
 
 # Maintainence
 
