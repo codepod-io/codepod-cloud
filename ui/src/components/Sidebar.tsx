@@ -696,7 +696,7 @@ function PodTreeItem({ id }) {
       </Flex>
 
       {!node.data.folded && (
-        <Flex>
+        <Flex direction="column">
           {node.type === "SCOPE" && (
             <Flex direction="column" style={{ paddingLeft: "15px" }}>
               {node.data.scopeChildrenIds?.map((child) => (
