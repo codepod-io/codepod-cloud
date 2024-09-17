@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   Dialog,
   TextField,
+  Switch,
 } from "@radix-ui/themes";
 
 import { gray, mauve, violet } from "@radix-ui/colors";
@@ -58,6 +59,7 @@ import { match } from "ts-pattern";
 import { runtimeTrpc, trpc, yjsTrpc } from "@/lib/trpc";
 import {
   ATOM_copilotManualMode,
+  ATOM_debugMode,
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -100,13 +102,14 @@ function SidebarSettings() {
   const [copilotManualMode, setCopilotManualMode] = useAtom(
     ATOM_copilotManualMode
   );
+  const [debugMode, setDebugMode] = useAtom(ATOM_debugMode);
 
   return (
     <Box>
       <Flex direction={"column"} gap="2">
         <Tooltip side="right" content={"Show Line Numbers"}>
           <Flex gap="3" align="center">
-            <Checkbox
+            <Switch
               size="3"
               checked={showLineNumbers}
               onClick={(e) => {
@@ -121,7 +124,7 @@ function SidebarSettings() {
           content={"Ctrl+Shift+Space to trigger Copilot manually"}
         >
           <Flex gap="3" align="center">
-            <Checkbox
+            <Switch
               size="3"
               checked={copilotManualMode}
               onClick={(e) => {
@@ -129,6 +132,18 @@ function SidebarSettings() {
               }}
             />
             <Text size="3">Trigger Copilot Manually</Text>
+          </Flex>
+        </Tooltip>
+        <Tooltip side="right" content={"Debug Mode"}>
+          <Flex gap="3" align="center">
+            <Switch
+              size="3"
+              checked={debugMode}
+              onClick={(e) => {
+                setDebugMode(!debugMode);
+              }}
+            />
+            <Text size="3">Debug Mode</Text>
           </Flex>
         </Tooltip>
       </Flex>
@@ -324,7 +339,9 @@ function CreatedAt({
 const Runtime = () => {
   return (
     <Flex direction={"column"} gap="2">
-      <Heading size="2">runtime</Heading>
+      <Heading size="2" my="3">
+        runtime
+      </Heading>
 
       <KernelStatus kernelName="python" />
       <KernelStatus kernelName="julia" />
@@ -866,6 +883,7 @@ export function SidebarLeft() {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
+  const debugMode = useAtomValue(ATOM_debugMode);
   return (
     <MyTabs
       side="left"
@@ -878,71 +896,59 @@ export function SidebarLeft() {
           content: (
             <Flex direction="column" gap="1">
               <YjsSyncStatus />
-              <Heading size="2">Export to ..</Heading>
+              <Heading size="2" my="3">
+                Export to ..
+              </Heading>
               <ExportButtons />
-              <Separator my="3" size="4" />
               <Runtime />
             </Flex>
           ),
         },
-        {
-          key: "Dev",
-          icon: <Construction />,
-          content: (
-            <Flex direction="column" gap="1">
-              <YjsSyncStatus />
-              <Heading size="2">Export to ..</Heading>
-              <ExportButtons />
-              <Separator my="3" size="4" />
-              <Button
-                onClick={() => {
-                  autoLayout();
-                }}
-                variant="outline"
-              >
-                Layout
-              </Button>
-              <Button onClick={() => parseAllPods()} variant="outline">
-                Parse All
-              </Button>
-              <Button onClick={() => propagateAllSt()} variant="outline">
-                Propagate All
-              </Button>
-              <Button onClick={() => resolveAllPods()} variant="outline">
-                Resolve All
-              </Button>
+        ...(debugMode
+          ? [
+              {
+                key: "Dev",
+                icon: <Construction />,
+                content: (
+                  <Flex direction="column" gap="1">
+                    <YjsSyncStatus />
+                    <Heading size="2">Export to ..</Heading>
+                    <ExportButtons />
+                    <Separator my="3" size="4" />
+                    <Button
+                      onClick={() => {
+                        autoLayout();
+                      }}
+                      variant="outline"
+                    >
+                      Layout
+                    </Button>
+                    <Button onClick={() => parseAllPods()} variant="outline">
+                      Parse All
+                    </Button>
+                    <Button onClick={() => propagateAllSt()} variant="outline">
+                      Propagate All
+                    </Button>
+                    <Button onClick={() => resolveAllPods()} variant="outline">
+                      Resolve All
+                    </Button>
 
-              <Separator my="3" size="4" />
-              <Runtime />
-            </Flex>
-          ),
-        },
-        { key: "Search", icon: <Search />, content: "Search".repeat(10) },
-        {
-          key: "Outline",
-          icon: <ListTree />,
-          content: (
-            <>
-              <Heading size="2">Table of Pods</Heading>
-              <TableofPods />
-            </>
-          ),
-        },
-        {
-          key: "Runtime",
-          icon: <Cpu />,
-          content: (
-            <>
-              <Runtime />
-            </>
-          ),
-        },
+                    <Separator my="3" size="4" />
+                    <Runtime />
+                  </Flex>
+                ),
+              },
+            ]
+          : []),
+        // { key: "Search", icon: <Search />, content: "Search".repeat(10) },
         {
           key: "Settings",
           icon: <Settings />,
           content: (
             <>
-              <Heading size="2">Site Settings</Heading>
+              <Heading size="2" my="3">
+                Site Settings
+              </Heading>
               <SidebarSettings />
             </>
           ),
@@ -1021,14 +1027,15 @@ function NodesMapInspector() {
 }
 
 export function SidebarRight() {
+  const debugMode = useAtomValue(ATOM_debugMode);
   return (
     <MyTabs
       side="right"
-      defaultValue="Files"
+      defaultValue="Index"
       tabs={[
         {
-          key: "Files",
-          icon: <Files />,
+          key: "Index",
+          icon: <ListTree />,
           // content: "Make changes to your account.".repeat(10),
           content: (
             <Flex direction="column">
@@ -1037,31 +1044,32 @@ export function SidebarRight() {
                 ToC
               </Heading>
               <TableofPods />
-              <Separator my="3" size="4" />
-              <Heading size="2">Meta data</Heading>
-              <RepoSize />
             </Flex>
           ),
         },
-        {
-          key: "Dev",
-          icon: <Construction />,
-          content: (
-            <Flex direction="column">
-              <Heading mb="2" size="2">
-                Right Sidebar
-              </Heading>
-              <FpsMeter />
-              <Heading size="2">ToC</Heading>
-              <TableofPods />
-              <Separator my="3" size="4" />
-              <Heading size="2">Meta data</Heading>
-              <RepoSize />
-              <Heading size="2">Debug</Heading>
-              <NodesMapInspector />
-            </Flex>
-          ),
-        },
+        ...(debugMode
+          ? [
+              {
+                key: "Dev",
+                icon: <Construction />,
+                content: (
+                  <Flex direction="column">
+                    <Heading mb="2" size="2">
+                      Right Sidebar
+                    </Heading>
+                    <FpsMeter />
+                    <Heading size="2">ToC</Heading>
+                    <TableofPods />
+                    <Separator my="3" size="4" />
+                    <Heading size="2">Meta data</Heading>
+                    <RepoSize />
+                    <Heading size="2">Debug</Heading>
+                    <NodesMapInspector />
+                  </Flex>
+                ),
+              },
+            ]
+          : []),
         {
           key: "Help",
           icon: <CircleHelp />,
