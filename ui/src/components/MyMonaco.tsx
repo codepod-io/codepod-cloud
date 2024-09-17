@@ -12,8 +12,6 @@ import * as Y from "yjs";
 
 import {
   ATOM_copilotManualMode,
-  ATOM_scopedVars,
-  ATOM_showAnnotations,
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import {
@@ -431,26 +429,17 @@ function useInitEditor({
   editor: monaco.editor.IStandaloneCodeEditor | null;
 }) {
   // there's no racket language support
-  const [showLineNumbers] = useAtom(ATOM_showLineNumbers);
   const id = node.id;
 
   const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(id));
   const resolveResult = useAtomValue(getOrCreate_ATOM_resolveResult(id));
 
-  const [showAnnotations] = useAtom(ATOM_showAnnotations);
-  const [scopedVars] = useAtom(ATOM_scopedVars);
-
   const [copilotManualMode] = useAtom(ATOM_copilotManualMode);
-
-  // TODO support other languages.
-  let lang = node.data.lang;
 
   useEffect(() => {
     if (!editor) return;
-    if (showAnnotations) {
-      highlightAnnotations(editor, parseResult, resolveResult);
-    }
-  }, [parseResult, resolveResult, editor, showAnnotations, scopedVars]);
+    highlightAnnotations(editor, parseResult, resolveResult);
+  }, [parseResult, resolveResult, editor]);
 
   const provider = useAtomValue(ATOM_provider);
   myassert(provider);
@@ -548,6 +537,14 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
   useInitEditor({ node, editor });
 
   useEffect(() => {
+    if (editor) {
+      editor.updateOptions({
+        lineNumbers: showLineNumbers ? "on" : "off",
+      });
+    }
+  }, [showLineNumbers]);
+
+  useEffect(() => {
     if (editorRef.current) {
       const editor = monaco.editor.create(editorRef.current, {
         // value: `function hello() {
@@ -578,7 +575,7 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
         // autoIndent: true,
         overviewRulerLanes: 0,
         automaticLayout: true,
-        lineNumbers: showLineNumbers ? "on" : "off",
+        lineNumbers: "off",
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",

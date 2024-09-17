@@ -37,6 +37,7 @@ import {
   NotebookPen,
   Package,
   Construction,
+  CircleHelp,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -57,8 +58,6 @@ import { match } from "ts-pattern";
 import { runtimeTrpc, trpc, yjsTrpc } from "@/lib/trpc";
 import {
   ATOM_copilotManualMode,
-  ATOM_scopedVars,
-  ATOM_showAnnotations,
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -97,8 +96,6 @@ import {
 } from "@/lib/store/runtimeSlice";
 
 function SidebarSettings() {
-  const [scopedVars, setScopedVars] = useAtom(ATOM_scopedVars);
-  const [showAnnotations, setShowAnnotations] = useAtom(ATOM_showAnnotations);
   const [showLineNumbers, setShowLineNumbers] = useAtom(ATOM_showLineNumbers);
   const [copilotManualMode, setCopilotManualMode] = useAtom(
     ATOM_copilotManualMode
@@ -119,30 +116,6 @@ function SidebarSettings() {
             <Text size="3">Line Numbers</Text>
           </Flex>
         </Tooltip>
-        <Tooltip side="right" content={"Enable Scoped Variables"}>
-          <Flex gap="3" align="center">
-            <Checkbox
-              size="3"
-              checked={scopedVars}
-              onClick={(e) => {
-                setScopedVars(!scopedVars);
-              }}
-            />
-            <Text size="3">Scoped Variables</Text>
-          </Flex>
-        </Tooltip>
-        <Tooltip side="right" content={"Show Annotations in Editor"}>
-          <Flex gap="3" align="center">
-            <Checkbox
-              size="3"
-              checked={showAnnotations}
-              onClick={(e) => {
-                setShowAnnotations(!showAnnotations);
-              }}
-            />
-            <Text size="3">Show Annotations</Text>
-          </Flex>
-        </Tooltip>
         <Tooltip
           side="right"
           content={"Ctrl+Shift+Space to trigger Copilot manually"}
@@ -158,16 +131,6 @@ function SidebarSettings() {
             <Text size="3">Trigger Copilot Manually</Text>
           </Flex>
         </Tooltip>
-        {showAnnotations && (
-          <Flex direction={"column"} gap={"1"}>
-            <Box className="myDecoration-function">Function Definition</Box>
-            <Box className="myDecoration-vardef">Variable Definition</Box>
-            <Box className="myDecoration-varuse">Function/Variable Use</Box>
-            <Box className="myDecoration-varuse my-underline">
-              Undefined Variable
-            </Box>
-          </Flex>
-        )}
       </Flex>
     </Box>
   );
@@ -927,7 +890,6 @@ export function SidebarLeft() {
           icon: <Construction />,
           content: (
             <Flex direction="column" gap="1">
-              <Separator my="3" size="4" />
               <YjsSyncStatus />
               <Heading size="2">Export to ..</Heading>
               <ExportButtons />
@@ -1097,6 +1059,27 @@ export function SidebarRight() {
               <RepoSize />
               <Heading size="2">Debug</Heading>
               <NodesMapInspector />
+            </Flex>
+          ),
+        },
+        {
+          key: "Help",
+          icon: <CircleHelp />,
+          content: (
+            <Flex direction="column">
+              <Heading size="2">Help</Heading>
+
+              <Heading size="2" my="3">
+                Syntax Highlighting
+              </Heading>
+              <Flex direction={"column"} gap={"1"}>
+                <Box className="myDecoration-function">Function Definition</Box>
+                <Box className="myDecoration-vardef">Variable Definition</Box>
+                <Box className="myDecoration-varuse">Function/Variable Use</Box>
+                <Box className="myDecoration-varuse my-underline">
+                  Undefined Variable
+                </Box>
+              </Flex>
             </Flex>
           ),
         },
