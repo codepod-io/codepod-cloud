@@ -218,10 +218,10 @@ function KernelStatus({
     },
   });
   // init the kernel status when the component is mounted
-  useEffect(() => {
-    console.log("init kernel status", repoId, kernelName);
-    status.mutate({ repoId, kernelName });
-  }, []);
+  // useEffect(() => {
+  //   console.log("init kernel status", repoId, kernelName);
+  //   status.mutate({ repoId, kernelName });
+  // }, []);
 
   return (
     <Card>
