@@ -36,6 +36,7 @@ import {
   ChevronDown,
   NotebookPen,
   Package,
+  Construction,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -729,17 +730,18 @@ function TableofPods() {
 const MyTabsRoot = ({
   tabs,
   side,
+  defaultValue,
   children,
 }: {
   tabs: { key: string; icon: any; content: any }[];
   side: "left" | "right";
+  defaultValue?: string;
   children: any;
 }) => {
-  const [value, setValue] = useState(tabs[0].key);
+  const [value, setValue] = useState(defaultValue);
   const [open, setOpen] = useState(true);
   return (
     <Tabs.Root
-      defaultValue={tabs[0].key}
       orientation="vertical"
       value={value}
       style={{
@@ -792,12 +794,14 @@ const MyTabsRoot = ({
 function MyTabs({
   tabs,
   side = "left",
+  defaultValue,
 }: {
   tabs: { key: string; icon: any; content: any }[];
   side: "left" | "right";
+  defaultValue?: string;
 }) {
   return (
-    <MyTabsRoot tabs={tabs} side={side}>
+    <MyTabsRoot tabs={tabs} side={side} defaultValue={defaultValue}>
       <Box
         style={{
           border: "1px solid black",
@@ -837,7 +841,9 @@ function Versions() {
   useTick(1000);
   return (
     <Flex direction="column">
-      Versions ({repoData.versions.length}):
+      <Heading size="2" my="3">
+        Versinos ({repoData.versions.length})
+      </Heading>
       {repoData.versions.map((v) => (
         <Flex key={v.id} gap="3">
           <Box>{v.message}</Box>
@@ -847,7 +853,9 @@ function Versions() {
       {/* Open a dialog for user to enter a commit message. */}
       <Dialog.Root>
         <Dialog.Trigger>
-          <Button>Commit</Button>
+          <Button variant="outline" size="1">
+            Commit
+          </Button>
         </Dialog.Trigger>
 
         <Dialog.Content maxWidth="450px">
@@ -898,6 +906,7 @@ export function SidebarLeft() {
   return (
     <MyTabs
       side="left"
+      defaultValue="Files"
       tabs={[
         {
           key: "Files",
@@ -905,8 +914,19 @@ export function SidebarLeft() {
           // content: "Make changes to your account.".repeat(10),
           content: (
             <Flex direction="column" gap="1">
-              {/* Experimental zone */}
-              <Versions />
+              <YjsSyncStatus />
+              <Heading size="2">Export to ..</Heading>
+              <ExportButtons />
+              <Separator my="3" size="4" />
+              <Runtime />
+            </Flex>
+          ),
+        },
+        {
+          key: "Dev",
+          icon: <Construction />,
+          content: (
+            <Flex direction="column" gap="1">
               <Separator my="3" size="4" />
               <YjsSyncStatus />
               <Heading size="2">Export to ..</Heading>
@@ -978,15 +998,92 @@ function RepoSize() {
   return <Flex>Size: {prettyPrintBytes(size)}</Flex>;
 }
 
+function NodesMapInspector() {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const codeMap = useAtomValue(ATOM_codeMap);
+  const richMap = useAtomValue(ATOM_richMap);
+  const nodes = useAtomValue(ATOM_nodes);
+  return (
+    <Flex direction="column">
+      <Box>Nodes: {nodes.length}</Box>
+      <Flex
+        style={{
+          paddingLeft: "15px",
+        }}
+        direction="column"
+      >
+        {nodes.map(({ id }) => (
+          <Box key={id}>{id.substring(0, 6)}</Box>
+        ))}
+      </Flex>
+
+      <Box>nodesMap: {nodesMap.size} </Box>
+      <Flex
+        style={{
+          paddingLeft: "15px",
+        }}
+        direction="column"
+      >
+        {Array.from(nodesMap.keys()).map((key) => (
+          <Box key={key}>{key.substring(0, 6)}</Box>
+        ))}
+      </Flex>
+      <Box>
+        Code: {codeMap.size} {codeMap.keys()}
+      </Box>
+      <Flex
+        style={{
+          paddingLeft: "15px",
+        }}
+        direction="column"
+      >
+        {Array.from(codeMap.keys()).map((key) => (
+          <Box key={key}>{key.substring(0, 6)}</Box>
+        ))}
+      </Flex>
+      <Box>
+        Rich: {richMap.size} {richMap.keys()}
+      </Box>
+      <Flex
+        style={{
+          paddingLeft: "15px",
+        }}
+        direction="column"
+      >
+        {Array.from(richMap.keys()).map((key) => (
+          <Box key={key}>{key.substring(0, 6)}</Box>
+        ))}
+      </Flex>
+    </Flex>
+  );
+}
+
 export function SidebarRight() {
   return (
     <MyTabs
       side="right"
+      defaultValue="Files"
       tabs={[
         {
           key: "Files",
           icon: <Files />,
           // content: "Make changes to your account.".repeat(10),
+          content: (
+            <Flex direction="column">
+              <Versions />
+              <Heading size="2" my="3">
+                ToC
+              </Heading>
+              <TableofPods />
+              <Separator my="3" size="4" />
+              <Heading size="2">Meta data</Heading>
+              <RepoSize />
+            </Flex>
+          ),
+        },
+        {
+          key: "Dev",
+          icon: <Construction />,
           content: (
             <Flex direction="column">
               <Heading mb="2" size="2">
@@ -998,28 +1095,9 @@ export function SidebarRight() {
               <Separator my="3" size="4" />
               <Heading size="2">Meta data</Heading>
               <RepoSize />
+              <Heading size="2">Debug</Heading>
+              <NodesMapInspector />
             </Flex>
-          ),
-        },
-        { key: "Search", icon: <Search />, content: "Search".repeat(10) },
-        {
-          key: "Outline",
-          icon: <ListTree />,
-          content: (
-            <>
-              <Heading size="2">Table of Pods</Heading>
-              <TableofPods />
-            </>
-          ),
-        },
-        {
-          key: "Settings",
-          icon: <Settings />,
-          content: (
-            <>
-              <Heading size="2">Site Settings</Heading>
-              <SidebarSettings />
-            </>
           ),
         },
       ]}
