@@ -65,6 +65,7 @@ import { StarButton } from "./dashboard_buttons";
 import { env } from "@/lib/vars";
 import { Header } from "@/components/Header";
 import { myassert } from "@/lib/utils/utils";
+import { ATOM_debugMode, ATOM_showLineNumbers } from "@/lib/store/settingSlice";
 
 function NotFoundAlert({}) {
   return (
@@ -99,6 +100,9 @@ function RepoLoader({ children }) {
   const setEditMode = useSetAtom(ATOM_editMode);
   const setCollaborators = useSetAtom(ATOM_collaborators);
 
+  const setDebugMode = useSetAtom(ATOM_debugMode);
+  const setShowLineNumbers = useSetAtom(ATOM_showLineNumbers);
+
   useEffect(() => {
     if (repoQuery.data && me.data) {
       setCollaborators(repoQuery.data.collaborators);
@@ -116,6 +120,9 @@ function RepoLoader({ children }) {
       ) {
         setEditMode("edit");
       }
+      // set settings
+      setDebugMode(me.data.setting?.debugMode || false);
+      setShowLineNumbers(me.data.setting?.showLineNumbers || false);
       setLoaded(true);
     }
   }, [repoQuery, me]);

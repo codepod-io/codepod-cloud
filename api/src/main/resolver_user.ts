@@ -11,6 +11,7 @@ import prisma from "../prisma";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { myenv } from "./vars";
+import assert from "assert";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -20,16 +21,16 @@ const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
     where: {
       id: userId,
     },
-    select: {
-      id: true,
-      email: true,
-      firstname: true,
-      lastname: true,
+    omit: {
+      hashedPassword: true,
+    },
+    include: {
       stars: {
         select: {
           id: true,
         },
       },
+      setting: true,
     },
   });
   if (!user) throw Error("Authorization token is not valid");
@@ -110,6 +111,40 @@ const updateUser = protectedProcedure
     }
   );
 
+const updateUserSetting = protectedProcedure
+  .input(
+    z.object({
+      debugMode: z.optional(z.boolean()),
+      showLineNumbers: z.optional(z.boolean()),
+    })
+  )
+  .mutation(async ({ ctx: { userId }, input }) => {
+    if (!userId) throw Error("Unauthenticated");
+    if (myenv.READ_ONLY) throw Error("Read only mode");
+    let user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+    if (!user) throw Error("User not found.");
+    assert(user.id === userId);
+    // do the udpate
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        setting: {
+          upsert: {
+            create: input,
+            update: input,
+          },
+        },
+      },
+    });
+    return true;
+  });
+
 const login = publicProcedure
   .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
   .mutation(async ({ input: { email, password } }) => {
@@ -185,4 +220,5 @@ export const userRouter = router({
   loginWithGoogle,
   signup,
   updateUser,
+  updateUserSetting,
 });

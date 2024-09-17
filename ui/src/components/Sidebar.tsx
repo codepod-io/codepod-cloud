@@ -103,51 +103,58 @@ function SidebarSettings() {
     ATOM_copilotManualMode
   );
   const [debugMode, setDebugMode] = useAtom(ATOM_debugMode);
+  const updateUserSetting = trpc.user.updateUserSetting.useMutation();
 
   return (
-    <Box>
-      <Flex direction={"column"} gap="2">
-        <Tooltip side="right" content={"Show Line Numbers"}>
-          <Flex gap="3" align="center">
-            <Switch
-              size="3"
-              checked={showLineNumbers}
-              onClick={(e) => {
-                setShowLineNumbers(!showLineNumbers);
-              }}
-            />
-            <Text size="3">Line Numbers</Text>
-          </Flex>
-        </Tooltip>
-        <Tooltip
-          side="right"
-          content={"Ctrl+Shift+Space to trigger Copilot manually"}
-        >
-          <Flex gap="3" align="center">
-            <Switch
-              size="3"
-              checked={copilotManualMode}
-              onClick={(e) => {
-                setCopilotManualMode(!copilotManualMode);
-              }}
-            />
-            <Text size="3">Trigger Copilot Manually</Text>
-          </Flex>
-        </Tooltip>
-        <Tooltip side="right" content={"Debug Mode"}>
-          <Flex gap="3" align="center">
-            <Switch
-              size="3"
-              checked={debugMode}
-              onClick={(e) => {
-                setDebugMode(!debugMode);
-              }}
-            />
-            <Text size="3">Debug Mode</Text>
-          </Flex>
-        </Tooltip>
-      </Flex>
-    </Box>
+    <Flex direction={"column"} gap="2">
+      <Tooltip side="right" content={"Show Line Numbers"}>
+        <Flex gap="3" align="center">
+          <Switch
+            size="3"
+            checked={showLineNumbers}
+            onClick={(e) => {
+              setShowLineNumbers(!showLineNumbers);
+              updateUserSetting.mutate({
+                showLineNumbers: !showLineNumbers,
+              });
+            }}
+          />
+          <Text size="3">Line Numbers</Text>
+        </Flex>
+      </Tooltip>
+      <Tooltip
+        side="right"
+        content={"Ctrl+Shift+Space to trigger Copilot manually"}
+      >
+        <Flex gap="3" align="center">
+          <Switch
+            size="3"
+            checked={copilotManualMode}
+            onClick={(e) => {
+              setCopilotManualMode(!copilotManualMode);
+            }}
+            disabled
+          />
+          <Text size="3">Trigger Copilot Manually</Text>
+        </Flex>
+      </Tooltip>
+      <Separator size="4" />
+      <Tooltip side="right" content={"Debug Mode"}>
+        <Flex gap="3" align="center">
+          <Switch
+            size="3"
+            checked={debugMode}
+            onClick={(e) => {
+              setDebugMode(!debugMode);
+              updateUserSetting.mutate({
+                debugMode: !debugMode,
+              });
+            }}
+          />
+          <Text size="3">Debug Mode</Text>
+        </Flex>
+      </Tooltip>
+    </Flex>
   );
 }
 
@@ -794,8 +801,14 @@ function MyTabs({
       >
         <>
           {tabs.map(({ key, content }) => (
-            <Tabs.Content key={key} value={key}>
-              <Text size="2">{content}</Text>
+            <Tabs.Content
+              key={key}
+              value={key}
+              style={{
+                height: "100%",
+              }}
+            >
+              {content}
             </Tabs.Content>
           ))}
         </>
@@ -887,7 +900,7 @@ export function SidebarLeft() {
   return (
     <MyTabs
       side="left"
-      defaultValue="Files"
+      defaultValue={debugMode ? "Debug" : "Files"}
       tabs={[
         {
           key: "Files",
@@ -907,7 +920,7 @@ export function SidebarLeft() {
         ...(debugMode
           ? [
               {
-                key: "Dev",
+                key: "Debug",
                 icon: <Construction />,
                 content: (
                   <Flex direction="column" gap="1">
@@ -1031,7 +1044,7 @@ export function SidebarRight() {
   return (
     <MyTabs
       side="right"
-      defaultValue="Index"
+      defaultValue={debugMode ? "Debug" : "Index"}
       tabs={[
         {
           key: "Index",
@@ -1050,7 +1063,7 @@ export function SidebarRight() {
         ...(debugMode
           ? [
               {
-                key: "Dev",
+                key: "Debug",
                 icon: <Construction />,
                 content: (
                   <Flex direction="column">

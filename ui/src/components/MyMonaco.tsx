@@ -575,7 +575,7 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
         // autoIndent: true,
         overviewRulerLanes: 0,
         automaticLayout: true,
-        lineNumbers: "off",
+        lineNumbers: showLineNumbers ? "on" : "off",
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
