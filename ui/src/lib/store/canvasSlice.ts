@@ -103,7 +103,11 @@ export function updateView(get: Getter, set: Setter) {
     );
     if (node.data.folded) return [node];
     const node2 = structuredClone(node);
-    node2.selected = selectedPods.has(id);
+    // We should not select a scope, otherwise it will be shown on top of inner pods.
+    if (node2.type !== "SCOPE") {
+      // set it as selected so that the toolbar (of the rich node) will be shown on top of other pods.
+      node2.selected = selectedPods.has(id);
+    }
     let res = [node2];
     res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
     if (node.type === "SCOPE") {
