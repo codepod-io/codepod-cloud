@@ -101,7 +101,6 @@ export function updateView(get: Getter, set: Setter) {
       id,
       "" + node.data.parent?.id + node.data.parent?.relation
     );
-    if (node.data.folded) return [node];
     const node2 = structuredClone(node);
     // We should not select a scope, otherwise it will be shown on top of inner pods.
     if (node2.type !== "SCOPE") {
@@ -109,13 +108,24 @@ export function updateView(get: Getter, set: Setter) {
       node2.selected = selectedPods.has(id);
     }
     let res = [node2];
-    res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
-    if (node.type === "SCOPE") {
+    if (!node.data.treeFolded) {
+      res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
+    }
+    if (node.type === "SCOPE" && !node.data.podFolded) {
       res = [...res, ...node.data.scopeChildrenIds.flatMap(dfs)];
     }
     return res;
   }
   const nodes = dfs("ROOT");
+  // Remove width and height to let reactflow measure them.
+  nodes.forEach((node) => {
+    // For scope node, setting mywidth/myheight has a small bug that the scope,
+    // when folded, is not positioned correctly with autoLayout.
+    if (node.type !== "SCOPE") {
+      node.width = undefined;
+      node.height = undefined;
+    }
+  });
   // compare old  and new structure, if changed, propagate symbol table
   // FIXME performance
   if (!compareMaps(oldStructure, newStructure)) {
@@ -190,17 +200,17 @@ export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
   updateView(get, set);
 });
 
-function toggleFold(get: Getter, set: Setter, id: string) {
+function toggleTreeFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  if (!node) throw new Error("Node not found");
+  myassert(node);
   nodesMap.set(
     id,
     produce(node, (node) => {
-      node.data.folded = !node.data.folded;
+      node.data.treeFolded = !node.data.treeFolded;
     })
   );
-  if (!node.data.folded) {
+  if (!node.data.treeFolded) {
     // This is a fold operation. This doesn't trigger auto-layout because
     // nodesMap sees no change.
     // debouncedAutoLayoutTree(get, set);
@@ -209,7 +219,23 @@ function toggleFold(get: Getter, set: Setter, id: string) {
   updateView(get, set);
 }
 
-export const ATOM_toggleFold = atom(null, toggleFold);
+export const ATOM_toggleTreeFold = atom(null, toggleTreeFold);
+
+function togglePodFold(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  nodesMap.set(
+    id,
+    produce(node, (node) => {
+      node.data.podFolded = !node.data.podFolded;
+    })
+  );
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_togglePodFold = atom(null, togglePodFold);
 
 export const ATOM_deleteSubtree = atom(
   null,
@@ -362,14 +388,13 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           // is changed due to content height changes.
           const node = nextNodes.find((n) => n.id === change.id);
           if (!node) throw new Error(`Node not found: ${change.id}`);
-          nodesMap.set(change.id, {
-            ...node,
-            width: node.width,
-            // Need to set height to undefined to let reactflow grow
-            // automatically according to the content. Even a width change will
-            // set the height.
-            height: node.type === "SCOPE" ? node.height : undefined,
-          } as AppNode);
+          // when the pod is not folded, we record the dimension change into
+          // mywidth/myheight
+          if (!node.data.podFolded) {
+            node.data.myheight = change.dimensions.height;
+            node.data.mywidth = change.dimensions.width;
+          }
+          nodesMap.set(change.id, node as AppNode);
         }
         break;
       case "position":

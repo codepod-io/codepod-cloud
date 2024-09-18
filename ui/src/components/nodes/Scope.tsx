@@ -13,7 +13,7 @@ import {
   SymbolTable,
   UnslurpButton,
 } from "./utils";
-import { Button, DropdownMenu, IconButton } from "@radix-ui/themes";
+import { Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { Ellipsis, NotebookPen } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
 import { ATOM_cutId } from "@/lib/store/atom";
@@ -213,17 +213,15 @@ export const ScopeNode = function ({ id }) {
   return (
     <div
       style={{
-        color: "red",
         width: "100%",
         height: "100%",
         border: cutId === id ? "3px dashed red" : "3px solid transparent",
-        backgroundColor: "rgba(255, 0, 0, 0.1)",
+        backgroundColor: "rgba(0, 0, 255, 0.05)",
       }}
       className="nodrag"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      Scope
       <motion.div
         animate={{
           opacity: hover ? 1 : 0,
@@ -234,7 +232,13 @@ export const ScopeNode = function ({ id }) {
       <Handle id="left" type="source" position={Position.Left} />
       <Handle id="right" type="source" position={Position.Right} />
       <SymbolTable id={id} />
-      {node.data.scopeChildrenIds.length === 0 && (
+      {node.data.podFolded && (
+        <Flex align="center" justify="center">
+          {/* FIXME This is the number of direct children. We should show the number of all descendants. */}
+          {node.data.scopeChildrenIds.length} pods folded
+        </Flex>
+      )}
+      {!node.data.podFolded && node.data.scopeChildrenIds.length === 0 && (
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
             style={{

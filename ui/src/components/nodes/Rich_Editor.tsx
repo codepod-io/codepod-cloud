@@ -42,7 +42,7 @@ import { css } from "@emotion/css";
 import { Extension } from "@tiptap/core";
 import { MyDropcursor } from "./MyDropCursor_tiptap";
 import { useAtomValue } from "jotai";
-import { ATOM_simpleAwareness } from "@/lib/store/yjsSlice";
+import { ATOM_nodesMap, ATOM_simpleAwareness } from "@/lib/store/yjsSlice";
 import { trpc } from "@/lib/trpc";
 import { myassert, myNanoId } from "@/lib/utils/utils";
 import { ATOM_repoData } from "@/lib/store/atom";
@@ -103,10 +103,15 @@ const urlResolveCache = new Map<string, { value: string; createdAt: Date }>();
 export function RichEditor({
   yXml,
   provider,
+  id,
 }: {
   yXml: Y.XmlFragment;
   provider: WebsocketProvider;
+  id: string;
 }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
   const simpleAwareness = useAtomValue(ATOM_simpleAwareness);
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
@@ -296,6 +301,36 @@ okay
     }
     // loadInitialHTML();
   }, [editor]);
+  if (node.data.podFolded)
+    return (
+      <div
+        className={css`
+          .bn-editor {
+            padding: 10px;
+            background-color: var(--gray-3);
+          }
+          .bn-side-menu .bn-button {
+            background-color: var(--sky-3);
+            transform: translateX(-5px);
+          }
+          .bn-side-menu .bn-button svg {
+            color: var(--blue-9);
+          }
+        `}
+        style={{
+          height: "50px",
+          width: "300px",
+          overflow: "hidden",
+        }}
+      >
+        <BlockNoteView
+          editor={editor}
+          slashMenu={false}
+          formattingToolbar={false}
+          editable={false}
+        ></BlockNoteView>
+      </div>
+    );
   return (
     <div
       // style={{
