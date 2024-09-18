@@ -165,43 +165,47 @@ export const DeleteSelectedButton = () => {
   return (
     <AlertDialog.Root>
       <AlertDialog.Trigger>
-        <Button color="red" variant="ghost" disabled={deleteRepos.isLoading}>
+        <Button
+          color="red"
+          variant="ghost"
+          disabled={deleteRepos.isLoading || selectedRepos.length === 0}
+        >
           Delete Selected
         </Button>
       </AlertDialog.Trigger>
       <AlertDialog.Content maxWidth="450px">
         <AlertDialog.Title>Delete Selected Repository</AlertDialog.Title>
         <AlertDialog.Description size="2">
-          Th following repos will be deleted:
-          {selectedRepos
-            .sort((a, b) => {
-              if (a.createdAt && b.createdAt) {
-                return (
-                  new Date(b.createdAt).getTime() -
-                  new Date(a.createdAt).getTime()
-                );
-              } else if (a.createdAt) {
-                return -1;
-              } else if (b.createdAt) {
-                return 1;
-              } else {
-                return 0;
-              }
-            })
-            .map((repo) => (
-              <div
-                key={repo.id}
-                style={{
-                  paddingLeft: "10px",
-                  // weight bold
-                  fontWeight: "bold",
-                }}
-              >
-                {repo.name || "Untitled"}
-              </div>
-            ))}
-          Are you sure?
+          The following repos will be deleted. Are you sure?
         </AlertDialog.Description>
+
+        {selectedRepos
+          .sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+              return (
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+              );
+            } else if (a.createdAt) {
+              return -1;
+            } else if (b.createdAt) {
+              return 1;
+            } else {
+              return 0;
+            }
+          })
+          .map((repo) => (
+            <div
+              key={repo.id}
+              style={{
+                paddingLeft: "10px",
+                // weight bold
+                fontWeight: "bold",
+              }}
+            >
+              {repo.name || "Untitled"}
+            </div>
+          ))}
 
         <Flex gap="3" mt="4" justify="end">
           <AlertDialog.Cancel>
