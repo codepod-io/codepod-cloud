@@ -29,7 +29,6 @@ function createCodeNode(
     dragHandle: ".custom-drag-handle",
     data: {
       treeChildrenIds: [],
-      isScope: false,
       lang,
     },
   };
@@ -45,7 +44,6 @@ function createRichNode(position: XYPosition): RichNodeType {
     dragHandle: ".custom-drag-handle",
     data: {
       treeChildrenIds: [],
-      isScope: false,
     },
   };
 }
@@ -60,7 +58,6 @@ function createScopeNode(position: XYPosition): ScopeNodeType {
     dragHandle: ".custom-drag-handle",
     data: {
       treeChildrenIds: [],
-      isScope: false,
       scopeChildrenIds: [],
     },
   };

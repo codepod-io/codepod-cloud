@@ -49,14 +49,12 @@ import { Box, Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 import { env } from "../lib/vars";
-import { SvgNode } from "./nodes/Scope";
 import { myassert } from "@/lib/utils/utils";
 
 const nodeTypes = {
   CODE: CodeNode,
   RICH: RichNode,
   SCOPE: ScopeNode,
-  SVG: SvgNode,
 };
 
 const edgeTypes = {

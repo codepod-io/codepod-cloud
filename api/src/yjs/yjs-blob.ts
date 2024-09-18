@@ -174,11 +174,8 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       id: "ROOT",
       type: "RICH",
       position: { x: 0, y: 0 },
-      width: 300,
       data: {
         treeChildrenIds: [pod1_id, pod2_id],
-        isScope: false,
-        folded: false,
       },
     };
     nodesMap.set("ROOT", rootNode);
@@ -189,12 +186,9 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       type: "CODE",
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: -74 },
-      width: 300,
       data: {
         treeChildrenIds: [],
         parent: { id: "ROOT", relation: "TREE" },
-        folded: false,
-        isScope: false,
         lang: "python",
       },
     };
@@ -203,14 +197,11 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       // a python code pod
       id: pod2_id,
       type: "CODE",
-      width: 300,
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: 97 },
       data: {
         treeChildrenIds: [],
         parent: { id: "ROOT", relation: "TREE" },
-        folded: false,
-        isScope: false,
         lang: "python",
       },
     };

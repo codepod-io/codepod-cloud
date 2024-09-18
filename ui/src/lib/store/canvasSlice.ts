@@ -132,25 +132,7 @@ export function updateView(get: Getter, set: Setter) {
     propagateAllST(get, set);
     oldStructure = newStructure;
   }
-
-  // generate the scope overlay SVG here
-  // for each node, start a SVG drawing covering it and all its children.
-  // node: {x,y,width,height}
-  const svgNodes = nodes
-    .filter((node) => node.data.isScope)
-    .map((node) => {
-      return {
-        id: node.id + "_SVG",
-        type: "SVG",
-        // position: { x: node.position.x, y: node.position.y },
-        position: { x: 0, y: 0 },
-        data: {
-          id: node.id,
-        },
-      };
-    });
-  set(ATOM_nodes, [...svgNodes, ...nodes]);
-
+  set(ATOM_nodes, nodes);
   // edges view
   // const edgesMap = get().getEdgesMap();
   // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
@@ -185,20 +167,6 @@ export function updateView(get: Getter, set: Setter) {
 }
 
 export const ATOM_updateView = atom(null, updateView);
-
-export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  if (!node) throw new Error("Node not found");
-  nodesMap.set(
-    id,
-    produce(node, (draft) => {
-      draft.data.isScope = !draft.data.isScope;
-    })
-  );
-  autoLayoutTree(get, set);
-  updateView(get, set);
-});
 
 function toggleTreeFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
