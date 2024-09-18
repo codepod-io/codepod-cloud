@@ -17,6 +17,7 @@ import {
   Dialog,
   TextField,
   Switch,
+  AlertDialog,
 } from "@radix-ui/themes";
 
 import {
@@ -77,9 +78,10 @@ import {
   ATOM_resolveAllPods,
 } from "@/lib/store/runtimeSlice";
 import { Runtime } from "./Sidebar_Kernels";
-import { ExportButtons } from "./Sidebar_Download";
+import { ExportPDF, ExportYDoc, ImportYDoc } from "./Sidebar_Download";
 import { MyTabs } from "./Sidebar_Tabs";
 import { TableofPods } from "./Sidebar_ToC";
+import { css } from "@emotion/css";
 
 function SidebarSettings() {
   const [showLineNumbers, setShowLineNumbers] = useAtom(ATOM_showLineNumbers);
@@ -199,15 +201,81 @@ function Versions() {
     },
   });
   useTick(1000);
+  const restoreVersion = yjsTrpc.restoreVersion.useMutation({
+    onSuccess() {
+      // reload the page
+      window.location.reload();
+    },
+  });
   return (
-    <Flex direction="column">
+    <Flex direction="column" gap="3">
       <Heading size="2" my="3">
         Versinos ({repoData.versions.length})
       </Heading>
       {repoData.versions.map((v) => (
-        <Flex key={v.id} gap="3">
-          <Box>{v.message}</Box>
-          <Box>{timeDifference(new Date(), new Date(v.time))} ago</Box>
+        <Flex
+          key={v.id}
+          direction="column"
+          className={css`
+            &:hover {
+              background-color: var(--gray-3);
+            }
+          `}
+        >
+          <Flex gap="3" align="center">
+            <Box>{v.message}</Box>
+
+            <Flex flexGrow="1" />
+
+            <AlertDialog.Root>
+              <AlertDialog.Trigger>
+                <Button variant="outline" color="red" size="1">
+                  Restore
+                </Button>
+              </AlertDialog.Trigger>
+              <AlertDialog.Content maxWidth="450px">
+                <AlertDialog.Title>Restore to version</AlertDialog.Title>
+                <AlertDialog.Description size="2">
+                  Are you sure? The current changes will be lost.
+                </AlertDialog.Description>
+
+                <Flex direction="column" mt="5">
+                  <Flex gap="3">
+                    Version:
+                    <Text color="blue">{v.message}</Text>
+                  </Flex>
+                  <Text color="gray">
+                    Committed {timeDifference(new Date(), new Date(v.time))} ago
+                  </Text>
+                </Flex>
+
+                <Flex gap="3" mt="4" justify="end">
+                  <AlertDialog.Cancel>
+                    <Button variant="soft" color="gray">
+                      Cancel
+                    </Button>
+                  </AlertDialog.Cancel>
+                  <AlertDialog.Action>
+                    <Button
+                      variant="solid"
+                      color="red"
+                      onClick={() => {
+                        restoreVersion.mutate({
+                          repoId: repoData.id,
+                          versionId: v.id,
+                        });
+                      }}
+                    >
+                      Restore
+                    </Button>
+                  </AlertDialog.Action>
+                </Flex>
+              </AlertDialog.Content>
+            </AlertDialog.Root>
+          </Flex>
+          <Text color="gray">
+            {timeDifference(new Date(), new Date(v.time))} ago
+          </Text>
         </Flex>
       ))}
       {/* Open a dialog for user to enter a commit message. */}
@@ -279,7 +347,7 @@ export function SidebarLeft() {
               <Heading size="2" my="3">
                 Export to ..
               </Heading>
-              <ExportButtons />
+              <ExportPDF />
               <Runtime />
             </Flex>
           ),
@@ -293,7 +361,9 @@ export function SidebarLeft() {
                   <Flex direction="column" gap="1">
                     <YjsSyncStatus />
                     <Heading size="2">Export to ..</Heading>
-                    <ExportButtons />
+                    <ExportPDF />
+                    <ExportYDoc />
+                    <ImportYDoc />
                     <Separator my="3" size="4" />
                     <Button
                       onClick={() => {
@@ -438,6 +508,7 @@ export function SidebarRight() {
                       Right Sidebar
                     </Heading>
                     <FpsMeter />
+                    <Versions />
                     <Heading size="2">ToC</Heading>
                     <TableofPods />
                     <Separator my="3" size="4" />
