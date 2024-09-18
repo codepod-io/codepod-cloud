@@ -45,6 +45,7 @@ import {
   Flex,
   IconButton,
   Spinner,
+  Text,
 } from "@radix-ui/themes";
 import { Check, Ellipsis, Play, ScissorsLineDashed, X } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
@@ -58,6 +59,7 @@ import {
   ATOM_resolvePod,
 } from "@/lib/store/runtimeSlice";
 import {
+  ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_resultChanged,
   ATOM_resultMap,
@@ -420,6 +422,26 @@ function useRunKey({ node }: { node: CodeNodeType }) {
   );
 }
 
+function FoldedCode({ id }) {
+  const codeMap = useAtomValue(ATOM_codeMap);
+  const ytext = codeMap.get(id);
+  if (!ytext) return <>Empty</>;
+  const code = ytext.toString();
+  const firstLine = code.split("\n")[0];
+  if (firstLine.length === 0) {
+    return (
+      <Text
+        style={{
+          opacity: 0,
+        }}
+      >
+        Empty
+      </Text>
+    );
+  }
+  return <>{firstLine}</>;
+}
+
 export const CodeNode = function ({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -437,81 +459,124 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const [hover, setHover] = useState(false);
 
+  if (node.data.podFolded) {
+    return (
+      <Flex
+        className="nodrag"
+        ref={ref}
+        style={{
+          width: "100px",
+          // This is the key to let the node auto-resize w.r.t. the content.
+          height: "auto",
+          paddingLeft: "10px",
+          // minHeight: "50px",
+          backdropFilter: "blur(10px)",
+          backgroundColor: "rgba(228, 228, 228, 0.5)",
+          borderRadius: "8px",
+          border: cutId === id ? "5px dashed red" : "5px solid transparent",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+        }}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <Flex direction="column">
+          {!env.READ_ONLY && (
+            <motion.div
+              animate={{
+                opacity: hover ? 1 : 0,
+              }}
+            >
+              <MyPodToolbar node={node} />
+            </motion.div>
+          )}
+          <Handle id="left" type="source" position={Position.Left} />
+          <Handle id="right" type="source" position={Position.Right} />
+          <FoldedCode id={id} />
+        </Flex>
+      </Flex>
+    );
+  }
+
   return (
     <div
-      // className="nodrag"
       style={{
-        width: "100%",
-        // This is the key to let the node auto-resize w.r.t. the content.
-        height: "auto",
-        // minHeight: "50px",
-        backdropFilter: "blur(10px)",
-        backgroundColor: "rgba(228, 228, 228, 0.5)",
-        // backgroundImage: "linear-gradient(200deg, #FDEB82, #F78FAD)",
-        // backgroundColor: "red",
-        // backgroundImage: "linear-gradient(200deg, #41D8DD, #5583EE)",
-        // backgroundImage: "linear-gradient(200deg, #FAF8F9, #F0EFF0)",
-        // padding: "8px",
-        borderRadius: "8px",
-        // border: isCutting ? "3px dash" : "3px solid",
-        // borderColor: focused ? "black" : "transparent",
-        border: cutId === id ? "5px dashed red" : "5px solid transparent",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+        width: node.data.mywidth,
+        minWidth: "300px",
       }}
-      className="nodrag"
-      ref={ref}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
     >
-      <Flex direction="column">
-        {!env.READ_ONLY && (
-          <motion.div
-            animate={{
-              opacity: hover ? 1 : 0,
+      <div
+        className="nodrag"
+        style={{
+          // This is the key to let the node auto-resize w.r.t. the content.
+          height: "auto",
+          // minHeight: "50px",
+          backdropFilter: "blur(10px)",
+          backgroundColor: "rgba(228, 228, 228, 0.5)",
+          // backgroundImage: "linear-gradient(200deg, #FDEB82, #F78FAD)",
+          // backgroundColor: "red",
+          // backgroundImage: "linear-gradient(200deg, #41D8DD, #5583EE)",
+          // backgroundImage: "linear-gradient(200deg, #FAF8F9, #F0EFF0)",
+          // padding: "8px",
+          borderRadius: "8px",
+          // border: isCutting ? "3px dash" : "3px solid",
+          // borderColor: focused ? "black" : "transparent",
+          border: cutId === id ? "5px dashed red" : "5px solid transparent",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+        }}
+        ref={ref}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <Flex direction="column">
+          {!env.READ_ONLY && (
+            <motion.div
+              animate={{
+                opacity: hover ? 1 : 0,
+              }}
+            >
+              <MyPodToolbar node={node} />
+            </motion.div>
+          )}
+          <MyMonaco node={node} />
+          <ResultBlock id={id} />
+          <SymbolTable id={id} />
+
+          <Handle id="left" type="source" position={Position.Left} />
+          <Handle id="right" type="source" position={Position.Right} />
+
+          <Box
+            style={{
+              position: "fixed",
+              bottom: 0,
+              right: 0,
+              transform: "translate(-50%, -50%)",
             }}
           >
-            <MyPodToolbar node={node} />
-          </motion.div>
-        )}
-        <MyMonaco node={node} />
-        <ResultBlock id={id} />
-        <SymbolTable id={id} />
+            {/* .py */}
+            {match(node.data.lang)
+              .with("python", () => <PythonLogo />)
+              .with("julia", () => <JuliaLogo />)
+              .with("javascript", () => <JavaScriptLogo />)
+              .with("racket", () => <RacketLogo />)
+              .otherwise(() => "??")}{" "}
+          </Box>
 
-        <Handle id="left" type="source" position={Position.Left} />
-        <Handle id="right" type="source" position={Position.Right} />
-
-        <Box
-          style={{
-            position: "fixed",
-            bottom: 0,
-            right: 0,
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          {/* .py */}
-          {match(node.data.lang)
-            .with("python", () => <PythonLogo />)
-            .with("julia", () => <JuliaLogo />)
-            .with("javascript", () => <JavaScriptLogo />)
-            .with("racket", () => <RacketLogo />)
-            .otherwise(() => "??")}{" "}
-        </Box>
-
-        <NodeResizeControl
-          minWidth={300}
-          minHeight={50}
-          // this allows the resize happens in X-axis only.
-          position="right"
-          // FIXME couldn't get the variant to work.
-          variant={"line" as any}
-          // variant={ResizeControlVariant.Line}
-          color="transparent"
-          style={{
-            border: "10px solid transparent",
-            transform: "translateX(-30%)",
-          }}
-        />
-      </Flex>
+          <NodeResizeControl
+            minWidth={300}
+            minHeight={50}
+            // this allows the resize happens in X-axis only.
+            position="right"
+            // FIXME couldn't get the variant to work.
+            variant={"line" as any}
+            // variant={ResizeControlVariant.Line}
+            color="transparent"
+            style={{
+              border: "10px solid transparent",
+              transform: "translateX(-30%)",
+            }}
+          />
+        </Flex>
+      </div>
     </div>
   );
 }

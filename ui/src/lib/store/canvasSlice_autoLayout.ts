@@ -42,7 +42,13 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
   const rootNode = nodesMap.get(id);
   // console.log("RootNode", rootNode);
   if (!rootNode) throw new Error("Root node not found");
-  function subtree(id: string) {
+  type TreeNode = {
+    id: string;
+    width: number;
+    height: number;
+    children: TreeNode[];
+  };
+  function subtree(id: string): TreeNode {
     const node = nodesMap.get(id);
     if (!node) throw new Error(`Node not found: ${id}`);
     const children = node.data.treeChildrenIds;
@@ -51,19 +57,21 @@ function layoutSubTree(nodesMap: Y.Map<AppNode>, id: string) {
       width: node.measured?.width || 0,
       height: node.measured?.height || 0,
       ...(scopeSizeMap.has(id) ? scopeSizeMap.get(id) : {}),
-      children: node.data.folded ? [] : children.map(subtree),
+      children: node.data.treeFolded ? [] : children.map(subtree),
     };
   }
-  function subtree_for_scope(node: ScopeNodeType) {
-    const scopeChildren = [...node.data.scopeChildrenIds];
+  function subtree_for_scope(node: ScopeNodeType): TreeNode {
+    const scopeChildren = node.data.podFolded
+      ? []
+      : [...node.data.scopeChildrenIds];
     return {
       id: node.id,
       width: 0,
       height: 0,
-      children: node.data.folded ? [] : scopeChildren.map(subtree),
+      children: node.data.podFolded ? [] : scopeChildren.map(subtree),
     };
   }
-  let data;
+  let data: TreeNode;
   if (rootNode.type === "SCOPE") {
     data = subtree_for_scope(rootNode);
   } else {

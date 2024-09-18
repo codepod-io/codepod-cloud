@@ -38,7 +38,7 @@ import {
   ATOM_nodes,
   ATOM_selectedPods,
   ATOM_selectPod,
-  ATOM_toggleFold,
+  ATOM_toggleTreeFold,
 } from "@/lib/store/canvasSlice";
 import { ATOM_codeMap, ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
@@ -57,7 +57,8 @@ function PodTreeItem({ id }) {
   const selectPod = useSetAtom(ATOM_selectPod);
   const setSelectedPods = useSetAtom(ATOM_selectedPods);
   const setCenterSelection = useSetAtom(ATOM_centerSelection);
-  const toggleFold = useSetAtom(ATOM_toggleFold);
+  const toggleTreeFold = useSetAtom(ATOM_toggleTreeFold);
+
   return (
     <Flex direction="column">
       <Flex align="center" gap="2">
@@ -128,16 +129,16 @@ function PodTreeItem({ id }) {
               padding: 0,
             }}
           >
-            {node.data.folded ? (
+            {node.data.treeFolded ? (
               <ChevronRight
                 onClick={() => {
-                  toggleFold(id);
+                  toggleTreeFold(id);
                 }}
               />
             ) : (
               <ChevronDown
                 onClick={() => {
-                  toggleFold(id);
+                  toggleTreeFold(id);
                 }}
               />
             )}
@@ -145,7 +146,7 @@ function PodTreeItem({ id }) {
         ) : null}
       </Flex>
 
-      {!node.data.folded && (
+      {!node.data.treeFolded && (
         <Flex direction="column">
           {node.type === "SCOPE" && (
             <Flex direction="column" style={{ paddingLeft: "15px" }}>

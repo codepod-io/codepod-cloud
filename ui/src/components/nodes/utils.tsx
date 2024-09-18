@@ -18,6 +18,10 @@ import {
   Wrench,
   CornerRightUp,
   CornerDownLeft,
+  Minimize,
+  Maximize,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -25,7 +29,7 @@ import {
   ATOM_deleteSubtree,
   ATOM_moveCut,
   ATOM_slurp,
-  ATOM_toggleFold,
+  ATOM_togglePodFold,
   ATOM_toggleScope,
   ATOM_unslurp,
   getAbsPos,
@@ -700,6 +704,29 @@ export function ToolbarAddPod({
   );
 }
 
+function PodFoldButton({ id }) {
+  const togglePodFold = useSetAtom(ATOM_togglePodFold);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+
+  return (
+    <IconButton
+      variant="ghost"
+      radius="small"
+      style={{
+        margin: 3,
+        padding: 0,
+      }}
+      onClick={() => {
+        togglePodFold(id);
+      }}
+    >
+      {node.data.podFolded ? <Maximize2 /> : <Minimize2 />}
+    </IconButton>
+  );
+}
+
 export function PodToolbar({
   id,
   children,
@@ -802,6 +829,7 @@ export function PodToolbar({
           </IconButton>
         </Tooltip>
       )}
+      <PodFoldButton id={id} />
       {children}
     </Flex>
   );
