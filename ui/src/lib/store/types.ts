@@ -8,7 +8,6 @@ type CommonData = {
   parent?: { id: string; relation: "TREE" | "SCOPE" };
   podFolded?: boolean;
   treeFolded?: boolean;
-  isScope: boolean;
   // Record the width and height of the node after resizing. These values are
   // used in the style of the component. The actual node.width and node.height
   // are set to undefined to let reactflow measure them, so that folding a pod

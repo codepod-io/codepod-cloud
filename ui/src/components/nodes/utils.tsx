@@ -30,7 +30,6 @@ import {
   ATOM_moveCut,
   ATOM_slurp,
   ATOM_togglePodFold,
-  ATOM_toggleScope,
   ATOM_unslurp,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
@@ -742,8 +741,6 @@ export function PodToolbar({
   const node = nodesMap.get(id);
   if (!node) throw new Error(`Node ${id} not found.`);
 
-  const toggleScope = useSetAtom(ATOM_toggleScope);
-
   return (
     <Flex
       align="center"
@@ -759,16 +756,6 @@ export function PodToolbar({
         cursor: "auto",
       }}
     >
-      {/* scope switch */}
-      {/* <Tooltip content="Scope">
-          <Switch
-            checked={node.data.isScope}
-            onClick={() => {
-              console.log("toggle scope", id);
-              toggleScope(id);
-            }}
-          />
-        </Tooltip> */}
       {/* Toolbar for adding new pod top/bottom/right */}
       {id !== "ROOT" && <ToolbarAddPod id={id} position="left" />}
       {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
