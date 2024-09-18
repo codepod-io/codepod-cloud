@@ -4,6 +4,7 @@ import { writeState } from "./yjs-blob";
 import prisma from "../prisma";
 import { myNanoId } from "./utils";
 import { ensureRepoEditAccess } from "../utils";
+import { closeDocNoWrite } from "./yjs-setupWS";
 
 export const appRouter = router({
   hello: publicProcedure.query(() => {
@@ -57,6 +58,72 @@ export const appRouter = router({
         return null;
       }
       return versions[0];
+    }),
+  restoreVersion: protectedProcedure
+    .input(z.object({ repoId: z.string(), versionId: z.string() }))
+    .mutation(async ({ input: { repoId, versionId }, ctx: { userId } }) => {
+      // check permission
+      await ensureRepoEditAccess({ repoId, userId });
+      const version = await prisma.versionedYDocBlob.findFirst({
+        where: { id: versionId },
+      });
+      if (!version) {
+        throw new Error("version not found");
+      }
+      await prisma.repo.update({
+        where: { id: repoId },
+        data: {
+          yDocBlob: {
+            update: {
+              blob: version.blob,
+              size: version.size,
+            },
+          },
+        },
+      });
+      // close existing connections
+      closeDocNoWrite(repoId);
+      return true;
+    }),
+  restoreYDoc: protectedProcedure
+    .input(
+      z.object({
+        repoId: z.string(),
+        yDocBlob: z.string(),
+      })
+    )
+    .mutation(async ({ input: { repoId, yDocBlob }, ctx: { userId } }) => {
+      // check permission
+      await ensureRepoEditAccess({ repoId, userId });
+      const repo = await prisma.repo.findFirst({
+        where: { id: repoId },
+        include: {
+          yDocBlob: true,
+        },
+      });
+      if (!repo) {
+        throw new Error("repo not found");
+      }
+      if (!repo.yDocBlob) {
+        throw new Error("yDocBlob not found");
+      }
+      const decodedBlob = Buffer.from(yDocBlob, "base64");
+
+      const size = Buffer.byteLength(yDocBlob);
+      await prisma.repo.update({
+        where: { id: repoId },
+        data: {
+          yDocBlob: {
+            update: {
+              blob: decodedBlob,
+              size,
+            },
+          },
+        },
+      });
+      // close existing connections
+      closeDocNoWrite(repoId);
+      return true;
     }),
 });
 

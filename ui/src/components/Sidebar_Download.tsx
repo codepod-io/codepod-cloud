@@ -18,6 +18,7 @@ import {
   Dialog,
   TextField,
   Switch,
+  AlertDialog,
 } from "@radix-ui/themes";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -30,10 +31,15 @@ import {
   ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_resultMap,
+  ATOM_ydoc,
 } from "@/lib/store/yjsSlice";
-import { ATOM_repoData } from "@/lib/store/atom";
 
-function downloadLink(dataUrl, fileName) {
+import * as Y from "yjs";
+
+import { ATOM_repoData } from "@/lib/store/atom";
+import { yjsTrpc } from "@/lib/trpc";
+
+function downloadLink(dataUrl: string, fileName: string) {
   let element = document.createElement("a");
   element.setAttribute("href", dataUrl);
   element.setAttribute("download", fileName);
@@ -120,11 +126,26 @@ function ExportSVG() {
   );
 }
 
+function getDateString() {
+  // Format the date as save-pdf_20240916-1118
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  const dateString = `${year}${month}${day}-${hours}${minutes}`;
+  return dateString;
+}
+
 /**
  * Use the default letter size. This is good for printing. User can adjust
  * portrait/landscape mode and the size of the paper.
  */
-function ExportPDF() {
+export function ExportPDF() {
   const { id: repoId } = useParams();
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
@@ -147,17 +168,7 @@ function ExportPDF() {
         return true;
       },
     }).then((dataUrl) => {
-      // Format the date as save-pdf_20240916-1118
-      const now = new Date();
-
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-
-      const dateString = `${year}${month}${day}-${hours}${minutes}`;
+      const dateString = getDateString();
 
       // Create a new iframe element
       const iframe = document.createElement("iframe");
@@ -210,12 +221,96 @@ function ExportPDF() {
   );
 }
 
-export function ExportButtons() {
+/**
+ * Download the ydoc, mainly for debugging.
+ */
+export function ExportYDoc() {
+  const ydoc = useAtomValue(ATOM_ydoc);
+  const [loading, setLoading] = useState(false);
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const onClick = () => {
+    setLoading(true);
+    const update = Y.encodeStateAsUpdate(ydoc);
+    // update is a Uint8Array
+    const blob = new Blob([update], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const dateString = getDateString();
+    const a = document.createElement("a");
+    a.href = url;
+    const filename =
+      (repoData.name || "Untitled").replaceAll(" ", "-") + "_" + dateString;
+    a.download = filename + ".ydoc";
+    a.click();
+    setLoading(false);
+  };
   return (
-    <Flex gap={"1"} direction={"column"}>
-      {/* <ExportJupyterNB /> */}
-      {/* <ExportSVG /> */}
-      <ExportPDF />
-    </Flex>
+    <Button variant="outline" size="1" onClick={onClick} disabled={loading}>
+      Download as YDoc
+    </Button>
+  );
+}
+
+export function ImportYDoc() {
+  const repoData = useAtomValue(ATOM_repoData);
+  const restoreYDoc = yjsTrpc.restoreYDoc.useMutation({
+    onSuccess: () => {
+      // refresh the page
+      window.location.reload();
+    },
+  });
+  myassert(repoData);
+  const onClick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".ydoc";
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files) return;
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const buffer = e.target?.result;
+        if (!buffer) return;
+        const update = new Uint8Array(buffer as ArrayBuffer);
+        const base64String = btoa(String.fromCharCode(...update));
+
+        // const doc = new Y.Doc();
+        // Y.applyUpdate(doc, update);
+        // setYdoc(doc);
+
+        restoreYDoc.mutate({ repoId: repoData.id, yDocBlob: base64String });
+      };
+      reader.readAsArrayBuffer(file);
+    };
+    input.click();
+  };
+  return (
+    <AlertDialog.Root>
+      <AlertDialog.Trigger>
+        <Button variant="outline" color="red" size="1">
+          Import YDoc
+        </Button>
+      </AlertDialog.Trigger>
+      <AlertDialog.Content maxWidth="450px">
+        <AlertDialog.Title>Import from yDoc file</AlertDialog.Title>
+        <AlertDialog.Description size="2">
+          Are you sure? This will overwrite the current document.
+        </AlertDialog.Description>
+
+        <Flex gap="3" mt="4" justify="end">
+          <AlertDialog.Cancel>
+            <Button variant="soft" color="gray">
+              Cancel
+            </Button>
+          </AlertDialog.Cancel>
+          <AlertDialog.Action>
+            <Button variant="solid" color="red" onClick={onClick}>
+              Select file
+            </Button>
+          </AlertDialog.Action>
+        </Flex>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
   );
 }

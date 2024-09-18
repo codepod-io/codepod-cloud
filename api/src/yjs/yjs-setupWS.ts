@@ -231,6 +231,42 @@ const closeConn = (doc: WSSharedDoc, conn: WebSocket) => {
 };
 
 /**
+ * Close the connection without writing the state to the database.
+ */
+const closeConnNoWrite = (doc: WSSharedDoc, conn: WebSocket) => {
+  if (doc.conns.has(conn)) {
+    /**
+     * @type {Set<number>}
+     */
+    // @ts-ignore
+    const controlledIds = doc.conns.get(conn);
+    if (!controlledIds) throw new Error("This should not happen");
+    doc.conns.delete(conn);
+    awarenessProtocol.removeAwarenessStates(
+      doc.awareness,
+      Array.from(controlledIds),
+      null
+    );
+  }
+  conn.close();
+};
+
+/**
+ * Close all connections of a document without writing the state to the
+ * database. This is to be used when we restore a document from a snapshot.
+ */
+export function closeDocNoWrite(repoId: string) {
+  const doc = docs.get(repoId);
+  if (doc) {
+    doc.conns.forEach((_, conn) => {
+      closeConnNoWrite(doc, conn);
+    });
+    doc.destroy();
+    docs.delete(repoId);
+  }
+}
+
+/**
  * @param {WSSharedDoc} doc
  * @param {any} conn
  * @param {Uint8Array} m
