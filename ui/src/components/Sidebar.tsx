@@ -56,7 +56,9 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_autoLayoutTree,
   ATOM_centerSelection,
+  ATOM_foldAllPods,
   ATOM_nodes,
+  ATOM_unfoldAllPods,
 } from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
@@ -345,11 +347,52 @@ function Versions() {
   );
 }
 
-export function SidebarLeft() {
+function DebugPanel() {
   const autoLayout = useSetAtom(ATOM_autoLayoutTree);
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
+  const foldAllPods = useSetAtom(ATOM_foldAllPods);
+  const unFoldAllPods = useSetAtom(ATOM_unfoldAllPods);
+  return (
+    <Flex direction="column" gap="1">
+      <YjsSyncStatus />
+      <Heading size="2">Export to ..</Heading>
+      <ExportPDF />
+      <ExportYDoc />
+      <ImportYDoc />
+      <Separator my="3" size="4" />
+      <Button
+        onClick={() => {
+          autoLayout();
+        }}
+        variant="outline"
+      >
+        Layout
+      </Button>
+      <Button onClick={() => parseAllPods()} variant="outline">
+        Parse All
+      </Button>
+      <Button onClick={() => propagateAllSt()} variant="outline">
+        Propagate All
+      </Button>
+      <Button onClick={() => resolveAllPods()} variant="outline">
+        Resolve All
+      </Button>
+      <Button onClick={() => foldAllPods()} variant="outline">
+        Fold All
+      </Button>
+      <Button onClick={() => unFoldAllPods()} variant="outline">
+        Unfold All
+      </Button>
+
+      <Separator my="3" size="4" />
+      <Runtime />
+    </Flex>
+  );
+}
+
+export function SidebarLeft() {
   const debugMode = useAtomValue(ATOM_debugMode);
   return (
     <MyTabs
@@ -376,36 +419,7 @@ export function SidebarLeft() {
               {
                 key: "Debug",
                 icon: <Construction />,
-                content: (
-                  <Flex direction="column" gap="1">
-                    <YjsSyncStatus />
-                    <Heading size="2">Export to ..</Heading>
-                    <ExportPDF />
-                    <ExportYDoc />
-                    <ImportYDoc />
-                    <Separator my="3" size="4" />
-                    <Button
-                      onClick={() => {
-                        autoLayout();
-                      }}
-                      variant="outline"
-                    >
-                      Layout
-                    </Button>
-                    <Button onClick={() => parseAllPods()} variant="outline">
-                      Parse All
-                    </Button>
-                    <Button onClick={() => propagateAllSt()} variant="outline">
-                      Propagate All
-                    </Button>
-                    <Button onClick={() => resolveAllPods()} variant="outline">
-                      Resolve All
-                    </Button>
-
-                    <Separator my="3" size="4" />
-                    <Runtime />
-                  </Flex>
-                ),
+                content: <DebugPanel />,
               },
             ]
           : []),

@@ -205,6 +205,42 @@ function togglePodFold(get: Getter, set: Setter, id: string) {
 
 export const ATOM_togglePodFold = atom(null, togglePodFold);
 
+function foldAllPods(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  nodesMap.forEach((node) => {
+    if (node.type !== "SCOPE") {
+      nodesMap.set(
+        node.id,
+        produce(node, (node) => {
+          node.data.podFolded = true;
+        })
+      );
+    }
+  });
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_foldAllPods = atom(null, foldAllPods);
+
+function unfoldAllPods(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  nodesMap.forEach((node) => {
+    if (node.type !== "SCOPE") {
+      nodesMap.set(
+        node.id,
+        produce(node, (node) => {
+          node.data.podFolded = false;
+        })
+      );
+    }
+  });
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_unfoldAllPods = atom(null, unfoldAllPods);
+
 export const ATOM_deleteSubtree = atom(
   null,
   (get: Getter, set: Setter, todelete: string) => {
@@ -383,7 +419,7 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
     .map((c) => c.type)
     .filter((t) => t !== "select");
   if (effectiveChanges.length > 0) {
-    // console.log("effectiveChanges", effectiveChanges);
+    console.log("effectiveChanges", effectiveChanges);
     // debouncedAutoLayoutTree(get, set);
     autoLayoutTree(get, set);
   }
