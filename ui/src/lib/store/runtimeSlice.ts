@@ -17,6 +17,7 @@ import { ParseResult } from "../parser";
 import { parseJavascript } from "../parserJavascript";
 import { parseJulia } from "../parserJulia";
 import { myassert } from "../utils/utils";
+import { ATOM_disableCodeRewrite } from "./settingSlice";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -407,7 +408,7 @@ function setRunning(get: Getter, set: Setter, podId: string) {
   resultMap.set(podId, { running: true, data: [] });
 }
 
-function preprocessChain(get: Getter, set: Setter, ids: string[]) {
+function preprocessChainWithRewrite(get: Getter, set: Setter, ids: string[]) {
   let specs = ids.map((id) => {
     const nodesMap = get(ATOM_nodesMap);
     const node = nodesMap.get(id);
@@ -437,6 +438,34 @@ function preprocessChain(get: Getter, set: Setter, ids: string[]) {
     }
     return false;
   });
+}
+
+function preprocessChainNoRewrite(get: Getter, set: Setter, ids: string[]) {
+  let specs = ids.map((id) => {
+    const nodesMap = get(ATOM_nodesMap);
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found for id: ${id}`);
+    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
+    const codeMap = get(ATOM_codeMap);
+    const code = codeMap.get(id)?.toString() || "";
+    const lang = node?.data.lang;
+    return { podId: id, code, kernelName: lang || "python" };
+  });
+  return specs.filter(({ podId, code }) => {
+    if (code.length > 0) {
+      clearResults(get, set, podId);
+      setRunning(get, set, podId);
+      return true;
+    }
+    return false;
+  });
+}
+
+function preprocessChain(get: Getter, set: Setter, ids: string[]) {
+  if (get(ATOM_disableCodeRewrite)) {
+    return preprocessChainNoRewrite(get, set, ids);
+  }
+  return preprocessChainWithRewrite(get, set, ids);
 }
 
 export const ATOM_preprocessChain = atom(null, preprocessChain);
