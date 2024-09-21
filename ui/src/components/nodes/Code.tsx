@@ -465,7 +465,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         className="nodrag"
         ref={ref}
         style={{
-          width: "100px",
+          width: "200px",
           // This is the key to let the node auto-resize w.r.t. the content.
           height: "auto",
           paddingLeft: "10px",
