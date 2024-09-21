@@ -67,7 +67,18 @@ const theme: monaco.editor.IStandaloneThemeData = {
     "editor.lineHighlightBackground": "#00ff3320",
   },
 };
+const themeFolded: monaco.editor.IStandaloneThemeData = {
+  base: "vs",
+  inherit: true,
+  rules: [],
+  colors: {
+    // dark gray
+    "editor.background": "#333333",
+    "editor.lineHighlightBackground": "#00ff3320",
+  },
+};
 monaco.editor.defineTheme("codepod", theme);
+monaco.editor.defineTheme("codepod-folded", themeFolded);
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
     increaseIndentPattern:
@@ -545,6 +556,20 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
   }, [showLineNumbers]);
 
   useEffect(() => {
+    if (editor) {
+      editor.updateOptions({
+        readOnly: node.data.podFolded
+          ? true
+          : env.READ_ONLY || editMode !== "edit",
+        scrollbar: {
+          handleMouseWheel: node.data.podFolded ? false : true,
+        },
+        // theme: node.data.podFolded ? "codepod-folded" : "codepod",
+      });
+    }
+  }, [node.data.podFolded]);
+
+  useEffect(() => {
     if (editorRef.current) {
       const editor = monaco.editor.create(editorRef.current, {
         // value: `function hello() {
@@ -553,7 +578,9 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
         language: lang === "racket" ? "scheme" : lang,
         theme: "codepod",
         selectOnLineNumbers: true,
-        readOnly: env.READ_ONLY || editMode !== "edit",
+        readOnly: node.data.podFolded
+          ? true
+          : env.READ_ONLY || editMode !== "edit",
         fontSize: 14,
         // Add padding for showing user awareness.
         padding: {
@@ -578,6 +605,7 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
         lineNumbers: showLineNumbers ? "on" : "off",
         scrollbar: {
           alwaysConsumeMouseWheel: false,
+          handleMouseWheel: node.data.podFolded ? false : true,
           vertical: "hidden",
         },
         renderLineHighlight: "line",
@@ -594,6 +622,31 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
       };
     }
   }, []);
+
+  if (node.data.podFolded) {
+    return (
+      <div
+        className={css`
+          .monaco-editor {
+            outline: 0;
+            border-radius: 4px;
+            background-color: gray;
+            --vscode-editor-background: var(--gray-5);
+          }
+          .overflow-guard {
+            border-radius: 4px;
+          }
+        `}
+        ref={editorRef}
+        style={{
+          height: "50px",
+          width: "300px",
+          overflow: "hidden",
+          backgroundColor: "gray",
+        }}
+      />
+    );
+  }
 
   return (
     <div

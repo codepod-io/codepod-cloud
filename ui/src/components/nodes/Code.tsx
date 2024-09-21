@@ -459,48 +459,10 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const [hover, setHover] = useState(false);
 
-  if (node.data.podFolded) {
-    return (
-      <Flex
-        className="nodrag"
-        ref={ref}
-        style={{
-          width: "200px",
-          // This is the key to let the node auto-resize w.r.t. the content.
-          height: "auto",
-          paddingLeft: "10px",
-          // minHeight: "50px",
-          backdropFilter: "blur(10px)",
-          backgroundColor: "rgba(228, 228, 228, 0.5)",
-          borderRadius: "8px",
-          border: cutId === id ? "5px dashed red" : "5px solid transparent",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
-        }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-      >
-        <Flex direction="column">
-          {!env.READ_ONLY && (
-            <motion.div
-              animate={{
-                opacity: hover ? 1 : 0,
-              }}
-            >
-              <MyPodToolbar node={node} />
-            </motion.div>
-          )}
-          <Handle id="left" type="source" position={Position.Left} />
-          <Handle id="right" type="source" position={Position.Right} />
-          <FoldedCode id={id} />
-        </Flex>
-      </Flex>
-    );
-  }
-
   return (
     <div
       style={{
-        width: node.data.mywidth,
+        width: node.data.podFolded ? undefined : node.data.mywidth,
         minWidth: "300px",
       }}
     >
