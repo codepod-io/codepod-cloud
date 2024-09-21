@@ -49,6 +49,7 @@ import { runtimeTrpc, trpc, yjsTrpc } from "@/lib/trpc";
 import {
   ATOM_copilotManualMode,
   ATOM_debugMode,
+  ATOM_disableCodeRewrite,
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -89,6 +90,9 @@ function SidebarSettings() {
     ATOM_copilotManualMode
   );
   const [debugMode, setDebugMode] = useAtom(ATOM_debugMode);
+  const [disableCodeRewrite, setDisableCodeRewrite] = useAtom(
+    ATOM_disableCodeRewrite
+  );
   const updateUserSetting = trpc.user.updateUserSetting.useMutation();
 
   return (
@@ -122,6 +126,21 @@ function SidebarSettings() {
             disabled
           />
           <Text size="3">Trigger Copilot Manually</Text>
+        </Flex>
+      </Tooltip>
+      <Tooltip side="right" content={"Disable Code Rewrite"}>
+        <Flex gap="3" align="center">
+          <Switch
+            size="3"
+            checked={disableCodeRewrite}
+            onClick={(e) => {
+              setDisableCodeRewrite(!disableCodeRewrite);
+              // updateUserSetting.mutate({
+              //   disableCodeRewrite: !disableCodeRewrite,
+              // });
+            }}
+          />
+          <Text size="3">Disable Code Rewrite</Text>
         </Flex>
       </Tooltip>
       <Separator size="4" />
