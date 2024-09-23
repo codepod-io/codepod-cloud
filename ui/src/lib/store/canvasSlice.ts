@@ -132,7 +132,25 @@ export function updateView(get: Getter, set: Setter) {
     propagateAllST(get, set);
     oldStructure = newStructure;
   }
-  set(ATOM_nodes, nodes);
+
+  // generate the scope overlay SVG here
+  // for each node, start a SVG drawing covering it and all its children.
+  // node: {x,y,width,height}
+  const svgNodes = nodes
+    .filter((node) => node.data.isScope)
+    .map((node) => {
+      return {
+        id: node.id + "_SVG",
+        type: "SVG",
+        // position: { x: node.position.x, y: node.position.y },
+        position: { x: 0, y: 0 },
+        data: {
+          id: node.id,
+        },
+      };
+    });
+  set(ATOM_nodes, [...svgNodes, ...nodes]);
+
   // edges view
   // const edgesMap = get().getEdgesMap();
   // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
@@ -167,6 +185,20 @@ export function updateView(get: Getter, set: Setter) {
 }
 
 export const ATOM_updateView = atom(null, updateView);
+
+export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) throw new Error("Node not found");
+  nodesMap.set(
+    id,
+    produce(node, (draft) => {
+      draft.data.isScope = !draft.data.isScope;
+    })
+  );
+  autoLayoutTree(get, set);
+  updateView(get, set);
+});
 
 function toggleTreeFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
@@ -374,6 +406,8 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   //   changes.map((c) => c.type)
   // );
 
+  let shouldAutoLayout = false;
+
   changes.forEach((change) => {
     switch (change.type) {
       case "add":
@@ -386,6 +420,8 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           // There's a weird dimencion change event fired at the end of
           // resizing a node.
           if (!change.dimensions) return;
+          // if change.id is xxx_SVG, it's a SVG node, we ignore it.
+          if (change.id.endsWith("_SVG")) return;
 
           // Since CodeNode doesn't have a height, this dimension change will
           // be filed for CodeNode at the beginning or anytime the node height
@@ -399,6 +435,7 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
             node.data.mywidth = change.dimensions.width;
           }
           nodesMap.set(change.id, node as AppNode);
+          shouldAutoLayout = true;
         }
         break;
       case "position":
@@ -415,15 +452,12 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
         throw new Error(`Unknown change type: ${change.type}`);
     }
   });
-  const effectiveChanges = changes
-    .map((c) => c.type)
-    .filter((t) => t !== "select");
-  if (effectiveChanges.length > 0) {
-    console.log("effectiveChanges", effectiveChanges);
+  if (shouldAutoLayout) {
+    console.log("autoLayout triggerred by dimension change");
     // debouncedAutoLayoutTree(get, set);
     autoLayoutTree(get, set);
+    updateView(get, set);
   }
-  updateView(get, set);
 }
 
 const debouncedAutoLayoutTree = debounce(

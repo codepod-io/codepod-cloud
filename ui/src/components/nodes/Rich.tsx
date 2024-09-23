@@ -20,7 +20,14 @@ import {
   UnslurpButton,
 } from "./utils";
 
-import { Box, Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
+import {
+  Box,
+  Button,
+  DropdownMenu,
+  Flex,
+  IconButton,
+  Switch,
+} from "@radix-ui/themes";
 import { Ellipsis, RemoveFormatting, ScissorsLineDashed } from "lucide-react";
 import { ATOM_cutId, ATOM_editMode } from "@/lib/store/atom";
 import {
@@ -30,12 +37,17 @@ import {
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { env } from "@/lib/vars";
-import { ATOM_addScope } from "@/lib/store/canvasSlice";
+import { ATOM_addScope, ATOM_toggleScope } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 import { RichEditor } from "./Rich_Editor";
+import { myassert } from "@/lib/utils/utils";
 
 function MyPodToolbar({ id }) {
   const addScope = useSetAtom(ATOM_addScope);
+  const toggleScope = useSetAtom(ATOM_toggleScope);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
   return (
     <PodToolbar id={id}>
       {/* The "more" button */}
@@ -53,7 +65,25 @@ function MyPodToolbar({ id }) {
               <Ellipsis />
             </IconButton>
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content>
+          <DropdownMenu.Content color="yellow">
+            {id !== "ROOT" && (
+              <DropdownMenu.Item
+                onSelect={(e) => {
+                  e.preventDefault();
+                }}
+                asChild
+              >
+                <Flex
+                  onClick={() => {
+                    toggleScope(id);
+                  }}
+                >
+                  Scope
+                  <Switch checked={node.data.isScope} color="blue" />
+                </Flex>
+              </DropdownMenu.Item>
+            )}
+
             {/* Structural edit */}
             <DropdownMenu.Item
               onSelect={() => {

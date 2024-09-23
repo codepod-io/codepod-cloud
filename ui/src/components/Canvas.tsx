@@ -20,7 +20,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
-import { ScopeNode } from "./nodes/Scope";
+import { SvgNode } from "./nodes/Scope";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
@@ -54,7 +54,7 @@ import { myassert } from "@/lib/utils/utils";
 const nodeTypes = {
   CODE: CodeNode,
   RICH: RichNode,
-  SCOPE: ScopeNode,
+  SVG: SvgNode,
 };
 
 const edgeTypes = {
