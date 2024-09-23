@@ -45,6 +45,7 @@ import {
   Flex,
   IconButton,
   Spinner,
+  Switch,
   Text,
 } from "@radix-ui/themes";
 import { Check, Ellipsis, Play, ScissorsLineDashed, X } from "lucide-react";
@@ -71,7 +72,7 @@ import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType, ScopeNodeType } from "@/lib/store/types";
-import { ATOM_addScope } from "@/lib/store/canvasSlice";
+import { ATOM_addScope, ATOM_toggleScope } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 
 function Timer({ lastExecutedAt }) {
@@ -296,6 +297,7 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
   const addScope = useSetAtom(ATOM_addScope);
+  const toggleScope = useSetAtom(ATOM_toggleScope);
 
   return (
     <PodToolbar id={id}>
@@ -329,7 +331,7 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
             <Ellipsis />
           </IconButton>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
+        <DropdownMenu.Content color="yellow">
           <DropdownMenu.Item
             shortcut="⇧ ⏎"
             onSelect={() => {
@@ -360,6 +362,22 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
 
           {/* Structural edit */}
           <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault();
+            }}
+            asChild
+          >
+            <Flex
+              onClick={() => {
+                toggleScope(id);
+              }}
+            >
+              Scope
+              <Switch checked={node.data.isScope} color="blue" />
+            </Flex>
+          </DropdownMenu.Item>
+
           <DropdownMenu.Item
             onSelect={() => {
               addScope(id);

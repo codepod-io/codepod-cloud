@@ -917,7 +917,7 @@ export function DeleteButton({ id }) {
       }}
       trigger={
         <>
-          <Trash2 color="red" /> Delete Tree
+          <Trash2 /> Delete Tree
         </>
       }
       title="This will delete the entire subtree."

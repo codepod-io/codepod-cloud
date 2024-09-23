@@ -6,6 +6,7 @@ type CommonData = {
   // common data
   treeChildrenIds: string[];
   parent?: { id: string; relation: "TREE" | "SCOPE" };
+  isScope?: boolean;
   podFolded?: boolean;
   treeFolded?: boolean;
   // Record the width and height of the node after resizing. These values are
