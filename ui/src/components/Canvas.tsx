@@ -168,6 +168,9 @@ function CanvasImpl() {
     maxWait: 5000,
   });
 
+  useForce();
+  // useForce(draggingNodeRef);
+
   return (
     <Flex
       style={{
@@ -325,7 +328,9 @@ function CanvasImpl() {
 export function Canvas() {
   return (
     <ReactFlowProvider>
-      <CanvasImplWrap />
+      {/* <CanvasImplWrap /> */}
+      <LayoutFlow />
+      {/* <ColaLayoutFlow /> */}
     </ReactFlowProvider>
   );
 }
