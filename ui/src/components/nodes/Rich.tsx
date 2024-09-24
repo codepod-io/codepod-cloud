@@ -9,6 +9,8 @@ import {
   NodeProps,
 } from "@xyflow/react";
 
+import * as Y from "yjs";
+
 // Local Imports
 
 import { DeleteButton, PodToolbar, SymbolTable, ToolbarAddPod } from "./utils";
@@ -16,10 +18,12 @@ import { DeleteButton, PodToolbar, SymbolTable, ToolbarAddPod } from "./utils";
 import {
   Box,
   Button,
+  Text,
   DropdownMenu,
   Flex,
   IconButton,
   Switch,
+  Heading,
 } from "@radix-ui/themes";
 import {
   CornerDownLeft,
@@ -128,6 +132,40 @@ function MyPodToolbar({ id }) {
   );
 }
 
+function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
+  const blockGroup = yXmlFragment.get(0);
+  if (
+    blockGroup instanceof Y.XmlElement &&
+    blockGroup.nodeName === "blockGroup"
+  ) {
+    const blockContainer = blockGroup.get(0);
+    if (
+      blockContainer instanceof Y.XmlElement &&
+      blockContainer.nodeName === "blockContainer"
+    ) {
+      let heading = blockContainer.get(0);
+      if (heading instanceof Y.XmlElement) {
+        if (heading.nodeName === "heading") {
+          const text = heading.get(0);
+          if (text) {
+            return <Heading>{text.toString()}</Heading>;
+          }
+        } else {
+          // This is plain text.
+          // recursively get children until plain text
+          while (heading && !(heading instanceof Y.Text)) {
+            heading = heading.get(0);
+          }
+          if (heading) {
+            return <Text>{heading.toString().substring(0, 10)} ..</Text>;
+          }
+        }
+      }
+    }
+  }
+  return <Text>Folded Note</Text>;
+}
+
 const RichEditorWrapper = ({ id }: { id: string }) => {
   // the Yjs extension for Remirror
   const [provider] = useAtom(ATOM_provider);
@@ -141,6 +179,20 @@ const RichEditorWrapper = ({ id }: { id: string }) => {
   if (!provider) return null;
   return <RichEditor yXml={yXml} provider={provider} id={id} />;
 };
+
+function FoldedRichPod({ id }: { id: string }) {
+  const [provider] = useAtom(ATOM_provider);
+
+  const [richMap] = useAtom(ATOM_richMap);
+  if (!richMap.has(id)) {
+    throw new Error("richMap does not have id " + id);
+  }
+  const yXml = richMap.get(id);
+  if (!yXml) return null;
+  if (!provider) return null;
+  const title = getTitleFromYXml(yXml);
+  return title;
+}
 
 /**
  * The React Flow node.
@@ -157,6 +209,65 @@ export const RichNode = function ({
   const node = nodesMap.get(id);
   const cutId = useAtomValue(ATOM_cutId);
   if (!node) return null;
+
+  if (node.data.podFolded) {
+    return (
+      <div
+        className={`nodrag`}
+        style={{
+          minWidth: "200px",
+        }}
+      >
+        <div
+          style={{
+            // This is the key to let the node auto-resize w.r.t. the content.
+            height: "auto",
+
+            backdropFilter: "blur(10px)",
+            backgroundColor: "rgba(228, 228, 228, 0.5)",
+            // padding: "8px",
+            borderRadius: "8px",
+            // border: "3px solid",
+            // borderColor: focused ? "black" : "transparent",
+            border: cutId === id ? "3px dashed red" : "3px solid transparent",
+            // add shadow
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+            paddingLeft: "10px",
+          }}
+        >
+          <div
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              // backgroundColor: "white",
+              cursor: "auto",
+              // This is required to remove the weird corner of the border.
+              borderRadius: "5px",
+            }}
+          >
+            {!env.READ_ONLY && (
+              <motion.div
+                animate={{
+                  opacity: hover ? 1 : 0,
+                }}
+              >
+                <MyPodToolbar id={id} />
+              </motion.div>
+            )}
+
+            <FoldedRichPod id={id} />
+
+            <SymbolTable id={id} />
+
+            <Handle id="left" type="source" position={Position.Left} />
+            <Handle id="right" type="source" position={Position.Right} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
