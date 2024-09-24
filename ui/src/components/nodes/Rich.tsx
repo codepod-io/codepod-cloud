@@ -18,6 +18,7 @@ import { DeleteButton, PodToolbar, SymbolTable, ToolbarAddPod } from "./utils";
 import {
   Box,
   Button,
+  Text,
   DropdownMenu,
   Flex,
   IconButton,
@@ -131,7 +132,7 @@ function MyPodToolbar({ id }) {
   );
 }
 
-function getTitleFromYXml(yXmlFragment: Y.XmlFragment): string | null {
+function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
   const blockGroup = yXmlFragment.get(0);
   if (
     blockGroup instanceof Y.XmlElement &&
@@ -142,16 +143,27 @@ function getTitleFromYXml(yXmlFragment: Y.XmlFragment): string | null {
       blockContainer instanceof Y.XmlElement &&
       blockContainer.nodeName === "blockContainer"
     ) {
-      const heading = blockContainer.get(0);
-      if (heading instanceof Y.XmlElement && heading.nodeName === "heading") {
-        const text = heading.get(0);
-        if (text) {
-          return text.toString();
+      let heading = blockContainer.get(0);
+      if (heading instanceof Y.XmlElement) {
+        if (heading.nodeName === "heading") {
+          const text = heading.get(0);
+          if (text) {
+            return <Heading>{text.toString()}</Heading>;
+          }
+        } else {
+          // This is plain text.
+          // recursively get children until plain text
+          while (heading && !(heading instanceof Y.Text)) {
+            heading = heading.get(0);
+          }
+          if (heading) {
+            return <Text>{heading.toString().substring(0, 10)} ..</Text>;
+          }
         }
       }
     }
   }
-  return null;
+  return <Text>Folded Note</Text>;
 }
 
 const RichEditorWrapper = ({ id }: { id: string }) => {
@@ -179,7 +191,7 @@ function FoldedRichPod({ id }: { id: string }) {
   if (!yXml) return null;
   if (!provider) return null;
   const title = getTitleFromYXml(yXml);
-  return <Heading>{title}</Heading>;
+  return title;
 }
 
 /**
