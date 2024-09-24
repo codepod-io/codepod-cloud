@@ -874,37 +874,22 @@ export function SymbolTable({ id }) {
           transform: "translateY(-100%) translateY(-10px)",
         }}
         gap="4"
+        wrap="wrap"
       >
         {[...selfSt.keys()].map((key) => (
           <Flex align="center" key={key}>
-            <Button
-              onClick={() => {
-                // jump to the node
-                const targetId = selfSt.get(key);
-                myassert(targetId);
-                const targetNode = nodesMap.get(targetId);
-                if (!targetNode) return;
-                const pos = getAbsPos(targetNode, nodesMap);
-                reactFlowInstance.setCenter(
-                  pos.x + (targetNode.measured?.width || 0) / 2,
-                  pos.y + (targetNode.measured?.height || 0) / 2,
-                  {
-                    zoom: reactFlowInstance.getZoom(),
-                    duration: 800,
-                  }
-                );
+            <code
+              style={{
+                fontSize: "2.5em",
+                color: "black",
+                // lineHeight: "var(--line-height-1)",
+                lineHeight: "10px",
+                // do not wrap
+                whiteSpace: "nowrap",
               }}
-              variant="ghost"
             >
-              <code
-                style={{
-                  fontSize: "3em",
-                  color: "black",
-                }}
-              >
-                {key}
-              </code>
-            </Button>
+              {key}
+            </code>
           </Flex>
         ))}
       </Flex>

@@ -489,7 +489,7 @@ function FoldedCode({ id }) {
       </Text>
     );
   }
-  return <>{firstLine}</>;
+  return <>{firstLine.substring(0, 10)} ..</>;
 }
 
 export const CodeNode = function ({ id }) {
@@ -530,6 +530,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         onMouseLeave={() => setHover(false)}
       >
         <Flex direction="column">
+          <SymbolTable id={id} />
           {!env.READ_ONLY && (
             <motion.div
               animate={{
