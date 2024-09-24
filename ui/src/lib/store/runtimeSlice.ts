@@ -201,7 +201,8 @@ function propagateST(get: Getter, set: Setter, id: string) {
   if (node.type !== "CODE") return;
   const parseResult = get(getOrCreate_ATOM_parseResult(id));
   // this only for updating selfSt
-  const selfSt = new Map<string, string>();
+  // const selfSt = new Map<string, string>();
+  const selfSt = get(getOrCreate_ATOM_selfST(id));
   parseResult.annotations
     .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
     .forEach((annotation) => {
