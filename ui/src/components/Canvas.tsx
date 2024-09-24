@@ -27,7 +27,6 @@ import HelperLines from "./HelperLines";
 
 import { ContextMenu, useContextMenu, useUpload } from "./canvas/ContextMenu";
 import { useAnimatedNodes, useCopyPaste } from "./canvas/helpers";
-import { useJump } from "./canvas/jump";
 import {
   ATOM_edges,
   ATOM_helperLineHorizontal,
@@ -67,7 +66,6 @@ const edgeTypes = {
  */
 function CanvasImplWrap() {
   useCopyPaste();
-  useJump();
   return (
     <Flex flexGrow={"1"} position="relative">
       <CanvasImpl />

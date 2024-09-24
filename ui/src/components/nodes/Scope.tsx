@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
-import { AppNode, ScopeNodeType } from "@/lib/store/types";
+import { AppNode } from "@/lib/store/types";
 
 import * as Y from "yjs";
 import { XYPosition } from "@xyflow/react";

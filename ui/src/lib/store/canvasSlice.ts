@@ -15,7 +15,7 @@ import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
 import { myassert, myNanoId } from "../utils/utils";
-import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
+import { AppNode } from "./types";
 
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
@@ -70,9 +70,10 @@ function selectPod(
 
 export const ATOM_selectPod = atom(null, selectPod);
 
-let oldStructure = new Map<string, string>();
+type T_id2parent = Map<string, string | undefined>;
+let oldStructure: T_id2parent = new Map<string, string | undefined>();
 
-function compareMaps(map1: Map<string, string>, map2: Map<string, string>) {
+function compareMaps(map1: T_id2parent, map2: T_id2parent) {
   if (map1.size !== map2.size) {
     return false;
   }
@@ -91,40 +92,27 @@ export function updateView(get: Getter, set: Setter) {
   const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
   let selectedPods = get(ATOM_selectedPods);
-  const newStructure = new Map<string, string>();
+  const newStructure: T_id2parent = new Map();
   // let nodes = Array.from<Node>(nodesMap.values());
   // follow the tree order, skip folded nodes
   function dfs(id: string): AppNode[] {
     const node = nodesMap.get(id);
     if (!node) throw new Error(`Node not found: ${id}`);
-    newStructure.set(
-      id,
-      "" + node.data.parent?.id + node.data.parent?.relation
-    );
+    newStructure.set(id, node.data.treeParentId);
     const node2 = structuredClone(node);
-    // We should not select a scope, otherwise it will be shown on top of inner pods.
-    if (node2.type !== "SCOPE") {
-      // set it as selected so that the toolbar (of the rich node) will be shown on top of other pods.
-      node2.selected = selectedPods.has(id);
-    }
+    // set it as selected so that the toolbar (of the rich node) will be shown on top of other pods.
+    node2.selected = selectedPods.has(id);
     let res = [node2];
     if (!node.data.treeFolded) {
       res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
-    }
-    if (node.type === "SCOPE" && !node.data.podFolded) {
-      res = [...res, ...node.data.scopeChildrenIds.flatMap(dfs)];
     }
     return res;
   }
   const nodes = dfs("ROOT");
   // Remove width and height to let reactflow measure them.
   nodes.forEach((node) => {
-    // For scope node, setting mywidth/myheight has a small bug that the scope,
-    // when folded, is not positioned correctly with autoLayout.
-    if (node.type !== "SCOPE") {
-      node.width = undefined;
-      node.height = undefined;
-    }
+    node.width = undefined;
+    node.height = undefined;
   });
   // compare old  and new structure, if changed, propagate symbol table
   // FIXME performance
@@ -166,16 +154,6 @@ export function updateView(get: Getter, set: Setter) {
           targetHandle: "left",
         });
       });
-      node.type === "SCOPE" &&
-        node.data?.scopeChildrenIds?.map((id: string) => {
-          edges.push({
-            id: `${node.id}-${id}`,
-            source: node.id,
-            target: id,
-            sourceHandle: "left",
-            targetHandle: "left",
-          });
-        });
     });
     return edges;
   }
@@ -240,14 +218,12 @@ export const ATOM_togglePodFold = atom(null, togglePodFold);
 function foldAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
-    if (node.type !== "SCOPE") {
-      nodesMap.set(
-        node.id,
-        produce(node, (node) => {
-          node.data.podFolded = true;
-        })
-      );
-    }
+    nodesMap.set(
+      node.id,
+      produce(node, (node) => {
+        node.data.podFolded = true;
+      })
+    );
   });
   autoLayoutTree(get, set);
   updateView(get, set);
@@ -258,14 +234,12 @@ export const ATOM_foldAllPods = atom(null, foldAllPods);
 function unfoldAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
-    if (node.type !== "SCOPE") {
-      nodesMap.set(
-        node.id,
-        produce(node, (node) => {
-          node.data.podFolded = false;
-        })
-      );
-    }
+    nodesMap.set(
+      node.id,
+      produce(node, (node) => {
+        node.data.podFolded = false;
+      })
+    );
   });
   autoLayoutTree(get, set);
   updateView(get, set);
@@ -292,15 +266,6 @@ export const ATOM_deleteSubtree = atom(
         if (codeMap.has(childId)) codeMap.delete(childId);
         if (richMap.has(childId)) richMap.delete(childId);
       });
-      if (node.type === "SCOPE") {
-        node.data.scopeChildrenIds.forEach((childId) => {
-          removeDescendants(childId);
-          nodesMap.delete(childId);
-          // remove from codeMap or richMap
-          if (codeMap.has(childId)) codeMap.delete(childId);
-          if (richMap.has(childId)) richMap.delete(childId);
-        });
-      }
     };
     removeDescendants(todelete);
     // remove the node itself
@@ -308,33 +273,18 @@ export const ATOM_deleteSubtree = atom(
     if (codeMap.has(todelete)) codeMap.delete(todelete);
     if (richMap.has(todelete)) richMap.delete(todelete);
     // update parent node's children field.
-    myassert(node.data.parent);
-    if (node.data.parent.relation === "TREE") {
-      const treeParent = nodesMap.get(node.data.parent.id);
-      myassert(treeParent);
-      nodesMap.set(
-        node.data.parent.id,
-        produce(treeParent, (draft) => {
-          draft.data.treeChildrenIds = draft.data.treeChildrenIds.filter(
-            (childId) => childId !== todelete
-          );
-        })
-      );
-    } else {
-      const scopeParent = nodesMap.get(node.data.parent.id);
-      myassert(scopeParent);
-      myassert(scopeParent.type === "SCOPE");
-      nodesMap.set(node.data.parent.id, {
-        ...scopeParent,
-        data: {
-          ...scopeParent.data,
-          scopeChildrenIds: scopeParent.data.scopeChildrenIds.filter(
-            (childId) => childId !== todelete
-          ),
-        },
-      });
-    }
+    myassert(node.data.treeParentId);
 
+    const treeParent = nodesMap.get(node.data.treeParentId);
+    myassert(treeParent);
+    nodesMap.set(
+      node.data.treeParentId,
+      produce(treeParent, (draft) => {
+        draft.data.treeChildrenIds = draft.data.treeChildrenIds.filter(
+          (childId) => childId !== todelete
+        );
+      })
+    );
     autoLayoutTree(get, set);
     updateView(get, set);
   }
