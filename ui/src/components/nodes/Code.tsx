@@ -594,6 +594,8 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
 
           <Handle id="left" type="source" position={Position.Left} />
           <Handle id="right" type="source" position={Position.Right} />
+          <Handle id="top" type="source" position={Position.Top} />
+          <Handle id="bottom" type="source" position={Position.Bottom} />
 
           <Box
             style={{

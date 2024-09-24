@@ -3,6 +3,7 @@ import { Doc } from "yjs";
 import * as Y from "yjs";
 import {
   Edge,
+  MarkerType,
   Node,
   NodeChange,
   XYPosition,
@@ -21,7 +22,7 @@ import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
 import { toast } from "react-toastify";
 import { autoLayoutTree } from "./canvasSlice_autoLayout";
-import { propagateAllST } from "./runtimeSlice";
+import { getOrCreate_ATOM_resolveResult, propagateAllST } from "./runtimeSlice";
 
 // export the APIs defined in canvas_XXX.ts
 export * from "./canvasSlice_autoLayout";
@@ -85,6 +86,51 @@ function compareMaps(map1: T_id2parent, map2: T_id2parent) {
   return true;
 }
 
+function generateEdge(nodes: AppNode[]) {
+  const edges: Edge[] = [];
+  nodes.forEach((node) => {
+    node.data?.treeChildrenIds?.map((id: string) => {
+      edges.push({
+        id: `${node.id}-${id}`,
+        source: node.id,
+        target: id,
+        sourceHandle: "right",
+        targetHandle: "left",
+      });
+    });
+  });
+  return edges;
+}
+
+function generateCallEdges(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  const res: Edge[] = [];
+  nodesMap.forEach((node) => {
+    const resolveResult = get(getOrCreate_ATOM_resolveResult(node.id));
+    myassert(resolveResult);
+    for (let [key, value] of resolveResult.resolved) {
+      res.push({
+        id: `${node.id}-${key}`,
+        source: node.id,
+        target: value,
+        // sourceHandle: "right",
+        // targetHandle: "left",
+        style: {
+          stroke: "red",
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: "red",
+          strokeWidth: 4,
+        },
+        type: "floating",
+      });
+    }
+  });
+  // console.log("call edges", res);
+  return res;
+}
+
 /**
  * This function handles the real updates to the reactflow nodes to render.
  */
@@ -139,25 +185,11 @@ export function updateView(get: Getter, set: Setter) {
     });
   set(ATOM_nodes, [...svgNodes, ...nodes]);
 
-  // edges view
-  // const edgesMap = get().getEdgesMap();
-  // set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
-  function generateEdge(nodes: AppNode[]) {
-    const edges: Edge[] = [];
-    nodes.forEach((node) => {
-      node.data?.treeChildrenIds?.map((id: string) => {
-        edges.push({
-          id: `${node.id}-${id}`,
-          source: node.id,
-          target: id,
-          sourceHandle: "right",
-          targetHandle: "left",
-        });
-      });
-    });
-    return edges;
-  }
-  set(ATOM_edges, generateEdge(nodes));
+  // Generate edges for tree structure.
+  const edges1 = generateEdge(nodes);
+  // Generate edges for caller-callee relationship.
+  const edges2 = generateCallEdges(get, set);
+  set(ATOM_edges, [...edges1, ...edges2]);
   const t2 = performance.now();
   console.debug("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
 }
