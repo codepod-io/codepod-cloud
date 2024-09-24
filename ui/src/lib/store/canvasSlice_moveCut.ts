@@ -4,7 +4,7 @@ import { produce } from "immer";
 import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { myassert, myNanoId } from "../utils/utils";
-import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
+import { AppNode, CodeNodeType, RichNodeType } from "./types";
 
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
@@ -27,10 +27,7 @@ function checkCutValid({
     const node = nodesMap.get(id);
     myassert(node);
     if (id === anchorId) return false;
-    return [
-      ...node.data.treeChildrenIds,
-      ...(node.type === "SCOPE" ? node.data.scopeChildrenIds : []),
-    ].every((childId) => dfs(childId));
+    return [...node.data.treeChildrenIds].every((childId) => dfs(childId));
   };
   return dfs(cutId);
 }
@@ -54,82 +51,45 @@ function moveCut_top_bottom(
   const node = nodesMap.get(cutId);
   myassert(node);
   // the new parent is the anchor's parent
-  const new_parent = anchor.data.parent;
-  const old_parent = node.data.parent;
-  myassert(new_parent && old_parent);
+  const new_parentId = anchor.data.treeParentId;
+  const old_parentId = node.data.treeParentId;
+  myassert(new_parentId && old_parentId);
 
   // remove the node from the old parent
-  if (old_parent.relation === "SCOPE") {
-    const old_scopeParent = nodesMap.get(old_parent.id);
-    myassert(old_scopeParent);
-    myassert(old_scopeParent.type === "SCOPE");
-    nodesMap.set(
-      old_parent.id,
-      produce(old_scopeParent, (draft) => {
-        const children = draft.data.scopeChildrenIds;
-        const index = children.indexOf(cutId);
-        children.splice(index, 1);
-      })
-    );
-  } else {
-    const old_treeParent = nodesMap.get(old_parent.id);
-    myassert(old_treeParent);
-    nodesMap.set(
-      old_parent.id,
-      produce(old_treeParent, (draft) => {
-        const children = draft.data.treeChildrenIds;
-        const index = children.indexOf(cutId);
-        children.splice(index, 1);
-      })
-    );
-  }
+  const old_treeParent = nodesMap.get(old_parentId);
+  myassert(old_treeParent);
+  nodesMap.set(
+    old_parentId,
+    produce(old_treeParent, (draft) => {
+      const children = draft.data.treeChildrenIds;
+      const index = children.indexOf(cutId);
+      children.splice(index, 1);
+    })
+  );
+
   // add the node to the new parent
-  if (new_parent.relation === "SCOPE") {
-    const new_scopeParent = nodesMap.get(new_parent.id);
-    myassert(new_scopeParent);
-    myassert(new_scopeParent.type === "SCOPE");
-    const scopeChildrenIds = new_scopeParent.data.scopeChildrenIds;
-    const index = scopeChildrenIds.indexOf(anchorId);
-    nodesMap.set(
-      new_parent.id,
-      produce(new_scopeParent, (draft) => {
-        draft.data.scopeChildrenIds.splice(
-          position === "top" ? index : index + 1,
-          0,
-          cutId
-        );
-      })
-    );
-    // update the node's parent
-    nodesMap.set(
-      cutId,
-      produce(node, (draft) => {
-        draft.data.parent = { id: new_parent.id, relation: "SCOPE" };
-      })
-    );
-  } else {
-    const new_treeParent = nodesMap.get(new_parent.id);
-    myassert(new_treeParent);
-    const treeChildrenIds = new_treeParent.data.treeChildrenIds;
-    const index = treeChildrenIds.indexOf(anchorId);
-    nodesMap.set(
-      new_parent.id,
-      produce(new_treeParent, (draft) => {
-        draft.data.treeChildrenIds.splice(
-          position === "top" ? index : index + 1,
-          0,
-          cutId
-        );
-      })
-    );
-    // update the node's parent
-    nodesMap.set(
-      cutId,
-      produce(node, (draft) => {
-        draft.data.parent = { id: new_parent.id, relation: "TREE" };
-      })
-    );
-  }
+
+  const new_treeParent = nodesMap.get(new_parentId);
+  myassert(new_treeParent);
+  const treeChildrenIds = new_treeParent.data.treeChildrenIds;
+  const index = treeChildrenIds.indexOf(anchorId);
+  nodesMap.set(
+    new_parentId,
+    produce(new_treeParent, (draft) => {
+      draft.data.treeChildrenIds.splice(
+        position === "top" ? index : index + 1,
+        0,
+        cutId
+      );
+    })
+  );
+  // update the node's parent
+  nodesMap.set(
+    cutId,
+    produce(node, (draft) => {
+      draft.data.treeParentId = new_parentId;
+    })
+  );
 
   // Do not clear the cutId, so that it can be explicit to the user which pod
   // is being moved.
@@ -157,35 +117,22 @@ function moveCut_right(get: Getter, set: Setter, anchorId: string) {
   const node = nodesMap.get(cutId);
   myassert(node);
 
-  const oldParent = node.data.parent;
-  myassert(oldParent);
+  const oldParentId = node.data.treeParentId;
+  myassert(oldParentId);
 
   // remove the node from the old parent
-  if (oldParent.relation === "SCOPE") {
-    const old_scopeParentId = oldParent.id;
-    const old_scopeParent = nodesMap.get(old_scopeParentId);
-    myassert(old_scopeParent);
-    myassert(old_scopeParent.type === "SCOPE");
-    nodesMap.set(
-      old_scopeParentId,
-      produce(old_scopeParent, (draft) => {
-        const children = draft.data.scopeChildrenIds;
-        const index = children.indexOf(cutId);
-        children.splice(index, 1);
-      })
-    );
-  } else {
-    const old_treeParent = nodesMap.get(oldParent.id);
-    myassert(old_treeParent);
-    nodesMap.set(
-      oldParent.id,
-      produce(old_treeParent, (draft) => {
-        const children = draft.data.treeChildrenIds;
-        const index = children.indexOf(cutId);
-        children.splice(index, 1);
-      })
-    );
-  }
+
+  const old_treeParent = nodesMap.get(oldParentId);
+  myassert(old_treeParent);
+  nodesMap.set(
+    oldParentId,
+    produce(old_treeParent, (draft) => {
+      const children = draft.data.treeChildrenIds;
+      const index = children.indexOf(cutId);
+      children.splice(index, 1);
+    })
+  );
+
   // add the node to the new parent
   nodesMap.set(
     new_treeParentId,
@@ -198,7 +145,7 @@ function moveCut_right(get: Getter, set: Setter, anchorId: string) {
   nodesMap.set(
     cutId,
     produce(node, (draft) => {
-      draft.data.parent = { id: new_treeParentId, relation: "TREE" };
+      draft.data.treeParentId = new_treeParentId;
     })
   );
 

@@ -102,7 +102,6 @@ function PodTreeItem({ id }) {
                 .otherwise(() => <Box>???</Box>)
             )
             .with("RICH", () => <NotebookPen size={15} />)
-            .with("SCOPE", () => <Package />)
             .otherwise(() => (
               <Box>???</Box>
             ))}
@@ -148,13 +147,6 @@ function PodTreeItem({ id }) {
 
       {!node.data.treeFolded && (
         <Flex direction="column">
-          {node.type === "SCOPE" && (
-            <Flex direction="column" style={{ paddingLeft: "15px" }}>
-              {node.data.scopeChildrenIds?.map((child) => (
-                <PodTreeItem key={child} id={child} />
-              ))}
-            </Flex>
-          )}
           <Flex direction="column" style={{ paddingLeft: "15px" }}>
             {node.data.treeChildrenIds?.map((child) => (
               <PodTreeItem key={child} id={child} />

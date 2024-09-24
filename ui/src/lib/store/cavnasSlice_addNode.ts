@@ -5,7 +5,7 @@ import { produce } from "immer";
 import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { myassert, myNanoId } from "../utils/utils";
-import { AppNode, CodeNodeType, RichNodeType, ScopeNodeType } from "./types";
+import { AppNode, CodeNodeType, RichNodeType } from "./types";
 
 import { updateView } from "./canvasSlice";
 import { autoLayoutTree } from "./canvasSlice_autoLayout";
@@ -48,23 +48,8 @@ function createRichNode(position: XYPosition): RichNodeType {
   };
 }
 
-function createScopeNode(position: XYPosition): ScopeNodeType {
-  let id = myNanoId();
-  return {
-    id,
-    type: "SCOPE",
-    position,
-    // width: 300,
-    dragHandle: ".custom-drag-handle",
-    data: {
-      treeChildrenIds: [],
-      scopeChildrenIds: [],
-    },
-  };
-}
-
 function createNewNode(
-  type: "CODE" | "RICH" | "SCOPE",
+  type: "CODE" | "RICH",
   position: XYPosition = { x: 0, y: 0 }
 ): AppNode {
   switch (type) {
@@ -73,8 +58,6 @@ function createNewNode(
       return createCodeNode("python", position);
     case "RICH":
       return createRichNode(position);
-    case "SCOPE":
-      return createScopeNode(position);
   }
 }
 
@@ -96,7 +79,7 @@ const addNode_top_bottom = (
   const nodesMap = get(ATOM_nodesMap);
   const anchor = nodesMap.get(anchorId);
   myassert(anchor);
-  myassert(anchor.data.parent);
+  myassert(anchor.data.treeParentId);
 
   const newNode = createNewNode(type, anchor.position);
   switch (newNode.type) {
@@ -113,43 +96,24 @@ const addNode_top_bottom = (
   nodesMap.set(
     newNode.id,
     produce(newNode, (draft) => {
-      draft.data.parent = anchor.data.parent;
+      draft.data.treeParentId = anchor.data.treeParentId;
     })
   );
 
-  if (anchor.data.parent.relation === "SCOPE") {
-    // check in scopeChildren
-    const scopeParent = nodesMap.get(anchor.data.parent.id);
-    myassert(scopeParent);
-    myassert(scopeParent.type === "SCOPE");
-    let index = scopeParent.data.scopeChildrenIds.indexOf(anchorId);
-    myassert(index !== -1);
-    if (position === "bottom") {
-      index = index + 1;
-    }
-    // update the parent node: add the node to the children field at index
-    nodesMap.set(
-      anchor.data.parent.id,
-      produce(scopeParent, (draft) => {
-        draft.data.scopeChildrenIds.splice(index, 0, newNode.id);
-      })
-    );
-  } else {
-    const treeParent = nodesMap.get(anchor.data.parent.id);
-    myassert(treeParent);
-    let index = treeParent.data.treeChildrenIds.indexOf(anchorId);
-    myassert(index !== -1);
-    if (position == "bottom") {
-      index = index + 1;
-    }
-    // update the parent node: add the node to the children field at index
-    nodesMap.set(
-      anchor.data.parent.id,
-      produce(treeParent, (draft) => {
-        draft.data.treeChildrenIds.splice(index, 0, newNode.id);
-      })
-    );
+  const treeParent = nodesMap.get(anchor.data.treeParentId);
+  myassert(treeParent);
+  let index = treeParent.data.treeChildrenIds.indexOf(anchorId);
+  myassert(index !== -1);
+  if (position == "bottom") {
+    index = index + 1;
   }
+  // update the parent node: add the node to the children field at index
+  nodesMap.set(
+    anchor.data.treeParentId,
+    produce(treeParent, (draft) => {
+      draft.data.treeChildrenIds.splice(index, 0, newNode.id);
+    })
+  );
 
   updateView(get, set);
 };
@@ -196,48 +160,6 @@ const addNode_bottom = (
   });
 };
 
-const addNode_in = (
-  get: Getter,
-  set: Setter,
-  {
-    anchorId,
-    type,
-    lang,
-  }: {
-    anchorId: string;
-    type: "CODE" | "RICH";
-    lang?: SupportedLanguage;
-  }
-) => {
-  // add node inside the scope (which must be a scope with no children or scopeChildren)
-  const nodesMap = get(ATOM_nodesMap);
-  const anchor = nodesMap.get(anchorId);
-  myassert(anchor);
-  myassert(anchor.type === "SCOPE");
-  myassert(anchor.data.scopeChildrenIds.length === 0);
-  const newNode = createNewNode(type, anchor.position);
-  switch (newNode.type) {
-    case "CODE":
-      if (lang) newNode.data.lang = lang;
-      get(ATOM_codeMap).set(newNode.id, new Y.Text());
-      break;
-    case "RICH":
-      get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
-      break;
-  }
-  newNode.data.parent = { id: anchorId, relation: "SCOPE" };
-  nodesMap.set(newNode.id, newNode);
-  // update the parent node
-  nodesMap.set(
-    anchorId,
-    produce(anchor, (draft) => {
-      draft.data.scopeChildrenIds = [newNode.id];
-    })
-  );
-  autoLayoutTree(get, set);
-  updateView(get, set);
-};
-
 const addNode_right = (
   get: Getter,
   set: Setter,
@@ -268,7 +190,7 @@ const addNode_right = (
   nodesMap.set(
     newNode.id,
     produce(newNode, (draft) => {
-      draft.data.parent = { id: anchorId, relation: "TREE" };
+      draft.data.treeParentId = anchorId;
     })
   );
 
@@ -306,7 +228,7 @@ function wrap({
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
-  myassert(node.data.parent);
+  myassert(node.data.treeParentId);
   // create a new node
   const newNode = createNewNode(type, node.position);
   switch (newNode.type) {
@@ -320,47 +242,32 @@ function wrap({
   }
   get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
   newNode.data.treeChildrenIds = [id];
-  newNode.data.parent = node.data.parent;
+  newNode.data.treeParentId = node.data.treeParentId;
   nodesMap.set(
     newNode.id,
     produce(newNode, (draft) => {
-      draft.data.parent = node.data.parent;
+      draft.data.treeParentId = node.data.treeParentId;
     })
   );
   // update the parent node
-  if (node.data.parent.relation === "SCOPE") {
-    const scopeParent = nodesMap.get(node.data.parent.id);
-    myassert(scopeParent);
-    myassert(scopeParent.type === "SCOPE");
-    nodesMap.set(
-      node.data.parent.id,
-      produce(scopeParent, (draft) => {
-        const children = draft.data.scopeChildrenIds;
-        const index = children.indexOf(id);
-        myassert(index !== -1);
-        children.splice(index, 1, newNode.id);
-      })
-    );
-  } else {
-    const treeParentId = node.data.parent.id;
-    const treeParent = nodesMap.get(treeParentId);
-    myassert(treeParent);
-    nodesMap.set(
-      treeParentId,
-      produce(treeParent, (draft) => {
-        const children = draft.data.treeChildrenIds;
-        const index = children.indexOf(id);
-        myassert(index !== -1);
-        children.splice(index, 1, newNode.id);
-      })
-    );
-  }
+  const treeParentId = node.data.treeParentId;
+  const treeParent = nodesMap.get(treeParentId);
+  myassert(treeParent);
+  nodesMap.set(
+    treeParentId,
+    produce(treeParent, (draft) => {
+      const children = draft.data.treeChildrenIds;
+      const index = children.indexOf(id);
+      myassert(index !== -1);
+      children.splice(index, 1, newNode.id);
+    })
+  );
 
   // update the node
   nodesMap.set(
     id,
     produce(node, (draft) => {
-      draft.data.parent = { id: newNode.id, relation: "TREE" };
+      draft.data.treeParentId = newNode.id;
     })
   );
   autoLayoutTree(get, set);
@@ -395,7 +302,7 @@ export const ATOM_addNode = atom(
       lang,
     }: {
       anchorId: string;
-      position: "top" | "bottom" | "right" | "left" | "in";
+      position: "top" | "bottom" | "right" | "left";
       type: "CODE" | "RICH";
       lang?: SupportedLanguage;
     }
@@ -413,96 +320,6 @@ export const ATOM_addNode = atom(
       .with("left", () => {
         addNode_left(get, set, { anchorId, type, lang });
       })
-      .with("in", () => {
-        addNode_in(get, set, { anchorId, type, lang });
-      })
       .exhaustive();
   }
 );
-
-export const ATOM_addScope = atom(null, (get, set, id: string) => {
-  // add a scope surrounding the node
-
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-  const newScopeNode = createNewNode("SCOPE", node.position);
-  myassert(newScopeNode.type === "SCOPE");
-  // Connect the new scope node to this node.
-  nodesMap.set(
-    id,
-    produce(node, (draft) => {
-      draft.data.parent = { id: newScopeNode.id, relation: "SCOPE" };
-      draft.data.treeChildrenIds = [];
-    })
-  );
-
-  myassert(node.data.parent);
-  // put the new node in the parent's children field
-  if (node.data.parent.relation === "SCOPE") {
-    // The parent is a scope.
-    const scopeParent = nodesMap.get(node.data.parent.id);
-    myassert(scopeParent);
-    myassert(scopeParent.type === "SCOPE");
-    nodesMap.set(
-      node.data.parent.id,
-      produce(scopeParent, (draft) => {
-        const children = draft.data.scopeChildrenIds;
-        const index = children.indexOf(id);
-        myassert(index !== -1);
-        children.splice(index, 1, newScopeNode.id);
-      })
-    );
-    // update the scope node
-    // 1. the node will be the scopeChildren of the scope node
-    // 2. the children of the node will be the children of the scope node
-    nodesMap.set(
-      newScopeNode.id,
-      produce(newScopeNode, (draft) => {
-        myassert(node.data.parent);
-        draft.data.parent = { id: node.data.parent.id, relation: "SCOPE" };
-        draft.data.scopeChildrenIds = [id];
-        draft.data.treeChildrenIds = node.data.treeChildrenIds;
-      })
-    );
-  } else {
-    // The parent is a tree node.
-    const treeParent = nodesMap.get(node.data.parent.id);
-    myassert(treeParent);
-    nodesMap.set(
-      node.data.parent.id,
-      produce(treeParent, (draft) => {
-        const children = draft.data.treeChildrenIds;
-        const index = children.indexOf(id);
-        myassert(index !== -1);
-        children.splice(index, 1, newScopeNode.id);
-      })
-    );
-    // update the scope node
-    // 1. the node will be the scopeChildren of the scope node
-    // 2. the children of the node will be the children of the scope node
-    nodesMap.set(
-      newScopeNode.id,
-      produce(newScopeNode, (draft) => {
-        myassert(node.data.parent);
-        draft.data.parent = { id: node.data.parent.id, relation: "TREE" };
-        draft.data.scopeChildrenIds = [id];
-        draft.data.treeChildrenIds = node.data.treeChildrenIds;
-      })
-    );
-  }
-  // the tree children of the node will be the children of the scope node
-  node.data.treeChildrenIds.forEach((childId) => {
-    const n = nodesMap.get(childId);
-    myassert(n);
-    nodesMap.set(
-      childId,
-      produce(n, (draft) => {
-        draft.data.parent = { id: newScopeNode.id, relation: "TREE" };
-      })
-    );
-  });
-
-  autoLayoutTree(get, set);
-  updateView(get, set);
-});

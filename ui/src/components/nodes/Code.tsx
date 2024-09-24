@@ -71,8 +71,8 @@ import { ATOM_cutId, ATOM_repoData } from "@/lib/store/atom";
 import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
-import { CodeNodeType, ScopeNodeType } from "@/lib/store/types";
-import { ATOM_addScope, ATOM_toggleScope } from "@/lib/store/canvasSlice";
+import { CodeNodeType } from "@/lib/store/types";
+import { ATOM_toggleScope } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 
 function Timer({ lastExecutedAt }) {
@@ -296,7 +296,6 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
   const repoId = repoData.id;
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
-  const addScope = useSetAtom(ATOM_addScope);
   const toggleScope = useSetAtom(ATOM_toggleScope);
 
   return (
@@ -378,13 +377,6 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
             </Flex>
           </DropdownMenu.Item>
 
-          <DropdownMenu.Item
-            onSelect={() => {
-              addScope(id);
-            }}
-          >
-            Add Scope
-          </DropdownMenu.Item>
           <SlurpButton id={id} />
           <UnslurpButton id={id} />
           <DropdownMenu.Separator />

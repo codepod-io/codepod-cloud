@@ -1,11 +1,11 @@
 import { Node } from "@xyflow/react";
 
-export type NodeData = CodeNodeData | RichNodeData | ScopeNodeData;
+export type NodeData = CodeNodeData | RichNodeData;
 
 type CommonData = {
   // common data
   treeChildrenIds: string[];
-  parent?: { id: string; relation: "TREE" | "SCOPE" };
+  treeParentId?: string;
   isScope?: boolean;
   podFolded?: boolean;
   treeFolded?: boolean;
@@ -26,13 +26,7 @@ export type CodeNodeData = CommonData & {
 
 export type RichNodeData = CommonData & {};
 
-export type ScopeNodeData = CommonData & {
-  // special data
-  scopeChildrenIds: string[];
-};
-
 export type CodeNodeType = Node<CodeNodeData, "CODE">;
 export type RichNodeType = Node<RichNodeData, "RICH">;
-export type ScopeNodeType = Node<ScopeNodeData, "SCOPE">;
 
-export type AppNode = CodeNodeType | RichNodeType | ScopeNodeType;
+export type AppNode = CodeNodeType | RichNodeType;

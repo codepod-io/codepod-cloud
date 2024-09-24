@@ -196,12 +196,12 @@ function propagateST(get: Getter, set: Setter, id: string) {
   function passUp(tmpId: string) {
     const tmpNode = nodesMap.get(tmpId);
     if (!tmpNode) return;
-    if (!tmpNode.data.parent) return;
-    const parent = nodesMap.get(tmpNode.data.parent.id);
+    if (!tmpNode.data.treeParentId) return;
+    const parent = nodesMap.get(tmpNode.data.treeParentId);
     if (!parent) return;
-    if (tmpNode.data.parent.relation === "TREE" && parent.type !== "RICH") {
+    if (parent.type !== "RICH") {
       // terminate
-      const treeParent = nodesMap.get(tmpNode.data.parent.id);
+      const treeParent = nodesMap.get(tmpNode.data.treeParentId);
       myassert(treeParent);
       const st = get(getOrCreate_ATOM_privateST(treeParent.id));
       parseResult.annotations
@@ -213,7 +213,7 @@ function propagateST(get: Getter, set: Setter, id: string) {
       set(getOrCreate_ATOM_privateST(treeParent.id), st);
       return;
     }
-    const scopeParent = nodesMap.get(tmpNode.data.parent.id);
+    const scopeParent = nodesMap.get(tmpNode.data.treeParentId);
     myassert(scopeParent);
     const parent_privateSt = get(getOrCreate_ATOM_publicST(scopeParent.id));
     parseResult.annotations
@@ -223,11 +223,11 @@ function propagateST(get: Getter, set: Setter, id: string) {
         parent_privateSt.set(annotation.name, id);
       });
     set(getOrCreate_ATOM_publicST(scopeParent.id), parent_privateSt);
-    passUp(tmpNode.data.parent.id);
+    passUp(tmpNode.data.treeParentId);
   }
 
-  myassert(node.data.parent);
-  const parent = nodesMap.get(node.data.parent.id);
+  myassert(node.data.treeParentId);
+  const parent = nodesMap.get(node.data.treeParentId);
   myassert(parent);
   passUp(id);
 }
@@ -245,6 +245,8 @@ function parseAllPods(get: Getter, set: Setter) {
 }
 
 export function propagateAllST(get: Getter, set: Setter) {
+  console.log("TODO: propagateAllST");
+  return;
   const t2 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
   // clear all symbol tables
@@ -335,9 +337,10 @@ function resolvePod(get: Getter, set: Setter, id: string) {
   if (resolveResult.unresolved.size > 0) {
     const node = get(ATOM_nodesMap).get(id);
     if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (!node.data.parent) throw new Error(`Parent not found for id: ${id}`);
-    const privateSt = get(getOrCreate_ATOM_privateST(node.data.parent.id));
-    const publicSt = get(getOrCreate_ATOM_publicST(node.data.parent.id));
+    if (!node.data.treeParentId)
+      throw new Error(`Parent not found for id: ${id}`);
+    const privateSt = get(getOrCreate_ATOM_privateST(node.data.treeParentId));
+    const publicSt = get(getOrCreate_ATOM_publicST(node.data.treeParentId));
     myassert(privateSt);
     myassert(publicSt);
     resolveResult.unresolved.forEach((symbol) => {
@@ -365,26 +368,11 @@ function resolveUp(
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) return;
-  if (!node.data.parent) return;
-  const parent = nodesMap.get(node.data.parent.id);
+  if (!node.data.treeParentId) return;
+  const parent = nodesMap.get(node.data.treeParentId);
   if (!parent) return;
-  if (node.data.parent.relation === "SCOPE") {
-    // try the parent's private ST
-    const scopeParent = nodesMap.get(node.data.parent.id);
-    myassert(scopeParent);
-    const st = get(getOrCreate_ATOM_privateST(scopeParent.id));
-    resolveResult.unresolved.forEach((symbol) => {
-      const target = st.get(symbol);
-      if (target) {
-        resolveResult.resolved.set(symbol, target);
-      }
-    });
-    resolveResult.resolved.forEach((_, key) =>
-      resolveResult.unresolved.delete(key)
-    );
-  }
   // continue go up until root
-  resolveUp(get, set, node.data.parent.id, resolveResult);
+  resolveUp(get, set, node.data.treeParentId, resolveResult);
 }
 
 export const ATOM_resolveAllPods = atom(null, (get, set) => {

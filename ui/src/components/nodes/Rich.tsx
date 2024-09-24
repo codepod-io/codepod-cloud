@@ -37,13 +37,12 @@ import {
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { env } from "@/lib/vars";
-import { ATOM_addScope, ATOM_toggleScope } from "@/lib/store/canvasSlice";
+import { ATOM_toggleScope } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 import { RichEditor } from "./Rich_Editor";
 import { myassert } from "@/lib/utils/utils";
 
 function MyPodToolbar({ id }) {
-  const addScope = useSetAtom(ATOM_addScope);
   const toggleScope = useSetAtom(ATOM_toggleScope);
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -85,13 +84,6 @@ function MyPodToolbar({ id }) {
             )}
 
             {/* Structural edit */}
-            <DropdownMenu.Item
-              onSelect={() => {
-                addScope(id);
-              }}
-            >
-              Add Scope
-            </DropdownMenu.Item>
             <SlurpButton id={id} />
             <UnslurpButton id={id} />
             <DropdownMenu.Separator />

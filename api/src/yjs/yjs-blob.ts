@@ -188,7 +188,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       position: { x: 400, y: -74 },
       data: {
         treeChildrenIds: [],
-        parent: { id: "ROOT", relation: "TREE" },
+        treeParentId: "ROOT",
         lang: "python",
       },
     };
@@ -201,7 +201,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       position: { x: 400, y: 97 },
       data: {
         treeChildrenIds: [],
-        parent: { id: "ROOT", relation: "TREE" },
+        treeParentId: "ROOT",
         lang: "python",
       },
     };
