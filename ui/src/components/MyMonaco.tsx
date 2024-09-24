@@ -566,6 +566,8 @@ export function MyMonaco({ node }: { node: CodeNodeType }) {
         lineNumbersMinChars: 3,
         wordWrap: "on",
         wrappingStrategy: "advanced",
+        // TODO better wrapping
+        wrappingIndent: "none",
         minimap: {
           enabled: false,
         },
