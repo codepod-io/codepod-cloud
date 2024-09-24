@@ -58,17 +58,17 @@ export function parsePython(code: string): ParseResult {
   let isutility = false;
   // FIXME better error handling
   if (!code) return { ispublic, isutility, annotations };
-  if (code.trim().startsWith("@export")) {
+  if (code.trim().startsWith("@public")) {
     ispublic = true;
-    code = code.replace("@export", " ".repeat("@export".length));
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   if (code.trim().startsWith("@utility")) {
     isutility = true;
     code = code.replace("@utility", " ".repeat("@utility".length));
   }
-  if (code.trim().startsWith("@export")) {
+  if (code.trim().startsWith("@public")) {
     ispublic = true;
-    code = code.replace("@export", " ".repeat("@export".length));
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   // magic commands
   if (code.startsWith("!")) return { ispublic, isutility, annotations };
@@ -126,10 +126,10 @@ export function analyzeCode(code: string): ParseResult {
   let isutility = false;
   // FIXME better error handling
   if (!code) return { ispublic, isutility, annotations };
-  // check for @export statements, a regular expression that matches a starting
-  // of the line followed by @export and a name
+  // check for @public statements, a regular expression that matches a starting
+  // of the line followed by @public and a name
 
-  const re = /^@export +([a-zA-Z0-9_]+)$/gm;
+  const re = /^@public +([a-zA-Z0-9_]+)$/gm;
   code = code.replaceAll(re, (match, name, offset) => {
     // parse the first name as a function definition
     annotations.push({
@@ -148,17 +148,17 @@ export function analyzeCode(code: string): ParseResult {
     return { ispublic: true, isutility, isbridge: true, annotations };
   }
 
-  if (code.trim().startsWith("@export")) {
+  if (code.trim().startsWith("@public")) {
     ispublic = true;
-    code = code.replace("@export", " ".repeat("@export".length));
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   if (code.trim().startsWith("@utility")) {
     isutility = true;
     code = code.replace("@utility", " ".repeat("@utility".length));
   }
-  if (code.trim().startsWith("@export")) {
+  if (code.trim().startsWith("@public")) {
     ispublic = true;
-    code = code.replace("@export", " ".repeat("@export".length));
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   // magic commands
   if (code.startsWith("!")) return { ispublic, isutility, annotations };

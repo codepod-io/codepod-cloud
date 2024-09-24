@@ -47,14 +47,14 @@ function rewriteCode(id: string, get: Getter): string | null {
   if (!node) return null;
   if (!codeMap.has(id)) return null;
   let code = codeMap.get(id)!.toString();
-  if (code.trim().startsWith("@export")) {
-    code = code.replace("@export", " ".repeat("@export".length));
+  if (code.trim().startsWith("@public")) {
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   if (code.trim().startsWith("@utility")) {
     code = code.replace("@utility", " ".repeat("@utility".length));
   }
-  if (code.trim().startsWith("@export")) {
-    code = code.replace("@export", " ".repeat("@export".length));
+  if (code.trim().startsWith("@public")) {
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   if (code.startsWith("!")) return code;
   // replace with symbol table
