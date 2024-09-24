@@ -734,8 +734,6 @@ export function PodToolbar({
   children: React.ReactNode;
 }) {
   const [cutId, setCutId] = useAtom(ATOM_cutId);
-  const slurp = useSetAtom(ATOM_slurp);
-  const unslurp = useSetAtom(ATOM_unslurp);
 
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -756,11 +754,6 @@ export function PodToolbar({
         cursor: "auto",
       }}
     >
-      {/* Toolbar for adding new pod top/bottom/right */}
-      {id !== "ROOT" && <ToolbarAddPod id={id} position="left" />}
-      {id !== "ROOT" && <ToolbarAddPod id={id} position="top" />}
-      {id !== "ROOT" && <ToolbarAddPod id={id} position="bottom" />}
-      <ToolbarAddPod id={id} position="right" />
       {id !== "ROOT" && (
         <IconButton
           variant="ghost"
@@ -780,75 +773,9 @@ export function PodToolbar({
           <ScissorsLineDashed />
         </IconButton>
       )}
-      {id !== "ROOT" && (
-        <Tooltip content="Slurp">
-          <IconButton
-            variant="ghost"
-            radius="small"
-            style={{
-              margin: 3,
-              padding: 0,
-            }}
-            onClick={() => {
-              // move its next sibling to its children
-              slurp(id);
-            }}
-          >
-            <CornerRightUp />
-          </IconButton>
-        </Tooltip>
-      )}
-      {id !== "ROOT" && (
-        <Tooltip content="Unslurp">
-          <IconButton
-            variant="ghost"
-            radius="small"
-            style={{
-              margin: 3,
-              padding: 0,
-            }}
-            onClick={() => {
-              // move its children to its next sibling
-              unslurp(id);
-            }}
-          >
-            <CornerDownLeft />
-          </IconButton>
-        </Tooltip>
-      )}
       <PodFoldButton id={id} />
       {children}
     </Flex>
-  );
-}
-
-export function SlurpButton({ id }) {
-  const slurp = useSetAtom(ATOM_slurp);
-  return (
-    <DropdownMenu.Item
-      onSelect={() => {
-        // move its next sibling to its children
-        slurp(id);
-      }}
-    >
-      <CornerRightUp />
-      Slurp
-    </DropdownMenu.Item>
-  );
-}
-
-export function UnslurpButton({ id }) {
-  const unslurp = useSetAtom(ATOM_unslurp);
-  return (
-    <DropdownMenu.Item
-      onSelect={() => {
-        // move its children to its next sibling
-        unslurp(id);
-      }}
-    >
-      <CornerDownLeft />
-      Unslurp
-    </DropdownMenu.Item>
   );
 }
 
@@ -937,21 +864,23 @@ export function SymbolTable({ id }) {
   if (!node) throw new Error(`Node ${id} not found.`);
   return (
     <>
-      <Box
+      {/* TOP: show self symbol table at the top, big font */}
+      <Flex
         style={{
           // place it on the right
           position: "absolute",
           top: 0,
           left: 0,
-          transform: "translateX(-100%) translateX(-10px)",
+          transform: "translateY(-100%) translateY(-10px)",
         }}
+        gap="4"
       >
-        {[...selfSt.keys(), ...publicSt.keys()].map((key) => (
+        {[...selfSt.keys()].map((key) => (
           <Flex align="center" key={key}>
             <Button
               onClick={() => {
                 // jump to the node
-                const targetId = publicSt.get(key) || selfSt.get(key);
+                const targetId = selfSt.get(key);
                 myassert(targetId);
                 const targetNode = nodesMap.get(targetId);
                 if (!targetNode) return;
@@ -967,12 +896,62 @@ export function SymbolTable({ id }) {
               }}
               variant="ghost"
             >
-              <code>{key}</code>
+              <code
+                style={{
+                  fontSize: "3em",
+                  color: "black",
+                }}
+              >
+                {key}
+              </code>
+            </Button>
+          </Flex>
+        ))}
+      </Flex>
+      {/* LEFT: show public ST of this scope. */}
+      <Box
+        style={{
+          // place it on the left
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translateX(-100%) translateX(-10px)",
+        }}
+      >
+        {[...publicSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const targetId = publicSt.get(key);
+                myassert(targetId);
+                const targetNode = nodesMap.get(targetId);
+                if (!targetNode) return;
+                const pos = getAbsPos(targetNode, nodesMap);
+                reactFlowInstance.setCenter(
+                  pos.x + (targetNode.measured?.width || 0) / 2,
+                  pos.y + (targetNode.measured?.height || 0) / 2,
+                  {
+                    zoom: reactFlowInstance.getZoom(),
+                    duration: 800,
+                  }
+                );
+              }}
+              variant="ghost"
+            >
+              <code
+                style={{
+                  color: "green",
+                }}
+              >
+                {key}
+              </code>
             </Button>
           </Flex>
         ))}
       </Box>
 
+      {/* RIGHT: show private ST of this scope. */}
       <Box
         style={{
           // place it on the right

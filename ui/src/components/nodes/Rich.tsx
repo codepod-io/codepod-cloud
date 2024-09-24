@@ -11,14 +11,7 @@ import {
 
 // Local Imports
 
-import {
-  DeleteButton,
-  PodToolbar,
-  SlurpButton,
-  SymbolTable,
-  ToolbarAddPod,
-  UnslurpButton,
-} from "./utils";
+import { DeleteButton, PodToolbar, SymbolTable, ToolbarAddPod } from "./utils";
 
 import {
   Box,
@@ -28,7 +21,13 @@ import {
   IconButton,
   Switch,
 } from "@radix-ui/themes";
-import { Ellipsis, RemoveFormatting, ScissorsLineDashed } from "lucide-react";
+import {
+  CornerDownLeft,
+  CornerRightUp,
+  Ellipsis,
+  RemoveFormatting,
+  ScissorsLineDashed,
+} from "lucide-react";
 import { ATOM_cutId, ATOM_editMode } from "@/lib/store/atom";
 import {
   ATOM_nodesMap,
@@ -37,7 +36,11 @@ import {
 } from "@/lib/store/yjsSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { env } from "@/lib/vars";
-import { ATOM_toggleScope } from "@/lib/store/canvasSlice";
+import {
+  ATOM_slurp,
+  ATOM_toggleScope,
+  ATOM_unslurp,
+} from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 import { RichEditor } from "./Rich_Editor";
 import { myassert } from "@/lib/utils/utils";
@@ -46,10 +49,13 @@ function MyPodToolbar({ id }) {
   const toggleScope = useSetAtom(ATOM_toggleScope);
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
+  const slurp = useSetAtom(ATOM_slurp);
+  const unslurp = useSetAtom(ATOM_unslurp);
   myassert(node);
   return (
     <PodToolbar id={id}>
       {/* The "more" button */}
+      {id === "ROOT" && <ToolbarAddPod id={id} position="right" />}
       {id !== "ROOT" && (
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -84,9 +90,36 @@ function MyPodToolbar({ id }) {
             )}
 
             {/* Structural edit */}
-            <SlurpButton id={id} />
-            <UnslurpButton id={id} />
             <DropdownMenu.Separator />
+            <Flex direction="column">
+              <ToolbarAddPod id={id} position="top" />
+              <Flex align="center" justify="center">
+                <ToolbarAddPod id={id} position="left" />
+                <ToolbarAddPod id={id} position="right" />
+              </Flex>
+              <ToolbarAddPod id={id} position="bottom" />
+            </Flex>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item
+              onSelect={(e) => {
+                e.preventDefault();
+                // move its next sibling to its children
+                slurp(id);
+              }}
+            >
+              <CornerRightUp />
+              Slurp
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={(e) => {
+                e.preventDefault();
+                // move its children to its next sibling
+                unslurp(id);
+              }}
+            >
+              <CornerDownLeft />
+              Unslurp
+            </DropdownMenu.Item>
             <DeleteButton id={id} />
           </DropdownMenu.Content>
         </DropdownMenu.Root>

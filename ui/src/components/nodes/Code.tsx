@@ -29,10 +29,8 @@ import {
   PodToolbar,
   PythonLogo,
   RacketLogo,
-  SlurpButton,
   SymbolTable,
   ToolbarAddPod,
-  UnslurpButton,
 } from "./utils";
 import { myassert, timeDifference, useTick } from "@/lib/utils/utils";
 
@@ -48,7 +46,15 @@ import {
   Switch,
   Text,
 } from "@radix-ui/themes";
-import { Check, Ellipsis, Play, ScissorsLineDashed, X } from "lucide-react";
+import {
+  Check,
+  CornerDownLeft,
+  CornerRightUp,
+  Ellipsis,
+  Play,
+  ScissorsLineDashed,
+  X,
+} from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -72,7 +78,11 @@ import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType } from "@/lib/store/types";
-import { ATOM_toggleScope } from "@/lib/store/canvasSlice";
+import {
+  ATOM_slurp,
+  ATOM_toggleScope,
+  ATOM_unslurp,
+} from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 
 function Timer({ lastExecutedAt }) {
@@ -297,6 +307,8 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
   const toggleScope = useSetAtom(ATOM_toggleScope);
+  const slurp = useSetAtom(ATOM_slurp);
+  const unslurp = useSetAtom(ATOM_unslurp);
 
   return (
     <PodToolbar id={id}>
@@ -361,6 +373,16 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
 
           {/* Structural edit */}
           <DropdownMenu.Separator />
+          <Flex direction="column">
+            <ToolbarAddPod id={id} position="top" />
+            <Flex align="center" justify="center">
+              <ToolbarAddPod id={id} position="left" />
+              <ToolbarAddPod id={id} position="right" />
+            </Flex>
+            <ToolbarAddPod id={id} position="bottom" />
+          </Flex>
+          <DropdownMenu.Separator />
+
           <DropdownMenu.Item
             onSelect={(e) => {
               e.preventDefault();
@@ -377,8 +399,26 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
             </Flex>
           </DropdownMenu.Item>
 
-          <SlurpButton id={id} />
-          <UnslurpButton id={id} />
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault();
+              // move its next sibling to its children
+              slurp(id);
+            }}
+          >
+            <CornerRightUp />
+            Slurp
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault();
+              // move its children to its next sibling
+              unslurp(id);
+            }}
+          >
+            <CornerDownLeft />
+            Unslurp
+          </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DeleteButton id={id} />
         </DropdownMenu.Content>

@@ -1,4 +1,6 @@
 import { Getter, PrimitiveAtom, Setter, atom } from "jotai";
+import * as Y from "yjs";
+
 import { parsePython } from "../parser";
 import { parseRacket } from "../parserRacket";
 import {
@@ -18,6 +20,7 @@ import { parseJavascript } from "../parserJavascript";
 import { parseJulia } from "../parserJulia";
 import { myassert } from "../utils/utils";
 import { ATOM_disableCodeRewrite } from "./settingSlice";
+import { AppNode } from "./types";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -174,9 +177,22 @@ function parsePod(get: Getter, set: Setter, id: string) {
 
 export const ATOM_parsePod = atom(null, parsePod);
 
+function findParentScope(id: string, nodesMap: Y.Map<AppNode>) {
+  if (id === "ROOT") return id;
+  const node = nodesMap.get(id);
+  myassert(node);
+  if (node.data.isScope) return id;
+  const parentId = node.data.treeParentId;
+  myassert(parentId);
+  return findParentScope(parentId, nodesMap);
+}
+
 /**
  * TODO this is nlogn, can be improved to n. But this is not a bottleneck, i.e.,
  * runs in sub millisecond.
+ *
+ * FIXME does this modify in place? Seems yes.
+ * FIXME detect multiple definitions
  */
 function propagateST(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
@@ -191,45 +207,41 @@ function propagateST(get: Getter, set: Setter, id: string) {
     .forEach((annotation) => {
       selfSt.set(annotation.name, id);
     });
-  set(getOrCreate_ATOM_selfST(id), selfSt);
+  // set(getOrCreate_ATOM_selfST(id), selfSt);
 
-  function passUp(tmpId: string) {
-    const tmpNode = nodesMap.get(tmpId);
-    if (!tmpNode) return;
-    if (!tmpNode.data.treeParentId) return;
-    const parent = nodesMap.get(tmpNode.data.treeParentId);
-    if (!parent) return;
-    if (parent.type !== "RICH") {
-      // terminate
-      const treeParent = nodesMap.get(tmpNode.data.treeParentId);
-      myassert(treeParent);
-      const st = get(getOrCreate_ATOM_privateST(treeParent.id));
-      parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-        .forEach((annotation) => {
-          // TODO support multiple definitions with map to array (multi-map).
-          st.set(annotation.name, id);
-        });
-      set(getOrCreate_ATOM_privateST(treeParent.id), st);
-      return;
-    }
-    const scopeParent = nodesMap.get(tmpNode.data.treeParentId);
-    myassert(scopeParent);
-    const parent_privateSt = get(getOrCreate_ATOM_publicST(scopeParent.id));
+  // Find the nearest scope parent, and insert the symbols to its private ST
+
+  const parentScopeId = findParentScope(id, nodesMap);
+  const parentScopeSt = get(getOrCreate_ATOM_privateST(parentScopeId));
+  parseResult.annotations
+    .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+    .forEach((annotation) => {
+      parentScopeSt.set(annotation.name, id);
+    });
+  // set(getOrCreate_ATOM_privateST(parentScopeId), parentScopeSt);
+  // If it is public, insert to one layer up
+  if (parseResult.ispublic && parentScopeId !== "ROOT") {
+    const parentScope = nodesMap.get(parentScopeId);
+    myassert(parentScope);
+    myassert(parentScope.data.treeParentId);
+    const grandParentScopeId = findParentScope(
+      parentScope.data.treeParentId,
+      nodesMap
+    );
+    const grandParentScopeSt = get(
+      getOrCreate_ATOM_privateST(grandParentScopeId)
+    );
+    const parentScopePublicSt = get(getOrCreate_ATOM_publicST(parentScopeId));
     parseResult.annotations
       .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
       .forEach((annotation) => {
-        // TODO support multiple definitions with map to array (multi-map).
-        parent_privateSt.set(annotation.name, id);
+        grandParentScopeSt.set(annotation.name, id);
+        // This public ST is only for visualization purpose. Symbol resolving does not use this.
+        parentScopePublicSt.set(annotation.name, id);
       });
-    set(getOrCreate_ATOM_publicST(scopeParent.id), parent_privateSt);
-    passUp(tmpNode.data.treeParentId);
+    // set(getOrCreate_ATOM_privateST(grandParentScopeId), grandParentScopeSt);
+    // set(getOrCreate_ATOM_publicST(parentScopeId), parentScopePublicSt);
   }
-
-  myassert(node.data.treeParentId);
-  const parent = nodesMap.get(node.data.treeParentId);
-  myassert(parent);
-  passUp(id);
 }
 
 function parseAllPods(get: Getter, set: Setter) {
@@ -245,8 +257,6 @@ function parseAllPods(get: Getter, set: Setter) {
 }
 
 export function propagateAllST(get: Getter, set: Setter) {
-  console.log("TODO: propagateAllST");
-  return;
   const t2 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
   // clear all symbol tables
@@ -319,41 +329,7 @@ function resolvePod(get: Getter, set: Setter, id: string) {
       resolveResult.unresolved.delete(key)
     );
   }
-  // 2.2 try this pod's private ST, i.e. from its children
-  if (resolveResult.unresolved.size > 0) {
-    const st = get(getOrCreate_ATOM_privateST(id));
-    if (!st) throw new Error(`Symbol table not found for id: ${id}`);
-    resolveResult.unresolved.forEach((symbol) => {
-      const target = st.get(symbol);
-      if (target) {
-        resolveResult.resolved.set(symbol, target);
-      }
-    });
-    resolveResult.resolved.forEach((_, key) =>
-      resolveResult.unresolved.delete(key)
-    );
-  }
-  // 2.3 try the parent's private and public ST, i.e., from its siblings
-  if (resolveResult.unresolved.size > 0) {
-    const node = get(ATOM_nodesMap).get(id);
-    if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (!node.data.treeParentId)
-      throw new Error(`Parent not found for id: ${id}`);
-    const privateSt = get(getOrCreate_ATOM_privateST(node.data.treeParentId));
-    const publicSt = get(getOrCreate_ATOM_publicST(node.data.treeParentId));
-    myassert(privateSt);
-    myassert(publicSt);
-    resolveResult.unresolved.forEach((symbol) => {
-      const target = privateSt.get(symbol) || publicSt.get(symbol);
-      if (target) {
-        resolveResult.resolved.set(symbol, target);
-      }
-    });
-    resolveResult.resolved.forEach((_, key) =>
-      resolveResult.unresolved.delete(key)
-    );
-  }
-  // 2.4 go up, find scopes, and try their private ST
+  // 2.2 go up, find scopes, and try their private ST
   resolveUp(get, set, id, resolveResult);
   set(getOrCreate_ATOM_resolveResult(id), resolveResult);
 }
@@ -367,11 +343,25 @@ function resolveUp(
   if (resolveResult.unresolved.size == 0) return;
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  if (!node) return;
-  if (!node.data.treeParentId) return;
-  const parent = nodesMap.get(node.data.treeParentId);
-  if (!parent) return;
-  // continue go up until root
+  myassert(node);
+  if (id === "ROOT" || node.data.isScope) {
+    // This is a scope termination node. Resolve in private ST.
+    const st = get(getOrCreate_ATOM_privateST(id));
+    resolveResult.unresolved.forEach((symbol) => {
+      const target = st.get(symbol);
+      if (target) {
+        resolveResult.resolved.set(symbol, target);
+      }
+    });
+    resolveResult.resolved.forEach((_, key) =>
+      resolveResult.unresolved.delete(key)
+    );
+  }
+  // Return conditions.
+  if (id === "ROOT") return;
+  if (resolveResult.unresolved.size == 0) return;
+  myassert(node.data.treeParentId);
+  // pass up
   resolveUp(get, set, node.data.treeParentId, resolveResult);
 }
 
