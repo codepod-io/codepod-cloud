@@ -109,9 +109,6 @@ export function RichEditor({
   provider: WebsocketProvider;
   id: string;
 }) {
-  const nodesMap = useAtomValue(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
   const simpleAwareness = useAtomValue(ATOM_simpleAwareness);
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
@@ -301,36 +298,6 @@ okay
     }
     // loadInitialHTML();
   }, [editor]);
-  if (node.data.podFolded)
-    return (
-      <div
-        className={css`
-          .bn-editor {
-            padding: 10px;
-            background-color: var(--gray-3);
-          }
-          .bn-side-menu .bn-button {
-            background-color: var(--sky-3);
-            transform: translateX(-5px);
-          }
-          .bn-side-menu .bn-button svg {
-            color: var(--blue-9);
-          }
-        `}
-        style={{
-          height: "50px",
-          width: "300px",
-          overflow: "hidden",
-        }}
-      >
-        <BlockNoteView
-          editor={editor}
-          slashMenu={false}
-          formattingToolbar={false}
-          editable={false}
-        ></BlockNoteView>
-      </div>
-    );
   return (
     <div
       // style={{
