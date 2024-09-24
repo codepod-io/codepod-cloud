@@ -41,17 +41,17 @@ export function parseJulia(code: string): ParseResult {
   let isutility = false;
   // FIXME better error handling
   if (!code) return { ispublic, isutility, annotations };
-  if (code.trim().startsWith("@export")) {
+  if (code.trim().startsWith("@public")) {
     ispublic = true;
-    code = code.replace("@export", " ".repeat("@export".length));
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   if (code.trim().startsWith("@utility")) {
     isutility = true;
     code = code.replace("@utility", " ".repeat("@utility".length));
   }
-  if (code.trim().startsWith("@export")) {
+  if (code.trim().startsWith("@public")) {
     ispublic = true;
-    code = code.replace("@export", " ".repeat("@export".length));
+    code = code.replace("@public", " ".repeat("@public".length));
   }
   // magic commands
   if (code.startsWith("!")) return { ispublic, isutility, annotations };
