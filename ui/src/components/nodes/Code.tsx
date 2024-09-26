@@ -64,6 +64,7 @@ import {
   ATOM_getEdgeChain,
   ATOM_preprocessChain,
   ATOM_resolvePod,
+  getOrCreate_ATOM_selfST,
 } from "@/lib/store/runtimeSlice";
 import {
   ATOM_codeMap,
@@ -472,7 +473,7 @@ function useRunKey({ node }: { node: CodeNodeType }) {
   );
 }
 
-function FoldedCode({ id }) {
+function FoldedCodeText({ id }) {
   const codeMap = useAtomValue(ATOM_codeMap);
   const ytext = codeMap.get(id);
   if (!ytext) return <>Empty</>;
@@ -489,7 +490,35 @@ function FoldedCode({ id }) {
       </Text>
     );
   }
-  return <>{firstLine.substring(0, 10)} ..</>;
+  return <>{firstLine.substring(0, 20)} ..</>;
+}
+
+function FoldedCode({ id }: { id: string }) {
+  // update: instead of showing the text, show the symbol tables if exist
+  const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
+  if (selfSt.size > 0) {
+    return (
+      <Flex direction="column">
+        {[...selfSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <code
+              style={{
+                fontSize: "2.5em",
+                color: "black",
+                // lineHeight: "var(--line-height-1)",
+                // lineHeight: "10px",
+                // do not wrap
+                whiteSpace: "nowrap",
+              }}
+            >
+              {key}
+            </code>
+          </Flex>
+        ))}
+      </Flex>
+    );
+  }
+  return <FoldedCodeText id={id} />;
 }
 
 export const CodeNode = function ({ id }) {
@@ -515,7 +544,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         className="nodrag"
         ref={ref}
         style={{
-          width: "200px",
           // This is the key to let the node auto-resize w.r.t. the content.
           height: "auto",
           paddingLeft: "10px",
@@ -530,7 +558,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         onMouseLeave={() => setHover(false)}
       >
         <Flex direction="column">
-          <SymbolTable id={id} />
           {!env.READ_ONLY && (
             <motion.div
               animate={{
@@ -594,8 +621,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
 
           <Handle id="left" type="source" position={Position.Left} />
           <Handle id="right" type="source" position={Position.Right} />
-          <Handle id="top" type="source" position={Position.Top} />
-          <Handle id="bottom" type="source" position={Position.Bottom} />
 
           <Box
             style={{
