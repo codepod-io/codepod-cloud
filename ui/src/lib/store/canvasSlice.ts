@@ -109,21 +109,22 @@ function generateCallEdges(get: Getter, set: Setter) {
     const resolveResult = get(getOrCreate_ATOM_resolveResult(node.id));
     myassert(resolveResult);
     for (let [key, value] of resolveResult.resolved) {
+      // do not show self-connections
+      if (node.id === value) continue;
       res.push({
         id: `${node.id}-${key}`,
         source: node.id,
         target: value,
-        // sourceHandle: "right",
-        // targetHandle: "left",
-        style: {
-          stroke: "red",
-        },
+        sourceHandle: "right",
+        targetHandle: "left",
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: "red",
           strokeWidth: 4,
         },
-        type: "floating",
+        type: "gradient",
+        // Caution: animated edges have a huge performance hit.
+        // animated: true,
       });
     }
   });

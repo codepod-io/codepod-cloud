@@ -11,6 +11,8 @@ import {
   ReactFlowProvider,
   useViewport,
   SelectionMode,
+  getBezierPath,
+  EdgeProps,
 } from "@xyflow/react";
 
 // you also need to adjust the style import
@@ -56,8 +58,63 @@ const nodeTypes = {
   SVG: SvgNode,
 };
 
+function GradientEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  markerEnd,
+  sourcePosition,
+  targetPosition,
+  style,
+}: EdgeProps) {
+  const [edgePath] = getBezierPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <defs>
+        <linearGradient
+          // id={"blue-to-red"}
+          id={id}
+          x1={sourceX > targetX ? "100%" : "0%"}
+          // x1="100%"
+          y1="0%"
+          x2={sourceX > targetX ? "0%" : "100%"}
+          // x2="0%"
+          y2="0%"
+          // gradientUnits="objectBoundingBox"
+          // gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" style={{ stopColor: "blue", stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: "red", stopOpacity: 1 }} />
+        </linearGradient>
+      </defs>
+      <path
+        id={id}
+        className="react-flow__edge-path"
+        d={edgePath}
+        strokeWidth={5}
+        markerEnd={markerEnd}
+        style={{
+          ...style,
+          stroke: `url(#${id})`,
+        }}
+      />
+    </>
+  );
+}
+
 const edgeTypes = {
   floating: FloatingEdge,
+  gradient: GradientEdge,
 };
 
 /**
@@ -201,9 +258,9 @@ function CanvasImpl() {
         // custom edge for easy connect
         edgeTypes={edgeTypes}
         defaultEdgeOptions={{
-          style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
+          // style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
           // type: "floating",
-          type: "simplebezier",
+          // type: "simplebezier",
           selectable: false,
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,
