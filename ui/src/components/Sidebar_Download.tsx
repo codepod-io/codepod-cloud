@@ -273,7 +273,11 @@ export function ImportYDoc() {
         const buffer = e.target?.result;
         if (!buffer) return;
         const update = new Uint8Array(buffer as ArrayBuffer);
-        const base64String = btoa(String.fromCharCode(...update));
+        // const base64String = btoa(String.fromCharCode(...update));
+        const binaryString = Array.from(update)
+          .map((byte) => String.fromCharCode(byte))
+          .join("");
+        const base64String = btoa(binaryString);
 
         // const doc = new Y.Doc();
         // Y.applyUpdate(doc, update);
