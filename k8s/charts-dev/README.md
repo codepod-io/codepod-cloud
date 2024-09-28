@@ -62,6 +62,8 @@ corepack enable && pnpm i
 
 8. redeploy the api/ui/yjs/runtime containers (to load prisma generated npm pkg)
 
+Now port-forward dev machine's 80 port to localhost:3333. Open http://localhost:3333
+
 # Maintainence
 
 1. Just repeat step 4 helm install/update app.
