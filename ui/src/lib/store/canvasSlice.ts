@@ -248,6 +248,50 @@ function togglePodFold(get: Getter, set: Setter, id: string) {
 
 export const ATOM_togglePodFold = atom(null, togglePodFold);
 
+function foldSubtreePods(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  const dfs = (id: string) => {
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found: ${id}`);
+    nodesMap.set(
+      id,
+      produce(node, (node) => {
+        node.data.podFolded = true;
+      })
+    );
+    node.data.treeChildrenIds.forEach(dfs);
+  };
+  dfs(id);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_foldSubtreePods = atom(null, foldSubtreePods);
+
+function unfoldSubtreePods(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  const dfs = (id: string) => {
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found: ${id}`);
+    nodesMap.set(
+      id,
+      produce(node, (node) => {
+        node.data.podFolded = false;
+      })
+    );
+    node.data.treeChildrenIds.forEach(dfs);
+  };
+  dfs(id);
+  autoLayoutTree(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_unfoldSubtreePods = atom(null, unfoldSubtreePods);
+
 function foldAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
