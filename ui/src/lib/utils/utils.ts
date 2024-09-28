@@ -1,6 +1,11 @@
 import { customAlphabet } from "nanoid";
-import { lowercase, numbers } from "nanoid-dictionary";
 import { useEffect, useState } from "react";
+
+// https://github.com/CyberAP/nanoid-dictionary
+const lowercase = "abcdefghijklmnopqrstuvwxyz";
+const numbers = "0123456789";
+
+export const myNanoId = customAlphabet(lowercase + numbers, 20);
 
 export function myassert(condition: any, msg?: string): asserts condition {
   if (!condition) {
@@ -90,8 +95,6 @@ export function prettyPrintMemory(memory: string) {
     return `${gi.toFixed(2)}`;
   }
 }
-
-export const myNanoId = customAlphabet(lowercase + numbers, 20);
 
 const yRemoteSelectionStyle = (clientID: string, color: string) => {
   return `.yRemoteSelection-${clientID} 

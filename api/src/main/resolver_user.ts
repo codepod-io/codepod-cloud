@@ -2,18 +2,13 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 
-// nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
-import { customAlphabet } from "nanoid/async";
-import { lowercase, numbers } from "nanoid-dictionary";
-
 import prisma from "../prisma";
 
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { myenv } from "./vars";
 import assert from "assert";
-
-const nanoid = customAlphabet(lowercase + numbers, 20);
+import { myNanoId } from "../utils";
 
 const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
   if (!userId) throw Error("Unauthenticated");
@@ -61,7 +56,7 @@ const signup = publicProcedure
     }
     const user = await prisma.user.create({
       data: {
-        id: await nanoid(),
+        id: myNanoId(),
         email,
         firstname,
         lastname,
@@ -196,7 +191,7 @@ const loginWithGoogle = publicProcedure
       // create a new user
       user = await prisma.user.create({
         data: {
-          id: await nanoid(),
+          id: myNanoId(),
           email: payload["email"]!,
           firstname: payload["given_name"]!,
           lastname: payload["family_name"]!,

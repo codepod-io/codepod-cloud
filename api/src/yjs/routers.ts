@@ -2,7 +2,7 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { writeState } from "./yjs-blob";
 import prisma from "../prisma";
-import { myNanoId } from "./utils";
+import { myNanoId } from "../utils";
 import { ensureRepoEditAccess } from "../utils";
 import { closeDocNoWrite } from "./yjs-setupWS";
 

@@ -1,6 +1,3 @@
-// nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
-import { customAlphabet } from "nanoid/async";
-import { lowercase, numbers } from "nanoid-dictionary";
 import prisma from "../prisma";
 
 import { z } from "zod";
@@ -9,9 +6,7 @@ import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { myenv } from "./vars";
 
 import { createPresignedUrlGET, createPresignedUrlPUT } from "./s3utils";
-import { ensureRepoEditAccess, ensureRepoReadAccess } from "../utils";
-
-const nanoid = customAlphabet(lowercase + numbers, 20);
+import { ensureRepoEditAccess, ensureRepoReadAccess, myNanoId } from "../utils";
 
 const getDashboardRepos = protectedProcedure.query(
   async ({ ctx: { userId } }) => {
@@ -171,7 +166,7 @@ async function doCreateRepo({ userId }) {
   if (myenv.READ_ONLY) throw Error("Read only mode");
   const repo = await prisma.repo.create({
     data: {
-      id: await nanoid(),
+      id: await myNanoId(),
       owner: {
         connect: {
           id: userId,
