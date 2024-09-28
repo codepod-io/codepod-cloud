@@ -17,6 +17,9 @@ export const appRouter = router({
       })
     )
     .query(async ({ input: { repoId }, ctx: { userId } }) => {
+      if (!userId) {
+        throw new Error("Unauthorized");
+      }
       await ensureRepoReadAccess({ userId, repoId });
       const kernels = await prisma.kernel.findMany({
         where: {
