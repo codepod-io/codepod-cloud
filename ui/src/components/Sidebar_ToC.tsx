@@ -40,7 +40,12 @@ import {
   ATOM_selectPod,
   ATOM_toggleTreeFold,
 } from "@/lib/store/canvasSlice";
-import { ATOM_codeMap, ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import {
+  ATOM_codeMap,
+  ATOM_nodesMap,
+  ATOM_provider,
+  ATOM_richMap,
+} from "@/lib/store/yjsSlice";
 
 import juliaLogo from "@/assets/julia.svg";
 import pythonLogo from "@/assets/python.svg";
@@ -48,6 +53,68 @@ import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 import { toast } from "react-toastify";
 import { CodeNodeType } from "@/lib/store/types";
+import { getOrCreate_ATOM_selfST } from "@/lib/store/runtimeSlice";
+import { getTitleFromYXml } from "./nodes/Rich";
+
+function RichNodeName({ id }) {
+  const [provider] = useAtom(ATOM_provider);
+
+  const [richMap] = useAtom(ATOM_richMap);
+  if (!richMap.has(id)) {
+    throw new Error("richMap does not have id " + id);
+  }
+  const yXml = richMap.get(id);
+  if (!yXml) return null;
+  if (!provider) return null;
+  const title = getTitleFromYXml(yXml);
+  if (title) return title;
+  return (
+    <Text
+      style={{
+        color: "black",
+      }}
+    >
+      {id.substring(0, 5)}
+    </Text>
+  );
+}
+
+function CodeNodeName({ id }) {
+  const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
+  if (selfSt.size === 0)
+    return (
+      <Text
+        style={{
+          color: "black",
+        }}
+      >
+        {id.substring(0, 5)}
+      </Text>
+    );
+  return (
+    <Flex align="center">
+      <code
+        style={{
+          // do not wrap
+          whiteSpace: "nowrap",
+        }}
+      >
+        {[...selfSt.keys()].join(",")}
+      </code>
+    </Flex>
+  );
+}
+
+function NodeName({ id }) {
+  const [nodesMap] = useAtom(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) return null;
+
+  return match(node.type)
+    .with("CODE", () => <CodeNodeName id={id} />)
+    .with("RICH", () => <RichNodeName id={id} />)
+    .otherwise(() => <Text>???</Text>);
+}
 
 function PodTreeItem({ id }) {
   const [nodesMap] = useAtom(ATOM_nodesMap);
@@ -116,7 +183,7 @@ function PodTreeItem({ id }) {
             setCenterSelection(true);
           }}
         >
-          {id.substring(0, 5)}
+          <NodeName id={id} />
         </Button>
 
         {/* fold button */}

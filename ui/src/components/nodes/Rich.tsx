@@ -151,7 +151,7 @@ function MyPodToolbar({ id }) {
   );
 }
 
-function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
+export function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
   const blockGroup = yXmlFragment.get(0);
   if (
     blockGroup instanceof Y.XmlElement &&
@@ -182,7 +182,7 @@ function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
       }
     }
   }
-  return <Text>Folded Note</Text>;
+  return null;
 }
 
 const RichEditorWrapper = ({ id }: { id: string }) => {
@@ -210,7 +210,8 @@ function FoldedRichPod({ id }: { id: string }) {
   if (!yXml) return null;
   if (!provider) return null;
   const title = getTitleFromYXml(yXml);
-  return title;
+  if (title) return title;
+  return <Text>Folded Note</Text>;
 }
 
 /**
