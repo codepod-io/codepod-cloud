@@ -56,15 +56,8 @@ export function Header({ children }) {
   );
 }
 
-export const UserProfile = () => {
+function UserProfileImpl() {
   const { isSignedIn, signOut } = useAuth();
-  if (!isSignedIn()) {
-    return (
-      <Box display="block">
-        <ReactLink to="/login">Login</ReactLink>
-      </Box>
-    );
-  }
   const me = trpc.user.me.useQuery();
   let navigate = useNavigate();
   if (!me.data) return null;
@@ -101,4 +94,16 @@ export const UserProfile = () => {
       </DropdownMenu.Root>
     </>
   );
+}
+
+export const UserProfile = () => {
+  const { isSignedIn, signOut } = useAuth();
+  if (!isSignedIn()) {
+    return (
+      <Box display="block">
+        <ReactLink to="/login">Login</ReactLink>
+      </Box>
+    );
+  }
+  return <UserProfileImpl />;
 };
