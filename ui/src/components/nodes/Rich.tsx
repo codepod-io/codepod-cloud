@@ -41,8 +41,10 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { env } from "@/lib/vars";
 import {
+  ATOM_foldSubtreePods,
   ATOM_slurp,
   ATOM_toggleScope,
+  ATOM_unfoldSubtreePods,
   ATOM_unslurp,
 } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
@@ -55,6 +57,8 @@ function MyPodToolbar({ id }) {
   const node = nodesMap.get(id);
   const slurp = useSetAtom(ATOM_slurp);
   const unslurp = useSetAtom(ATOM_unslurp);
+  const foldSubtreePods = useSetAtom(ATOM_foldSubtreePods);
+  const unfoldSubtreePods = useSetAtom(ATOM_unfoldSubtreePods);
   myassert(node);
   return (
     <PodToolbar id={id}>
@@ -103,6 +107,21 @@ function MyPodToolbar({ id }) {
               </Flex>
               <ToolbarAddPod id={id} position="bottom" />
             </Flex>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item
+              onSelect={() => {
+                foldSubtreePods(id);
+              }}
+            >
+              Fold Subtree Pods
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => {
+                unfoldSubtreePods(id);
+              }}
+            >
+              Unfold Subtree Pods
+            </DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item
               onSelect={(e) => {

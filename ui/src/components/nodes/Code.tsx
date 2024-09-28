@@ -80,8 +80,10 @@ import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType } from "@/lib/store/types";
 import {
+  ATOM_foldSubtreePods,
   ATOM_slurp,
   ATOM_toggleScope,
+  ATOM_unfoldSubtreePods,
   ATOM_unslurp,
 } from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
@@ -311,6 +313,9 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
   const slurp = useSetAtom(ATOM_slurp);
   const unslurp = useSetAtom(ATOM_unslurp);
 
+  const foldSubtreePods = useSetAtom(ATOM_foldSubtreePods);
+  const unfoldSubtreePods = useSetAtom(ATOM_unfoldSubtreePods);
+
   return (
     <PodToolbar id={id}>
       {/* The run button */}
@@ -399,6 +404,24 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
               <Switch checked={node.data.isScope} color="blue" />
             </Flex>
           </DropdownMenu.Item>
+
+          <DropdownMenu.Separator />
+
+          <DropdownMenu.Item
+            onSelect={() => {
+              foldSubtreePods(id);
+            }}
+          >
+            Fold Subtree Pods
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              unfoldSubtreePods(id);
+            }}
+          >
+            Unfold Subtree Pods
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
 
           <DropdownMenu.Item
             onSelect={(e) => {
