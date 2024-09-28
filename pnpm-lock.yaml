@@ -77,9 +77,6 @@ importers:
       nanoid:
         specifier: ^3.0.0
         version: 3.3.7
-      nanoid-dictionary:
-        specifier: ^4.3.0
-        version: 4.3.0
       node-llama-cpp:
         specifier: ^2.8.3
         version: 2.8.16(typescript@5.5.4)
@@ -273,9 +270,6 @@ importers:
       nanoid:
         specifier: ^3.0.0
         version: 3.3.7
-      nanoid-dictionary:
-        specifier: ^4.3.0
-        version: 4.3.0
       prettier:
         specifier: ^3.1.1
         version: 3.3.3
@@ -4917,9 +4911,6 @@ packages:
 
   nan@2.20.0:
     resolution: {integrity: sha512-bk3gXBZDGILuuo/6sKtr0DQmSThYHLtNCdSdXk9YkxD/jK6X2vmCyyXBBxyqZ4XcnzTyYEAThfX3DCEnLf6igw==}
-
-  nanoid-dictionary@4.3.0:
-    resolution: {integrity: sha512-Xw1+/QnRGWO1KJ0rLfU1xR85qXmAHyLbE3TUkklu9gOIDburP6CsUnLmTaNECGpBh5SHb2uPFmx0VT8UPyoeyw==}
 
   nanoid@3.3.7:
     resolution: {integrity: sha512-eSRppjcPIatRIMC1U6UngP8XFcz8MQWGQdt1MTBQ7NaAmvXDfvNxbvWV3x2y6CdEUciCSsDHDQZbhYaB8QEo2g==}
@@ -12435,8 +12426,6 @@ snapshots:
 
   nan@2.20.0:
     optional: true
-
-  nanoid-dictionary@4.3.0: {}
 
   nanoid@3.3.7: {}
 

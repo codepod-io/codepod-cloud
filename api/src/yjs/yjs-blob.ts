@@ -28,7 +28,8 @@ import {
   CodeNodeType,
   RichNodeType,
 } from "@/../../ui/src/lib/store/types";
-import { getInitYXml, myNanoId } from "./utils";
+import { getInitYXml } from "./utils";
+import { myNanoId } from "../utils";
 import { docs } from "./yjs-setupWS";
 
 const debounceRegistry = new Map<string, any>();
