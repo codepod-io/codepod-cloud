@@ -14,7 +14,6 @@ import { Test } from "@/pages/test";
 
 import { Profile } from "@/pages/profile";
 import { SignIn } from "@/pages/login";
-import { SignUp } from "@/pages/signup";
 
 import { Header, UserProfile } from "@/components/Header";
 
@@ -98,19 +97,6 @@ const router = createBrowserRouter([
         </Flex>
         <Flex overflow="auto" flexGrow={"1"}>
           <SignIn />
-        </Flex>
-      </Flex>
-    ),
-  },
-  {
-    path: "signup",
-    element: (
-      <Flex direction="column" height="100vh">
-        <Flex>
-          <HeaderWithItems />
-        </Flex>
-        <Flex overflow="auto" flexGrow={"1"}>
-          <SignUp />
         </Flex>
       </Flex>
     ),
