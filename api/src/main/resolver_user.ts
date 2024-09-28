@@ -16,9 +16,6 @@ const me = protectedProcedure.query(async ({ ctx: { userId } }) => {
     where: {
       id: userId,
     },
-    omit: {
-      hashedPassword: true,
-    },
     include: {
       stars: {
         select: {

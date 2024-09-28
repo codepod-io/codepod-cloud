@@ -17,14 +17,10 @@ generator studio-client {
 }
 
 model User {
-    id             String  @id
-    email          String  @unique
-    // username is an optional value, because it might create barrier when user signup.
-    username       String? @unique
-    firstname      String
-    lastname       String
-    // A user might not have a password, if they login via OAuth.
-    hashedPassword String?
+    id        String @id
+    email     String @unique
+    firstname String
+    lastname  String
 
     createdAt    DateTime       @default(now())
     updatedAt    DateTime       @default(now()) @updatedAt
