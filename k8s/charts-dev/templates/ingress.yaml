@@ -11,28 +11,28 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ui-codepod-service
+                name: codepod-ui-service
                 port:
                   number: 80
           - path: /api
             pathType: Prefix
             backend:
               service:
-                name: api-codepod-service
+                name: codepod-api-service
                 port:
                   number: 4000
           - path: /runtime
             pathType: Prefix
             backend:
               service:
-                name: runtime-codepod-service
+                name: codepod-runtime-service
                 port:
                   number: 4001
           - path: /yjs
             pathType: Prefix
             backend:
               service:
-                name: yjs-codepod-service
+                name: codepod-yjs-service
                 port:
                   number: 4233
     # Or use kubectl port forwarding
