@@ -2,12 +2,20 @@ import { Link as ReactLink, useLocation } from "react-router-dom";
 
 import { useNavigate } from "react-router-dom";
 
-import { Avatar, Box, DropdownMenu, Flex, Text } from "@radix-ui/themes";
+import {
+  Avatar,
+  Box,
+  Button,
+  DropdownMenu,
+  Flex,
+  Link,
+  Text,
+} from "@radix-ui/themes";
 
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/lib/auth";
 
 import { env } from "@/lib/vars";
+import { signOut, useSession } from "next-auth/react";
 
 function Banner() {
   return (
@@ -56,18 +64,24 @@ export function Header({ children }) {
   );
 }
 
-export const UserProfile = () => {
-  const { isSignedIn, signOut } = useAuth();
-  if (!isSignedIn()) {
+export function name2initial(name) {
+  // name is Hello World
+  // signature is HW
+  if (!name) return "";
+  const parts = name.split(" ");
+  return parts[0][0] + parts[1][0];
+}
+
+export function UserProfile() {
+  const { data: session } = useSession();
+
+  let navigate = useNavigate();
+  if (!session)
     return (
       <Box display="block">
-        <ReactLink to="/login">Login</ReactLink>
+        <Link href="/api/auth/signin">Login</Link>
       </Box>
     );
-  }
-  const me = trpc.user.me.useQuery();
-  let navigate = useNavigate();
-  if (!me.data) return null;
   return (
     <>
       <DropdownMenu.Root>
@@ -76,7 +90,7 @@ export const UserProfile = () => {
             <Avatar
               // src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
               // fallback="A"
-              fallback={`${me.data.firstname[0]}${me.data.lastname[0]}`}
+              fallback={name2initial(session.user?.name)}
               radius="full"
             />
           </Box>
@@ -86,19 +100,22 @@ export const UserProfile = () => {
             <ReactLink to="/profile">Profile</ReactLink>
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
+
           <DropdownMenu.Item
-            onSelect={() => {
-              signOut();
-              navigate("/login");
-            }}
+            // onSelect={() => {
+            //   // signOut({ redirect: true });
+            //   navigate("/api/auth/signout");
+            // }}
             style={{
               color: "red",
             }}
+            asChild
           >
-            Logout
+            <a href="/api/auth/signout">Logout</a>
+            {/* Logout */}
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </>
   );
-};
+}

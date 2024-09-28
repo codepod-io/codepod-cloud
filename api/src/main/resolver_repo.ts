@@ -16,6 +16,9 @@ const nanoid = customAlphabet(lowercase + numbers, 20);
 const getDashboardRepos = protectedProcedure.query(
   async ({ ctx: { userId } }) => {
     if (!userId) throw Error("Unauthenticated");
+    // FIXME assert all user.id
+    // FIXME why user.id is optional?
+    // assert(user.id);
     const repos = await prisma.repo.findMany({
       where: {
         OR: [
@@ -135,16 +138,14 @@ const repo = publicProcedure
           select: {
             id: true,
             email: true,
-            firstname: true,
-            lastname: true,
+            name: true,
           },
         },
         collaborators: {
           select: {
             id: true,
             email: true,
-            firstname: true,
-            lastname: true,
+            name: true,
           },
         },
         UserRepoData: {
@@ -183,8 +184,7 @@ async function doCreateRepo({ userId }) {
         select: {
           id: true,
           email: true,
-          firstname: true,
-          lastname: true,
+          name: true,
         },
       },
     },

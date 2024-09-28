@@ -39,7 +39,6 @@ import {
 } from "@/lib/parserJulia";
 
 import { trpc, yjsTrpc } from "@/lib/trpc";
-import { useAuth } from "@/lib/auth";
 import { atom, Provider, useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_connectYjs,
@@ -193,7 +192,7 @@ function WaitForYjs({ children }) {
   const connectYjs = useSetAtom(ATOM_connectYjs);
   const me = trpc.user.me.useQuery();
   useEffect(() => {
-    connectYjs(me.data?.firstname || "Anonymous");
+    connectYjs(me.data?.name?.split(" ")[0] || "Anonymous");
     return () => {
       disconnectYjs();
     };

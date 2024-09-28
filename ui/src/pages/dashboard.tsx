@@ -1,7 +1,8 @@
-import { Box } from "@radix-ui/themes";
-import { useAuth } from "@/lib/auth";
+import { Box, Flex } from "@radix-ui/themes";
 import { atom, useAtom } from "jotai";
 import { RepoLists } from "./dashboard_repo";
+import { useSession } from "next-auth/react";
+import { NoLogginErrorAlert } from "@/components/Utils";
 
 export type RepoType = {
   id: string;
@@ -21,12 +22,21 @@ export const ATOM_selectMode = atom(false);
 export const ATOM_selectedRepos = atom<RepoType[]>([]);
 
 export function Dashboard() {
-  const { isSignedIn } = useAuth();
-  if (!isSignedIn()) {
+  const { data: session } = useSession();
+
+  if (!session) {
     return (
-      <Box style={{ maxWidth: "md", alignItems: "center", margin: "auto" }}>
-        Not signed in.
-      </Box>
+      <Flex
+        direction="column"
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <NoLogginErrorAlert />
+      </Flex>
     );
   }
   return (

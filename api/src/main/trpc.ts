@@ -5,23 +5,22 @@ import type { inferAsyncReturnType } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 
 import jwt from "jsonwebtoken";
+
+import { getSession } from "@auth/express";
+
 import { myenv } from "./vars";
+import { authConfig } from "../auth";
 
 export const createContext = async ({
   req,
   res,
 }: CreateExpressContextOptions) => {
-  const token = req?.headers?.authorization?.slice(7);
-  let userId: string | undefined = undefined;
-
-  if (token) {
-    const decoded = jwt.verify(token, myenv.JWT_SECRET) as {
-      id: string;
-    };
-    userId = decoded.id;
-  }
+  // req.locals.session
+  const session = (await getSession(req, authConfig)) ?? undefined;
   return {
-    userId,
+    // userId,
+    user: session?.user,
+    userId: session?.user?.id,
   };
 };
 

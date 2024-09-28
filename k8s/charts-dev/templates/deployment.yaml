@@ -4,8 +4,14 @@ type: Opaque
 metadata:
   name: mysecret
 stringData:
-  GOOGLE_CLIENT_ID: "{{ .Values.googleClientId }}"
-  JWT_SECRET: "{{ .Values.jwtSecret }}"
+  # AUTH.js actually uses these variable names.
+  # AUTH_GOOGLE_ID
+  # AUTH_GOOGLE_SECRET
+  # AUTH_SECRET
+  GOOGLE_CLIENT_ID: "{{ .Values.GOOGLE_CLIENT_ID }}"
+  GOOGLE_CLIENT_SECRET: "{{ .Values.GOOGLE_CLIENT_SECRET }}"
+  JWT_SECRET: "{{ .Values.JWT_SECRET }}"
+  # S3 configuration
   AWS_ACCESS_KEY_ID: "{{ .Values.AWS_ACCESS_KEY_ID }}"
   AWS_SECRET_ACCESS_KEY: "{{ .Values.AWS_SECRET_ACCESS_KEY }}"
   AWS_REGION: "{{ .Values.AWS_REGION }}"
@@ -84,11 +90,6 @@ spec:
               value: "{{ .Values.READ_ONLY }}"
             - name: VITE_APP_BANNER
               value: "{{ .Values.BANNER }}"
-            - name: VITE_APP_GOOGLE_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: mysecret
-                  key: GOOGLE_CLIENT_ID
             - name: VITE_APP_APP_VERSION
               value: "{{ .Chart.AppVersion }}"
           ports:
@@ -179,6 +180,12 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_SECRET
+
             # S3 configuration
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -354,6 +361,16 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_SECRET
           resources:
             limits:
               memory: 6Gi
@@ -424,6 +441,16 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: GOOGLE_CLIENT_SECRET
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:

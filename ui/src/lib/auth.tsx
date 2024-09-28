@@ -13,7 +13,6 @@ import {
 } from "@/lib/trpc";
 
 function RuntimeTrpcProvider({ children }) {
-  const { getAuthHeaders } = useAuth();
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -25,7 +24,6 @@ function RuntimeTrpcProvider({ children }) {
     links: [
       httpBatchLink({
         url: "/runtime",
-        headers: getAuthHeaders(),
       }),
     ],
   });
@@ -39,7 +37,6 @@ function RuntimeTrpcProvider({ children }) {
 }
 
 function CopilotTrpcProvider({ children }) {
-  const { getAuthHeaders } = useAuth();
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -51,7 +48,6 @@ function CopilotTrpcProvider({ children }) {
     links: [
       httpBatchLink({
         url: "/copilot",
-        headers: getAuthHeaders(),
       }),
     ],
   });
@@ -65,7 +61,6 @@ function CopilotTrpcProvider({ children }) {
 }
 
 function YjsTrpcProvider({ children }) {
-  const { getAuthHeaders } = useAuth();
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -77,7 +72,6 @@ function YjsTrpcProvider({ children }) {
     links: [
       httpBatchLink({
         url: "/yjs",
-        headers: getAuthHeaders(),
       }),
     ],
   });
@@ -90,13 +84,7 @@ function YjsTrpcProvider({ children }) {
   );
 }
 
-type AuthContextType = ReturnType<typeof useProvideAuth>;
-
-const authContext = createContext<AuthContextType | null>(null);
-
-export function AuthProvider({ children }) {
-  const auth = useProvideAuth();
-
+export function TrpcProvider({ children }) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -110,86 +98,19 @@ export function AuthProvider({ children }) {
     links: [
       httpBatchLink({
         url: "/api",
-        headers: auth.getAuthHeaders(),
-        // fetch(url, options) {
-        //   return fetch(url, {
-        //     ...options,
-        //     credentials: "include",
-        //   });
-        // },
       }),
     ],
   });
 
   return (
-    <authContext.Provider value={auth}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <RuntimeTrpcProvider>
-            <CopilotTrpcProvider>
-              <YjsTrpcProvider>{children}</YjsTrpcProvider>
-            </CopilotTrpcProvider>
-          </RuntimeTrpcProvider>
-        </QueryClientProvider>
-      </trpc.Provider>
-    </authContext.Provider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <RuntimeTrpcProvider>
+          <CopilotTrpcProvider>
+            <YjsTrpcProvider>{children}</YjsTrpcProvider>
+          </CopilotTrpcProvider>
+        </RuntimeTrpcProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
-}
-
-export const useAuth = () => {
-  return useContext(authContext)!;
-};
-
-function useProvideAuth() {
-  const [authToken, setAuthToken] = useState<String | null>(
-    localStorage.getItem("token")
-  );
-
-  const getAuthHeaders = (): Record<string, string> => {
-    if (!authToken) return {};
-
-    return {
-      authorization: `Bearer ${authToken}`,
-    };
-  };
-
-  const signOut = () => {
-    console.log("sign out");
-    // HEBI CAUTION this must be removed. Otherwise, when getItem back, it is not null, but "null"
-    // localStorage.setItem("token", null);
-    localStorage.removeItem("token");
-    setAuthToken(null);
-  };
-
-  const signIn = (token: string) => {
-    setAuthToken(token);
-    localStorage.setItem("token", token);
-  };
-
-  /**
-   * This is not immediately set onrefresh.
-   */
-  const isSignedIn = () => {
-    if (authToken && localStorage.getItem("token") !== null) {
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  /**
-   * This is set immediately on refresh.
-   */
-  function hasToken() {
-    return localStorage.getItem("token") !== null;
-  }
-
-  return {
-    authToken,
-    getAuthHeaders,
-    signIn,
-    signOut,
-    isSignedIn,
-    hasToken,
-  };
 }

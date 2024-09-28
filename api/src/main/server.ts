@@ -7,9 +7,12 @@ import http from "http";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import cors from "cors";
 
+import { ExpressAuth } from "@auth/express";
+
 import { createContext } from "./trpc";
 
 import { appRouter } from "./routers";
+import { authConfig } from "../auth";
 
 export async function startServer({ port }) {
   const expapp = express();
@@ -23,6 +26,7 @@ export async function startServer({ port }) {
     })
   );
 
+  expapp.use("/api/auth/*", ExpressAuth(authConfig));
   expapp.use(
     "/api",
     trpcExpress.createExpressMiddleware({
@@ -30,6 +34,7 @@ export async function startServer({ port }) {
       createContext,
     })
   );
+
   const http_server = http.createServer(expapp);
   const wss = new WebSocketServer({ server: http_server });
 

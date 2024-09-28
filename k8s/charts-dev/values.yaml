@@ -1,7 +1,10 @@
 srcDir: "/path/to/codepod-cloud/src/dir"
-googleClientId:
+# Auth.js config
+GOOGLE_CLIENT_ID:
+GOOGLE_CLIENT_SECRET:
 # openssl rand -base64 12
-jwtSecret: 
+JWT_SECRET: 
+# App config
 READ_ONLY: false
 BANNER:
 host:

@@ -163,9 +163,6 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
       //
       // BC is more complex to track our custom Uploading status and SyncDone events.
       disableBc: true,
-      params: {
-        token: localStorage.getItem("token") || "",
-      },
     }
   );
   set(ATOM_simpleAwareness, { name, color: mycolor });

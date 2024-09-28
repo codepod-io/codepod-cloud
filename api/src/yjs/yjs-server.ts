@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws";
 
-import express from "express";
+import express, { Request } from "express";
 import http from "http";
 import cors from "cors";
 
@@ -14,6 +14,9 @@ import prisma from "../prisma";
 import { myenv } from "./vars";
 import { createContext } from "./trpc";
 import { appRouter } from "./routers";
+import { getSession } from "@auth/express";
+import { authConfig } from "../auth";
+
 interface TokenInterface {
   id: string;
 }
@@ -75,11 +78,12 @@ export async function startWsServer({ port }) {
     })
   );
 
-  http_server.on("upgrade", async (request, socket, head) => {
+  http_server.on("upgrade", async (request: Request, socket, head) => {
     console.log("new WS connection");
     // You may check auth of request here..
     // See https://github.com/websockets/ws#client-authentication
     function deny() {
+      console.log("Denying connection");
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
     }
@@ -88,20 +92,21 @@ export async function startWsServer({ port }) {
       deny();
       return;
     }
+    // The runtime server will send cookie as a query parameter.
     const url = new URL(`ws://${request.headers.host}${request.url}`);
-    // request.url: /yjs/idt3wbfcob3qbchpqovl?
-    // console.log("--- request.url", request.url);
+    const cookieParam = url.searchParams.get("cookie");
+    if (cookieParam) {
+      request.headers.cookie = cookieParam;
+      request.headers.connection = "upgrade";
+      request.headers["x-forwarded-proto"] = "http";
+    }
+    const session = (await getSession(request, authConfig)) ?? undefined;
     const docName = request.url.slice(1).split("?")[0];
     // docName: yjs/idt3wbfcob3qbchpqovl
     // console.log("--- docname", docName);
-    const token = url.searchParams.get("token");
     const repoId = docName.split("/")[1];
 
-    let userId: string | undefined;
-    if (token) {
-      const decoded = jwt.verify(token, myenv.JWT_SECRET) as TokenInterface;
-      userId = decoded.id;
-    }
+    const userId = session?.user?.id;
 
     const permission = await checkPermission({ repoId, userId });
     switch (permission) {

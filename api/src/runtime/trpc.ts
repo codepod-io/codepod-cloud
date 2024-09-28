@@ -5,23 +5,23 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 
 import jwt from "jsonwebtoken";
 import { myenv } from "./vars";
+import { getSession } from "@auth/express";
+import { authConfig } from "../auth";
+import assert from "assert";
 
 export const createContext = async ({
   req,
   res,
 }: CreateExpressContextOptions) => {
-  const token = req?.headers?.authorization?.slice(7);
-  let userId: string | undefined = undefined;
+  const session = (await getSession(req, authConfig)) ?? undefined;
+  // get the token to use to construct http request to other services
+  // the token is not in req.headers, but in cookies
+  assert(req.headers.cookie);
 
-  if (token) {
-    const decoded = jwt.verify(token, myenv.JWT_SECRET) as {
-      id: string;
-    };
-    userId = decoded.id;
-  }
   return {
-    userId,
-    token,
+    user: session?.user,
+    userId: session?.user?.id,
+    cookie: req.headers.cookie,
   };
 };
 

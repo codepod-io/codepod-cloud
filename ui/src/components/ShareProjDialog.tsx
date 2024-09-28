@@ -16,6 +16,7 @@ import {
 } from "@radix-ui/themes";
 import { toast, ToastContainer } from "react-toastify";
 import { Check, Earth, Link, Lock } from "lucide-react";
+import { name2initial } from "./Header";
 
 function CollaboratorList({
   repoId,
@@ -23,11 +24,10 @@ function CollaboratorList({
   collaborators,
 }: {
   repoId: string;
-  owner: { id: string; firstname: string; lastname: string; email: string };
+  owner: { id: string; name: string | null; email: string };
   collaborators: {
     id: string;
-    firstname: string;
-    lastname: string;
+    name: string | null;
     email: string;
   }[];
 }) {
@@ -57,12 +57,11 @@ function CollaboratorList({
             size="3"
             // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
             radius="full"
-            fallback={owner.firstname[0] + owner.lastname[0]}
+            fallback={name2initial(owner.name)}
           />
           <Box>
             <Text as="div" size="2" weight="bold">
-              {owner.firstname + " " + owner.lastname}{" "}
-              {me.id === owner.id && "(you)"}
+              {owner.name} {me.id === owner.id && "(you)"}
             </Text>
             <Text as="div" size="2" color="gray">
               {owner.email}
@@ -82,11 +81,11 @@ function CollaboratorList({
               size="3"
               // src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
               radius="full"
-              fallback={collab.firstname[0] + collab.lastname[0]}
+              fallback={name2initial(collab.name)}
             />
             <Box>
               <Text as="div" size="2" weight="bold">
-                {collab.firstname + " " + collab.lastname}{" "}
+                {collab.name}
                 {me.id === collab.id && "(you)"}
               </Text>
               <Text as="div" size="2" color="gray">

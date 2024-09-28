@@ -8,15 +8,6 @@ export function myassert(condition: any, msg?: string): asserts condition {
   }
 }
 
-// FIXME performance for reading this from localstorage
-export const getAuthHeaders = () => {
-  let authToken = localStorage.getItem("token") || null;
-  if (!authToken) return null;
-  return {
-    authorization: `Bearer ${authToken}`,
-  };
-};
-
 export function timeDifference(current: Date, previous: Date) {
   const msPerMinute = 60 * 1000;
   const msPerHour = msPerMinute * 60;

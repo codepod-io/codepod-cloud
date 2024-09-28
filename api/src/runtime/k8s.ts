@@ -307,12 +307,18 @@ async function createKernel({
  * ensure the ydoc for the repo is created and connected.
  * @returns the ydoc
  */
-async function ensureYDoc({ repoId, token }) {
+async function ensureYDoc({
+  repoId,
+  cookie,
+}: {
+  repoId: string;
+  cookie: string;
+}) {
   // create Y doc if not exists
   let ydoc = repoId2ydoc.get(repoId);
   if (!ydoc) {
     console.log("creating new ydoc ..");
-    ydoc = await getYDoc({ repoId, token });
+    ydoc = await getYDoc({ repoId, cookie });
     // trying to handle race condition
     if (repoId2ydoc.has(repoId)) {
       console.warn("WARN: race condition. This should rarely occur.");
@@ -337,7 +343,7 @@ export const k8sRouter = router({
         kernelName: z.enum(["python", "julia", "javascript", "racket"]),
       })
     )
-    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { cookie } }) => {
       console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
       if (myenv.READ_ONLY) throw Error("Read only mode");
       if (!repoId2wireMap.has(repoId)) {
@@ -349,7 +355,7 @@ export const k8sRouter = router({
         return false;
       }
 
-      const ydoc = await ensureYDoc({ repoId, token });
+      const ydoc = await ensureYDoc({ repoId, cookie });
 
       // set the runtime status to "starting"
       const runtimeMap = ydoc
@@ -412,7 +418,7 @@ export const k8sRouter = router({
         kernelName: z.enum(["python", "julia", "javascript", "racket"]),
       })
     )
-    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { cookie } }) => {
       if (myenv.READ_ONLY) throw Error("Read only mode");
       // remove zmq wire and ydoc
       console.log("deleting ZMQ wire ..");
@@ -423,7 +429,7 @@ export const k8sRouter = router({
       wire?.iopub.close();
       wireMap?.delete(kernelName);
 
-      const ydoc = await ensureYDoc({ repoId, token });
+      const ydoc = await ensureYDoc({ repoId, cookie });
       // set the runtime status to "starting"
       const runtimeMap = ydoc
         .getMap("rootMap")
@@ -469,10 +475,10 @@ export const k8sRouter = router({
 
   usageStatus: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
-    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { cookie } }) => {
       if (myenv.READ_ONLY) throw Error("Read only mode");
       console.log("usageStatus", repoId);
-      const ydoc = await ensureYDoc({ repoId, token });
+      const ydoc = await ensureYDoc({ repoId, cookie });
       const runtimeMap = ydoc
         .getMap("rootMap")
         .get("runtimeMap") as Y.Map<RuntimeInfo>;
@@ -525,9 +531,9 @@ export const k8sRouter = router({
 
   status: protectedProcedure
     .input(z.object({ repoId: z.string(), kernelName: z.string() }))
-    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
+    .mutation(async ({ input: { repoId, kernelName }, ctx: { cookie } }) => {
       if (myenv.READ_ONLY) throw Error("Read only mode");
-      const ydoc = await ensureYDoc({ repoId, token });
+      const ydoc = await ensureYDoc({ repoId, cookie });
       const runtimeMap = ydoc
         ?.getMap("rootMap")
         .get("runtimeMap") as Y.Map<RuntimeInfo>;
@@ -576,7 +582,7 @@ export const k8sRouter = router({
         ),
       })
     )
-    .mutation(async ({ input: { repoId, specs }, ctx: { token } }) => {
+    .mutation(async ({ input: { repoId, specs }, ctx: {} }) => {
       console.log("runChain", repoId);
       if (myenv.READ_ONLY) throw Error("Read only mode");
       const wireMap = repoId2wireMap.get(repoId);
@@ -597,7 +603,15 @@ export const k8sRouter = router({
     }),
 });
 
-export async function getYDoc({ repoId, token }): Promise<Y.Doc> {
+// FIXME token is missing for yjs connection
+// FIXME check user permission to repo
+export async function getYDoc({
+  repoId,
+  cookie,
+}: {
+  repoId: string;
+  cookie: string;
+}): Promise<Y.Doc> {
   return new Promise((resolve, reject) => {
     const ydoc = new Y.Doc();
     // connect to primary database
@@ -608,7 +622,8 @@ export async function getYDoc({ repoId, token }): Promise<Y.Doc> {
       // BC is more complex to track our custom Uploading status and SyncDone events.
       disableBc: true,
       params: {
-        token,
+        // send cookie
+        cookie,
       },
       // IMPORTANT: import websocket, because we're running it in node.js
       WebSocketPolyfill: WebSocket as any,
