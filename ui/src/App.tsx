@@ -63,7 +63,7 @@ const RequireSignIn = ({ children }) => {
           height: "100vh",
         }}
       >
-        <NoLogginErrorAlert />;
+        <NoLogginErrorAlert />
       </Flex>
     );
   }
