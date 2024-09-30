@@ -53,13 +53,7 @@ import {
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import {
-  ATOM_autoLayoutTree,
-  ATOM_centerSelection,
-  ATOM_foldAllPods,
-  ATOM_nodes,
-  ATOM_unfoldAllPods,
-} from "@/lib/store/canvasSlice";
+import { ATOM_nodes } from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
   ATOM_nodesMap,
@@ -348,12 +342,9 @@ function Versions() {
 }
 
 function DebugPanel() {
-  const autoLayout = useSetAtom(ATOM_autoLayoutTree);
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
-  const foldAllPods = useSetAtom(ATOM_foldAllPods);
-  const unFoldAllPods = useSetAtom(ATOM_unfoldAllPods);
   return (
     <Flex direction="column" gap="1">
       <YjsSyncStatus />
@@ -362,14 +353,6 @@ function DebugPanel() {
       <ExportYDoc />
       <ImportYDoc />
       <Separator my="3" size="4" />
-      <Button
-        onClick={() => {
-          autoLayout();
-        }}
-        variant="outline"
-      >
-        Layout
-      </Button>
       <Button onClick={() => parseAllPods()} variant="outline">
         Parse All
       </Button>
@@ -378,12 +361,6 @@ function DebugPanel() {
       </Button>
       <Button onClick={() => resolveAllPods()} variant="outline">
         Resolve All
-      </Button>
-      <Button onClick={() => foldAllPods()} variant="outline">
-        Fold All
-      </Button>
-      <Button onClick={() => unFoldAllPods()} variant="outline">
-        Unfold All
       </Button>
 
       <Separator my="3" size="4" />

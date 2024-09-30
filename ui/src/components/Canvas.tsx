@@ -157,11 +157,8 @@ function ViewportInfo() {
  * @returns
  */
 function CanvasImpl() {
-  const reactFlowWrapper = useRef<any>(null);
-
   const [nodes] = useAtom(ATOM_nodes);
 
-  const { nodes: animatedNodes } = useAnimatedNodes(nodes);
   const [edges] = useAtom(ATOM_edges);
   const [nodesMap] = useAtom(ATOM_nodesMap);
   const onNodesChange = useSetAtom(ATOM_onNodesChange);
@@ -203,7 +200,8 @@ function CanvasImpl() {
   const [helperLineHorizontal] = useAtom(ATOM_helperLineHorizontal);
   const [helperLineVertical] = useAtom(ATOM_helperLineVertical);
   const {
-    points,
+    pagePosition,
+    clientPosition,
     showContextMenu,
     setShowContextMenu,
     onPaneContextMenu,
@@ -243,10 +241,9 @@ function CanvasImpl() {
         // backgroundImage: "linear-gradient(200deg, #FDEB82, #ABC7FF)",
       }}
       flexGrow={"1"}
-      ref={reactFlowWrapper}
     >
       <ReactFlow
-        nodes={animatedNodes}
+        nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         attributionPosition="top-right"
@@ -355,8 +352,8 @@ function CanvasImpl() {
       {showContextMenu && (
         <Box
           style={{
-            left: `${points.x}px`,
-            top: `${points.y}px`,
+            left: `${pagePosition.x}px`,
+            top: `${pagePosition.y}px`,
             zIndex: 100,
             // FIXME still a little offset
             position: "fixed",
@@ -370,6 +367,7 @@ function CanvasImpl() {
           <ContextMenu
             setShowContextMenu={setShowContextMenu}
             handleItemClick={handleItemClick}
+            clientPosition={clientPosition}
           />
         </Box>
       )}

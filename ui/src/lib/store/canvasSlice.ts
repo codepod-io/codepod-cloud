@@ -21,14 +21,7 @@ import { AppNode } from "./types";
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
 import { toast } from "react-toastify";
-import { autoLayoutTree } from "./canvasSlice_autoLayout";
 import { getOrCreate_ATOM_resolveResult, propagateAllST } from "./runtimeSlice";
-
-// export the APIs defined in canvas_XXX.ts
-export * from "./canvasSlice_autoLayout";
-export * from "./canvasSlice_moveCut";
-export * from "./canvasSlice_structureOp";
-export * from "./cavnasSlice_addNode";
 
 /**
  * Get the absoluate position of the node.
@@ -140,22 +133,13 @@ export function updateView(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   let selectedPods = get(ATOM_selectedPods);
   const newStructure: T_id2parent = new Map();
-  // let nodes = Array.from<Node>(nodesMap.values());
-  // follow the tree order, skip folded nodes
-  function dfs(id: string): AppNode[] {
-    const node = nodesMap.get(id);
-    if (!node) throw new Error(`Node not found: ${id}`);
-    newStructure.set(id, node.data.treeParentId);
-    const node2 = structuredClone(node);
-    // set it as selected so that the toolbar (of the rich node) will be shown on top of other pods.
-    node2.selected = selectedPods.has(id);
-    let res = [node2];
-    if (!node.data.treeFolded) {
-      res = [...res, ...node.data.treeChildrenIds.flatMap(dfs)];
-    }
-    return res;
-  }
-  const nodes = dfs("ROOT");
+  // TODO compare new/old structure
+  // TODO render scope first
+  const _nodes = Array.from<AppNode>(nodesMap.values());
+  const nodes = structuredClone(_nodes);
+  nodes.forEach((node) => {
+    node.selected = selectedPods.has(node.id);
+  });
   // Remove width and height to let reactflow measure them.
   nodes.forEach((node) => {
     node.width = undefined;
@@ -197,133 +181,6 @@ export function updateView(get: Getter, set: Setter) {
 
 export const ATOM_updateView = atom(null, updateView);
 
-export const ATOM_toggleScope = atom(null, (get, set, id: string) => {
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  if (!node) throw new Error("Node not found");
-  nodesMap.set(
-    id,
-    produce(node, (draft) => {
-      draft.data.isScope = !draft.data.isScope;
-    })
-  );
-  autoLayoutTree(get, set);
-  updateView(get, set);
-});
-
-function toggleTreeFold(get: Getter, set: Setter, id: string) {
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-  nodesMap.set(
-    id,
-    produce(node, (node) => {
-      node.data.treeFolded = !node.data.treeFolded;
-    })
-  );
-  if (!node.data.treeFolded) {
-    // This is a fold operation. This doesn't trigger auto-layout because
-    // nodesMap sees no change.
-    // debouncedAutoLayoutTree(get, set);
-    autoLayoutTree(get, set);
-  }
-  updateView(get, set);
-}
-
-export const ATOM_toggleTreeFold = atom(null, toggleTreeFold);
-
-function togglePodFold(get: Getter, set: Setter, id: string) {
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-  nodesMap.set(
-    id,
-    produce(node, (node) => {
-      node.data.podFolded = !node.data.podFolded;
-    })
-  );
-  autoLayoutTree(get, set);
-  updateView(get, set);
-}
-
-export const ATOM_togglePodFold = atom(null, togglePodFold);
-
-function foldSubtreePods(get: Getter, set: Setter, id: string) {
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-  const dfs = (id: string) => {
-    const node = nodesMap.get(id);
-    if (!node) throw new Error(`Node not found: ${id}`);
-    nodesMap.set(
-      id,
-      produce(node, (node) => {
-        node.data.podFolded = true;
-      })
-    );
-    node.data.treeChildrenIds.forEach(dfs);
-  };
-  dfs(id);
-  autoLayoutTree(get, set);
-  updateView(get, set);
-}
-
-export const ATOM_foldSubtreePods = atom(null, foldSubtreePods);
-
-function unfoldSubtreePods(get: Getter, set: Setter, id: string) {
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-  const dfs = (id: string) => {
-    const node = nodesMap.get(id);
-    if (!node) throw new Error(`Node not found: ${id}`);
-    nodesMap.set(
-      id,
-      produce(node, (node) => {
-        node.data.podFolded = false;
-      })
-    );
-    node.data.treeChildrenIds.forEach(dfs);
-  };
-  dfs(id);
-  autoLayoutTree(get, set);
-  updateView(get, set);
-}
-
-export const ATOM_unfoldSubtreePods = atom(null, unfoldSubtreePods);
-
-function foldAllPods(get: Getter, set: Setter) {
-  const nodesMap = get(ATOM_nodesMap);
-  nodesMap.forEach((node) => {
-    nodesMap.set(
-      node.id,
-      produce(node, (node) => {
-        node.data.podFolded = true;
-      })
-    );
-  });
-  autoLayoutTree(get, set);
-  updateView(get, set);
-}
-
-export const ATOM_foldAllPods = atom(null, foldAllPods);
-
-function unfoldAllPods(get: Getter, set: Setter) {
-  const nodesMap = get(ATOM_nodesMap);
-  nodesMap.forEach((node) => {
-    nodesMap.set(
-      node.id,
-      produce(node, (node) => {
-        node.data.podFolded = false;
-      })
-    );
-  });
-  autoLayoutTree(get, set);
-  updateView(get, set);
-}
-
-export const ATOM_unfoldAllPods = atom(null, unfoldAllPods);
-
 export const ATOM_deleteSubtree = atom(
   null,
   (get: Getter, set: Setter, todelete: string) => {
@@ -350,19 +207,20 @@ export const ATOM_deleteSubtree = atom(
     if (codeMap.has(todelete)) codeMap.delete(todelete);
     if (richMap.has(todelete)) richMap.delete(todelete);
     // update parent node's children field.
-    myassert(node.data.treeParentId);
+    if (node.data.treeParentId) {
+      const treeParent = nodesMap.get(node.data.treeParentId);
+      myassert(treeParent);
+      nodesMap.set(
+        node.data.treeParentId,
+        produce(treeParent, (draft) => {
+          draft.data.treeChildrenIds = draft.data.treeChildrenIds.filter(
+            (childId) => childId !== todelete
+          );
+        })
+      );
+    }
 
-    const treeParent = nodesMap.get(node.data.treeParentId);
-    myassert(treeParent);
-    nodesMap.set(
-      node.data.treeParentId,
-      produce(treeParent, (draft) => {
-        draft.data.treeChildrenIds = draft.data.treeChildrenIds.filter(
-          (childId) => childId !== todelete
-        );
-      })
-    );
-    autoLayoutTree(get, set);
+    // autoLayoutTree(get, set);
     updateView(get, set);
   }
 );
@@ -473,24 +331,25 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
         }
         break;
       case "remove":
+        // Toast error is displayd below.
         break;
       default:
         // should not reach here.
         throw new Error(`Unknown change type: ${change.type}`);
     }
   });
-  if (shouldAutoLayout) {
-    console.log("autoLayout triggerred by dimension change");
-    // debouncedAutoLayoutTree(get, set);
-    autoLayoutTree(get, set);
-    updateView(get, set);
-  }
+  // Tell users to use the delete button.
+  changes.map((change) => change.type).includes("remove") &&
+    toast.error(
+      "Cannot use delete key to remove nodes. Use the delete button instead."
+    );
+  updateView(get, set);
 }
 
 const debouncedAutoLayoutTree = debounce(
   (get, set) => {
     // console.log("debounced autoLayoutTree");
-    autoLayoutTree(get, set);
+    // autoLayoutTree(get, set);
     // console.log("DEBUG skip autoLayoutTree");
   },
   10,

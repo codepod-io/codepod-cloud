@@ -33,12 +33,10 @@ import { match } from "ts-pattern";
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  ATOM_autoLayoutTree,
   ATOM_centerSelection,
   ATOM_nodes,
   ATOM_selectedPods,
   ATOM_selectPod,
-  ATOM_toggleTreeFold,
 } from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
@@ -124,7 +122,6 @@ function PodTreeItem({ id }) {
   const selectPod = useSetAtom(ATOM_selectPod);
   const setSelectedPods = useSetAtom(ATOM_selectedPods);
   const setCenterSelection = useSetAtom(ATOM_centerSelection);
-  const toggleTreeFold = useSetAtom(ATOM_toggleTreeFold);
 
   return (
     <Flex direction="column">
@@ -185,42 +182,7 @@ function PodTreeItem({ id }) {
         >
           <NodeName id={id} />
         </Button>
-
-        {/* fold button */}
-        {node.data.treeChildrenIds?.length ? (
-          <Button
-            variant="ghost"
-            size="1"
-            style={{
-              padding: 0,
-            }}
-          >
-            {node.data.treeFolded ? (
-              <ChevronRight
-                onClick={() => {
-                  toggleTreeFold(id);
-                }}
-              />
-            ) : (
-              <ChevronDown
-                onClick={() => {
-                  toggleTreeFold(id);
-                }}
-              />
-            )}
-          </Button>
-        ) : null}
       </Flex>
-
-      {!node.data.treeFolded && (
-        <Flex direction="column">
-          <Flex direction="column" style={{ paddingLeft: "15px" }}>
-            {node.data.treeChildrenIds?.map((child) => (
-              <PodTreeItem key={child} id={child} />
-            ))}
-          </Flex>
-        </Flex>
-      )}
     </Flex>
   );
 }
