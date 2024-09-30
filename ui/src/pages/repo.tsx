@@ -172,8 +172,8 @@ function ParserWrapper({ children }) {
       parserReady_julia
     ) {
       parseAllPods();
-      propagateAllST();
-      resolveAllPods();
+      // propagateAllST();
+      // resolveAllPods();
     }
   }, [
     parseAllPods,

@@ -168,49 +168,51 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     metaMap.set("version", "v0.0.1");
     rootMap.set("metaMap", metaMap);
     // the initial python pod id
-    const pod1_id = myNanoId();
-    const pod2_id = myNanoId();
+    const rich1_id = myNanoId();
+    const code1_id = myNanoId();
+    const code2_id = myNanoId();
     // add ROOT node
     const rootNode: RichNodeType = {
-      id: "ROOT",
+      id: rich1_id,
       type: "RICH",
       position: { x: 0, y: 0 },
       data: {
-        treeChildrenIds: [pod1_id, pod2_id],
+        treeChildrenIds: [],
       },
+      dragHandle: ".custom-drag-handle",
     };
-    nodesMap.set("ROOT", rootNode);
+    nodesMap.set(rich1_id, rootNode);
 
     const pod1: CodeNodeType = {
       // a python code pod
-      id: pod1_id,
+      id: code1_id,
       type: "CODE",
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: -74 },
       data: {
         treeChildrenIds: [],
-        treeParentId: "ROOT",
         lang: "python",
       },
+      dragHandle: ".custom-drag-handle",
     };
-    nodesMap.set(pod1_id, pod1);
+    nodesMap.set(code1_id, pod1);
     const pod2: CodeNodeType = {
       // a python code pod
-      id: pod2_id,
+      id: code2_id,
       type: "CODE",
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: 97 },
       data: {
         treeChildrenIds: [],
-        treeParentId: "ROOT",
         lang: "python",
       },
+      dragHandle: ".custom-drag-handle",
     };
-    nodesMap.set(pod2_id, pod2);
+    nodesMap.set(code2_id, pod2);
     const yxml = await getInitYXml();
-    richMap.set("ROOT", yxml);
-    codeMap.set(pod1_id, new Y.Text("def foo(x):\n    return x+1\n"));
-    codeMap.set(pod2_id, new Y.Text("foo(3)\n"));
+    richMap.set(rich1_id, yxml);
+    codeMap.set(code1_id, new Y.Text("def foo(x):\n    return x+1\n"));
+    codeMap.set(code2_id, new Y.Text("foo(3)\n"));
   }
 }
 

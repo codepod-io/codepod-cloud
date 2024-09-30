@@ -1,16 +1,23 @@
 import { useState, useEffect, ChangeEvent } from "react";
-import { useKeyPress } from "@xyflow/react";
+import { useKeyPress, useReactFlow, XYPosition } from "@xyflow/react";
 
 import { Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useSetAtom } from "jotai";
 import { ATOM_nodes } from "@/lib/store/canvasSlice";
-import { FileUp } from "lucide-react";
+import { FileUp, NotebookPen, Clipboard } from "lucide-react";
+import {
+  JavaScriptLogo,
+  JuliaLogo,
+  PythonLogo,
+  RacketLogo,
+} from "../nodes/utils";
+import { ATOM_addNode } from "@/lib/store/cavnasSlice_addNode";
 
 export function useContextMenu() {
   const [showContextMenu, setShowContextMenu] = useState(false);
 
-  const [points, setPoints] = useState({ x: 0, y: 0 });
-  // const [client, setClient] = useState({ x: 0, y: 0 });
+  const [pagePosition, setPagePosition] = useState({ x: 0, y: 0 });
+  const [clientPosition, setClientPositin] = useState({ x: 0, y: 0 });
 
   const escapePressed = useKeyPress("Escape");
   useEffect(() => {
@@ -22,8 +29,8 @@ export function useContextMenu() {
   const onPaneContextMenu = (event) => {
     event.preventDefault();
     setShowContextMenu(true);
-    setPoints({ x: event.pageX, y: event.pageY });
-    // setClient({ x: event.clientX, y: event.clientY });
+    setPagePosition({ x: event.pageX, y: event.pageY });
+    setClientPositin({ x: event.clientX, y: event.clientY });
   };
 
   const onNodeContextMenu = (event, node) => {
@@ -31,12 +38,13 @@ export function useContextMenu() {
 
     event.preventDefault();
     setShowContextMenu(true);
-    setPoints({ x: event.pageX, y: event.pageY });
-    // setClient({ x: event.clientX, y: event.clientY });
+    setPagePosition({ x: event.pageX, y: event.pageY });
+    setClientPositin({ x: event.clientX, y: event.clientY });
   };
 
   return {
-    points,
+    pagePosition,
+    clientPosition,
     showContextMenu,
     setShowContextMenu,
     onPaneContextMenu,
@@ -89,7 +97,19 @@ export function useUpload() {
   return { handleFileInputChange };
 }
 
-export function ContextMenu({ setShowContextMenu, handleItemClick }) {
+export function ContextMenu({
+  setShowContextMenu,
+  handleItemClick,
+  clientPosition,
+}: {
+  setShowContextMenu: any;
+  handleItemClick: any;
+  clientPosition: XYPosition;
+}) {
+  const addNode = useSetAtom(ATOM_addNode);
+  // TODO calculate position of context menu right click
+  const { screenToFlowPosition } = useReactFlow();
+  const position = screenToFlowPosition(clientPosition);
   return (
     <DropdownMenu.Root
       open={true}
@@ -111,6 +131,57 @@ export function ContextMenu({ setShowContextMenu, handleItemClick }) {
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content>
+        <DropdownMenu.Item
+          shortcut="⌘ D"
+          onSelect={() => {
+            addNode({ position, type: "RICH" });
+          }}
+        >
+          <NotebookPen /> Note
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onSelect={() => {
+            addNode({ position, type: "CODE", lang: "python" });
+          }}
+        >
+          <PythonLogo />
+          Python
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onSelect={() => {
+            addNode({ position, type: "CODE", lang: "julia" });
+          }}
+        >
+          <JuliaLogo />
+          Julia
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onSelect={() => {
+            addNode({
+              position,
+              type: "CODE",
+              lang: "javascript",
+            });
+          }}
+        >
+          <JavaScriptLogo />
+          JavaScript
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          shortcut="⌘ E"
+          onSelect={() => {
+            addNode({ position, type: "CODE", lang: "racket" });
+          }}
+        >
+          <RacketLogo />
+          Racket
+        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           shortcut="⌘ N"

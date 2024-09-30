@@ -26,11 +26,9 @@ import {
   DeleteButton,
   JavaScriptLogo,
   JuliaLogo,
-  PodToolbar,
   PythonLogo,
   RacketLogo,
   SymbolTable,
-  ToolbarAddPod,
 } from "./utils";
 import { myassert, timeDifference, useTick } from "@/lib/utils/utils";
 
@@ -51,6 +49,7 @@ import {
   CornerDownLeft,
   CornerRightUp,
   Ellipsis,
+  GripVertical,
   Play,
   ScissorsLineDashed,
   X,
@@ -79,13 +78,6 @@ import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType } from "@/lib/store/types";
-import {
-  ATOM_foldSubtreePods,
-  ATOM_slurp,
-  ATOM_toggleScope,
-  ATOM_unfoldSubtreePods,
-  ATOM_unslurp,
-} from "@/lib/store/canvasSlice";
 import { motion } from "framer-motion";
 
 function Timer({ lastExecutedAt }) {
@@ -309,15 +301,33 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
   const repoId = repoData.id;
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
-  const toggleScope = useSetAtom(ATOM_toggleScope);
-  const slurp = useSetAtom(ATOM_slurp);
-  const unslurp = useSetAtom(ATOM_unslurp);
-
-  const foldSubtreePods = useSetAtom(ATOM_foldSubtreePods);
-  const unfoldSubtreePods = useSetAtom(ATOM_unfoldSubtreePods);
 
   return (
-    <PodToolbar id={id}>
+    <Flex
+      align="center"
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        // border: "solid 1px var(--gray-8)",
+        transform: "translateY(-120%)",
+        backgroundColor: "white",
+        borderRadius: "5px",
+        boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+        cursor: "auto",
+      }}
+    >
+      {/* drag handle */}
+      <Box
+        className="custom-drag-handle"
+        style={{
+          cursor: "grab",
+          padding: "8px",
+          display: "inline-flex",
+        }}
+      >
+        <GripVertical />
+      </Box>
       {/* The run button */}
       <IconButton
         variant="ghost"
@@ -376,78 +386,11 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
           <DropdownMenu.Item onSelect={() => resolvePod(id)}>
             Resolve
           </DropdownMenu.Item>
-
-          {/* Structural edit */}
-          <DropdownMenu.Separator />
-          <Flex direction="column">
-            <ToolbarAddPod id={id} position="top" />
-            <Flex align="center" justify="center">
-              <ToolbarAddPod id={id} position="left" />
-              <ToolbarAddPod id={id} position="right" />
-            </Flex>
-            <ToolbarAddPod id={id} position="bottom" />
-          </Flex>
-          <DropdownMenu.Separator />
-
-          <DropdownMenu.Item
-            onSelect={(e) => {
-              e.preventDefault();
-            }}
-            asChild
-          >
-            <Flex
-              onClick={() => {
-                toggleScope(id);
-              }}
-            >
-              Scope
-              <Switch checked={node.data.isScope} color="blue" />
-            </Flex>
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Separator />
-
-          <DropdownMenu.Item
-            onSelect={() => {
-              foldSubtreePods(id);
-            }}
-          >
-            Fold Subtree Pods
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={() => {
-              unfoldSubtreePods(id);
-            }}
-          >
-            Unfold Subtree Pods
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-
-          <DropdownMenu.Item
-            onSelect={(e) => {
-              e.preventDefault();
-              // move its next sibling to its children
-              slurp(id);
-            }}
-          >
-            <CornerRightUp />
-            Slurp
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={(e) => {
-              e.preventDefault();
-              // move its children to its next sibling
-              unslurp(id);
-            }}
-          >
-            <CornerDownLeft />
-            Unslurp
-          </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DeleteButton id={id} />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    </PodToolbar>
+    </Flex>
   );
 }
 
@@ -561,43 +504,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const [hover, setHover] = useState(false);
 
-  if (node.data.podFolded) {
-    return (
-      <Flex
-        className="nodrag"
-        ref={ref}
-        style={{
-          // This is the key to let the node auto-resize w.r.t. the content.
-          height: "auto",
-          paddingLeft: "10px",
-          // minHeight: "50px",
-          backdropFilter: "blur(10px)",
-          backgroundColor: "rgba(228, 228, 228, 0.5)",
-          borderRadius: "8px",
-          border: cutId === id ? "5px dashed red" : "5px solid transparent",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
-        }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-      >
-        <Flex direction="column">
-          {!env.READ_ONLY && (
-            <motion.div
-              animate={{
-                opacity: hover ? 1 : 0,
-              }}
-            >
-              <MyPodToolbar node={node} />
-            </motion.div>
-          )}
-          <Handle id="left" type="source" position={Position.Left} />
-          <Handle id="right" type="source" position={Position.Right} />
-          <FoldedCode id={id} />
-        </Flex>
-      </Flex>
-    );
-  }
-
   return (
     <div
       style={{
@@ -606,7 +512,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
       }}
     >
       <div
-        className="nodrag"
+        // className="nodrag"
         style={{
           // This is the key to let the node auto-resize w.r.t. the content.
           height: "auto",
