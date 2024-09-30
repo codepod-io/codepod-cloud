@@ -13,6 +13,7 @@ import {
   NodeProps,
   Handle,
   Position,
+  useConnection,
 } from "@xyflow/react";
 import { ResizeControlVariant } from "@xyflow/react";
 
@@ -79,6 +80,7 @@ import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType } from "@/lib/store/types";
 import { motion } from "framer-motion";
+import { ATOM_insertMode } from "@/lib/store/canvasSlice";
 
 function Timer({ lastExecutedAt }) {
   useTick(1000);
@@ -497,12 +499,84 @@ export const CodeNode = function ({ id }) {
   return <CodeNodeImpl node={node} />;
 };
 
+/**
+ * This is the handle that appears when the user is dragging a node to connect.
+ */
+export function MyHandle({
+  hover,
+  isTarget,
+}: {
+  hover: boolean;
+  isTarget: boolean;
+}) {
+  const insertMode = useAtomValue(ATOM_insertMode);
+  return (
+    <Box
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        ...(insertMode === "Connect"
+          ? {
+              width: "100%",
+              height: "100%",
+              borderStyle: isTarget ? "dashed" : "solid",
+              backgroundColor: isTarget
+                ? hover
+                  ? "orange"
+                  : "#ffcce3"
+                : "#ccd9f6",
+            }
+          : { width: 0, height: 0 }),
+        // make content horizontally and vertically centered
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: 0.5,
+      }}
+    >
+      <Handle
+        id="left"
+        type="source"
+        position={Position.Left}
+        style={{
+          width: "100%",
+          height: "100%",
+          minWidth: 0,
+          minHeight: 0,
+          position: "absolute",
+          // background: "blue",
+          border: "none",
+          opacity: 0.2,
+          borderRadius: 0,
+          transform: "none",
+          top: 0,
+          left: 0,
+          color: "black",
+          fontWeight: "bold",
+        }}
+      />
+      <Text>
+        {insertMode === "Connect" &&
+          (isTarget ? "Drop Here" : "Drag to connect")}
+      </Text>
+    </Box>
+  );
+}
+
 function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   const id = node.id;
   let ref = useRunKey({ node });
   const cutId = useAtomValue(ATOM_cutId);
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const [hover, setHover] = useState(false);
+
+  const insertMode = useAtomValue(ATOM_insertMode);
+
+  const connection = useConnection();
+
+  const isTarget = connection.inProgress && connection.fromNode.id !== id;
 
   return (
     <div
@@ -511,6 +585,28 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
         minWidth: "300px",
       }}
     >
+      {insertMode === "Move" && (
+        <Box
+          className="custom-drag-handle"
+          style={{
+            // put it on top of Monaco
+            zIndex: 10,
+            // make it full width of the node
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            top: 0,
+            left: 0,
+            backgroundColor: "#ccd9f6",
+            opacity: 0.5,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          Drag to move
+        </Box>
+      )}
       <div
         // className="nodrag"
         style={{
@@ -548,8 +644,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
           <ResultBlock id={id} />
           <SymbolTable id={id} />
 
-          <Handle id="left" type="source" position={Position.Left} />
-          <Handle id="right" type="source" position={Position.Right} />
+          <MyHandle hover={hover} isTarget={isTarget} />
 
           <Box
             style={{

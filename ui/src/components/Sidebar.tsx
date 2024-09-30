@@ -18,6 +18,8 @@ import {
   TextField,
   Switch,
   AlertDialog,
+  RadioGroup,
+  RadioCards,
 } from "@radix-ui/themes";
 
 import {
@@ -28,6 +30,9 @@ import {
   Settings,
   Construction,
   CircleHelp,
+  TextCursor,
+  Move,
+  Unplug,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -53,7 +58,7 @@ import {
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_nodes } from "@/lib/store/canvasSlice";
+import { ATOM_insertMode, ATOM_nodes } from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
   ATOM_nodesMap,
@@ -341,15 +346,54 @@ function Versions() {
   );
 }
 
+/**
+ * Switch between modes:
+ * - Insert
+ * - Move
+ * - Connect
+ */
+function ModeSwitch() {
+  const [insertMode, setInsertMode] = useAtom(ATOM_insertMode);
+  return (
+    <Flex direction="column" gap="3">
+      <Heading size="2">Canvas Mode</Heading>
+      <RadioCards.Root
+        defaultValue={insertMode}
+        columns={{ initial: "1" }}
+        onValueChange={(v: "Insert" | "Move" | "Connect") => {
+          setInsertMode(v);
+        }}
+      >
+        <RadioCards.Item value="Insert">
+          <Flex direction="row" width="100%" gap="3">
+            <TextCursor />
+            <Text weight="bold">Insert</Text>
+          </Flex>
+        </RadioCards.Item>
+        <RadioCards.Item value="Move">
+          <Flex direction="row" width="100%" gap="3">
+            <Move />
+            <Text weight="bold">Move</Text>
+          </Flex>
+        </RadioCards.Item>
+        <RadioCards.Item value="Connect">
+          <Flex direction="row" width="100%" gap="3">
+            <Unplug />
+            <Text weight="bold">Connect</Text>
+          </Flex>
+        </RadioCards.Item>
+      </RadioCards.Root>
+    </Flex>
+  );
+}
+
 function DebugPanel() {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
   return (
     <Flex direction="column" gap="1">
-      <YjsSyncStatus />
       <Heading size="2">Export to ..</Heading>
-      <ExportPDF />
       <ExportYDoc />
       <ImportYDoc />
       <Separator my="3" size="4" />
@@ -362,9 +406,6 @@ function DebugPanel() {
       <Button onClick={() => resolveAllPods()} variant="outline">
         Resolve All
       </Button>
-
-      <Separator my="3" size="4" />
-      <Runtime />
     </Flex>
   );
 }
@@ -387,6 +428,9 @@ export function SidebarLeft() {
                 Export to ..
               </Heading>
               <ExportPDF />
+              <Separator my="3" size="4" />
+              <ModeSwitch />
+
               <Runtime />
             </Flex>
           ),

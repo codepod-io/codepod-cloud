@@ -2,7 +2,9 @@ import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Doc } from "yjs";
 import * as Y from "yjs";
 import {
+  Connection,
   Edge,
+  EdgeChange,
   MarkerType,
   Node,
   NodeChange,
@@ -12,7 +14,12 @@ import {
 import { getHelperLines } from "@/components/nodes/utils";
 import { produce } from "immer";
 import { useCallback } from "react";
-import { ATOM_codeMap, ATOM_nodesMap, ATOM_richMap } from "./yjsSlice";
+import {
+  ATOM_codeMap,
+  ATOM_edgesMap,
+  ATOM_nodesMap,
+  ATOM_richMap,
+} from "./yjsSlice";
 import { match } from "ts-pattern";
 import { flextree } from "d3-flextree";
 import { myassert, myNanoId } from "../utils/utils";
@@ -22,6 +29,8 @@ import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
 import { toast } from "react-toastify";
 import { getOrCreate_ATOM_resolveResult, propagateAllST } from "./runtimeSlice";
+
+export const ATOM_insertMode = atom<"Insert" | "Move" | "Connect">("Insert");
 
 /**
  * Get the absoluate position of the node.
@@ -170,11 +179,14 @@ export function updateView(get: Getter, set: Setter) {
     });
   set(ATOM_nodes, [...svgNodes, ...nodes]);
 
+  // from edgesMap
+  const edgesMap = get(ATOM_edgesMap);
+  const edges0 = Array.from(edgesMap.values());
   // Generate edges for tree structure.
   const edges1 = generateEdge(nodes);
   // Generate edges for caller-callee relationship.
   const edges2 = generateCallEdges(get, set);
-  set(ATOM_edges, [...edges1, ...edges2]);
+  set(ATOM_edges, [...edges0, ...edges1, ...edges2]);
   const t2 = performance.now();
   console.debug("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
 }
@@ -221,6 +233,15 @@ export const ATOM_deleteSubtree = atom(
     }
 
     // autoLayoutTree(get, set);
+    updateView(get, set);
+  }
+);
+
+export const ATOM_deleteEdge = atom(
+  null,
+  (get: Getter, set: Setter, edgeId: string) => {
+    const edgesMap = get(ATOM_edgesMap);
+    edgesMap.delete(edgeId);
     updateView(get, set);
   }
 );
@@ -346,6 +367,35 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   updateView(get, set);
 }
 
+export const ATOM_onNodesChange = atom(null, onNodesChange);
+
+function onConnect(get: Getter, set: Setter, connection: Connection) {
+  const edgesMap = get(ATOM_edgesMap);
+  if (!connection.source || !connection.target) return null;
+  const edge = {
+    // TODO This ID might not support multiple types of edges between the same nodes.
+    id: `${connection.source}_${connection.target}_manual`,
+    source: connection.source,
+    // sourceHandle: "top",
+    target: connection.target,
+    type: "floating",
+    // targetHandle: "top",
+
+    // NOTE: I should not add styles here. Instead, it should be default so that
+    // I don't need to migrate this piece of data.
+    //
+    // markerEnd: {
+    //   type: MarkerType.Arrow,
+    //   color: "red",
+    // },
+    // style: { strokeWidth: 8, stroke: "black", strokeOpacity: 0.1 },
+  };
+  edgesMap.set(edge.id, edge);
+  updateView(get, set);
+}
+
+export const ATOM_onConnect = atom(null, onConnect);
+
 const debouncedAutoLayoutTree = debounce(
   (get, set) => {
     // console.log("debounced autoLayoutTree");
@@ -359,5 +409,3 @@ const debouncedAutoLayoutTree = debounce(
     trailing: false,
   }
 );
-
-export const ATOM_onNodesChange = atom(null, onNodesChange);

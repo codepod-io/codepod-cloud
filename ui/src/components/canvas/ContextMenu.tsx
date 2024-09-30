@@ -1,9 +1,15 @@
 import { useState, useEffect, ChangeEvent } from "react";
-import { useKeyPress, useReactFlow, XYPosition } from "@xyflow/react";
+import {
+  Edge,
+  EdgeMouseHandler,
+  useKeyPress,
+  useReactFlow,
+  XYPosition,
+} from "@xyflow/react";
 
-import { Button, DropdownMenu } from "@radix-ui/themes";
+import { Box, Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useSetAtom } from "jotai";
-import { ATOM_nodes } from "@/lib/store/canvasSlice";
+import { ATOM_deleteEdge, ATOM_nodes } from "@/lib/store/canvasSlice";
 import { FileUp, NotebookPen, Clipboard } from "lucide-react";
 import {
   JavaScriptLogo,
@@ -12,6 +18,7 @@ import {
   RacketLogo,
 } from "../nodes/utils";
 import { ATOM_addNode } from "@/lib/store/cavnasSlice_addNode";
+import { myassert } from "@/lib/utils/utils";
 
 export function useContextMenu() {
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -207,4 +214,84 @@ export function ContextMenu({
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
+}
+
+export function useEdgeContextMenu() {
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [edgeId, setEdgeId] = useState<string | null>(null);
+
+  const [pagePosition, setPagePosition] = useState({ x: 0, y: 0 });
+  const [clientPosition, setClientPositin] = useState({ x: 0, y: 0 });
+
+  const escapePressed = useKeyPress("Escape");
+  useEffect(() => {
+    if (escapePressed) {
+      setShowContextMenu(false);
+    }
+  }, [escapePressed]);
+
+  const onEdgeContextMenu: EdgeMouseHandler<Edge> = (event, edge) => {
+    event.preventDefault();
+    setShowContextMenu(true);
+    setEdgeId(edge.id);
+    setPagePosition({ x: event.pageX, y: event.pageY });
+    setClientPositin({ x: event.clientX, y: event.clientY });
+  };
+
+  const deleteEdge = useSetAtom(ATOM_deleteEdge);
+
+  const edgeContextMenu = showContextMenu && (
+    <Box
+      style={{
+        left: `${pagePosition.x}px`,
+        top: `${pagePosition.y}px`,
+        zIndex: 100,
+        // FIXME still a little offset
+        position: "fixed",
+        boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
+        // width: '200px',
+        backgroundColor: "#fff",
+        borderRadius: "5px",
+        boxSizing: "border-box",
+      }}
+    >
+      <DropdownMenu.Root
+        open={true}
+        onOpenChange={(open) => {
+          console.log("onOpenChange");
+          setShowContextMenu(false);
+        }}
+      >
+        <DropdownMenu.Trigger>
+          <Button
+            variant="ghost"
+            style={{
+              width: 0,
+              height: 0,
+              opacity: 0,
+            }}
+          >
+            Options
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <DropdownMenu.Item
+            shortcut="⌘ D"
+            disabled={!edgeId}
+            onSelect={() => {
+              myassert(edgeId);
+              deleteEdge(edgeId);
+            }}
+          >
+            Delete Edge
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </Box>
+  );
+
+  return {
+    onEdgeContextMenu,
+    edgeContextMenu,
+  };
 }
