@@ -23,11 +23,20 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
 import { SvgNode } from "./nodes/Scope";
-import FloatingEdge from "./nodes/FloatingEdge";
-import CustomConnectionLine from "./nodes/CustomConnectionLine";
+import { FloatingEdge } from "./nodes/FloatingEdge";
+import {
+  ConnectionLineStraight,
+  StraightFloatingEdge,
+} from "./nodes/FloatingEdge_Straight";
+
 import HelperLines from "./HelperLines";
 
-import { ContextMenu, useContextMenu, useUpload } from "./canvas/ContextMenu";
+import {
+  ContextMenu,
+  useContextMenu,
+  useEdgeContextMenu,
+  useUpload,
+} from "./canvas/ContextMenu";
 import { useAnimatedNodes, useCopyPaste } from "./canvas/helpers";
 import {
   ATOM_edges,
@@ -38,6 +47,8 @@ import {
   ATOM_onNodesChange,
   ATOM_centerSelection,
   getAbsPos,
+  ATOM_onConnect,
+  ATOM_insertMode,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
@@ -113,7 +124,8 @@ function GradientEdge({
 }
 
 const edgeTypes = {
-  floating: FloatingEdge,
+  // floating: FloatingEdge,
+  floating: StraightFloatingEdge,
   gradient: GradientEdge,
 };
 
@@ -162,6 +174,7 @@ function CanvasImpl() {
   const [edges] = useAtom(ATOM_edges);
   const [nodesMap] = useAtom(ATOM_nodesMap);
   const onNodesChange = useSetAtom(ATOM_onNodesChange);
+  const onConnect = useSetAtom(ATOM_onConnect);
 
   const [selectedPods] = useAtom(ATOM_selectedPods);
 
@@ -221,6 +234,9 @@ function CanvasImpl() {
     maxWait: 5000,
   });
 
+  const { edgeContextMenu, onEdgeContextMenu } = useEdgeContextMenu();
+  const insertMode = useAtomValue(ATOM_insertMode);
+
   return (
     <Flex
       style={{
@@ -246,6 +262,8 @@ function CanvasImpl() {
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onEdgeContextMenu={onEdgeContextMenu}
+        onConnect={onConnect}
         attributionPosition="top-right"
         maxZoom={2}
         minZoom={0.1}
@@ -258,13 +276,22 @@ function CanvasImpl() {
           // style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
           // type: "floating",
           // type: "simplebezier",
-          selectable: false,
+          selectable: insertMode !== "Insert",
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,
           //   color: "black",
           // },
+          markerEnd: {
+            type: MarkerType.Arrow,
+            // color: "red",
+          },
+          style: {
+            strokeWidth: 5,
+            // stroke: "black",
+            // strokeOpacity: 0.1,
+          },
         }}
-        connectionLineComponent={CustomConnectionLine}
+        connectionLineComponent={ConnectionLineStraight}
         connectionLineStyle={{
           strokeWidth: 3,
           stroke: "black",
@@ -326,14 +353,14 @@ function CanvasImpl() {
             vertical={helperLineVertical}
           />
 
-          {/* <Background /> */}
+          <Background />
           {/* <Background
             id="1"
             gap={10}
             color="#f1f1f1"
             variant={BackgroundVariant.Lines}
-          />
-          <Background
+          /> */}
+          {/* <Background
             id="2"
             gap={100}
             offset={1}
@@ -371,6 +398,7 @@ function CanvasImpl() {
           />
         </Box>
       )}
+      {edgeContextMenu}
     </Flex>
   );
 }

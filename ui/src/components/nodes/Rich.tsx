@@ -7,6 +7,7 @@ import {
   Handle,
   Position,
   NodeProps,
+  useConnection,
 } from "@xyflow/react";
 
 import * as Y from "yjs";
@@ -44,6 +45,8 @@ import { env } from "@/lib/vars";
 import { motion } from "framer-motion";
 import { RichEditor } from "./Rich_Editor";
 import { myassert } from "@/lib/utils/utils";
+import { ATOM_insertMode } from "@/lib/store/canvasSlice";
+import { MyHandle } from "./Code";
 
 function MyPodToolbar({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
@@ -174,6 +177,13 @@ export const RichNode = function ({
 
   const node = nodesMap.get(id);
   const cutId = useAtomValue(ATOM_cutId);
+
+  const insertMode = useAtomValue(ATOM_insertMode);
+
+  const connection = useConnection();
+
+  const isTarget = connection.inProgress && connection.fromNode.id !== id;
+
   if (!node) return null;
 
   return (
@@ -184,6 +194,28 @@ export const RichNode = function ({
         minWidth: "300px",
       }}
     >
+      {insertMode === "Move" && (
+        <Box
+          className="custom-drag-handle"
+          style={{
+            // put it on top of Monaco
+            zIndex: 10,
+            // make it full width of the node
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            top: 0,
+            left: 0,
+            backgroundColor: "#ccd9f6",
+            opacity: 0.5,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          Drag to move
+        </Box>
+      )}
       <div
         style={{
           // This is the key to let the node auto-resize w.r.t. the content.
@@ -224,9 +256,7 @@ export const RichNode = function ({
           <RichEditorWrapper id={id} />
 
           <SymbolTable id={id} />
-
-          <Handle id="left" type="source" position={Position.Left} />
-          <Handle id="right" type="source" position={Position.Right} />
+          <MyHandle hover={hover} isTarget={isTarget} />
 
           <NodeResizeControl
             minWidth={300}
