@@ -22,7 +22,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
-import { SvgNode } from "./nodes/Scope";
+import { ScopeNode } from "./nodes/Scope";
 import { FloatingEdge } from "./nodes/FloatingEdge";
 import {
   ConnectionLineStraight,
@@ -35,6 +35,7 @@ import {
   ContextMenu,
   useContextMenu,
   useEdgeContextMenu,
+  useSelectionContextMenu,
   useUpload,
 } from "./canvas/ContextMenu";
 import { useAnimatedNodes, useCopyPaste } from "./canvas/helpers";
@@ -66,7 +67,7 @@ import { myassert } from "@/lib/utils/utils";
 const nodeTypes = {
   CODE: CodeNode,
   RICH: RichNode,
-  SVG: SvgNode,
+  SCOPE: ScopeNode,
 };
 
 function GradientEdge({
@@ -235,6 +236,8 @@ function CanvasImpl() {
   });
 
   const { edgeContextMenu, onEdgeContextMenu } = useEdgeContextMenu();
+  const { selectionContextMenu, onSelectionContextMenu } =
+    useSelectionContextMenu();
   const insertMode = useAtomValue(ATOM_insertMode);
 
   return (
@@ -263,6 +266,7 @@ function CanvasImpl() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgeContextMenu={onEdgeContextMenu}
+        onSelectionContextMenu={onSelectionContextMenu}
         onConnect={onConnect}
         attributionPosition="top-right"
         maxZoom={2}
@@ -304,6 +308,10 @@ function CanvasImpl() {
           if (env.READ_ONLY) return;
           debouncedSaveViewPort({ repoId, x, y, zoom });
         }}
+        // drag to select nodes instead of panning the canvas.
+        panOnDrag={false}
+        selectionOnDrag={true}
+        // use the touchpad to pan the canvas.
         zoomOnScroll={false}
         panOnScroll={true}
         connectionMode={ConnectionMode.Loose}
@@ -311,7 +319,7 @@ function CanvasImpl() {
         // disable node delete on backspace when the user is a guest.
         deleteKeyCode={editMode === "view" ? null : "Backspace"}
         multiSelectionKeyCode={isMac ? "Meta" : "Control"}
-        selectionMode={SelectionMode.Partial}
+        // selectionMode={SelectionMode.Partial}
         // Restore previous viewport.
         defaultViewport={{ zoom: repoData.zoom, x: repoData.x, y: repoData.y }}
         // Center node on repo creation. INIT_ZOOM is a magic number (1.001) to
@@ -399,6 +407,7 @@ function CanvasImpl() {
         </Box>
       )}
       {edgeContextMenu}
+      {selectionContextMenu}
     </Flex>
   );
 }

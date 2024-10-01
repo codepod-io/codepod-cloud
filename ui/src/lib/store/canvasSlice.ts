@@ -62,7 +62,8 @@ function selectPod(
   set: Setter,
   { id, selected }: { id: string; selected: boolean }
 ) {
-  const selectedPods = get(ATOM_selectedPods);
+  // NOTE: must use structuredClone, otherwise the ATOM is not marked as changed.
+  const selectedPods = structuredClone(get(ATOM_selectedPods));
   if (selected) {
     selectedPods.add(id);
   } else {
@@ -86,22 +87,6 @@ function compareMaps(map1: T_id2parent, map2: T_id2parent) {
     }
   }
   return true;
-}
-
-function generateEdge(nodes: AppNode[]) {
-  const edges: Edge[] = [];
-  nodes.forEach((node) => {
-    node.data?.treeChildrenIds?.map((id: string) => {
-      edges.push({
-        id: `${node.id}-${id}`,
-        source: node.id,
-        target: id,
-        sourceHandle: "right",
-        targetHandle: "left",
-      });
-    });
-  });
-  return edges;
 }
 
 function generateCallEdges(get: Getter, set: Setter) {
@@ -134,6 +119,19 @@ function generateCallEdges(get: Getter, set: Setter) {
   return res;
 }
 
+function dfs(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
+  const node = nodesMap.get(id);
+  myassert(node);
+  if (node.type === "SCOPE") {
+    const children = node.data.childrenIds.map((childId) => {
+      return dfs(childId, nodesMap);
+    });
+    return [node, ...children.flatMap((child) => child)];
+  } else {
+    return [node];
+  }
+}
+
 /**
  * This function handles the real updates to the reactflow nodes to render.
  */
@@ -143,9 +141,20 @@ export function updateView(get: Getter, set: Setter) {
   let selectedPods = get(ATOM_selectedPods);
   const newStructure: T_id2parent = new Map();
   // TODO compare new/old structure
-  // TODO render scope first
-  const _nodes = Array.from<AppNode>(nodesMap.values());
-  const nodes = structuredClone(_nodes);
+
+  // The nodes from the nodesMap.
+  const nodes0 = Array.from<AppNode>(nodesMap.values());
+
+  // render scope first
+  const rootNodes = nodes0.filter((node) => !node.parentId);
+  const nodes1 = rootNodes
+    .map(({ id }) => {
+      return dfs(id, nodesMap);
+    })
+    .flatMap((child) => child);
+  // The structuredClone is necessary to not mutate in place, otherwise immer
+  // will complain.
+  const nodes = structuredClone(nodes1);
   nodes.forEach((node) => {
     node.selected = selectedPods.has(node.id);
   });
@@ -161,32 +170,14 @@ export function updateView(get: Getter, set: Setter) {
     oldStructure = newStructure;
   }
 
-  // generate the scope overlay SVG here
-  // for each node, start a SVG drawing covering it and all its children.
-  // node: {x,y,width,height}
-  const svgNodes = nodes
-    .filter((node) => node.data.isScope)
-    .map((node) => {
-      return {
-        id: node.id + "_SVG",
-        type: "SVG",
-        // position: { x: node.position.x, y: node.position.y },
-        position: { x: 0, y: 0 },
-        data: {
-          id: node.id,
-        },
-      };
-    });
-  set(ATOM_nodes, [...svgNodes, ...nodes]);
+  set(ATOM_nodes, [...nodes]);
 
   // from edgesMap
   const edgesMap = get(ATOM_edgesMap);
   const edges0 = Array.from(edgesMap.values());
-  // Generate edges for tree structure.
-  const edges1 = generateEdge(nodes);
   // Generate edges for caller-callee relationship.
-  const edges2 = generateCallEdges(get, set);
-  set(ATOM_edges, [...edges0, ...edges1, ...edges2]);
+  const edges1 = generateCallEdges(get, set);
+  set(ATOM_edges, [...edges0, ...edges1]);
   const t2 = performance.now();
   console.debug("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
 }
@@ -205,13 +196,15 @@ export const ATOM_deleteSubtree = atom(
     const removeDescendants = (id: string) => {
       const node = nodesMap.get(id);
       if (!node) throw new Error("Node not found");
-      node.data.treeChildrenIds.forEach((childId) => {
-        removeDescendants(childId);
-        nodesMap.delete(childId);
-        // remove from codeMap or richMap
-        if (codeMap.has(childId)) codeMap.delete(childId);
-        if (richMap.has(childId)) richMap.delete(childId);
-      });
+      if (node.type === "SCOPE") {
+        node.data.childrenIds.forEach((childId) => {
+          removeDescendants(childId);
+          nodesMap.delete(childId);
+          // remove from codeMap or richMap
+          if (codeMap.has(childId)) codeMap.delete(childId);
+          if (richMap.has(childId)) richMap.delete(childId);
+        });
+      }
     };
     removeDescendants(todelete);
     // remove the node itself
@@ -219,13 +212,14 @@ export const ATOM_deleteSubtree = atom(
     if (codeMap.has(todelete)) codeMap.delete(todelete);
     if (richMap.has(todelete)) richMap.delete(todelete);
     // update parent node's children field.
-    if (node.data.treeParentId) {
-      const treeParent = nodesMap.get(node.data.treeParentId);
-      myassert(treeParent);
+    if (node.parentId) {
+      const parent = nodesMap.get(node.parentId);
+      myassert(parent);
+      myassert(parent.type === "SCOPE");
       nodesMap.set(
-        node.data.treeParentId,
-        produce(treeParent, (draft) => {
-          draft.data.treeChildrenIds = draft.data.treeChildrenIds.filter(
+        node.parentId,
+        produce(parent, (draft) => {
+          draft.data.childrenIds = draft.data.childrenIds.filter(
             (childId) => childId !== todelete
           );
         })

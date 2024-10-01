@@ -494,7 +494,7 @@ function FoldedCode({ id }: { id: string }) {
   return <FoldedCodeText id={id} />;
 }
 
-export const CodeNode = function ({ id }) {
+export const CodeNode = function ({ id }: NodeProps) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) return null;
@@ -628,7 +628,9 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
           borderRadius: "8px",
           // border: isCutting ? "3px dash" : "3px solid",
           // borderColor: focused ? "black" : "transparent",
-          border: cutId === id ? "5px dashed red" : "5px solid transparent",
+          borderWidth: "5px",
+          borderStyle: cutId === id ? "dashed" : "solid",
+          borderColor: cutId === id ? "red" : "transparent",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}
         ref={ref}
