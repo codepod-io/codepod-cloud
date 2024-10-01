@@ -11,53 +11,6 @@ import { updateView } from "./canvasSlice";
 import { SupportedLanguage } from "./types";
 import { toast } from "react-toastify";
 
-/**
- * Create a new node. The node will start from the given position. Typically
- * auto-layout will be triggered after this to move the new node to place in an
- * animation.
- */
-function createCodeNode(
-  lang: SupportedLanguage,
-  position: XYPosition
-): CodeNodeType {
-  let id = myNanoId();
-  // FIXME get(ATOM_codeMap).set(newNode.id, new Y.Text());
-  return {
-    id,
-    type: "CODE",
-    position,
-    dragHandle: ".custom-drag-handle",
-    data: {
-      lang,
-    },
-  };
-}
-
-function createRichNode(position: XYPosition): RichNodeType {
-  let id = myNanoId();
-  // FIXME get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
-  return {
-    id,
-    type: "RICH",
-    position,
-    dragHandle: ".custom-drag-handle",
-    data: {},
-  };
-}
-
-function createNewNode(
-  type: "CODE" | "RICH",
-  position: XYPosition = { x: 0, y: 0 }
-): AppNode {
-  switch (type) {
-    case "CODE":
-      // FIXME pass in language
-      return createCodeNode("python", position);
-    case "RICH":
-      return createRichNode(position);
-  }
-}
-
 export const ATOM_addNode = atom(
   null,
   (
@@ -73,18 +26,39 @@ export const ATOM_addNode = atom(
       lang?: SupportedLanguage;
     }
   ) => {
-    const newNode = createNewNode(type, position);
-    switch (newNode.type) {
+    let id = myNanoId();
+    const nodesMap = get(ATOM_nodesMap);
+    switch (type) {
       case "CODE":
-        if (lang) newNode.data.lang = lang;
-        get(ATOM_codeMap).set(newNode.id, new Y.Text());
+        {
+          myassert(lang);
+          const node: CodeNodeType = {
+            id,
+            type: "CODE",
+            position,
+            dragHandle: ".custom-drag-handle",
+            data: {
+              lang,
+            },
+          };
+          nodesMap.set(id, node);
+          get(ATOM_codeMap).set(id, new Y.Text());
+        }
         break;
       case "RICH":
-        get(ATOM_richMap).set(newNode.id, new Y.XmlFragment());
+        {
+          const node: RichNodeType = {
+            id,
+            type: "RICH",
+            position,
+            dragHandle: ".custom-drag-handle",
+            data: {},
+          };
+          nodesMap.set(id, node);
+          get(ATOM_richMap).set(id, new Y.XmlFragment());
+        }
         break;
     }
-    const nodesMap = get(ATOM_nodesMap);
-    nodesMap.set(newNode.id, newNode);
     updateView(get, set);
   }
 );
