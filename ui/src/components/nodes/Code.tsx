@@ -286,7 +286,12 @@ export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
   );
 });
 
-function MyPodToolbar({ node }: { node: CodeNodeType }) {
+// FIXME memo `node` may be problematic.
+const MyPodToolbar = memo(function MyPodToolbar({
+  node,
+}: {
+  node: CodeNodeType;
+}) {
   const id = node.id;
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
@@ -394,7 +399,7 @@ function MyPodToolbar({ node }: { node: CodeNodeType }) {
       </DropdownMenu.Root>
     </Flex>
   );
-}
+});
 
 /**
  * Listen to Shift+Enter key press and run the code.
@@ -640,7 +645,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
               <MyPodToolbar node={node} />
             </motion.div>
           )}
-          <MyMonaco node={node} />
+          <MyMonaco id={id} />
           <ResultBlock id={id} />
           <SymbolTable id={id} />
 

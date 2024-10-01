@@ -134,7 +134,7 @@ export function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
   return null;
 }
 
-const RichEditorWrapper = ({ id }: { id: string }) => {
+const RichEditorWrapper = memo(({ id }: { id: string }) => {
   // the Yjs extension for Remirror
   const [provider] = useAtom(ATOM_provider);
 
@@ -146,7 +146,7 @@ const RichEditorWrapper = ({ id }: { id: string }) => {
   if (!yXml) return null;
   if (!provider) return null;
   return <RichEditor yXml={yXml} provider={provider} id={id} />;
-};
+});
 
 function FoldedRichPod({ id }: { id: string }) {
   const [provider] = useAtom(ATOM_provider);

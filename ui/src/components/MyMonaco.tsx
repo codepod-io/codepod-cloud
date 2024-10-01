@@ -1,5 +1,5 @@
 import { Position } from "monaco-editor";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 
 import * as monaco from "monaco-editor";
 
@@ -521,7 +521,15 @@ function useInitEditor({
   }, [editor]);
 }
 
-export function MyMonaco({ node }: { node: CodeNodeType }) {
+export const MyMonaco = memo(({ id }: { id: string }) => {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "CODE");
+  return MyMonacoImpl({ node });
+});
+
+function MyMonacoImpl({ node }: { node: CodeNodeType }) {
   const editorRef = useRef(null);
 
   let [editor, setEditor] =
