@@ -1,5 +1,6 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import {
+  Node,
   Edge,
   EdgeMouseHandler,
   useKeyPress,
@@ -17,7 +18,7 @@ import {
   PythonLogo,
   RacketLogo,
 } from "../nodes/utils";
-import { ATOM_addNode } from "@/lib/store/cavnasSlice_addNode";
+import { ATOM_addNode, ATOM_addScope } from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 
 export function useContextMenu() {
@@ -230,7 +231,7 @@ export function useEdgeContextMenu() {
     }
   }, [escapePressed]);
 
-  const onEdgeContextMenu: EdgeMouseHandler<Edge> = (event, edge) => {
+  const onEdgeContextMenu = (event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
     setShowContextMenu(true);
     setEdgeId(edge.id);
@@ -293,5 +294,84 @@ export function useEdgeContextMenu() {
   return {
     onEdgeContextMenu,
     edgeContextMenu,
+  };
+}
+
+export function useSelectionContextMenu() {
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [selectedNodes, setSelectedNodes] = useState<Node[]>([]);
+
+  const [pagePosition, setPagePosition] = useState({ x: 0, y: 0 });
+  const [clientPosition, setClientPositin] = useState({ x: 0, y: 0 });
+
+  const escapePressed = useKeyPress("Escape");
+  useEffect(() => {
+    if (escapePressed) {
+      setShowContextMenu(false);
+    }
+  }, [escapePressed]);
+
+  const onSelectionContextMenu = (event: React.MouseEvent, nodes: Node[]) => {
+    event.preventDefault();
+    setShowContextMenu(true);
+    setSelectedNodes(nodes);
+
+    setPagePosition({ x: event.pageX, y: event.pageY });
+    setClientPositin({ x: event.clientX, y: event.clientY });
+  };
+  const addScope = useSetAtom(ATOM_addScope);
+
+  const selectionContextMenu = showContextMenu && (
+    <Box
+      style={{
+        left: `${pagePosition.x}px`,
+        top: `${pagePosition.y}px`,
+        zIndex: 100,
+        // FIXME still a little offset
+        position: "fixed",
+        boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
+        // width: '200px',
+        backgroundColor: "#fff",
+        borderRadius: "5px",
+        boxSizing: "border-box",
+      }}
+    >
+      <DropdownMenu.Root
+        open={true}
+        onOpenChange={(open) => {
+          console.log("onOpenChange");
+          setShowContextMenu(false);
+        }}
+      >
+        <DropdownMenu.Trigger>
+          <Button
+            variant="ghost"
+            style={{
+              width: 0,
+              height: 0,
+              opacity: 0,
+            }}
+          >
+            Options
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <DropdownMenu.Item
+            shortcut="⌘ D"
+            onSelect={() => {
+              myassert(selectedNodes.length > 0);
+              addScope(selectedNodes);
+            }}
+          >
+            Create Scope
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </Box>
+  );
+
+  return {
+    onSelectionContextMenu,
+    selectionContextMenu,
   };
 }

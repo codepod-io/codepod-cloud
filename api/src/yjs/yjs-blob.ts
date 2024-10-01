@@ -176,9 +176,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       id: rich1_id,
       type: "RICH",
       position: { x: 0, y: 0 },
-      data: {
-        treeChildrenIds: [],
-      },
+      data: {},
       dragHandle: ".custom-drag-handle",
     };
     nodesMap.set(rich1_id, rootNode);
@@ -190,7 +188,6 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: -74 },
       data: {
-        treeChildrenIds: [],
         lang: "python",
       },
       dragHandle: ".custom-drag-handle",
@@ -203,7 +200,6 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       // This position is obtained after UI auto-layout.
       position: { x: 400, y: 97 },
       data: {
-        treeChildrenIds: [],
         lang: "python",
       },
       dragHandle: ".custom-drag-handle",
