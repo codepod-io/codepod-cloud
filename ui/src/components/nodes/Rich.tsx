@@ -45,7 +45,11 @@ import { env } from "@/lib/vars";
 import { motion } from "framer-motion";
 import { RichEditor } from "./Rich_Editor";
 import { myassert } from "@/lib/utils/utils";
-import { ATOM_insertMode } from "@/lib/store/canvasSlice";
+import {
+  ATOM_collisionIds,
+  ATOM_escapedIds,
+  ATOM_insertMode,
+} from "@/lib/store/canvasSlice";
 import { MyHandle } from "./Code";
 
 function MyPodToolbar({ id }) {
@@ -184,6 +188,10 @@ export const RichNode = function ({
 
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
 
+  // collisions
+  const collisionIds = useAtomValue(ATOM_collisionIds);
+  const escapedIds = useAtomValue(ATOM_escapedIds);
+
   if (!node) return null;
 
   return (
@@ -227,7 +235,16 @@ export const RichNode = function ({
           borderRadius: "8px",
           // border: "3px solid",
           // borderColor: focused ? "black" : "transparent",
-          border: cutId === id ? "3px dashed red" : "3px solid transparent",
+          borderWidth: "5px",
+          borderStyle: cutId === id ? "dashed" : "solid",
+          borderColor:
+            cutId === id
+              ? "red"
+              : escapedIds.includes(id)
+                ? "orange"
+                : collisionIds.includes(id)
+                  ? "pink"
+                  : "transparent",
           // add shadow
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}

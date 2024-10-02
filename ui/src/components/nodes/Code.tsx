@@ -80,7 +80,11 @@ import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
 import { CodeNodeType } from "@/lib/store/types";
 import { motion } from "framer-motion";
-import { ATOM_insertMode } from "@/lib/store/canvasSlice";
+import {
+  ATOM_collisionIds,
+  ATOM_escapedIds,
+  ATOM_insertMode,
+} from "@/lib/store/canvasSlice";
 
 function Timer({ lastExecutedAt }) {
   useTick(1000);
@@ -582,6 +586,9 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   const connection = useConnection();
 
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
+  // collisions
+  const collisionIds = useAtomValue(ATOM_collisionIds);
+  const escapedIds = useAtomValue(ATOM_escapedIds);
 
   return (
     <div
@@ -630,7 +637,14 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
           // borderColor: focused ? "black" : "transparent",
           borderWidth: "5px",
           borderStyle: cutId === id ? "dashed" : "solid",
-          borderColor: cutId === id ? "red" : "transparent",
+          borderColor:
+            cutId === id
+              ? "red"
+              : escapedIds.includes(id)
+                ? "orange"
+                : collisionIds.includes(id)
+                  ? "pink"
+                  : "transparent",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}
         ref={ref}

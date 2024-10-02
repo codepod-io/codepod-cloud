@@ -119,12 +119,16 @@ function generateCallEdges(get: Getter, set: Setter) {
   return res;
 }
 
-function dfs(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
+/**
+ * Get the list of nodes in the subtree rooted at id, including the root.
+ * @param id subtree root
+ */
+function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
   const node = nodesMap.get(id);
   myassert(node);
   if (node.type === "SCOPE") {
     const children = node.data.childrenIds.map((childId) => {
-      return dfs(childId, nodesMap);
+      return getSubtreeNodes(childId, nodesMap);
     });
     return [node, ...children.flatMap((child) => child)];
   } else {
@@ -149,7 +153,7 @@ export function updateView(get: Getter, set: Setter) {
   const rootNodes = nodes0.filter((node) => !node.parentId);
   const nodes1 = rootNodes
     .map(({ id }) => {
-      return dfs(id, nodesMap);
+      return getSubtreeNodes(id, nodesMap);
     })
     .flatMap((child) => child);
   // The structuredClone is necessary to not mutate in place, otherwise immer
@@ -403,3 +407,115 @@ const debouncedAutoLayoutTree = debounce(
     trailing: false,
   }
 );
+
+/***********************
+ * Collision Detection *
+ **********************/
+
+export const ATOM_collisionIds = atom<string[]>([]);
+export const ATOM_escapedIds = atom<string[]>([]);
+
+/**
+ * Compute the collisions between nodes.
+ * 1. when two nodes of the same scope collide
+ * 2. when a node is out of its parent
+ */
+function computeCollisions(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  const nodes = Array.from(nodesMap.values());
+  const rootNodes = nodes.filter((node) => !node.parentId);
+  // get collisions
+  const collisionIds = getCollisionIds(rootNodes);
+  const escapedIds = getEscapedIds(rootNodes);
+  // get all the nodes
+  rootNodes.forEach((node) => {
+    computeCollisionsSubtree(get, set, node, collisionIds, escapedIds);
+  });
+  set(ATOM_collisionIds, collisionIds);
+  set(ATOM_escapedIds, escapedIds);
+}
+
+function computeCollisionsSubtree(
+  get: Getter,
+  set: Setter,
+  root: AppNode,
+  collisionIds: string[],
+  escapedIds: string[]
+) {
+  if (root.type !== "SCOPE") return;
+  const nodesMap = get(ATOM_nodesMap);
+  const children = root.data.childrenIds.map((id) => nodesMap.get(id));
+  myassert(children.every((n) => !!n));
+  const tmp1 = getCollisionIds(children);
+  const tmp2 = getEscapedIds(children, root);
+  collisionIds.push(...tmp1);
+  escapedIds.push(...tmp2);
+  children.forEach((child) => {
+    if (child.type === "SCOPE") {
+      computeCollisionsSubtree(get, set, child, collisionIds, escapedIds);
+    }
+  });
+}
+
+export const ATOM_computeCollisions = atom(null, computeCollisions);
+
+/**
+ * Compute the collision ids and escaped ids.
+ * @returns {collisionIds, escapedIds}
+ * @returns {collisionIds} The ids of the nodes that collide with each other.
+ * @returns {escapedIds} The ids of the nodes that are out of the parent.
+ */
+function getCollisionIds(nodes: AppNode[]): string[] {
+  const collisionIds: string[] = [];
+
+  // Check for collisions between nodes
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      if (isColliding(nodes[i], nodes[j])) {
+        collisionIds.push(nodes[i].id, nodes[j].id);
+      }
+    }
+  }
+
+  return [...new Set(collisionIds)];
+}
+
+function getEscapedIds(nodes: AppNode[], parent?: AppNode): string[] {
+  const escapedIds: string[] = [];
+
+  // Check if nodes have escaped the parent
+  if (parent) {
+    for (const node of nodes) {
+      if (hasEscaped(node, parent)) {
+        // console.log("escaped", node, parent);
+        escapedIds.push(node.id, parent.id);
+      }
+    }
+  }
+
+  return escapedIds;
+}
+
+/**
+ * Check if two rectangles are colliding.
+ */
+function isColliding(rect1: AppNode, rect2: AppNode): boolean {
+  return (
+    rect1.position.x < rect2.position.x + rect2.measured!.width! &&
+    rect1.position.x + rect1.measured!.width! > rect2.position.x &&
+    rect1.position.y < rect2.position.y + rect2.measured!.height! &&
+    rect1.position.y + rect1.measured!.height! > rect2.position.y
+  );
+}
+
+/**
+ * Check if a rectangle has escaped its parent.
+ */
+function hasEscaped(rect: AppNode, parent: AppNode): boolean {
+  return (
+    rect.position.x < 0 ||
+    rect.position.y < 0 ||
+    rect.position.x + rect.measured!.width! > parent.measured!.width! ||
+    rect.position.y + rect.measured!.height! > parent.measured!.height!
+  );
+}

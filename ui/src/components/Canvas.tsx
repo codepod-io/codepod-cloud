@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -13,6 +13,7 @@ import {
   SelectionMode,
   getBezierPath,
   EdgeProps,
+  Node,
 } from "@xyflow/react";
 
 // you also need to adjust the style import
@@ -50,6 +51,7 @@ import {
   getAbsPos,
   ATOM_onConnect,
   ATOM_insertMode,
+  ATOM_computeCollisions,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
@@ -240,6 +242,12 @@ function CanvasImpl() {
     useSelectionContextMenu();
   const insertMode = useAtomValue(ATOM_insertMode);
 
+  const computeCollisions = useSetAtom(ATOM_computeCollisions);
+  useEffect(() => {
+    // compute collsion on mount.
+    computeCollisions();
+  }, []);
+
   return (
     <Flex
       style={{
@@ -268,6 +276,12 @@ function CanvasImpl() {
         onEdgeContextMenu={onEdgeContextMenu}
         onSelectionContextMenu={onSelectionContextMenu}
         onConnect={onConnect}
+        onNodeDragStart={() => {
+          computeCollisions();
+        }}
+        onNodeDrag={() => {
+          computeCollisions();
+        }}
         attributionPosition="top-right"
         maxZoom={2}
         minZoom={0.1}
