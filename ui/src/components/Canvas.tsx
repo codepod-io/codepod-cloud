@@ -248,6 +248,55 @@ function CanvasImpl() {
     computeCollisions();
   }, []);
 
+  const { getIntersectingNodes, isNodeIntersecting } = useReactFlow();
+
+  // this ref stores the current dragged node
+  const dragRef = useRef(null);
+
+  const onNodeDragStart = (evt, node) => {
+    dragRef.current = node;
+  };
+
+  const setCollisionIds = useSetAtom(ATOM_collisionIds);
+  const setEscapedIds = useSetAtom(ATOM_escapedIds);
+
+  const onNodeDrag = (evt: React.MouseEvent, _node: Node, nodes: Node[]) => {
+    const collisionIds: string[] = [];
+    const escapedIds: string[] = [];
+    nodes.forEach((node) => {
+      // find overlapping nodes
+      let intersectingNodes = getIntersectingNodes(node);
+      // only include nodes of the same parent
+      intersectingNodes = intersectingNodes.filter(
+        (n) => n.parentId === node.parentId
+      );
+      if (intersectingNodes.length > 0) {
+        collisionIds.push(node.id);
+        collisionIds.push(...intersectingNodes.map((n) => n.id));
+      }
+
+      // find if the node is within the parent node
+      if (node.parentId) {
+        const parent = nodesMap.get(node.parentId);
+        myassert(parent);
+        const rect = getNodesBounds([parent]);
+        const withinParent = isNodeIntersecting(node, rect, false);
+        if (!withinParent) {
+          escapedIds.push(node.id);
+          escapedIds.push(node.parentId);
+        }
+      }
+    });
+    setCollisionIds(collisionIds);
+    setEscapedIds(escapedIds);
+  };
+
+  const onNodeDragStop = (evt, node) => {
+    // we detect collisions when the drag stops. If collisions are detected, re-compute teh collision for all pods.
+    dragRef.current = null;
+    computeCollisions();
+  };
+
   return (
     <Flex
       style={{
