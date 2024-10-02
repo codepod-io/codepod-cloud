@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -50,6 +50,8 @@ import {
   getAbsPos,
   ATOM_onConnect,
   ATOM_insertMode,
+  ATOM_updateView,
+  g_nonSelectableScopes,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
@@ -63,6 +65,7 @@ import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 import { env } from "../lib/vars";
 import { myassert } from "@/lib/utils/utils";
+import { css } from "@emotion/css";
 
 const nodeTypes = {
   CODE: CodeNode,
@@ -226,6 +229,35 @@ function CanvasImpl() {
     useSelectionContextMenu();
   const insertMode = useAtomValue(ATOM_insertMode);
 
+  // ------------------------------------------------------------
+  // Set non-selectable scopes
+  // ------------------------------------------------------------
+
+  const { getIntersectingNodes } = useReactFlow();
+  const updateView = useSetAtom(ATOM_updateView);
+  const { screenToFlowPosition } = useReactFlow();
+
+  const onSelectionStart = (event: React.MouseEvent) => {
+    // If the selection drag starts within a scope, set the scope as not selectable
+    //
+    // 1. get all scopes that are within the selection
+    const position = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    const nodes = getIntersectingNodes({
+      x: position.x,
+      y: position.y,
+      width: 1,
+      height: 1,
+    });
+    // 2. set the not selectable flags
+    nodes.forEach((n) => {
+      g_nonSelectableScopes.add(n.id);
+    });
+    updateView();
+  };
+
   return (
     <Flex
       style={{
@@ -246,6 +278,16 @@ function CanvasImpl() {
         // backgroundImage: "linear-gradient(200deg, #FDEB82, #ABC7FF)",
       }}
       flexGrow={"1"}
+      className={css`
+        // so that we can drag a selection inside the scope.
+        .react-flow__node-SCOPE {
+          pointer-events: none !important;
+        }
+        // This is still needed so that edges are shown on top of ReactFlow Handles in Connect mode.
+        .react-flow__edges {
+          z-index: 9999 !important;
+        }
+      `}
     >
       <ReactFlow
         nodes={nodes}
@@ -254,12 +296,15 @@ function CanvasImpl() {
         onEdgeContextMenu={onEdgeContextMenu}
         onSelectionContextMenu={onSelectionContextMenu}
         onConnect={onConnect}
+        onSelectionStart={onSelectionStart}
+        onSelectionEnd={() => {
+          // reset the not selectable flags
+          g_nonSelectableScopes.clear();
+        }}
         attributionPosition="top-right"
         maxZoom={2}
         minZoom={0.1}
         onPaneContextMenu={onPaneContextMenu}
-        // TODO use dedicated onNodeContextMenu
-        onNodeContextMenu={onPaneContextMenu}
         nodeTypes={nodeTypes}
         // custom edge for easy connect
         edgeTypes={edgeTypes}
@@ -305,8 +350,8 @@ function CanvasImpl() {
         nodesDraggable={editMode === "edit"}
         // disable node delete on backspace when the user is a guest.
         deleteKeyCode={editMode === "view" ? null : "Backspace"}
-        multiSelectionKeyCode={isMac ? "Meta" : "Control"}
-        // selectionMode={SelectionMode.Partial}
+        // multiSelectionKeyCode={isMac ? "Meta" : "Control"}
+        selectionMode={SelectionMode.Partial}
         // Restore previous viewport.
         defaultViewport={{ zoom: repoData.zoom, x: repoData.x, y: repoData.y }}
         // Center node on repo creation. INIT_ZOOM is a magic number (1.001) to
@@ -348,20 +393,20 @@ function CanvasImpl() {
             vertical={helperLineVertical}
           />
 
-          <Background />
-          {/* <Background
+          {/* <Background /> */}
+          <Background
             id="1"
             gap={10}
             color="#f1f1f1"
             variant={BackgroundVariant.Lines}
-          /> */}
-          {/* <Background
+          />
+          <Background
             id="2"
             gap={100}
             offset={1}
             color="#ccc"
             variant={BackgroundVariant.Lines}
-          /> */}
+          />
         </Box>
       </ReactFlow>
       {paneContextMenu}
