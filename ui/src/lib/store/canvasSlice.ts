@@ -500,10 +500,10 @@ function getEscapedIds(nodes: AppNode[], parent?: AppNode): string[] {
  */
 function isColliding(rect1: AppNode, rect2: AppNode): boolean {
   return (
-    rect1.position.x < rect2.position.x + rect2.measured!.width! &&
-    rect1.position.x + rect1.measured!.width! > rect2.position.x &&
-    rect1.position.y < rect2.position.y + rect2.measured!.height! &&
-    rect1.position.y + rect1.measured!.height! > rect2.position.y
+    rect1.position.x < rect2.position.x + (rect2.measured?.width ?? 0) &&
+    rect1.position.x + (rect1.measured?.width ?? 0) > rect2.position.x &&
+    rect1.position.y < rect2.position.y + (rect2.measured?.height ?? 0) &&
+    rect1.position.y + (rect1.measured?.height ?? 0) > rect2.position.y
   );
 }
 
@@ -514,7 +514,9 @@ function hasEscaped(rect: AppNode, parent: AppNode): boolean {
   return (
     rect.position.x < 0 ||
     rect.position.y < 0 ||
-    rect.position.x + rect.measured!.width! > parent.measured!.width! ||
-    rect.position.y + rect.measured!.height! > parent.measured!.height!
+    rect.position.x + (rect.measured?.width ?? 0) >
+      (parent.measured?.width ?? 0) ||
+    rect.position.y + (rect.measured?.height ?? 0) >
+      (parent.measured?.height ?? 0)
   );
 }
