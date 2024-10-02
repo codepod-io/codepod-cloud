@@ -182,6 +182,7 @@ export function updateView(get: Getter, set: Setter) {
   // Generate edges for caller-callee relationship.
   const edges1 = generateCallEdges(get, set);
   set(ATOM_edges, [...edges0, ...edges1]);
+  computeCollisions(get, set);
   const t2 = performance.now();
   console.debug("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
 }
@@ -456,8 +457,6 @@ function computeCollisionsSubtree(
     }
   });
 }
-
-export const ATOM_computeCollisions = atom(null, computeCollisions);
 
 /**
  * Compute the collision ids and escaped ids.

@@ -3,7 +3,13 @@ import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { AppNode } from "@/lib/store/types";
 
 import * as Y from "yjs";
-import { Handle, Position, XYPosition } from "@xyflow/react";
+import {
+  Handle,
+  NodeResizeControl,
+  NodeResizer,
+  Position,
+  XYPosition,
+} from "@xyflow/react";
 import { Box } from "@radix-ui/themes";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_collisionIds, ATOM_escapedIds } from "@/lib/store/canvasSlice";
@@ -36,6 +42,24 @@ export function ScopeNode({ id }) {
     >
       Scope {id}
       <Handle type="source" position={Position.Right} />
+      <Box
+        style={{
+          pointerEvents: "all",
+        }}
+      >
+        <NodeResizer
+          minWidth={100}
+          minHeight={30}
+          handleStyle={{
+            border: "10px solid transparent",
+            opacity: 0,
+          }}
+          lineStyle={{
+            border: "10px solid transparent",
+            opacity: 0,
+          }}
+        />
+      </Box>
     </Box>
   );
 }
