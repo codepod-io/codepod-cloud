@@ -33,9 +33,8 @@ import {
 import HelperLines from "./HelperLines";
 
 import {
-  ContextMenu,
-  useContextMenu,
   useEdgeContextMenu,
+  usePaneContextMenu,
   useSelectionContextMenu,
   useUpload,
 } from "./canvas/ContextMenu";
@@ -214,28 +213,14 @@ function CanvasImpl() {
 
   const [helperLineHorizontal] = useAtom(ATOM_helperLineHorizontal);
   const [helperLineVertical] = useAtom(ATOM_helperLineVertical);
-  const {
-    pagePosition,
-    clientPosition,
-    showContextMenu,
-    setShowContextMenu,
-    onPaneContextMenu,
-    onNodeContextMenu,
-  } = useContextMenu();
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { handleFileInputChange } = useUpload();
-
-  const handleItemClick = () => {
-    fileInputRef!.current!.click();
-    fileInputRef!.current!.value = "";
-  };
 
   const saveViewPort = trpc.repo.saveViewPort.useMutation();
   const debouncedSaveViewPort = debounce(saveViewPort.mutate, 50, {
     maxWait: 5000,
   });
 
+  const { contextMenu: paneContextMenu, onContextMenu: onPaneContextMenu } =
+    usePaneContextMenu();
   const { edgeContextMenu, onEdgeContextMenu } = useEdgeContextMenu();
   const { selectionContextMenu, onSelectionContextMenu } =
     useSelectionContextMenu();
@@ -273,7 +258,8 @@ function CanvasImpl() {
         maxZoom={2}
         minZoom={0.1}
         onPaneContextMenu={onPaneContextMenu}
-        onNodeContextMenu={onNodeContextMenu}
+        // TODO use dedicated onNodeContextMenu
+        onNodeContextMenu={onPaneContextMenu}
         nodeTypes={nodeTypes}
         // custom edge for easy connect
         edgeTypes={edgeTypes}
@@ -378,35 +364,7 @@ function CanvasImpl() {
           /> */}
         </Box>
       </ReactFlow>
-      <input
-        type="file"
-        accept=".ipynb, .py"
-        ref={fileInputRef}
-        style={{ display: "none" }}
-        onChange={(e) => handleFileInputChange(e)}
-      />
-      {showContextMenu && (
-        <Box
-          style={{
-            left: `${pagePosition.x}px`,
-            top: `${pagePosition.y}px`,
-            zIndex: 100,
-            // FIXME still a little offset
-            position: "fixed",
-            boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
-            // width: '200px',
-            backgroundColor: "#fff",
-            borderRadius: "5px",
-            boxSizing: "border-box",
-          }}
-        >
-          <ContextMenu
-            setShowContextMenu={setShowContextMenu}
-            handleItemClick={handleItemClick}
-            clientPosition={clientPosition}
-          />
-        </Box>
-      )}
+      {paneContextMenu}
       {edgeContextMenu}
       {selectionContextMenu}
     </Flex>
