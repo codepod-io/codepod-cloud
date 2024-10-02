@@ -136,6 +136,8 @@ function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
   }
 }
 
+export const g_nonSelectableScopes = new Set<string>();
+
 /**
  * This function handles the real updates to the reactflow nodes to render.
  */
@@ -166,6 +168,9 @@ export function updateView(get: Getter, set: Setter) {
   nodes.forEach((node) => {
     node.width = undefined;
     node.height = undefined;
+    if (node.type === "SCOPE" && g_nonSelectableScopes.has(node.id)) {
+      node.selectable = false;
+    }
   });
   // compare old  and new structure, if changed, propagate symbol table
   // FIXME performance
