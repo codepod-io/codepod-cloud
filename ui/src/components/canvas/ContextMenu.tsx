@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent, useRef } from "react";
 import {
   Node,
   Edge,
@@ -20,45 +20,6 @@ import {
 } from "../nodes/utils";
 import { ATOM_addNode, ATOM_addScope } from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
-
-export function useContextMenu() {
-  const [showContextMenu, setShowContextMenu] = useState(false);
-
-  const [pagePosition, setPagePosition] = useState({ x: 0, y: 0 });
-  const [clientPosition, setClientPositin] = useState({ x: 0, y: 0 });
-
-  const escapePressed = useKeyPress("Escape");
-  useEffect(() => {
-    if (escapePressed) {
-      setShowContextMenu(false);
-    }
-  }, [escapePressed]);
-
-  const onPaneContextMenu = (event) => {
-    event.preventDefault();
-    setShowContextMenu(true);
-    setPagePosition({ x: event.pageX, y: event.pageY });
-    setClientPositin({ x: event.clientX, y: event.clientY });
-  };
-
-  const onNodeContextMenu = (event, node) => {
-    if (node?.type !== "SCOPE") return;
-
-    event.preventDefault();
-    setShowContextMenu(true);
-    setPagePosition({ x: event.pageX, y: event.pageY });
-    setClientPositin({ x: event.clientX, y: event.clientY });
-  };
-
-  return {
-    pagePosition,
-    clientPosition,
-    showContextMenu,
-    setShowContextMenu,
-    onPaneContextMenu,
-    onNodeContextMenu,
-  };
-}
 
 export function useUpload() {
   const nodes = useAtom(ATOM_nodes);
@@ -105,116 +66,164 @@ export function useUpload() {
   return { handleFileInputChange };
 }
 
-export function ContextMenu({
-  setShowContextMenu,
-  handleItemClick,
-  clientPosition,
-}: {
-  setShowContextMenu: any;
-  handleItemClick: any;
-  clientPosition: XYPosition;
-}) {
+export function usePaneContextMenu() {
+  const [showContextMenu, setShowContextMenu] = useState(false);
+
+  const [pagePosition, setPagePosition] = useState({ x: 0, y: 0 });
+  const [clientPosition, setClientPositin] = useState({ x: 0, y: 0 });
+
+  const escapePressed = useKeyPress("Escape");
+  useEffect(() => {
+    if (escapePressed) {
+      setShowContextMenu(false);
+    }
+  }, [escapePressed]);
+
+  const onContextMenu = (event: React.MouseEvent | MouseEvent) => {
+    event.preventDefault();
+    setShowContextMenu(true);
+    setPagePosition({ x: event.pageX, y: event.pageY });
+    setClientPositin({ x: event.clientX, y: event.clientY });
+  };
+
   const addNode = useSetAtom(ATOM_addNode);
   // TODO calculate position of context menu right click
   const { screenToFlowPosition } = useReactFlow();
   const position = screenToFlowPosition(clientPosition);
-  return (
-    <DropdownMenu.Root
-      open={true}
-      onOpenChange={(open) => {
-        console.log("onOpenChange");
-        setShowContextMenu(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { handleFileInputChange } = useUpload();
+
+  const handleItemClick = () => {
+    fileInputRef!.current!.click();
+    fileInputRef!.current!.value = "";
+  };
+
+  const contextMenu = (
+    <Box
+      style={{
+        left: `${pagePosition.x}px`,
+        top: `${pagePosition.y}px`,
+        zIndex: 100,
+        // FIXME still a little offset
+        position: "fixed",
+        boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
+        // width: '200px',
+        backgroundColor: "#fff",
+        borderRadius: "5px",
+        boxSizing: "border-box",
       }}
     >
-      <DropdownMenu.Trigger>
-        <Button
-          variant="ghost"
-          style={{
-            width: 0,
-            height: 0,
-            opacity: 0,
+      <input
+        type="file"
+        accept=".ipynb, .py"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={(e) => handleFileInputChange(e)}
+      />
+      {showContextMenu && (
+        <DropdownMenu.Root
+          open={true}
+          onOpenChange={(open) => {
+            setShowContextMenu(false);
           }}
         >
-          Options
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <DropdownMenu.Item
-          shortcut="⌘ D"
-          onSelect={() => {
-            addNode({ position, type: "RICH" });
-          }}
-        >
-          <NotebookPen /> Note
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onSelect={() => {
-            addNode({ position, type: "CODE", lang: "python" });
-          }}
-        >
-          <PythonLogo />
-          Python
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onSelect={() => {
-            addNode({ position, type: "CODE", lang: "julia" });
-          }}
-        >
-          <JuliaLogo />
-          Julia
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onSelect={() => {
-            addNode({
-              position,
-              type: "CODE",
-              lang: "javascript",
-            });
-          }}
-        >
-          <JavaScriptLogo />
-          JavaScript
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Item
-          shortcut="⌘ E"
-          onSelect={() => {
-            addNode({ position, type: "CODE", lang: "racket" });
-          }}
-        >
-          <RacketLogo />
-          Racket
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          shortcut="⌘ N"
-          onClick={() => {
-            // handle CanvasContextMenu "import Jupyter notebook" click
-            handleItemClick();
-          }}
-        >
-          <FileUp />
-          Import
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Sub>
-          <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent>
-            <DropdownMenu.Item>Move to project…</DropdownMenu.Item>
-            <DropdownMenu.Item>Move to folder…</DropdownMenu.Item>
-
+          <DropdownMenu.Trigger>
+            <Button
+              variant="ghost"
+              style={{
+                width: 0,
+                height: 0,
+                opacity: 0,
+              }}
+            >
+              Options
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            <DropdownMenu.Item
+              shortcut="⌘ D"
+              onSelect={() => {
+                addNode({ position, type: "RICH" });
+              }}
+            >
+              <NotebookPen /> Note
+            </DropdownMenu.Item>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item>Advanced options…</DropdownMenu.Item>
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({ position, type: "CODE", lang: "python" });
+              }}
+            >
+              <PythonLogo />
+              Python
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({ position, type: "CODE", lang: "julia" });
+              }}
+            >
+              <JuliaLogo />
+              Julia
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({
+                  position,
+                  type: "CODE",
+                  lang: "javascript",
+                });
+              }}
+            >
+              <JavaScriptLogo />
+              JavaScript
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                addNode({ position, type: "CODE", lang: "racket" });
+              }}
+            >
+              <RacketLogo />
+              Racket
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item
+              shortcut="⌘ N"
+              onClick={() => {
+                // handle CanvasContextMenu "import Jupyter notebook" click
+                handleItemClick();
+              }}
+            >
+              <FileUp />
+              Import
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item>Move to project…</DropdownMenu.Item>
+                <DropdownMenu.Item>Move to folder…</DropdownMenu.Item>
+
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item>Advanced options…</DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      )}
+    </Box>
   );
+
+  return {
+    onContextMenu,
+    contextMenu,
+  };
 }
 
 export function useEdgeContextMenu() {
@@ -259,7 +268,6 @@ export function useEdgeContextMenu() {
       <DropdownMenu.Root
         open={true}
         onOpenChange={(open) => {
-          console.log("onOpenChange");
           setShowContextMenu(false);
         }}
       >
@@ -339,7 +347,6 @@ export function useSelectionContextMenu() {
       <DropdownMenu.Root
         open={true}
         onOpenChange={(open) => {
-          console.log("onOpenChange");
           setShowContextMenu(false);
         }}
       >
