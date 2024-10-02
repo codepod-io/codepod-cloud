@@ -8,16 +8,31 @@ import {
   NodeResizeControl,
   NodeResizer,
   Position,
+  useConnection,
   XYPosition,
 } from "@xyflow/react";
 import { Box } from "@radix-ui/themes";
 import { myassert } from "@/lib/utils/utils";
-import { ATOM_collisionIds, ATOM_escapedIds } from "@/lib/store/canvasSlice";
+import {
+  ATOM_collisionIds,
+  ATOM_escapedIds,
+  ATOM_insertMode,
+} from "@/lib/store/canvasSlice";
+import { MyHandle } from "./Code";
+import { useState } from "react";
 
 export function ScopeNode({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
+
+  const [hover, setHover] = useState(false);
+
+  const insertMode = useAtomValue(ATOM_insertMode);
+
+  const connection = useConnection();
+
+  const isTarget = connection.inProgress && connection.fromNode.id !== id;
 
   // collisions
   const collisionIds = useAtomValue(ATOM_collisionIds);
@@ -39,9 +54,34 @@ export function ScopeNode({ id }) {
             ? "pink"
             : "transparent",
       }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
+      {insertMode === "Move" && (
+        <Box
+          className="custom-drag-handle"
+          style={{
+            pointerEvents: "all",
+            // put it on top of Monaco
+            zIndex: 10,
+            // make it full width of the node
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            top: 0,
+            left: 0,
+            backgroundColor: "#ccd9f6",
+            opacity: 0.5,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          Drag to move
+        </Box>
+      )}
       Scope {id}
-      <Handle type="source" position={Position.Right} />
+      <MyHandle hover={hover} isTarget={isTarget} />
       <Box
         style={{
           pointerEvents: "all",
