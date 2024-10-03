@@ -136,8 +136,7 @@ export function ScopeNode({ id }: NodeProps) {
             height: "100%",
             top: 0,
             left: 0,
-            backgroundColor: "lightblue",
-            opacity: 0.1,
+            opacity: 0,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -150,12 +149,10 @@ export function ScopeNode({ id }: NodeProps) {
         style={{
           width: "100%",
           height: "100%",
-          backgroundColor: "lightpink",
+          backgroundColor: "lightblue",
           opacity: 0.1,
         }}
-      >
-        Scope {id}
-      </Flex>
+      ></Flex>
       <MyHandle hover={hover} isTarget={isTarget} />
       <motion.div
         animate={{
