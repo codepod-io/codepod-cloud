@@ -530,12 +530,7 @@ export function MyHandle({
           ? {
               width: "100%",
               height: "100%",
-              borderStyle: isTarget ? "dashed" : "solid",
-              backgroundColor: isTarget
-                ? hover
-                  ? "orange"
-                  : "#ffcce3"
-                : "#ccd9f6",
+              backgroundColor: isTarget && hover ? "orange" : "transparent",
             }
           : { width: 0, height: 0 }),
         // make content horizontally and vertically centered
@@ -557,12 +552,11 @@ export function MyHandle({
           position: "absolute",
           // background: "blue",
           border: "none",
-          opacity: 0.2,
+          opacity: 0,
           borderRadius: 0,
           transform: "none",
           top: 0,
           left: 0,
-          color: "black",
           fontWeight: "bold",
         }}
       />
@@ -609,8 +603,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
             height: "100%",
             top: 0,
             left: 0,
-            backgroundColor: "#ccd9f6",
-            opacity: 0.5,
+            opacity: 0,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
