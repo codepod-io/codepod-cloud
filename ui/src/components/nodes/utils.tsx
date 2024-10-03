@@ -25,7 +25,9 @@ import {
 } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_deleteSubtree, getAbsPos } from "@/lib/store/canvasSlice";
+import { getAbsPos } from "@/lib/store/canvasSlice";
+import { ATOM_deleteSubtree } from "@/lib/store/cavnasSlice_addNode";
+
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
 import juliaLogo from "@/assets/julia.svg";

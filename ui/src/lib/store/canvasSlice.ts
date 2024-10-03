@@ -210,62 +210,6 @@ export function updateView(get: Getter, set: Setter) {
 
 export const ATOM_updateView = atom(null, updateView);
 
-export const ATOM_deleteSubtree = atom(
-  null,
-  (get: Getter, set: Setter, todelete: string) => {
-    const nodesMap = get(ATOM_nodesMap);
-    const codeMap = get(ATOM_codeMap);
-    const richMap = get(ATOM_richMap);
-    const node = nodesMap.get(todelete);
-    if (!node) throw new Error("Node not found");
-    // remove all descendants
-    const removeDescendants = (id: string) => {
-      const node = nodesMap.get(id);
-      if (!node) throw new Error("Node not found");
-      if (node.type === "SCOPE") {
-        node.data.childrenIds.forEach((childId) => {
-          removeDescendants(childId);
-          nodesMap.delete(childId);
-          // remove from codeMap or richMap
-          if (codeMap.has(childId)) codeMap.delete(childId);
-          if (richMap.has(childId)) richMap.delete(childId);
-        });
-      }
-    };
-    removeDescendants(todelete);
-    // remove the node itself
-    nodesMap.delete(todelete);
-    if (codeMap.has(todelete)) codeMap.delete(todelete);
-    if (richMap.has(todelete)) richMap.delete(todelete);
-    // update parent node's children field.
-    if (node.parentId) {
-      const parent = nodesMap.get(node.parentId);
-      myassert(parent);
-      myassert(parent.type === "SCOPE");
-      nodesMap.set(
-        node.parentId,
-        produce(parent, (draft) => {
-          draft.data.childrenIds = draft.data.childrenIds.filter(
-            (childId) => childId !== todelete
-          );
-        })
-      );
-    }
-
-    // autoLayoutTree(get, set);
-    updateView(get, set);
-  }
-);
-
-export const ATOM_deleteEdge = atom(
-  null,
-  (get: Getter, set: Setter, edgeId: string) => {
-    const edgesMap = get(ATOM_edgesMap);
-    edgesMap.delete(edgeId);
-    updateView(get, set);
-  }
-);
-
 function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   // compute the helper lines
   // get(setHelperLineHorizontal)(undefined);

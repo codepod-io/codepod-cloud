@@ -10,7 +10,7 @@ import {
 
 import { Box, Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_deleteEdge, ATOM_nodes } from "@/lib/store/canvasSlice";
+import { ATOM_nodes } from "@/lib/store/canvasSlice";
 import { FileUp, NotebookPen, Clipboard } from "lucide-react";
 import {
   JavaScriptLogo,
@@ -18,7 +18,11 @@ import {
   PythonLogo,
   RacketLogo,
 } from "../nodes/utils";
-import { ATOM_addNode, ATOM_addScope } from "@/lib/store/cavnasSlice_addNode";
+import {
+  ATOM_addNode,
+  ATOM_addScope,
+  ATOM_deleteEdge,
+} from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { AppNode } from "@/lib/store/types";
