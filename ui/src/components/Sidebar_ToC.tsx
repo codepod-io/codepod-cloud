@@ -111,6 +111,15 @@ function NodeName({ id }) {
   return match(node.type)
     .with("CODE", () => <CodeNodeName id={id} />)
     .with("RICH", () => <RichNodeName id={id} />)
+    .with("SCOPE", () => (
+      <Text
+        style={{
+          color: "black",
+        }}
+      >
+        Scope
+      </Text>
+    ))
     .otherwise(() => <Text>???</Text>);
 }
 
@@ -166,6 +175,7 @@ function PodTreeItem({ id }) {
                 .otherwise(() => <Box>???</Box>)
             )
             .with("RICH", () => <NotebookPen size={15} />)
+            .with("SCOPE", () => <Package size={15} />)
             .otherwise(() => (
               <Box>???</Box>
             ))}
@@ -183,6 +193,15 @@ function PodTreeItem({ id }) {
           <NodeName id={id} />
         </Button>
       </Flex>
+      {node.type === "SCOPE" && (
+        <Flex direction="column">
+          <Flex direction="column" style={{ paddingLeft: "15px" }}>
+            {node.data.childrenIds?.map((child) => (
+              <PodTreeItem key={child} id={child} />
+            ))}
+          </Flex>
+        </Flex>
+      )}
     </Flex>
   );
 }
@@ -190,10 +209,14 @@ function PodTreeItem({ id }) {
 export function TableofPods() {
   // listen to nodes change.
   const [nodes] = useAtom(ATOM_nodes);
+  // get root nodes
+  const rootNodes = nodes.filter((node) => !node.parentId);
 
   return (
     <Box>
-      <PodTreeItem key={"ROOT"} id={"ROOT"} />
+      {rootNodes.map((node) => (
+        <PodTreeItem key={node.id} id={node.id} />
+      ))}
     </Box>
   );
 }
