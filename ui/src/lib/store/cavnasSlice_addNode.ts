@@ -20,14 +20,24 @@ export const ATOM_addNode = atom(
       position,
       type,
       lang,
+      scopeId,
     }: {
       position: XYPosition;
       type: "CODE" | "RICH";
       lang?: SupportedLanguage;
+      scopeId?: string;
     }
   ) => {
     let id = myNanoId();
     const nodesMap = get(ATOM_nodesMap);
+    if (scopeId) {
+      const scope = nodesMap.get(scopeId);
+      myassert(scope);
+      position = {
+        x: position.x - scope.position.x,
+        y: position.y - scope.position.y,
+      };
+    }
     switch (type) {
       case "CODE":
         {
@@ -37,6 +47,7 @@ export const ATOM_addNode = atom(
             type: "CODE",
             position,
             dragHandle: ".custom-drag-handle",
+            parentId: scopeId,
             data: {
               lang,
             },
@@ -52,12 +63,16 @@ export const ATOM_addNode = atom(
             type: "RICH",
             position,
             dragHandle: ".custom-drag-handle",
+            parentId: scopeId,
             data: {},
           };
           nodesMap.set(id, node);
           get(ATOM_richMap).set(id, new Y.XmlFragment());
         }
         break;
+    }
+    if (scopeId) {
+      computeChildrenIds(get, set);
     }
     updateView(get, set);
   }
