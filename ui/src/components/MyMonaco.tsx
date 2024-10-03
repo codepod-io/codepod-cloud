@@ -1,10 +1,10 @@
 import { Position } from "monaco-editor";
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, useRef, memo, useMemo } from "react";
 
 import * as monaco from "monaco-editor";
 
 import { MonacoBinding } from "y-monaco";
-import { copilotTrpc } from "@/lib/trpc";
+import { copilotTrpc, runtimeTrpc } from "@/lib/trpc";
 
 import { llamaInlineCompletionProvider } from "@/lib/llamaCompletionProvider";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -15,6 +15,7 @@ import {
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import {
+  ATOM_preprocessChain,
   getOrCreate_ATOM_parseResult,
   getOrCreate_ATOM_resolveResult,
   ResolveResult,
@@ -23,6 +24,7 @@ import {
   ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_provider,
+  ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 
 // From here: https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#use-monaco-editor-as-an-npm-package
@@ -32,13 +34,15 @@ import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-import { ATOM_editMode } from "@/lib/store/atom";
+import { ATOM_editMode, ATOM_repoData } from "@/lib/store/atom";
 import { env } from "@/lib/vars";
 import { ParseResult } from "@/lib/parser";
 import { CodeNodeType } from "@/lib/store/types";
 import { css } from "@emotion/css";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_previousVersion } from "@/pages/repo";
+import { selectAtom } from "jotai/utils";
+import { toast } from "react-toastify";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -465,6 +469,22 @@ function useInitEditor({
     }
   }
 
+  // -------------------------
+  // Runtime
+  // -------------------------
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const lang = node.data.lang;
+  const runtimeReady =
+    lang &&
+    useAtom(
+      useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [node.id])
+    );
+
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
+
   useEffect(() => {
     if (editor && editor.getModel()) {
       const updateHeight = ({ contentHeight }) => {
@@ -479,6 +499,22 @@ function useInitEditor({
       editor.onDidContentSizeChange(updateHeight);
       // Set the height for the first time.
       updateHeight({ contentHeight: editor.getContentHeight() });
+      // Note: must use addAction instead of addCommand. The addCommand is not
+      // working because it is bound to only the latest Monaco instance. This is a
+      // known bug: https://github.com/microsoft/monaco-editor/issues/2947
+      editor.addAction({
+        id: "Run",
+        label: "Run",
+        keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+        run: () => {
+          if (!runtimeReady) {
+            toast.error("Runtime is not ready.");
+          } else {
+            const specs = preprocessChain([node.id]);
+            if (specs) runChain.mutate({ repoId, specs });
+          }
+        },
+      });
       editor.addAction({
         id: "trigger-inline-suggest",
         label: "Trigger Suggest",

@@ -17,8 +17,6 @@ import {
 } from "@xyflow/react";
 import { ResizeControlVariant } from "@xyflow/react";
 
-import { useHotkeys } from "react-hotkeys-hook";
-
 import Ansi from "ansi-to-react";
 
 import { MyMonaco } from "../MyMonaco";
@@ -467,51 +465,6 @@ const MyPodToolbar = memo(function MyPodToolbar({
   );
 });
 
-/**
- * Listen to Shift+Enter key press and run the code.
- * @param id the ID of the pod.
- * @returns a ref to be attached to a React component so that the hotkey is
- * bound to that pod.
- */
-function useRunKey({ node }: { node: CodeNodeType }) {
-  // The runtime ATOMs and trpc APIs.
-  const runChain = runtimeTrpc.k8s.runChain.useMutation();
-  const preprocessChain = useSetAtom(ATOM_preprocessChain);
-  const lang = node.data.lang;
-  const runtimeReady =
-    lang &&
-    useAtom(
-      React.useMemo(
-        () => selectAtom(ATOM_runtimeReady, (v) => v[lang]),
-        [node.id]
-      )
-    );
-  const repoData = useAtomValue(ATOM_repoData);
-  myassert(repoData);
-  const repoId = repoData.id;
-  // call useHotKeys library
-  return useHotkeys<HTMLDivElement>(
-    "shift+enter",
-    () => {
-      if (!runtimeReady) {
-        toast.error("Runtime is not ready.");
-      } else {
-        const specs = preprocessChain([node.id]);
-        if (specs) runChain.mutate({ repoId, specs });
-      }
-    },
-    {
-      enableOnContentEditable: true,
-      enabled: true,
-      // So that it works on the code editor.
-      enableOnFormTags: ["INPUT", "TEXTAREA"],
-      // Prevent inserting in the code editor.
-      preventDefault: true,
-    },
-    [runtimeReady]
-  );
-}
-
 function FoldedCodeText({ id }) {
   const codeMap = useAtomValue(ATOM_codeMap);
   const ytext = codeMap.get(id);
@@ -634,7 +587,6 @@ function CodeNodeImpl({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
 
-  // let ref = useRunKey({ node });
   const cutId = useAtomValue(ATOM_cutId);
   const [hover, setHover] = useState(false);
 
@@ -709,7 +661,6 @@ function CodeNodeImpl({ id }: { id: string }) {
                   : "transparent",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}
-        // ref={ref}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
