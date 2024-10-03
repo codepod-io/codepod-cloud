@@ -24,7 +24,7 @@ import Ansi from "ansi-to-react";
 import { MyMonaco } from "../MyMonaco";
 
 import {
-  DeleteButton,
+  ConfirmedDelete,
   JavaScriptLogo,
   JuliaLogo,
   PythonLogo,
@@ -53,6 +53,7 @@ import {
   GripVertical,
   Play,
   ScissorsLineDashed,
+  Trash2,
   X,
 } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
@@ -86,7 +87,10 @@ import {
   ATOM_insertMode,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
-import { ATOM_changeScope } from "@/lib/store/cavnasSlice_addNode";
+import {
+  ATOM_changeScope,
+  ATOM_deletePod,
+} from "@/lib/store/cavnasSlice_addNode";
 
 function Timer({ lastExecutedAt }) {
   useTick(1000);
@@ -353,6 +357,8 @@ const MyPodToolbar = memo(function MyPodToolbar({
   const parsePod = useSetAtom(ATOM_parsePod);
   const resolvePod = useSetAtom(ATOM_resolvePod);
 
+  const deletePod = useSetAtom(ATOM_deletePod);
+
   return (
     <Flex
       align="center"
@@ -441,7 +447,20 @@ const MyPodToolbar = memo(function MyPodToolbar({
           {/* assign group */}
           <ChangeScopeItem id={id} />
           <DropdownMenu.Separator />
-          <DeleteButton id={id} />
+          <ConfirmedDelete
+            color="red"
+            onSelect={() => {
+              deletePod(id);
+            }}
+            trigger={
+              <>
+                <Trash2 /> Delete Pod
+              </>
+            }
+            title="This will delete the pod."
+            description="Continue?"
+            confirm="Delete"
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </Flex>
@@ -548,7 +567,7 @@ export const CodeNode = function ({ id }: NodeProps) {
   if (node.type !== "CODE") {
     throw new Error("Should not reach here");
   }
-  return <CodeNodeImpl node={node} />;
+  return <CodeNodeImpl id={id} />;
 };
 
 /**
@@ -611,11 +630,12 @@ export function MyHandle({
   );
 }
 
-function CodeNodeImpl({ node }: { node: CodeNodeType }) {
-  const id = node.id;
-  let ref = useRunKey({ node });
-  const cutId = useAtomValue(ATOM_cutId);
+function CodeNodeImpl({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+
+  // let ref = useRunKey({ node });
+  const cutId = useAtomValue(ATOM_cutId);
   const [hover, setHover] = useState(false);
 
   const insertMode = useAtomValue(ATOM_insertMode);
@@ -626,6 +646,12 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
   // collisions
   const collisionIds = useAtomValue(ATOM_collisionIds);
   const escapedIds = useAtomValue(ATOM_escapedIds);
+
+  // NOTE: we have to check node here and return early (after all the hooks). On
+  // deleting this node, collisionIds will cause this component to be
+  // re-rendered. In that phase, the id does not exist in nodesMap.
+  if (!node) return null;
+  myassert(node.type === "CODE");
 
   return (
     <div
@@ -683,7 +709,7 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
                   : "transparent",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}
-        ref={ref}
+        // ref={ref}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >

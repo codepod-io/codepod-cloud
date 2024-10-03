@@ -26,7 +26,6 @@ import {
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { getAbsPos } from "@/lib/store/canvasSlice";
-import { ATOM_deleteSubtree } from "@/lib/store/cavnasSlice_addNode";
 
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
@@ -494,7 +493,7 @@ export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
 }
 
 // Ref: https://github.com/radix-ui/primitives/discussions/1830#discussioncomment-10300947
-function ConfirmedDelete({
+export function ConfirmedDelete({
   color,
   onSelect,
   trigger,
@@ -545,26 +544,6 @@ function ConfirmedDelete({
         </Flex>
       </Dialog.Content>
     </Dialog.Root>
-  );
-}
-
-export function DeleteButton({ id }) {
-  const deleteSubtree = useSetAtom(ATOM_deleteSubtree);
-  return (
-    <ConfirmedDelete
-      color="red"
-      onSelect={() => {
-        deleteSubtree(id);
-      }}
-      trigger={
-        <>
-          <Trash2 /> Delete Tree
-        </>
-      }
-      title="This will delete the entire subtree."
-      description="Continue?"
-      confirm="Delete"
-    />
   );
 }
 

@@ -22,10 +22,17 @@ import {
 import { ChangeScopeItem, MyHandle } from "./Code";
 import { memo, useState } from "react";
 import { motion } from "framer-motion";
-import { Ellipsis, GripVertical } from "lucide-react";
+import { Ellipsis, GripVertical, Trash2 } from "lucide-react";
 import { css } from "@emotion/css";
+import { ConfirmedDelete } from "./utils";
+import {
+  ATOM_deleteScope,
+  ATOM_deleteSubTree,
+} from "@/lib/store/cavnasSlice_addNode";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
+  const deleteScope = useSetAtom(ATOM_deleteScope);
+  const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
   return (
     <Flex
       align="center"
@@ -68,20 +75,34 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Content color="yellow">
           <ChangeScopeItem id={id} />
-          <DropdownMenu.Item
+          <ConfirmedDelete
+            color="red"
             onSelect={() => {
-              // TODO
+              deleteScope(id);
             }}
-          >
-            Delete Scope
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
+            trigger={
+              <>
+                <Trash2 /> Remove Scope
+              </>
+            }
+            title="This will delete the scope but keep its children."
+            description="Continue?"
+            confirm="Delete"
+          />
+          <ConfirmedDelete
+            color="red"
             onSelect={() => {
-              // TODO
+              deleteSubTree(id);
             }}
-          >
-            Delete Scope and Children
-          </DropdownMenu.Item>
+            trigger={
+              <>
+                <Trash2 /> Delete Scope and All Pods
+              </>
+            }
+            title="This will delete the scope AND delete all the pods inside it."
+            description="Continue?"
+            confirm="Delete"
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </Flex>
@@ -91,7 +112,6 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
 export function ScopeNode({ id }: NodeProps) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  myassert(node);
 
   const [hover, setHover] = useState(false);
 
@@ -106,6 +126,8 @@ export function ScopeNode({ id }: NodeProps) {
   const escapedIds = useAtomValue(ATOM_escapedIds);
 
   const borderWidth = 4;
+
+  if (!node) return null;
 
   return (
     <Box
