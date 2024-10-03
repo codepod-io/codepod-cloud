@@ -66,6 +66,7 @@ import { env } from "@/lib/vars";
 import { Header } from "@/components/Header";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_debugMode, ATOM_showLineNumbers } from "@/lib/store/settingSlice";
+import { ATOM_updateView } from "@/lib/store/canvasSlice";
 
 function NotFoundAlert({}) {
   return (
@@ -163,6 +164,7 @@ function ParserWrapper({ children }) {
   const loadParser_julia = useSetAtom(ATOM_loadParser_julia);
   loadParser_julia();
   const parserReady_julia = useAtomValue(ATOM_parserReady_julia);
+  const updateView = useSetAtom(ATOM_updateView);
 
   useEffect(() => {
     if (
@@ -174,6 +176,7 @@ function ParserWrapper({ children }) {
       parseAllPods();
       propagateAllST();
       resolveAllPods();
+      updateView();
     }
   }, [
     parseAllPods,
