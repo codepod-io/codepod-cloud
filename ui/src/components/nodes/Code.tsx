@@ -57,7 +57,6 @@ import {
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { selectAtom } from "jotai/utils";
 import {
   ATOM_clearResults,
   ATOM_getEdgeChain,
@@ -68,9 +67,9 @@ import {
 import {
   ATOM_codeMap,
   ATOM_nodesMap,
-  ATOM_resultChanged,
   ATOM_resultMap,
-  ATOM_runtimeReady,
+  getOrCreate_ATOM_resultChanged,
+  getOrCreate_ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 import { ATOM_cutId, ATOM_repoData } from "@/lib/store/atom";
 
@@ -101,10 +100,9 @@ export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
   const [resultScroll, setResultScroll] = useState(false);
 
   const clearResults = useSetAtom(ATOM_clearResults);
-  // monitor result change
-  useAtom(
-    React.useMemo(() => selectAtom(ATOM_resultChanged, (v) => v[id]), [id])
-  );
+  // Monitor result change.
+  // Do not remove this. This variable is not used but it is necessary to trigger re-render.
+  const resultChanged = useAtomValue(getOrCreate_ATOM_resultChanged(id));
 
   const [resultMap] = useAtom(ATOM_resultMap);
   const result = resultMap.get(id);
@@ -344,11 +342,7 @@ const MyPodToolbar = memo(function MyPodToolbar({
 
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const lang = node.data.lang;
-  const runtimeReady =
-    lang &&
-    useAtomValue(
-      React.useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [id])
-    );
+  const runtimeReady = useAtomValue(getOrCreate_ATOM_runtimeReady(lang));
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
   const repoId = repoData.id;
@@ -612,6 +606,17 @@ function CodeNodeImpl({ id }: { id: string }) {
         minWidth: "300px",
       }}
     >
+      <Flex
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translate(0, -100%)",
+        }}
+      >
+        {node.id}
+      </Flex>
+
       {insertMode === "Move" && (
         <Box
           className="custom-drag-handle"

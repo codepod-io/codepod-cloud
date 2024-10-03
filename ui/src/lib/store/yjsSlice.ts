@@ -1,4 +1,4 @@
-import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Getter, PrimitiveAtom, Setter, atom } from "jotai";
 import { Doc } from "yjs";
 import * as Y from "yjs";
 // FIXME can I import from api/ folder?
@@ -31,14 +31,23 @@ export const ATOM_setProviderSynced = atom(
 
 export const ATOM_runtimeChanged = atom(0);
 
-export const ATOM_resultChanged = atom<Record<string, number>>({});
+const id2_ATOM_resultChanged = new Map<string, PrimitiveAtom<number>>();
+export function getOrCreate_ATOM_resultChanged(id: string) {
+  if (id2_ATOM_resultChanged.has(id)) {
+    return id2_ATOM_resultChanged.get(id)!;
+  }
+  const res = atom(0);
+  id2_ATOM_resultChanged.set(id, res);
+  return res;
+}
 function triggerResultChanged(get: Getter, set: Setter, id: string) {
-  set(
-    ATOM_resultChanged,
-    produce((resultChanged: Record<string, number>) => {
-      resultChanged[id] = (resultChanged[id] || 0) + 1;
-    })
-  );
+  set(getOrCreate_ATOM_resultChanged(id), (counter: number) => {
+    if (counter >= Number.MAX_SAFE_INTEGER) {
+      // Handle overflow, reset the counter
+      counter = 0;
+    }
+    return counter + 1;
+  });
 }
 
 /**
@@ -92,7 +101,16 @@ export {
   ATOM_resultMap,
 };
 
-export const ATOM_runtimeReady = atom<Record<string, boolean>>({});
+const lang2_ATOM_runtimeReady = new Map<string, PrimitiveAtom<boolean>>();
+export function getOrCreate_ATOM_runtimeReady(lang: string) {
+  if (lang2_ATOM_runtimeReady.has(lang)) {
+    return lang2_ATOM_runtimeReady.get(lang)!;
+  }
+  const res = atom(false);
+  lang2_ATOM_runtimeReady.set(lang, res);
+  return res;
+}
+
 function setRuntimeReady(
   get: Getter,
   set: Setter,
@@ -100,19 +118,9 @@ function setRuntimeReady(
 ) {
   runtimeMap.forEach((value, kernelName) => {
     if (["idle", "busy"].includes(value.status || "")) {
-      set(
-        ATOM_runtimeReady,
-        produce((runtimeReady: Record<string, boolean>) => {
-          runtimeReady[kernelName] = true;
-        })
-      );
+      set(getOrCreate_ATOM_runtimeReady(kernelName), true);
     } else {
-      set(
-        ATOM_runtimeReady,
-        produce((runtimeReady: Record<string, boolean>) => {
-          runtimeReady[kernelName] = false;
-        })
-      );
+      set(getOrCreate_ATOM_runtimeReady(kernelName), false);
     }
   });
 }
