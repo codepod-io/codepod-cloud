@@ -24,7 +24,7 @@ import {
   ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_provider,
-  ATOM_runtimeReady,
+  getOrCreate_ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 
 // From here: https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#use-monaco-editor-as-an-npm-package
@@ -41,7 +41,6 @@ import { CodeNodeType } from "@/lib/store/types";
 import { css } from "@emotion/css";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_previousVersion } from "@/pages/repo";
-import { selectAtom } from "jotai/utils";
 import { toast } from "react-toastify";
 
 self.MonacoEnvironment = {
@@ -475,11 +474,7 @@ function useInitEditor({
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const lang = node.data.lang;
-  const runtimeReady =
-    lang &&
-    useAtom(
-      useMemo(() => selectAtom(ATOM_runtimeReady, (v) => v[lang]), [node.id])
-    );
+  const runtimeReady = useAtomValue(getOrCreate_ATOM_runtimeReady(lang));
 
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
