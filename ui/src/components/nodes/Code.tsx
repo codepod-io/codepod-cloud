@@ -339,6 +339,12 @@ const MyPodToolbar = memo(function MyPodToolbar({
       >
         <GripVertical />
       </Box>
+      {match(node.data.lang)
+        .with("python", () => <PythonLogo />)
+        .with("julia", () => <JuliaLogo />)
+        .with("javascript", () => <JavaScriptLogo />)
+        .with("racket", () => <RacketLogo />)
+        .otherwise(() => "??")}
       {/* The run button */}
       <IconButton
         variant="ghost"
@@ -659,23 +665,6 @@ function CodeNodeImpl({ node }: { node: CodeNodeType }) {
           <SymbolTable id={id} />
 
           <MyHandle hover={hover} isTarget={isTarget} />
-
-          <Box
-            style={{
-              position: "fixed",
-              bottom: 0,
-              right: 0,
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            {/* .py */}
-            {match(node.data.lang)
-              .with("python", () => <PythonLogo />)
-              .with("julia", () => <JuliaLogo />)
-              .with("javascript", () => <JavaScriptLogo />)
-              .with("racket", () => <RacketLogo />)
-              .otherwise(() => "??")}{" "}
-          </Box>
 
           <NodeResizeControl
             minWidth={300}
