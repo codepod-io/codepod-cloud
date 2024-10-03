@@ -21,6 +21,7 @@ import {
 import { ATOM_addNode, ATOM_addScope } from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { AppNode } from "@/lib/store/types";
 
 export function useUpload() {
   const nodes = useAtom(ATOM_nodes);
@@ -96,7 +97,7 @@ export function usePaneContextMenu() {
   // get scope at the position
   // ----------------
 
-  const { getIntersectingNodes } = useReactFlow();
+  const { getIntersectingNodes } = useReactFlow<AppNode>();
 
   // get scope at the position
   const scopes = getIntersectingNodes({
@@ -107,19 +108,10 @@ export function usePaneContextMenu() {
   }).filter((node) => node.type === "SCOPE");
 
   // the the innermost scope
-  const nodesMap = useAtomValue(ATOM_nodesMap);
-  function getNodeLevel(id?: string) {
-    if (!id) return 0;
-    const node = nodesMap.get(id);
-    myassert(node);
-    return getNodeLevel(node.parentId) + 1;
-  }
   const scopeId =
     scopes.length === 0
       ? undefined
-      : scopes
-          .map((node) => ({ id: node.id, level: getNodeLevel(node.id) }))
-          .sort((a, b) => b.level - a.level)[0].id;
+      : scopes.sort((a, b) => (b.data.level ?? 0) - (a.data.level ?? 0))[0].id;
 
   // ----------------
   // handle file upload

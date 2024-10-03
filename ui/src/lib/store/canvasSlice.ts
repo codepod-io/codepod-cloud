@@ -46,6 +46,22 @@ export function getAbsPos(node: Node, nodesMap: Y.Map<AppNode>): XYPosition {
   return { x, y };
 }
 
+/**
+ * Get the relative position of pos inside parent node.
+ */
+export function getRelativePos(
+  pos: XYPosition,
+  node: Node,
+  nodesMap: Y.Map<AppNode>
+): XYPosition {
+  let x = pos.x;
+  let y = pos.y;
+  const absPos = getAbsPos(node, nodesMap);
+  x -= absPos.x;
+  y -= absPos.y;
+  return { x, y };
+}
+
 export const ATOM_nodes = atom<Node[]>([]);
 export const ATOM_edges = atom<Edge[]>([]);
 
