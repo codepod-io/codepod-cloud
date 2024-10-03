@@ -9,7 +9,7 @@ import {
 } from "@xyflow/react";
 
 import { Box, Button, DropdownMenu } from "@radix-ui/themes";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ATOM_deleteEdge, ATOM_nodes } from "@/lib/store/canvasSlice";
 import { FileUp, NotebookPen, Clipboard } from "lucide-react";
 import {
@@ -20,6 +20,7 @@ import {
 } from "../nodes/utils";
 import { ATOM_addNode, ATOM_addScope } from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
+import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
 export function useUpload() {
   const nodes = useAtom(ATOM_nodes);
@@ -91,6 +92,38 @@ export function usePaneContextMenu() {
   const { screenToFlowPosition } = useReactFlow();
   const position = screenToFlowPosition(clientPosition);
 
+  // ----------------
+  // get scope at the position
+  // ----------------
+
+  const { getIntersectingNodes } = useReactFlow();
+
+  // get scope at the position
+  const scopes = getIntersectingNodes({
+    x: position.x,
+    y: position.y,
+    width: 1,
+    height: 1,
+  }).filter((node) => node.type === "SCOPE");
+
+  // the the innermost scope
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  function getNodeLevel(id?: string) {
+    if (!id) return 0;
+    const node = nodesMap.get(id);
+    myassert(node);
+    return getNodeLevel(node.parentId) + 1;
+  }
+  const scopeId =
+    scopes.length === 0
+      ? undefined
+      : scopes
+          .map((node) => ({ id: node.id, level: getNodeLevel(node.id) }))
+          .sort((a, b) => b.level - a.level)[0].id;
+
+  // ----------------
+  // handle file upload
+  // ----------------
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { handleFileInputChange } = useUpload();
 
@@ -144,7 +177,7 @@ export function usePaneContextMenu() {
             <DropdownMenu.Item
               shortcut="⌘ D"
               onSelect={() => {
-                addNode({ position, type: "RICH" });
+                addNode({ position, scopeId, type: "RICH" });
               }}
             >
               <NotebookPen /> Note
@@ -153,7 +186,7 @@ export function usePaneContextMenu() {
             <DropdownMenu.Item
               shortcut="⌘ E"
               onSelect={() => {
-                addNode({ position, type: "CODE", lang: "python" });
+                addNode({ position, scopeId, type: "CODE", lang: "python" });
               }}
             >
               <PythonLogo />
@@ -162,7 +195,7 @@ export function usePaneContextMenu() {
             <DropdownMenu.Item
               shortcut="⌘ E"
               onSelect={() => {
-                addNode({ position, type: "CODE", lang: "julia" });
+                addNode({ position, scopeId, type: "CODE", lang: "julia" });
               }}
             >
               <JuliaLogo />
@@ -174,6 +207,7 @@ export function usePaneContextMenu() {
               onSelect={() => {
                 addNode({
                   position,
+                  scopeId,
                   type: "CODE",
                   lang: "javascript",
                 });
@@ -186,7 +220,7 @@ export function usePaneContextMenu() {
             <DropdownMenu.Item
               shortcut="⌘ E"
               onSelect={() => {
-                addNode({ position, type: "CODE", lang: "racket" });
+                addNode({ position, scopeId, type: "CODE", lang: "racket" });
               }}
             >
               <RacketLogo />
