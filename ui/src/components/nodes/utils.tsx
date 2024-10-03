@@ -566,6 +566,7 @@ export function SymbolTable({ id }) {
           left: 0,
           transform: "translateY(-100%) translateY(-10px)",
         }}
+        direction={"column"}
         gap="4"
         wrap="wrap"
       >
@@ -576,7 +577,8 @@ export function SymbolTable({ id }) {
                 fontSize: "2.5em",
                 color: "black",
                 // lineHeight: "var(--line-height-1)",
-                lineHeight: "10px",
+                // lineHeight: "10px",
+                lineHeight: "0.5em",
                 // do not wrap
                 whiteSpace: "nowrap",
               }}
