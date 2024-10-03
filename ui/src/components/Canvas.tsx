@@ -28,6 +28,7 @@ import { FloatingEdge } from "./nodes/FloatingEdge";
 import {
   ConnectionLineStraight,
   StraightFloatingEdge,
+  StraightFloatingEdgeGradient,
 } from "./nodes/FloatingEdge_Straight";
 
 import HelperLines from "./HelperLines";
@@ -130,7 +131,8 @@ function GradientEdge({
 const edgeTypes = {
   // floating: FloatingEdge,
   floating: StraightFloatingEdge,
-  gradient: GradientEdge,
+  // gradient: GradientEdge,
+  gradient: StraightFloatingEdgeGradient,
 };
 
 /**

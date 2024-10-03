@@ -118,12 +118,12 @@ function generateCallEdges(get: Getter, set: Setter) {
         id: `${node.id}-${key}`,
         source: node.id,
         target: value,
-        sourceHandle: "right",
-        targetHandle: "left",
+        // sourceHandle: "right",
+        // targetHandle: "left",
         markerEnd: {
-          type: MarkerType.ArrowClosed,
+          type: MarkerType.Arrow,
           color: "red",
-          strokeWidth: 4,
+          // strokeWidth: 4,
         },
         type: "gradient",
         // Caution: animated edges have a huge performance hit.
@@ -185,6 +185,7 @@ export function updateView(get: Getter, set: Setter) {
     node.width = undefined;
     node.height = undefined;
     if (node.type === "SCOPE" && g_nonSelectableScopes.has(node.id)) {
+      console.log("nonSelectable", node.id);
       node.selectable = false;
     }
   });

@@ -116,6 +116,62 @@ export function StraightFloatingEdge({
   );
 }
 
+export function StraightFloatingEdgeGradient({
+  id,
+  source,
+  target,
+  markerEnd,
+  style,
+}: EdgeProps) {
+  const sourceNode = useInternalNode(source);
+  const targetNode = useInternalNode(target);
+
+  if (!sourceNode || !targetNode) {
+    return null;
+  }
+
+  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
+
+  const [edgePath] = getStraightPath({
+    sourceX: sx,
+    sourceY: sy,
+    targetX: tx,
+    targetY: ty,
+  });
+
+  return (
+    <>
+      <defs>
+        <linearGradient
+          // id={"blue-to-red"}
+          id={id}
+          x1={sx > tx ? "100%" : "0%"}
+          // x1="100%"
+          y1="0%"
+          x2={sx > tx ? "0%" : "100%"}
+          // x2="0%"
+          y2="0%"
+          // gradientUnits="objectBoundingBox"
+          // gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" style={{ stopColor: "blue", stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: "red", stopOpacity: 1 }} />
+        </linearGradient>
+      </defs>
+      <path
+        id={id}
+        className="react-flow__edge-path"
+        d={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          ...style,
+          stroke: `url(#${id})`,
+        }}
+      />
+    </>
+  );
+}
+
 export function ConnectionLineStraight({
   fromX,
   fromY,
