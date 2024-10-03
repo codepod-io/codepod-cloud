@@ -58,7 +58,11 @@ import {
   ATOM_showLineNumbers,
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_insertMode, ATOM_nodes } from "@/lib/store/canvasSlice";
+import {
+  ATOM_insertMode,
+  ATOM_nodes,
+  ATOM_selectedPods,
+} from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
   ATOM_nodesMap,
@@ -391,11 +395,21 @@ function DebugPanel() {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
+  const selectedPods = useAtomValue(ATOM_selectedPods);
   return (
     <Flex direction="column" gap="1">
+      <YjsSyncStatus />
+      <Separator my="3" size="4" />
+      <Flex>
+        <Text>Selected: {selectedPods.size}</Text>
+      </Flex>
       <Heading size="2">Export to ..</Heading>
+      <ExportPDF />
       <ExportYDoc />
       <ImportYDoc />
+
+      <Separator my="3" size="4" />
+      <ModeSwitch />
       <Separator my="3" size="4" />
       <Button onClick={() => parseAllPods()} variant="outline">
         Parse All
@@ -406,6 +420,8 @@ function DebugPanel() {
       <Button onClick={() => resolveAllPods()} variant="outline">
         Resolve All
       </Button>
+
+      <Runtime />
     </Flex>
   );
 }
@@ -557,12 +573,13 @@ export function SidebarRight() {
                 key: "Debug",
                 icon: <Construction />,
                 content: (
-                  <Flex direction="column">
+                  <Flex direction="column" gap="3">
                     <Heading mb="2" size="2">
                       Right Sidebar
                     </Heading>
                     <FpsMeter />
                     <Versions />
+                    <Separator my="3" size="4" />
                     <Heading size="2">ToC</Heading>
                     <TableofPods />
                     <Separator my="3" size="4" />
