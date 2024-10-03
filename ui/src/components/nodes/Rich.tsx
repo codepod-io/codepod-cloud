@@ -14,7 +14,7 @@ import * as Y from "yjs";
 
 // Local Imports
 
-import { DeleteButton, SymbolTable } from "./utils";
+import { ConfirmedDelete, SymbolTable } from "./utils";
 
 import {
   Box,
@@ -33,6 +33,7 @@ import {
   GripVertical,
   RemoveFormatting,
   ScissorsLineDashed,
+  Trash2,
 } from "lucide-react";
 import { ATOM_cutId, ATOM_editMode } from "@/lib/store/atom";
 import {
@@ -51,11 +52,14 @@ import {
   ATOM_insertMode,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
+import { ATOM_deletePod } from "@/lib/store/cavnasSlice_addNode";
 
 function MyPodToolbar({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
+
+  const deletePod = useSetAtom(ATOM_deletePod);
   return (
     <Flex
       align="center"
@@ -98,7 +102,20 @@ function MyPodToolbar({ id }) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
           <ChangeScopeItem id={id} />
-          <DeleteButton id={id} />
+          <ConfirmedDelete
+            color="red"
+            onSelect={() => {
+              deletePod(id);
+            }}
+            trigger={
+              <>
+                <Trash2 /> Delete Pod
+              </>
+            }
+            title="This will delete the pod."
+            description="Continue?"
+            confirm="Delete"
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </Flex>

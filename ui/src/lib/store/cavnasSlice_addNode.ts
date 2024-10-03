@@ -244,52 +244,85 @@ function changeScope(
 
 export const ATOM_changeScope = atom(null, changeScope);
 
-export const ATOM_deleteSubtree = atom(
-  null,
-  (get: Getter, set: Setter, todelete: string) => {
-    const nodesMap = get(ATOM_nodesMap);
-    const codeMap = get(ATOM_codeMap);
-    const richMap = get(ATOM_richMap);
-    const node = nodesMap.get(todelete);
-    if (!node) throw new Error("Node not found");
-    // remove all descendants
-    const removeDescendants = (id: string) => {
-      const node = nodesMap.get(id);
-      if (!node) throw new Error("Node not found");
-      if (node.type === "SCOPE") {
-        node.data.childrenIds.forEach((childId) => {
-          removeDescendants(childId);
-          nodesMap.delete(childId);
-          // remove from codeMap or richMap
-          if (codeMap.has(childId)) codeMap.delete(childId);
-          if (richMap.has(childId)) richMap.delete(childId);
-        });
-      }
-    };
-    removeDescendants(todelete);
-    // remove the node itself
-    nodesMap.delete(todelete);
-    if (codeMap.has(todelete)) codeMap.delete(todelete);
-    if (richMap.has(todelete)) richMap.delete(todelete);
-    // update parent node's children field.
-    if (node.parentId) {
-      const parent = nodesMap.get(node.parentId);
-      myassert(parent);
-      myassert(parent.type === "SCOPE");
-      nodesMap.set(
-        node.parentId,
-        produce(parent, (draft) => {
-          draft.data.childrenIds = draft.data.childrenIds.filter(
-            (childId) => childId !== todelete
-          );
-        })
-      );
-    }
+/**
+ * Delete a code pod or a rich pod.
+ */
+function deletePod(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const codeMap = get(ATOM_codeMap);
+  const richMap = get(ATOM_richMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "CODE" || node.type === "RICH");
+  nodesMap.delete(id);
+  // remove from codeMap or richMap
+  if (codeMap.has(id)) codeMap.delete(id);
+  if (richMap.has(id)) richMap.delete(id);
 
-    // autoLayoutTree(get, set);
-    updateView(get, set);
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_deletePod = atom(null, deletePod);
+
+/**
+ * Delete a scope but keep its children.
+ */
+function deleteScope(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "SCOPE");
+  // change the parentId of the children
+  node.data.childrenIds.forEach((childId) => {
+    const child = nodesMap.get(childId);
+    myassert(child);
+    child.parentId = node.parentId;
+    // adjust the positions
+    child.position.x += node.position.x;
+    child.position.y += node.position.y;
+    nodesMap.set(childId, child);
+  });
+  // delete the scope
+  nodesMap.delete(id);
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+export const ATOM_deleteScope = atom(null, deleteScope);
+
+/**
+ * Delete a scope and all its children.
+ */
+function deleleSubTree(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const codeMap = get(ATOM_codeMap);
+  const richMap = get(ATOM_richMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "SCOPE");
+  // remove all descendants
+  // get all descendants
+  function getSubtreeIds(id: string): string[] {
+    const node = nodesMap.get(id);
+    myassert(node);
+    let res = [id];
+    if (node.type === "SCOPE") {
+      node.data.childrenIds.forEach((childId) => {
+        res = res.concat(getSubtreeIds(childId));
+      });
+    }
+    return res;
   }
-);
+  const ids = getSubtreeIds(id);
+  ids.forEach((id) => {
+    nodesMap.delete(id);
+    if (codeMap.has(id)) codeMap.delete(id);
+    if (richMap.has(id)) richMap.delete(id);
+  });
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+export const ATOM_deleteSubTree = atom(null, deleleSubTree);
 
 export const ATOM_deleteEdge = atom(
   null,
