@@ -30,13 +30,15 @@ export const ATOM_addNode = atom(
   ) => {
     let id = myNanoId();
     const nodesMap = get(ATOM_nodesMap);
-    if (scopeId) {
-      const scope = nodesMap.get(scopeId);
-      myassert(scope);
+    let parentId = scopeId;
+    while (parentId) {
+      const parent = nodesMap.get(parentId);
+      myassert(parent);
       position = {
-        x: position.x - scope.position.x,
-        y: position.y - scope.position.y,
+        x: position.x - parent.position.x,
+        y: position.y - parent.position.y,
       };
+      parentId = parent.parentId;
     }
     switch (type) {
       case "CODE":
