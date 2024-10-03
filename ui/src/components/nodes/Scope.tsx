@@ -19,7 +19,7 @@ import {
   ATOM_escapedIds,
   ATOM_insertMode,
 } from "@/lib/store/canvasSlice";
-import { MyHandle } from "./Code";
+import { ChangeScopeItem, MyHandle } from "./Code";
 import { memo, useState } from "react";
 import { motion } from "framer-motion";
 import { Ellipsis, GripVertical } from "lucide-react";
@@ -67,6 +67,7 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
           </IconButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content color="yellow">
+          <ChangeScopeItem id={id} />
           <DropdownMenu.Item
             onSelect={() => {
               // TODO

@@ -50,7 +50,7 @@ import {
   ATOM_escapedIds,
   ATOM_insertMode,
 } from "@/lib/store/canvasSlice";
-import { MyHandle } from "./Code";
+import { ChangeScopeItem, MyHandle } from "./Code";
 
 function MyPodToolbar({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
@@ -97,6 +97,7 @@ function MyPodToolbar({ id }) {
           </IconButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
+          <ChangeScopeItem id={id} />
           <DeleteButton id={id} />
         </DropdownMenu.Content>
       </DropdownMenu.Root>

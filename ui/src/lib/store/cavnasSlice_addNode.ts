@@ -7,7 +7,7 @@ import { match } from "ts-pattern";
 import { myassert, myNanoId } from "../utils/utils";
 import { AppNode, CodeNodeType, RichNodeType } from "./types";
 
-import { updateView } from "./canvasSlice";
+import { getAbsPos, getRelativePos, updateView } from "./canvasSlice";
 import { SupportedLanguage } from "./types";
 import { toast } from "react-toastify";
 
@@ -74,7 +74,7 @@ export const ATOM_addNode = atom(
         break;
     }
     if (scopeId) {
-      computeChildrenIds(get, set);
+      computeHierarchy(get, set);
     }
     updateView(get, set);
   }
@@ -143,7 +143,7 @@ function addScope(get: Getter, set: Setter, nodes0: Node[]) {
     nodesMap.set(node.id, n);
   });
   // compute childrenIds
-  computeChildrenIds(get, set);
+  computeHierarchy(get, set);
   // update the view
   updateView(get, set);
 }
@@ -151,8 +151,10 @@ function addScope(get: Getter, set: Setter, nodes0: Node[]) {
 /**
  * We reset and recompute the childrenIds of all the scope nodes. This
  * simplifies the logic, and is efficient enough for now at O(n).
+ * - Reset and compute childrenIds
+ * - Compute levels
  */
-function computeChildrenIds(get: Getter, set: Setter) {
+function computeHierarchy(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   const nodes = Array.from(nodesMap.values());
   // clear childrenIds
@@ -160,6 +162,7 @@ function computeChildrenIds(get: Getter, set: Setter) {
     if (node.type === "SCOPE") {
       node.data.childrenIds = [];
     }
+    node.data.level = undefined;
   });
   // recompute childrenIds
   nodes.forEach((node) => {
@@ -170,6 +173,21 @@ function computeChildrenIds(get: Getter, set: Setter) {
       parent.data.childrenIds.push(node.id);
     }
   });
+  // compute level
+  const rootNodes = nodes.filter((n) => !n.parentId);
+  const computeLevel = (node: AppNode, level: number) => {
+    node.data.level = level;
+    if (node.type === "SCOPE") {
+      node.data.childrenIds
+        .map((id) => nodesMap.get(id))
+        .forEach((child) => {
+          if (child) {
+            computeLevel(child, level + 1);
+          }
+        });
+    }
+  };
+  rootNodes.forEach((node) => computeLevel(node, 0));
   // update the nodesMap
   nodes.forEach((node) => {
     nodesMap.set(node.id, node);
@@ -177,3 +195,46 @@ function computeChildrenIds(get: Getter, set: Setter) {
 }
 
 export const ATOM_addScope = atom(null, addScope);
+
+/**
+ * Change the scope of the node <id> to the scope <scopeId>.
+ */
+function changeScope(
+  get: Getter,
+  set: Setter,
+  { id, scopeId }: { id: string; scopeId?: string }
+) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  const oldScopeId = node.parentId;
+  if (oldScopeId === scopeId) {
+    return;
+  }
+  // adjust position
+  // 1. get abs position
+  const absPos = getAbsPos(node, nodesMap);
+  if (!scopeId) {
+    // if scopeId is undefined, absPos is the position to use.
+    node.parentId = scopeId;
+    node.position = absPos;
+  } else {
+    const scope = nodesMap.get(scopeId);
+    myassert(scope);
+    const relativePos = getRelativePos(absPos, scope, nodesMap);
+    // 2. adjust according to the new scope
+
+    node.parentId = scopeId;
+    node.position = relativePos;
+    // node.position = absPos;
+  }
+
+  // Set the new node.
+  nodesMap.set(id, node);
+
+  // We actually don't need to do anything to the old scope. Just re-compute the hierarchy.
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_changeScope = atom(null, changeScope);

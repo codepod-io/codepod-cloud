@@ -78,13 +78,15 @@ import { ATOM_cutId, ATOM_repoData } from "@/lib/store/atom";
 import { toast } from "react-toastify";
 import { env } from "@/lib/vars";
 import { ATOM_parsePod } from "@/lib/store/runtimeSlice";
-import { CodeNodeType } from "@/lib/store/types";
+import { AppNode, CodeNodeType } from "@/lib/store/types";
 import { motion } from "framer-motion";
 import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  getAbsPos,
 } from "@/lib/store/canvasSlice";
+import { ATOM_changeScope } from "@/lib/store/cavnasSlice_addNode";
 
 function Timer({ lastExecutedAt }) {
   useTick(1000);
@@ -290,6 +292,44 @@ export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
   );
 });
 
+export function ChangeScopeItem({ id }: { id: string }) {
+  const { getIntersectingNodes } = useReactFlow<AppNode>();
+  const changeScope = useSetAtom(ATOM_changeScope);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+
+  return (
+    <DropdownMenu.Item
+      onSelect={() => {
+        // change the current pod to be of the scope at its current position
+        // 1. get the scope at this position
+        // get scope at the position
+        const absPos = getAbsPos(node, nodesMap);
+        const scopes = getIntersectingNodes({
+          x: absPos.x,
+          y: absPos.y,
+          width: 1,
+          height: 1,
+        })
+          .filter((node) => node.type === "SCOPE")
+          .sort(
+            (a: AppNode, b: AppNode) =>
+              (b.data.level ?? 0) - (a.data.level ?? 0)
+          );
+        // 2. change the scope of the pod
+        if (scopes.length > 0) {
+          changeScope({ id: node.id, scopeId: scopes[0].id });
+        } else {
+          changeScope({ id: node.id, scopeId: undefined });
+        }
+      }}
+    >
+      Change Scope
+    </DropdownMenu.Item>
+  );
+}
+
 // FIXME memo `node` may be problematic.
 const MyPodToolbar = memo(function MyPodToolbar({
   node,
@@ -403,6 +443,9 @@ const MyPodToolbar = memo(function MyPodToolbar({
           <DropdownMenu.Item onSelect={() => resolvePod(id)}>
             Resolve
           </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          {/* assign group */}
+          <ChangeScopeItem id={id} />
           <DropdownMenu.Separator />
           <DeleteButton id={id} />
         </DropdownMenu.Content>
