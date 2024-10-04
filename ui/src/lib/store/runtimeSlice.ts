@@ -203,7 +203,16 @@ function propagateST(get: Getter, set: Setter, id: string) {
   // Find the nearest scope parent, and insert the symbols to its private ST
 
   const parentId = node.parentId;
-  if (!parentId) return;
+  if (!parentId) {
+    // Add to ROOT scope
+    const rootSt = get(getOrCreate_ATOM_privateST("ROOT"));
+    parseResult.annotations
+      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .forEach((annotation) => {
+        rootSt.set(annotation.name, id);
+      });
+    return;
+  }
   const parentSt = get(getOrCreate_ATOM_privateST(parentId));
   parseResult.annotations
     .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
@@ -355,6 +364,18 @@ function resolveUp(
   // pass up
   if (node.parentId) {
     resolveUp(get, set, node.parentId, resolveResult);
+  } else {
+    // resolve in ROOT scope
+    const rootSt = get(getOrCreate_ATOM_privateST("ROOT"));
+    resolveResult.unresolved.forEach((symbol) => {
+      const target = rootSt.get(symbol);
+      if (target) {
+        resolveResult.resolved.set(symbol, target);
+      }
+    });
+    resolveResult.resolved.forEach((_, key) =>
+      resolveResult.unresolved.delete(key)
+    );
   }
 }
 
