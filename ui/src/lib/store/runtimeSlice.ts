@@ -201,19 +201,7 @@ function propagateST(get: Getter, set: Setter, id: string) {
   // set(getOrCreate_ATOM_selfST(id), selfSt);
 
   // Find the nearest scope parent, and insert the symbols to its private ST
-
-  const parentId = node.parentId;
-  if (!parentId) {
-    // Add to ROOT scope
-    const rootSt = get(getOrCreate_ATOM_privateST("ROOT"));
-    parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-      .forEach((annotation) => {
-        rootSt.set(annotation.name, id);
-      });
-    return;
-  }
-  const parentSt = get(getOrCreate_ATOM_privateST(parentId));
+  const parentSt = get(getOrCreate_ATOM_privateST(node.parentId ?? "ROOT"));
   parseResult.annotations
     .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
     .forEach((annotation) => {
@@ -221,19 +209,18 @@ function propagateST(get: Getter, set: Setter, id: string) {
     });
   // set(getOrCreate_ATOM_privateST(parentScopeId), parentScopeSt);
   // If it is public, insert to one layer up
-  if (parseResult.ispublic) {
-    const parent = nodesMap.get(parentId);
+  if (node.parentId && parseResult.ispublic) {
+    const parent = nodesMap.get(node.parentId);
     myassert(parent);
-    const grandParentId = parent.parentId;
-    if (grandParentId) {
-      const grandParentSt = get(getOrCreate_ATOM_privateST(grandParentId));
-      parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-        .forEach((annotation) => {
-          grandParentSt.set(annotation.name, id);
-        });
-    }
-    const parentScopePublicSt = get(getOrCreate_ATOM_publicST(parentId));
+    const grandParentSt = get(
+      getOrCreate_ATOM_privateST(parent.parentId ?? "ROOT")
+    );
+    parseResult.annotations
+      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .forEach((annotation) => {
+        grandParentSt.set(annotation.name, id);
+      });
+    const parentScopePublicSt = get(getOrCreate_ATOM_publicST(node.parentId));
     parseResult.annotations
       .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
       .forEach((annotation) => {
@@ -331,23 +318,21 @@ function resolvePod(get: Getter, set: Setter, id: string) {
     );
   }
   // 2.2 go up, find scopes, and try their private ST
-  resolveUp(get, set, id, resolveResult);
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  resolveUp(get, set, { id: node.parentId, resolveResult });
   set(getOrCreate_ATOM_resolveResult(id), resolveResult);
 }
 
 function resolveUp(
   get: Getter,
   set: Setter,
-  id: string,
-  resolveResult: ResolveResult
+  { id, resolveResult }: { id?: string; resolveResult: ResolveResult }
 ) {
   if (resolveResult.unresolved.size == 0) return;
-  const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-
   // This is a scope termination node. Resolve in private ST.
-  const st = get(getOrCreate_ATOM_privateST(id));
+  const st = get(getOrCreate_ATOM_privateST(id ?? "ROOT"));
   resolveResult.unresolved.forEach((symbol) => {
     const target = st.get(symbol);
     if (target) {
@@ -359,24 +344,13 @@ function resolveUp(
   );
 
   // Return conditions.
-  if (id === "ROOT") return;
   if (resolveResult.unresolved.size == 0) return;
+  if (!id) return;
   // pass up
-  if (node.parentId) {
-    resolveUp(get, set, node.parentId, resolveResult);
-  } else {
-    // resolve in ROOT scope
-    const rootSt = get(getOrCreate_ATOM_privateST("ROOT"));
-    resolveResult.unresolved.forEach((symbol) => {
-      const target = rootSt.get(symbol);
-      if (target) {
-        resolveResult.resolved.set(symbol, target);
-      }
-    });
-    resolveResult.resolved.forEach((_, key) =>
-      resolveResult.unresolved.delete(key)
-    );
-  }
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  resolveUp(get, set, { id: node.parentId, resolveResult });
 }
 
 export const ATOM_resolveAllPods = atom(null, (get, set) => {
