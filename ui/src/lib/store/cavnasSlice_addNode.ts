@@ -379,7 +379,7 @@ function duplicateSubtree(
     // copy the code
     const code = codeMap.get(id);
     myassert(code);
-    codeMap.set(newId, new Y.Text(code.toString()));
+    codeMap.set(newId, code.clone());
   }
   if (node.type === "RICH") {
     // richMap.set(newId, new Y.XmlFragment());
