@@ -1,7 +1,6 @@
 import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import * as Y from "yjs";
 import { getNodesBounds, Node, XYPosition } from "@xyflow/react";
-import { produce } from "immer";
 import {
   ATOM_codeMap,
   ATOM_edgesMap,
@@ -332,3 +331,62 @@ export const ATOM_deleteEdge = atom(
     updateView(get, set);
   }
 );
+
+function duplicateScope(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "SCOPE");
+  const newId = duplicateSubtree(get, set, id, node.parentId);
+  // adjust the position
+  const newNode = nodesMap.get(newId);
+  myassert(newNode);
+  newNode.position.x += (node.measured?.width ?? 50) + 50;
+  // newNode.position.y += node.measured?.height ?? 50;
+  nodesMap.set(newId, newNode);
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_duplicateScope = atom(null, duplicateScope);
+
+/**
+ * For the subtree rooted at id, create a clone with all new ids. Return the new id of the root.
+ */
+function duplicateSubtree(
+  get: Getter,
+  set: Setter,
+  id: string,
+  parentId?: string
+) {
+  const nodesMap = get(ATOM_nodesMap);
+  const richMap = get(ATOM_richMap);
+  const codeMap = get(ATOM_codeMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  const newId = myNanoId();
+  if (node.type === "SCOPE") {
+    node.data.childrenIds.forEach((id) => {
+      duplicateSubtree(get, set, id, newId);
+    });
+  }
+  const newNode = structuredClone(node);
+  newNode.id = newId;
+  newNode.parentId = parentId;
+  nodesMap.set(newId, newNode);
+  if (node.type === "CODE") {
+    // codeMap.set(newId, new Y.Text());
+    // copy the code
+    const code = codeMap.get(id);
+    myassert(code);
+    codeMap.set(newId, code.clone());
+  }
+  if (node.type === "RICH") {
+    // richMap.set(newId, new Y.XmlFragment());
+    // copy the rich content
+    const rich = richMap.get(id);
+    myassert(rich);
+    richMap.set(newId, rich.clone());
+  }
+  return newId;
+}
