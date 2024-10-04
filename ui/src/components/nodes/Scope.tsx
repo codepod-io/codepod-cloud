@@ -28,11 +28,13 @@ import { ConfirmedDelete, SymbolTable } from "./utils";
 import {
   ATOM_deleteScope,
   ATOM_deleteSubTree,
+  ATOM_duplicateScope,
 } from "@/lib/store/cavnasSlice_addNode";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const deleteScope = useSetAtom(ATOM_deleteScope);
   const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
+  const duplicateScope = useSetAtom(ATOM_duplicateScope);
   return (
     <Flex
       align="center"
@@ -75,6 +77,14 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Content color="yellow">
           <ChangeScopeItem id={id} />
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={() => {
+              duplicateScope(id);
+            }}
+          >
+            Duplicate
+          </DropdownMenu.Item>
           <ConfirmedDelete
             color="red"
             onSelect={() => {
