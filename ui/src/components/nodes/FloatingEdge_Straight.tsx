@@ -135,9 +135,23 @@ export function StraightFloatingEdgeGradient({
   const [edgePath] = getStraightPath({
     sourceX: sx,
     sourceY: sy,
-    targetX: tx,
-    targetY: ty,
+    targetX: tx + 0.01,
+    targetY: ty + 0.01,
   });
+
+  let x1, y1, x2, y2;
+
+  if (sx === tx) {
+    x1 = "0%";
+    x2 = "0%";
+    y1 = sy > ty ? "100%" : "0%";
+    y2 = sy > ty ? "0%" : "100%";
+  } else {
+    x1 = sx > tx ? "100%" : "0%";
+    x2 = sx > tx ? "0%" : "100%";
+    y1 = "0%";
+    y2 = "0%";
+  }
 
   return (
     <>
@@ -145,12 +159,10 @@ export function StraightFloatingEdgeGradient({
         <linearGradient
           // id={"blue-to-red"}
           id={id}
-          x1={sx > tx ? "100%" : "0%"}
-          // x1="100%"
-          y1="0%"
-          x2={sx > tx ? "0%" : "100%"}
-          // x2="0%"
-          y2="0%"
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
           // gradientUnits="objectBoundingBox"
           // gradientUnits="userSpaceOnUse"
         >
