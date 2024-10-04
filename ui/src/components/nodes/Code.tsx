@@ -606,17 +606,6 @@ function CodeNodeImpl({ id }: { id: string }) {
         minWidth: "300px",
       }}
     >
-      <Flex
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          transform: "translate(0, -100%)",
-        }}
-      >
-        {node.id}
-      </Flex>
-
       {insertMode === "Move" && (
         <Box
           className="custom-drag-handle"
