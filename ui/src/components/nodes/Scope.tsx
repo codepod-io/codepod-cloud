@@ -24,7 +24,7 @@ import { memo, useState } from "react";
 import { motion } from "framer-motion";
 import { Ellipsis, GripVertical, Trash2 } from "lucide-react";
 import { css } from "@emotion/css";
-import { ConfirmedDelete } from "./utils";
+import { ConfirmedDelete, SymbolTable } from "./utils";
 import {
   ATOM_deleteScope,
   ATOM_deleteSubTree,
@@ -176,6 +176,13 @@ export function ScopeNode({ id }: NodeProps) {
           opacity: 0.1,
         }}
       ></Flex>
+      <Box
+        style={{
+          pointerEvents: "all",
+        }}
+      >
+        <SymbolTable id={id} />
+      </Box>
       <MyHandle hover={hover} isTarget={isTarget} />
       <motion.div
         animate={{
