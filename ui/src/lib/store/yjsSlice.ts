@@ -220,10 +220,6 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     // load initial nodes
     const nodesMap = getNodesMap(get);
     const edgesMap = getEdgesMap(get);
-    // init nodesMap
-    if (nodesMap.size == 0) {
-      throw new Error("nodesMap is empty");
-    }
 
     updateView(get, set);
     // Trigger initial results rendering.
