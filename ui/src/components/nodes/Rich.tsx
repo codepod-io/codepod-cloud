@@ -52,7 +52,7 @@ import {
   ATOM_insertMode,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
-import { ATOM_deletePod } from "@/lib/store/cavnasSlice_addNode";
+import { ATOM_deletePod } from "@/lib/store/canvasSlice_addNode";
 
 function MyPodToolbar({ id }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);

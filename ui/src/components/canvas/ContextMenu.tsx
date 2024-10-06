@@ -24,7 +24,7 @@ import {
   ATOM_deleteEdge,
   ATOM_deleteSelection,
   ATOM_duplicateSelection,
-} from "@/lib/store/cavnasSlice_addNode";
+} from "@/lib/store/canvasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import { AppNode } from "@/lib/store/types";

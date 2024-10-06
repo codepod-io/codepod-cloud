@@ -87,7 +87,7 @@ import {
 import {
   ATOM_changeScope,
   ATOM_deletePod,
-} from "@/lib/store/cavnasSlice_addNode";
+} from "@/lib/store/canvasSlice_addNode";
 
 function Timer({ lastExecutedAt }) {
   useTick(1000);

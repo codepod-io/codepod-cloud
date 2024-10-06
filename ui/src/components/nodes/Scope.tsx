@@ -29,7 +29,7 @@ import {
   ATOM_deleteScope,
   ATOM_deleteSubTree,
   ATOM_duplicateScope,
-} from "@/lib/store/cavnasSlice_addNode";
+} from "@/lib/store/canvasSlice_addNode";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const deleteScope = useSetAtom(ATOM_deleteScope);
