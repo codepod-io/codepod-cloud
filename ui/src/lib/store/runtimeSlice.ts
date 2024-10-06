@@ -99,6 +99,7 @@ export function getOrCreate_ATOM_parseResult(id: string) {
   }
   const res = atom<ParseResult>({
     ispublic: false,
+    istest: false,
     annotations: [],
   });
   id2_ATOM_parseResult.set(id, res);
