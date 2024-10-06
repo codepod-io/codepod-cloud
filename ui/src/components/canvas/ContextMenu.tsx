@@ -23,6 +23,7 @@ import {
   ATOM_addScope,
   ATOM_deleteEdge,
   ATOM_deleteSelection,
+  ATOM_duplicateSelection,
 } from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
@@ -363,6 +364,7 @@ export function useSelectionContextMenu() {
   };
   const addScope = useSetAtom(ATOM_addScope);
   const deleteSelection = useSetAtom(ATOM_deleteSelection);
+  const duplicateSelection = useSetAtom(ATOM_duplicateSelection);
 
   const selectionContextMenu = showContextMenu && (
     <Box
@@ -406,6 +408,15 @@ export function useSelectionContextMenu() {
             }}
           >
             Create Scope
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            shortcut="⌘ D"
+            onSelect={() => {
+              myassert(selectedNodes.length > 0);
+              duplicateSelection(selectedNodes);
+            }}
+          >
+            Duplicate
           </DropdownMenu.Item>
           <DropdownMenu.Item
             shortcut="⌘ D"
