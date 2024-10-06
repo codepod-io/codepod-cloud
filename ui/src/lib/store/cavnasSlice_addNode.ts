@@ -87,16 +87,9 @@ export const ATOM_addNode = atom(
 /**
  * Add a scope node that contains the selected nodes.
  */
-function addScope(get: Getter, set: Setter, nodes0: Node[]) {
-  myassert(nodes0.length > 0);
-  const id = myNanoId();
-  // purify the nodes
+function addScope(get: Getter, set: Setter, nodes1: AppNode[]) {
+  myassert(nodes1.length > 0);
   const nodesMap = get(ATOM_nodesMap);
-  const nodes1 = nodes0.map((n) => {
-    const node = nodesMap.get(n.id);
-    myassert(node);
-    return node;
-  });
 
   // 1. if a scope node is selected, remove all its children
   const ids = new Set(nodes1.map((n) => n.id));
@@ -116,6 +109,7 @@ function addScope(get: Getter, set: Setter, nodes0: Node[]) {
   }
   // get the bounding box of the nodes
   const bounds = getNodesBounds(nodes2);
+  const id = myNanoId();
   const scope: AppNode = {
     id,
     type: "SCOPE",
@@ -456,3 +450,42 @@ function cloneRecur(yxml: Y.XmlElement | Y.XmlText | Y.XmlHook) {
     return yxml.clone();
   }
 }
+
+function duplicateSelection(get: Getter, set: Setter, nodes1: AppNode[]) {
+  myassert(nodes1.length > 0);
+  // duplicate nodes in a selection
+  // 1. if a scope node is selected, remove all its children
+  const ids = new Set(nodes1.map((n) => n.id));
+  nodes1.forEach((node) => {
+    if (node.type === "SCOPE") {
+      node.data.childrenIds.forEach((id) => ids.delete(id));
+    }
+  });
+  const nodes2 = nodes1.filter((n) => ids.has(n.id));
+  // 2. verify that the remaining nodes have the same parentId
+  const isValid = nodes2
+    .map((n) => n.parentId)
+    .every((id) => id === nodes2[0].parentId);
+  if (!isValid) {
+    toast.error("All nodes must have the same parent");
+    return;
+  }
+
+  // get the bounding box of the nodes
+  const bounds = getNodesBounds(nodes2);
+  const nodesMap = get(ATOM_nodesMap);
+  // for each node, duplicate it and adjust the position
+  nodes2.forEach((node) => {
+    const newId = duplicateSubtree(get, set, node.id, node.parentId);
+    // adjust the position
+    const newNode = nodesMap.get(newId);
+    myassert(newNode);
+    newNode.position.x += (bounds.width ?? 50) + 50;
+    nodesMap.set(newId, newNode);
+  });
+
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_duplicateSelection = atom(null, duplicateSelection);
