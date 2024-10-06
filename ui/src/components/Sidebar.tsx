@@ -62,6 +62,7 @@ import {
   ATOM_insertMode,
   ATOM_nodes,
   ATOM_selectedPods,
+  ATOM_updateView,
 } from "@/lib/store/canvasSlice";
 import {
   ATOM_codeMap,
@@ -396,6 +397,7 @@ function DebugPanel() {
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
   const selectedPods = useAtomValue(ATOM_selectedPods);
+  const updateView = useSetAtom(ATOM_updateView);
   return (
     <Flex direction="column" gap="1">
       <YjsSyncStatus />
@@ -411,13 +413,31 @@ function DebugPanel() {
       <Separator my="3" size="4" />
       <ModeSwitch />
       <Separator my="3" size="4" />
-      <Button onClick={() => parseAllPods()} variant="outline">
+      <Button
+        onClick={() => {
+          parseAllPods();
+          updateView();
+        }}
+        variant="outline"
+      >
         Parse All
       </Button>
-      <Button onClick={() => propagateAllSt()} variant="outline">
+      <Button
+        onClick={() => {
+          propagateAllSt();
+          updateView();
+        }}
+        variant="outline"
+      >
         Propagate All
       </Button>
-      <Button onClick={() => resolveAllPods()} variant="outline">
+      <Button
+        onClick={() => {
+          resolveAllPods();
+          updateView();
+        }}
+        variant="outline"
+      >
         Resolve All
       </Button>
 
@@ -560,10 +580,11 @@ export function SidebarRight() {
           content: (
             <Flex direction="column">
               <Versions />
-              <Heading size="2" my="3">
+              {/* <Heading size="2" my="3">
                 ToC
-              </Heading>
-              <TableofPods />
+              </Heading> */}
+              {/* ToC has a HUGE performance hit. */}
+              {/* <TableofPods /> */}
             </Flex>
           ),
         },
@@ -580,8 +601,8 @@ export function SidebarRight() {
                     <FpsMeter />
                     <Versions />
                     <Separator my="3" size="4" />
-                    <Heading size="2">ToC</Heading>
-                    <TableofPods />
+                    {/* <Heading size="2">ToC</Heading> */}
+                    {/* <TableofPods /> */}
                     <Separator my="3" size="4" />
                     <Heading size="2">Meta data</Heading>
                     <RepoSize />

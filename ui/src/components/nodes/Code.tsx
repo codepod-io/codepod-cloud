@@ -507,7 +507,7 @@ function FoldedCode({ id }: { id: string }) {
   return <FoldedCodeText id={id} />;
 }
 
-export const CodeNode = function ({ id }: NodeProps) {
+export const CodeNode = memo(function ({ id }: NodeProps) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) return null;
@@ -515,12 +515,12 @@ export const CodeNode = function ({ id }: NodeProps) {
     throw new Error("Should not reach here");
   }
   return <CodeNodeImpl id={id} />;
-};
+});
 
 /**
  * This is the handle that appears when the user is dragging a node to connect.
  */
-export function MyHandle({
+export const MyHandle = memo(function MyHandle({
   hover,
   isTarget,
 }: {
@@ -575,9 +575,9 @@ export function MyHandle({
       </Text>
     </Box>
   );
-}
+});
 
-function CodeNodeImpl({ id }: { id: string }) {
+const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
 
@@ -607,7 +607,7 @@ function CodeNodeImpl({ id }: { id: string }) {
       }}
     >
       {insertMode === "Move" && (
-        <Box
+        <div
           className="custom-drag-handle"
           style={{
             // put it on top of Monaco
@@ -625,7 +625,7 @@ function CodeNodeImpl({ id }: { id: string }) {
           }}
         >
           Drag to move
-        </Box>
+        </div>
       )}
       <div
         // className="nodrag"
@@ -633,8 +633,8 @@ function CodeNodeImpl({ id }: { id: string }) {
           // This is the key to let the node auto-resize w.r.t. the content.
           height: "auto",
           // minHeight: "50px",
-          backdropFilter: "blur(10px)",
-          backgroundColor: "rgba(228, 228, 228, 0.5)",
+          // backdropFilter: "blur(10px)",
+          // backgroundColor: "rgba(228, 228, 228, 0.5)",
           // backgroundImage: "linear-gradient(200deg, #FDEB82, #F78FAD)",
           // backgroundColor: "red",
           // backgroundImage: "linear-gradient(200deg, #41D8DD, #5583EE)",
@@ -652,66 +652,88 @@ function CodeNodeImpl({ id }: { id: string }) {
                 ? "orange"
                 : collisionIds.includes(id)
                   ? "pink"
-                  : "transparent",
+                  : "var(--gray-2)",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
-        <Flex direction="column">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {!env.READ_ONLY && (
-            <motion.div
-              animate={{
+            // <motion.div
+            //   animate={{
+            //     opacity: hover ? 1 : 0,
+            //   }}
+            // >
+            //   <MyPodToolbar node={node} />
+            // </motion.div>
+            <div
+              style={{
                 opacity: hover ? 1 : 0,
               }}
             >
               <MyPodToolbar node={node} />
-            </motion.div>
+            </div>
           )}
-          <Box
+          <div
             style={{
               position: "relative",
             }}
           >
             <MyMonaco id={id} />
-            <Box
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                transform: "translate(-5px, 0)",
-              }}
-            >
-              {/* .py */}
-              {match(node.data.lang)
-                .with("python", () => <PythonLogo />)
-                .with("julia", () => <JuliaLogo />)
-                .with("javascript", () => <JavaScriptLogo />)
-                .with("racket", () => <RacketLogo />)
-                .otherwise(() => "??")}{" "}
-            </Box>
-          </Box>
+            <Language lang={node.data.lang} />
+          </div>
           <ResultBlock id={id} />
           <SymbolTable id={id} />
+          <MyNodeResizer />
 
           <MyHandle hover={hover} isTarget={isTarget} />
-
-          <NodeResizeControl
-            minWidth={300}
-            minHeight={50}
-            // this allows the resize happens in X-axis only.
-            position="right"
-            // FIXME couldn't get the variant to work.
-            variant={"line" as any}
-            // variant={ResizeControlVariant.Line}
-            color="transparent"
-            style={{
-              border: "10px solid transparent",
-              transform: "translateX(-30%)",
-            }}
-          />
-        </Flex>
+        </div>
       </div>
     </div>
+  );
+});
+
+const Language = memo(function Language({ lang }: { lang: string }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        transform: "translate(-5px, 0)",
+      }}
+    >
+      {match(lang)
+        .with("python", () => <PythonLogo />)
+        .with("julia", () => <JuliaLogo />)
+        .with("javascript", () => <JavaScriptLogo />)
+        .with("racket", () => <RacketLogo />)
+        .otherwise(() => "??")}{" "}
+    </div>
+  );
+});
+
+function MyNodeResizer() {
+  return (
+    <NodeResizeControl
+      minWidth={300}
+      minHeight={50}
+      // this allows the resize happens in X-axis only.
+      position="right"
+      // FIXME couldn't get the variant to work.
+      variant={"line" as any}
+      // variant={ResizeControlVariant.Line}
+      color="transparent"
+      style={{
+        border: "10px solid transparent",
+        transform: "translateX(-30%)",
+      }}
+    />
   );
 }

@@ -10,7 +10,7 @@ import {
 
 import { Dashboard } from "@/pages/dashboard";
 import { Repo } from "@/pages/repo";
-import { Test } from "@/pages/test";
+import Test from "@/pages/test";
 
 import { Profile } from "@/pages/profile";
 import { SignIn } from "@/pages/login";

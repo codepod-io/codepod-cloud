@@ -54,7 +54,7 @@ import {
 import { ChangeScopeItem, MyHandle } from "./Code";
 import { ATOM_deletePod } from "@/lib/store/canvasSlice_addNode";
 
-function MyPodToolbar({ id }) {
+const MyPodToolbar = memo(function MyPodToolbar({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
@@ -120,7 +120,7 @@ function MyPodToolbar({ id }) {
       </DropdownMenu.Root>
     </Flex>
   );
-}
+});
 
 export function getTitleFromYXml(yXmlFragment: Y.XmlFragment) {
   const blockGroup = yXmlFragment.get(0);
@@ -246,8 +246,8 @@ export const RichNode = function ({
           // This is the key to let the node auto-resize w.r.t. the content.
           height: "auto",
 
-          backdropFilter: "blur(10px)",
-          backgroundColor: "rgba(228, 228, 228, 0.5)",
+          // backdropFilter: "blur(10px)",
+          // backgroundColor: "rgba(228, 228, 228, 0.5)",
           // padding: "8px",
           borderRadius: "8px",
           // border: "3px solid",
@@ -279,38 +279,49 @@ export const RichNode = function ({
           }}
         >
           {!env.READ_ONLY && (
-            <motion.div
-              animate={{
+            // <motion.div
+            //   animate={{
+            //     opacity: hover ? 1 : 0,
+            //   }}
+            // >
+            //   <MyPodToolbar id={id} />
+            // </motion.div>
+            <div
+              style={{
                 opacity: hover ? 1 : 0,
               }}
             >
               <MyPodToolbar id={id} />
-            </motion.div>
+            </div>
           )}
           <RichEditorWrapper id={id} />
 
-          <SymbolTable id={id} />
+          <MyNodeResizer />
           <MyHandle hover={hover} isTarget={isTarget} />
-
-          <NodeResizeControl
-            minWidth={300}
-            minHeight={50}
-            // this allows the resize happens in X-axis only.
-            position="right"
-            // FIXME
-            variant={"line" as any}
-            // variant={ResizeControlVariant.Line}
-            color="transparent"
-            style={{
-              border: "10px solid transparent",
-              transform: "translateX(-30%)",
-            }}
-          />
         </div>
       </div>
     </div>
   );
 };
+
+const MyNodeResizer = memo(function MyNodeResizer() {
+  return (
+    <NodeResizeControl
+      minWidth={300}
+      minHeight={50}
+      // this allows the resize happens in X-axis only.
+      position="right"
+      // FIXME
+      variant={"line" as any}
+      // variant={ResizeControlVariant.Line}
+      color="transparent"
+      style={{
+        border: "10px solid transparent",
+        transform: "translateX(-30%)",
+      }}
+    />
+  );
+});
 
 function prosemirrorToPlainText(prosemirrorJson) {
   let plainText = "";
