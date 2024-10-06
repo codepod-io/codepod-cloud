@@ -375,18 +375,63 @@ function duplicateSubtree(
   newNode.parentId = parentId;
   nodesMap.set(newId, newNode);
   if (node.type === "CODE") {
-    // codeMap.set(newId, new Y.Text());
     // copy the code
     const code = codeMap.get(id);
     myassert(code);
     codeMap.set(newId, code.clone());
   }
   if (node.type === "RICH") {
-    // richMap.set(newId, new Y.XmlFragment());
     // copy the rich content
     const rich = richMap.get(id);
     myassert(rich);
-    richMap.set(newId, rich.clone());
+    richMap.set(newId, cloneYxmlFragment(rich));
   }
   return newId;
+}
+
+function cloneYxmlFragment(yxml: Y.XmlFragment) {
+  const el = new Y.XmlFragment();
+  el.insert(
+    0,
+    // @ts-ignore
+    yxml.toArray().map((item) => {
+      if (item instanceof Y.AbstractType) {
+        return cloneRecur(item);
+      } else {
+        return item;
+      }
+    })
+  );
+  return el;
+}
+
+// BlockNote stores the level attr of heading in number. Yjs only clones string
+// attrs. This is a temporary fix for it. Ref:
+// https://github.com/TypeCellOS/BlockNote/issues/1123
+function cloneRecur(yxml: Y.XmlElement | Y.XmlText | Y.XmlHook) {
+  if (yxml instanceof Y.XmlElement) {
+    const el = new Y.XmlElement(yxml.nodeName);
+    const attrs = yxml.getAttributes();
+    Object.entries(attrs).forEach(([key, value]) => {
+      // if (typeof value === 'string') {
+      if (value) {
+        el.setAttribute(key, value);
+      }
+    });
+
+    el.insert(
+      0,
+      // @ts-ignore
+      yxml
+        .toArray()
+        .map((item) =>
+          item instanceof Y.AbstractType ? cloneRecur(item) : item
+        )
+    );
+    return el;
+  } else if (yxml instanceof Y.XmlText) {
+    return yxml.clone();
+  } else if (yxml instanceof Y.XmlHook) {
+    return yxml.clone();
+  }
 }
