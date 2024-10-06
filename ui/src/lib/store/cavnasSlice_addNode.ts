@@ -323,6 +323,27 @@ function deleleSubTree(get: Getter, set: Setter, id: string) {
 }
 export const ATOM_deleteSubTree = atom(null, deleleSubTree);
 
+function deleteSelection(get: Getter, set: Setter, nodes: AppNode[]) {
+  // delete nodes in a selection
+  // 1. order the nodes by scope level
+  // 2. delete in order. If the node is already deleted, skip it.
+  const nodesMap = get(ATOM_nodesMap);
+  nodes.sort((a, b) => {
+    return (a.data.level ?? 0) - (b.data.level ?? 0);
+  });
+  nodes.forEach((node) => {
+    if (nodesMap.has(node.id)) {
+      if (node.type === "SCOPE") {
+        deleleSubTree(get, set, node.id);
+      } else {
+        deletePod(get, set, node.id);
+      }
+    }
+  });
+}
+
+export const ATOM_deleteSelection = atom(null, deleteSelection);
+
 export const ATOM_deleteEdge = atom(
   null,
   (get: Getter, set: Setter, edgeId: string) => {
