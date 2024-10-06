@@ -8,7 +8,7 @@ import {
   InternalNode,
 } from "@xyflow/react";
 
-import { useContext, useRef, useState } from "react";
+import { memo, useContext, useRef, useState } from "react";
 
 import {
   ChevronLeft,
@@ -34,18 +34,18 @@ import pythonLogo from "@/assets/python.svg";
 import javascriptLogo from "@/assets/javascript.svg";
 import racketLogo from "@/assets/racket.svg";
 
-export const JuliaLogo = () => (
+export const JuliaLogo = memo(() => (
   <img src={juliaLogo} style={{ height: "1.5em" }} />
-);
-export const PythonLogo = () => (
+));
+export const PythonLogo = memo(() => (
   <img src={pythonLogo} style={{ height: "1.5em" }} />
-);
-export const JavaScriptLogo = () => (
+));
+export const JavaScriptLogo = memo(() => (
   <img src={javascriptLogo} style={{ height: "1.5em" }} />
-);
-export const RacketLogo = () => (
+));
+export const RacketLogo = memo(() => (
   <img src={racketLogo} style={{ height: "1.5em" }} />
-);
+));
 
 import { NotebookPen, Clipboard } from "lucide-react";
 
@@ -547,7 +547,7 @@ export function ConfirmedDelete({
   );
 }
 
-export function SymbolTable({ id }) {
+export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
   const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
   const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
   const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
@@ -668,4 +668,4 @@ export function SymbolTable({ id }) {
       </Box>
     </>
   );
-}
+});

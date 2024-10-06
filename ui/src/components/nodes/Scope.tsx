@@ -119,7 +119,15 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   );
 });
 
-export function ScopeNode({ id }: NodeProps) {
+export const ScopeNode = memo(function ScopeNode({ id }: NodeProps) {
+  return <ScopeNodeImpl id={id} />;
+});
+
+export const ScopeNodeImpl = memo(function ScopeNodeImpl({
+  id,
+}: {
+  id: string;
+}) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
 
@@ -194,7 +202,8 @@ export function ScopeNode({ id }: NodeProps) {
         <SymbolTable id={id} />
       </Box>
       <MyHandle hover={hover} isTarget={isTarget} />
-      <motion.div
+      {/* THIS motion.div has a big performance hit. */}
+      {/* <motion.div
         animate={{
           opacity: hover ? 1 : 0,
         }}
@@ -203,12 +212,31 @@ export function ScopeNode({ id }: NodeProps) {
         }}
       >
         <MyToolbar id={id} />
-      </motion.div>
-      <Box
+      </motion.div> */}
+      <div
         style={{
           pointerEvents: "all",
+          opacity: hover ? 1 : 0,
         }}
-        className={css`
+      >
+        <MyToolbar id={id} />
+      </div>
+      <MyNodeResizer borderWidth={borderWidth} />
+    </Box>
+  );
+});
+
+const MyNodeResizer = memo(function borderWidth({
+  borderWidth,
+}: {
+  borderWidth: number;
+}) {
+  return (
+    <Box
+      style={{
+        pointerEvents: "all",
+      }}
+      className={css`
           .line.right {
             width: 20px;
             border-width: 0px;
@@ -248,27 +276,21 @@ export function ScopeNode({ id }: NodeProps) {
           .handle.bottom.left {
             transform: translate(-50%, -50%) translate(${borderWidth / 2}px, -${borderWidth / 2}px);
         `}
-      >
-        <NodeResizer
-          minWidth={100}
-          minHeight={30}
-          handleStyle={{
-            // borderWidth: "5px",
-            width: "10px",
-            height: "10px",
-            // border: "10px solid",
-            opacity: 0,
-          }}
-          lineStyle={{
-            opacity: 0,
-            borderColor: escapedIds.includes(id)
-              ? "orange"
-              : collisionIds.includes(id)
-                ? "pink"
-                : "blue",
-          }}
-        />
-      </Box>
+    >
+      <NodeResizer
+        minWidth={100}
+        minHeight={30}
+        handleStyle={{
+          // borderWidth: "5px",
+          width: "10px",
+          height: "10px",
+          // border: "10px solid",
+          opacity: 0,
+        }}
+        lineStyle={{
+          opacity: 0,
+        }}
+      />
     </Box>
   );
-}
+});

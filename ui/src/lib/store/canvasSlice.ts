@@ -212,6 +212,7 @@ export function updateView(get: Getter, set: Setter) {
 export const ATOM_updateView = atom(null, updateView);
 
 function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
+  const t1 = performance.now();
   // compute the helper lines
   // get(setHelperLineHorizontal)(undefined);
   set(ATOM_helperLineHorizontal, undefined);
@@ -329,6 +330,8 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
     toast.error(
       "Cannot use delete key to remove nodes. Use the delete button instead."
     );
+  const t2 = performance.now();
+  console.debug("[perf] onNodesChange took:", (t2 - t1).toFixed(2), "ms");
   updateView(get, set);
 }
 
