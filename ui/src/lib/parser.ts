@@ -41,37 +41,107 @@ export type Annotation = {
 
 export type ParseResult = {
   ispublic: boolean;
-  isutility: boolean;
-  isbridge?: boolean;
   annotations: Annotation[];
   errors?: string[];
   error_messages?: string[];
 };
 
 /**
+ * If code starts with lines containing
+ * - @export
+ * - @def XXX
+ * - @use XXX
+ *
+ * These annotations have to be at the beginning lines of code. Stop processing
+ * the rest of the text when a line does not match these. Empty lines are
+ * allowed.
+ *
+ * Return {code: string, ispublic: boolean, defs: string[], uses: string[]}
+ * - code: the code without the annotations
+ * - ispublic: true if there's @export
+ * - defs: the list of function names defined in the code
+ * - uses: the list of function names used in the code
+ */
+export function preprocess(code: string): {
+  code: string;
+  ispublic: boolean;
+  defs: string[];
+  uses: string[];
+} {
+  const lines = code.split("\n");
+  const result = {
+    code: "",
+    ispublic: false,
+    defs: [] as string[],
+    uses: [] as string[],
+  };
+
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (line === "") continue;
+
+    if (line === "@export") {
+      result.ispublic = true;
+    } else if (line.startsWith("@def ")) {
+      result.defs.push(line.slice(5).trim());
+    } else if (line.startsWith("@use ")) {
+      result.uses.push(line.slice(5).trim());
+    } else {
+      break;
+    }
+  }
+
+  result.code = lines.slice(i).join("\n");
+  return result;
+}
+
+export function preprocessAnnotate({
+  defs,
+  uses,
+  annotations,
+}: {
+  defs: string[];
+  uses: string[];
+  annotations: Annotation[];
+}) {
+  defs.forEach((def) => {
+    annotations.push({
+      name: def,
+      type: "function",
+      startIndex: 0,
+      endIndex: 1,
+      startPosition: { row: 0, column: 0 },
+      endPosition: { row: 0, column: 1 },
+    });
+  });
+  uses.forEach((use) => {
+    annotations.push({
+      name: use,
+      type: "callsite",
+      startIndex: 0,
+      endIndex: 1,
+      startPosition: { row: 0, column: 0 },
+      endPosition: { row: 0, column: 1 },
+    });
+  });
+}
+
+/**
  * Use tree-sitter query to analyze the code. This only work for functions.
  * @param code
  */
-export function parsePython(code: string): ParseResult {
+export function parsePython(code0: string): ParseResult {
   let annotations: Annotation[] = [];
-  let ispublic = false;
-  let isutility = false;
   // FIXME better error handling
-  if (!code) return { ispublic, isutility, annotations };
-  if (code.trim().startsWith("@public")) {
-    ispublic = true;
-    code = code.replace("@public", " ".repeat("@public".length));
-  }
-  if (code.trim().startsWith("@utility")) {
-    isutility = true;
-    code = code.replace("@utility", " ".repeat("@utility".length));
-  }
-  if (code.trim().startsWith("@public")) {
-    ispublic = true;
-    code = code.replace("@public", " ".repeat("@public".length));
-  }
+  if (!code0) return { ispublic: false, annotations };
+
+  const { code, ispublic, defs, uses } = preprocess(code0);
+  preprocessAnnotate({ defs, uses, annotations });
+
   // magic commands
-  if (code.startsWith("!")) return { ispublic, isutility, annotations };
+  if (code.startsWith("!")) return { ispublic, annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -112,7 +182,7 @@ export function parsePython(code: string): ParseResult {
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, isutility, annotations };
+  return { ispublic, annotations };
 }
 
 /**
@@ -123,9 +193,8 @@ export function parsePython(code: string): ParseResult {
 export function analyzeCode(code: string): ParseResult {
   let annotations: Annotation[] = [];
   let ispublic = false;
-  let isutility = false;
   // FIXME better error handling
-  if (!code) return { ispublic, isutility, annotations };
+  if (!code) return { ispublic, annotations };
   // check for @public statements, a regular expression that matches a starting
   // of the line followed by @public and a name
 
@@ -145,23 +214,19 @@ export function analyzeCode(code: string): ParseResult {
     return " ".repeat(match.length);
   });
   if (annotations.length > 0) {
-    return { ispublic: true, isutility, isbridge: true, annotations };
+    return { ispublic: true, annotations };
   }
 
   if (code.trim().startsWith("@public")) {
     ispublic = true;
     code = code.replace("@public", " ".repeat("@public".length));
   }
-  if (code.trim().startsWith("@utility")) {
-    isutility = true;
-    code = code.replace("@utility", " ".repeat("@utility".length));
-  }
   if (code.trim().startsWith("@public")) {
     ispublic = true;
     code = code.replace("@public", " ".repeat("@public".length));
   }
   // magic commands
-  if (code.startsWith("!")) return { ispublic, isutility, annotations };
+  if (code.startsWith("!")) return { ispublic, annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -236,7 +301,6 @@ export function analyzeCode(code: string): ParseResult {
 
   return {
     ispublic,
-    isutility,
     annotations,
     errors,
     error_messages: errors.map((e) => e.message),

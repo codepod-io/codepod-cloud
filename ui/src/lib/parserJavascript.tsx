@@ -1,7 +1,12 @@
 // racket parser
 
 import Parser from "web-tree-sitter";
-import { Annotation, ParseResult } from "./parser";
+import {
+  Annotation,
+  ParseResult,
+  preprocess,
+  preprocessAnnotate,
+} from "./parser";
 import { atom } from "jotai";
 
 import { Mutex } from "async-mutex";
@@ -36,26 +41,16 @@ export const ATOM_loadParser = atom(null, async (get, set) => {
  * Use tree-sitter query to analyze the code. This only work for functions.
  * @param code
  */
-export function parseJavascript(code: string): ParseResult {
+export function parseJavascript(code0: string): ParseResult {
   let annotations: Annotation[] = [];
-  let ispublic = false;
-  let isutility = false;
   // FIXME better error handling
-  if (!code) return { ispublic, isutility, annotations };
-  if (code.trim().startsWith("@public")) {
-    ispublic = true;
-    code = code.replace("@public", " ".repeat("@public".length));
-  }
-  if (code.trim().startsWith("@utility")) {
-    isutility = true;
-    code = code.replace("@utility", " ".repeat("@utility".length));
-  }
-  if (code.trim().startsWith("@public")) {
-    ispublic = true;
-    code = code.replace("@public", " ".repeat("@public".length));
-  }
+  if (!code0) return { ispublic: false, annotations };
+
+  const { code, ispublic, defs, uses } = preprocess(code0);
+  preprocessAnnotate({ defs, uses, annotations });
+
   // magic commands
-  if (code.startsWith("!")) return { ispublic, isutility, annotations };
+  if (code.startsWith("!")) return { ispublic, annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -98,5 +93,5 @@ export function parseJavascript(code: string): ParseResult {
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, isutility, annotations };
+  return { ispublic, annotations };
 }

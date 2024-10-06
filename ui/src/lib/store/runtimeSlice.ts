@@ -1,7 +1,7 @@
 import { Getter, PrimitiveAtom, Setter, atom } from "jotai";
 import * as Y from "yjs";
 
-import { parsePython } from "../parser";
+import { parsePython, preprocess } from "../parser";
 import { parseRacket } from "../parserRacket";
 import {
   ATOM_codeMap,
@@ -47,15 +47,8 @@ function rewriteCode(id: string, get: Getter): string | null {
   if (!node) return null;
   if (!codeMap.has(id)) return null;
   let code = codeMap.get(id)!.toString();
-  if (code.trim().startsWith("@public")) {
-    code = code.replace("@public", " ".repeat("@public".length));
-  }
-  if (code.trim().startsWith("@utility")) {
-    code = code.replace("@utility", " ".repeat("@utility".length));
-  }
-  if (code.trim().startsWith("@public")) {
-    code = code.replace("@public", " ".repeat("@public".length));
-  }
+  const { code: code1 } = preprocess(code);
+  code = code1;
   if (code.startsWith("!")) return code;
   // replace with symbol table
   let newcode = "";
@@ -106,7 +99,6 @@ export function getOrCreate_ATOM_parseResult(id: string) {
   }
   const res = atom<ParseResult>({
     ispublic: false,
-    isutility: false,
     annotations: [],
   });
   id2_ATOM_parseResult.set(id, res);
