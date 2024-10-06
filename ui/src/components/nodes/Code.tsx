@@ -599,6 +599,44 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
   if (!node) return null;
   myassert(node.type === "CODE");
 
+  // For performance debugging.
+  if (false as any) {
+    return (
+      <div
+        style={{
+          width: node.data.mywidth,
+          minWidth: "300px",
+          height: "100px",
+          backgroundColor: "pink",
+        }}
+      >
+        {insertMode === "Move" && (
+          <Box
+            className="custom-drag-handle"
+            style={{
+              // put it on top of Monaco
+              zIndex: 10,
+              // make it full width of the node
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              top: 0,
+              left: 0,
+              opacity: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            Drag to move
+          </Box>
+        )}
+        Test
+        <MyHandle hover={hover} isTarget={isTarget} />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
