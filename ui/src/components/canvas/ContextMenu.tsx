@@ -22,6 +22,7 @@ import {
   ATOM_addNode,
   ATOM_addScope,
   ATOM_deleteEdge,
+  ATOM_deleteSelection,
 } from "@/lib/store/cavnasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
@@ -337,7 +338,7 @@ export function useEdgeContextMenu() {
 
 export function useSelectionContextMenu() {
   const [showContextMenu, setShowContextMenu] = useState(false);
-  const [selectedNodes, setSelectedNodes] = useState<Node[]>([]);
+  const [selectedNodes, setSelectedNodes] = useState<AppNode[]>([]);
 
   const [pagePosition, setPagePosition] = useState({ x: 0, y: 0 });
   const [clientPosition, setClientPositin] = useState({ x: 0, y: 0 });
@@ -349,7 +350,10 @@ export function useSelectionContextMenu() {
     }
   }, [escapePressed]);
 
-  const onSelectionContextMenu = (event: React.MouseEvent, nodes: Node[]) => {
+  const onSelectionContextMenu = (
+    event: React.MouseEvent,
+    nodes: AppNode[]
+  ) => {
     event.preventDefault();
     setShowContextMenu(true);
     setSelectedNodes(nodes);
@@ -358,6 +362,7 @@ export function useSelectionContextMenu() {
     setClientPositin({ x: event.clientX, y: event.clientY });
   };
   const addScope = useSetAtom(ATOM_addScope);
+  const deleteSelection = useSetAtom(ATOM_deleteSelection);
 
   const selectionContextMenu = showContextMenu && (
     <Box
@@ -401,6 +406,16 @@ export function useSelectionContextMenu() {
             }}
           >
             Create Scope
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            shortcut="⌘ D"
+            color="red"
+            onSelect={() => {
+              myassert(selectedNodes.length > 0);
+              deleteSelection(selectedNodes);
+            }}
+          >
+            Delete
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>

@@ -62,7 +62,7 @@ export function getRelativePos(
   return { x, y };
 }
 
-export const ATOM_nodes = atom<Node[]>([]);
+export const ATOM_nodes = atom<AppNode[]>([]);
 export const ATOM_edges = atom<Edge[]>([]);
 
 export const ATOM_helperLineHorizontal = atom<number | undefined>(undefined);
