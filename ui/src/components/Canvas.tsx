@@ -67,6 +67,7 @@ import { debounce } from "lodash";
 import { env } from "../lib/vars";
 import { myassert } from "@/lib/utils/utils";
 import { css } from "@emotion/css";
+import { AppNode } from "@/lib/store/types";
 
 const nodeTypes = {
   CODE: CodeNode,
@@ -291,7 +292,7 @@ function CanvasImpl() {
         }
       `}
     >
-      <ReactFlow
+      <ReactFlow<AppNode>
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
