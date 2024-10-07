@@ -346,14 +346,16 @@ function resolveUp(
   resolveUp(get, set, { id: node.parentId, resolveResult });
 }
 
-export const ATOM_resolveAllPods = atom(null, (get, set) => {
+function resolveAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   nodesMap.forEach((node) => {
     if (node.type === "CODE") {
       resolvePod(get, set, node.id);
     }
   });
-});
+}
+
+export const ATOM_resolveAllPods = atom(null, resolveAllPods);
 
 function clearResults(get: Getter, set: Setter, podId: string) {
   const resultMap = get(ATOM_resultMap);
@@ -428,6 +430,53 @@ function preprocessChain(get: Getter, set: Setter, ids: string[]) {
 }
 
 export const ATOM_preprocessChain = atom(null, preprocessChain);
+
+function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
+  // parse and resolve
+  parseAllPods(get, set);
+  propagateAllST(get, set);
+  resolveAllPods(get, set);
+  // get all non-test pods
+  const nodesMap = get(ATOM_nodesMap);
+  let ids = Array.from(nodesMap.keys());
+  ids = ids.filter((id) => {
+    const node = nodesMap.get(id);
+    if (!node) return false;
+    if (node.type !== "CODE") return false;
+    const parseResult = get(getOrCreate_ATOM_parseResult(id));
+    return !parseResult.istest;
+  });
+  // rewrite code and construct specs
+  let specs = ids.map((id) => {
+    const nodesMap = get(ATOM_nodesMap);
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found for id: ${id}`);
+    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
+    // skip parsing and resolving
+    const newcode = rewriteCode(id, get);
+    // console.log("newcode", newcode);
+    const lang = node?.data.lang;
+    return { podId: id, code: newcode || "", kernelName: lang || "python" };
+  });
+  // filter out empty code
+  specs = specs.filter(({ podId, code }) => {
+    if (code.length > 0) {
+      return true;
+    }
+    return false;
+  });
+  // clear old results and set running status
+  specs.forEach(({ podId }) => {
+    clearResults(get, set, podId);
+    setRunning(get, set, podId);
+  });
+  return specs;
+}
+
+export const ATOM_preprocessAllPodsExceptTest = atom(
+  null,
+  preprocessAllPodsExceptTest
+);
 
 function getScopeChain(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
