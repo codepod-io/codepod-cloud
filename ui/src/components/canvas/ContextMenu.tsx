@@ -11,8 +11,9 @@ import {
 import { Box, Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodes } from "@/lib/store/canvasSlice";
-import { FileUp, NotebookPen, Clipboard } from "lucide-react";
+import { FileUp, NotebookPen, Clipboard, Trash2 } from "lucide-react";
 import {
+  ConfirmedDelete,
   JavaScriptLogo,
   JuliaLogo,
   PythonLogo,
@@ -418,16 +419,21 @@ export function useSelectionContextMenu() {
           >
             Duplicate
           </DropdownMenu.Item>
-          <DropdownMenu.Item
-            shortcut="⌘ D"
+          <ConfirmedDelete
             color="red"
             onSelect={() => {
               myassert(selectedNodes.length > 0);
               deleteSelection(selectedNodes);
             }}
-          >
-            Delete
-          </DropdownMenu.Item>
+            trigger={
+              <>
+                <Trash2 /> Delete Pod
+              </>
+            }
+            title="This will delete the selection."
+            description="Continue?"
+            confirm="Delete"
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </Box>
