@@ -1,12 +1,7 @@
 // racket parser
 
 import Parser from "web-tree-sitter";
-import {
-  Annotation,
-  ParseResult,
-  preprocess,
-  preprocessAnnotate,
-} from "./parser";
+import { Annotation, ParseResult, preprocess } from "./parser";
 import { atom } from "jotai";
 import { Mutex } from "async-mutex";
 
@@ -43,8 +38,7 @@ export const ATOM_loadParser = atom(null, async (get, set) => {
 export function parseJulia(code0: string): ParseResult {
   if (!code0) return { ispublic: false, istest: false, annotations: [] };
   let annotations: Annotation[] = [];
-  const { code, ispublic, istest, defs, uses } = preprocess(code0);
-  preprocessAnnotate({ defs, uses, annotations });
+  const { code, ispublic, istest } = preprocess(code0);
   // magic commands
   if (code.startsWith("!")) return { ispublic, istest, annotations };
   if (!parser) {

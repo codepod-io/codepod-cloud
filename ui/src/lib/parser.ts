@@ -67,16 +67,12 @@ export function preprocess(code: string): {
   code: string;
   ispublic: boolean;
   istest: boolean;
-  defs: string[];
-  uses: string[];
 } {
   const lines = code.split("\n");
   const result = {
     code: "",
     ispublic: false,
     istest: false,
-    defs: [] as string[],
-    uses: [] as string[],
   };
 
   let i = 0;
@@ -89,10 +85,6 @@ export function preprocess(code: string): {
       result.ispublic = true;
     } else if (line === "@test") {
       result.istest = true;
-    } else if (line.startsWith("@def ")) {
-      result.defs.push(line.slice(5).trim());
-    } else if (line.startsWith("@use ")) {
-      result.uses.push(line.slice(5).trim());
     } else {
       break;
     }
@@ -100,37 +92,6 @@ export function preprocess(code: string): {
 
   result.code = lines.slice(i).join("\n");
   return result;
-}
-
-export function preprocessAnnotate({
-  defs,
-  uses,
-  annotations,
-}: {
-  defs: string[];
-  uses: string[];
-  annotations: Annotation[];
-}) {
-  defs.forEach((def) => {
-    annotations.push({
-      name: def,
-      type: "function",
-      startIndex: 0,
-      endIndex: 1,
-      startPosition: { row: 0, column: 0 },
-      endPosition: { row: 0, column: 1 },
-    });
-  });
-  uses.forEach((use) => {
-    annotations.push({
-      name: use,
-      type: "callsite",
-      startIndex: 0,
-      endIndex: 1,
-      startPosition: { row: 0, column: 0 },
-      endPosition: { row: 0, column: 1 },
-    });
-  });
 }
 
 /**
@@ -141,8 +102,7 @@ export function parsePython(code0: string): ParseResult {
   if (!code0) return { ispublic: false, istest: false, annotations: [] };
 
   let annotations: Annotation[] = [];
-  const { code, ispublic, istest, defs, uses } = preprocess(code0);
-  preprocessAnnotate({ defs, uses, annotations });
+  const { code, ispublic, istest } = preprocess(code0);
 
   // magic commands
   if (code.startsWith("!")) return { ispublic, istest, annotations };
