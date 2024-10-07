@@ -1,12 +1,7 @@
 // racket parser
 
 import Parser from "web-tree-sitter";
-import {
-  Annotation,
-  ParseResult,
-  preprocess,
-  preprocessAnnotate,
-} from "./parser";
+import { Annotation, ParseResult, preprocess } from "./parser";
 import { atom } from "jotai";
 import { Mutex } from "async-mutex";
 
@@ -44,9 +39,7 @@ export function parseRacket(code0: string): ParseResult {
   if (!code0) return { ispublic: false, istest: false, annotations: [] };
   let annotations: Annotation[] = [];
   // FIXME better error handling
-  const { code, ispublic, istest, defs, uses } = preprocess(code0);
-
-  preprocessAnnotate({ defs, uses, annotations });
+  const { code, ispublic, istest } = preprocess(code0);
 
   // magic commands
   if (code.startsWith("!")) return { ispublic, istest, annotations };
@@ -57,6 +50,7 @@ export function parseRacket(code0: string): ParseResult {
 
   // top-level function definition
   const function_def = "(program (binding_procedure (identifier) @function))";
+  const syntax_def = "(program (binding_syntax (identifier) @function))";
   const callsite = `(procedure_call (identifier) @callsite)`;
   // top-level variable definition
   const vardef = "(program (binding_variable (identifier) @vardef))";
@@ -65,6 +59,7 @@ export function parseRacket(code0: string): ParseResult {
   let query_func = parser.getLanguage().query(`
   [
     ${function_def}
+    ${syntax_def}
     ${callsite}
     ${vardef}
     ${varuse}
