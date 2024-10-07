@@ -182,3 +182,23 @@ Here are the commands to work with Prisma schema:
 - During development, use `prisma db push`;
 - When commiting the schema changes to git, use `prisma migrate dev --name SOME_NAME`;
 - For deployment, use `prisma migrate deploy`.
+
+## ulimit problem
+
+Error: failed to create fsnotify watcher: too many open files
+
+Fixing the too many files opened problem:
+
+- This github reply points out the problem: https://github.com/derailed/k9s/issues/1399#issuecomment-1512001429
+- The ulimit -n isn't the issue, the fs.inotify.max_user_instances is. It was 128 on my node.
+  - Follow this page to set it. https://www.suse.com/support/kb/doc/?id=000020048
+
+```sh
+cat /proc/sys/fs/inotify/max_user_instances
+cat /proc/sys/fs/inotify/max_user_watches
+sudo sysctl fs.inotify.max_user_instances=8192
+sudo sysctl fs.inotify.max_user_watches=524288
+sudo sysctl -p
+```
+
+This should be run on the host of k8s nodes.
