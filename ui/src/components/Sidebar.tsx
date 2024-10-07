@@ -81,6 +81,7 @@ import { FpsMeter } from "@/lib/FpsMeter";
 import { toast } from "react-toastify";
 import {
   ATOM_parseAllPods,
+  ATOM_preprocessAllPodsExceptTest,
   ATOM_propagateAllST,
   ATOM_resolveAllPods,
 } from "@/lib/store/runtimeSlice";
@@ -398,6 +399,13 @@ function DebugPanel() {
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
   const selectedPods = useAtomValue(ATOM_selectedPods);
   const updateView = useSetAtom(ATOM_updateView);
+  const preprocessAllPodsExceptTest = useSetAtom(
+    ATOM_preprocessAllPodsExceptTest
+  );
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
   return (
     <Flex direction="column" gap="1">
       <YjsSyncStatus />
@@ -439,6 +447,17 @@ function DebugPanel() {
         variant="outline"
       >
         Resolve All
+      </Button>
+
+      <Separator my="3" size="4" />
+      <Button
+        onClick={() => {
+          const specs = preprocessAllPodsExceptTest();
+          if (specs) runChain.mutate({ repoId, specs });
+        }}
+        variant="outline"
+      >
+        Run All Except Tests
       </Button>
 
       <Runtime />
