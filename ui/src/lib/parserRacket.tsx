@@ -41,15 +41,15 @@ export const ATOM_loadParser = atom(null, async (get, set) => {
  * @param code
  */
 export function parseRacket(code0: string): ParseResult {
+  if (!code0) return { ispublic: false, istest: false, annotations: [] };
   let annotations: Annotation[] = [];
   // FIXME better error handling
-  if (!code0) return { ispublic: false, annotations };
-  const { code, ispublic, defs, uses } = preprocess(code0);
+  const { code, ispublic, istest, defs, uses } = preprocess(code0);
 
   preprocessAnnotate({ defs, uses, annotations });
 
   // magic commands
-  if (code.startsWith("!")) return { ispublic, annotations };
+  if (code.startsWith("!")) return { ispublic, istest, annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -89,5 +89,5 @@ export function parseRacket(code0: string): ParseResult {
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, annotations };
+  return { ispublic, istest, annotations };
 }

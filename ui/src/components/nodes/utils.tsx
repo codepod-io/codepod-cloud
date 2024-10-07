@@ -50,6 +50,7 @@ export const RacketLogo = memo(() => (
 import { NotebookPen, Clipboard } from "lucide-react";
 
 import {
+  Text,
   Box,
   Button,
   Dialog,
@@ -66,6 +67,7 @@ import { ATOM_cutId } from "@/lib/store/atom";
 
 import ArrowLeftToLine from "@/assets/ArrowLeftToLine.svg";
 import {
+  getOrCreate_ATOM_parseResult,
   getOrCreate_ATOM_privateST,
   getOrCreate_ATOM_publicST,
   getOrCreate_ATOM_selfST,
@@ -551,6 +553,7 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
   const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
   const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
   const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
+  const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(id));
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   const reactFlowInstance = useReactFlow();
@@ -570,6 +573,46 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
         gap="4"
         wrap="wrap"
       >
+        {/* tags */}
+        {parseResult.ispublic && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "lightgreen",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              public
+            </Text>
+          </div>
+        )}
+        {parseResult.istest && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              // lineHeight: "0.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "yellow",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              test
+            </Text>
+          </div>
+        )}
         {[...selfSt.keys()].map((key) => (
           <Flex align="center" key={key}>
             <code
