@@ -28,6 +28,7 @@ export type RichNodeType = Node<RichNodeData, "RICH">;
 type ScopeNodeType = Node<
   CommonData & {
     childrenIds: string[];
+    folded?: boolean;
   },
   "SCOPE"
 >;

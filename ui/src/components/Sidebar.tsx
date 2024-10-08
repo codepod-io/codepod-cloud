@@ -59,9 +59,11 @@ import {
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
+  ATOM_foldAll,
   ATOM_insertMode,
   ATOM_nodes,
   ATOM_selectedPods,
+  ATOM_unfoldAll,
   ATOM_updateView,
 } from "@/lib/store/canvasSlice";
 import {
@@ -399,6 +401,8 @@ function DebugPanel() {
   const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
   const selectedPods = useAtomValue(ATOM_selectedPods);
   const updateView = useSetAtom(ATOM_updateView);
+  const foldAll = useSetAtom(ATOM_foldAll);
+  const unfoldAll = useSetAtom(ATOM_unfoldAll);
   const preprocessAllPodsExceptTest = useSetAtom(
     ATOM_preprocessAllPodsExceptTest
   );
@@ -422,8 +426,8 @@ function DebugPanel() {
       <ModeSwitch />
       <Separator my="3" size="4" />
       <Button
-        onClick={() => {
-          parseAllPods();
+        onClick={async () => {
+          await parseAllPods();
           updateView();
         }}
         variant="outline"
@@ -447,6 +451,35 @@ function DebugPanel() {
         variant="outline"
       >
         Resolve All
+      </Button>
+      <Button
+        onClick={async () => {
+          await parseAllPods();
+          propagateAllSt();
+          resolveAllPods();
+          updateView();
+        }}
+        variant="outline"
+      >
+        Parse 3
+      </Button>
+      <Separator my="3" size="4" />
+      <Button
+        onClick={() => {
+          foldAll();
+        }}
+        variant="outline"
+      >
+        Fold All
+      </Button>
+      <Button
+        onClick={() => {
+          unfoldAll();
+        }}
+        variant="outline"
+        // disabled
+      >
+        Unfold All
       </Button>
 
       <Separator my="3" size="4" />

@@ -142,7 +142,7 @@ function generateCallEdges(get: Getter, set: Setter) {
 function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
   const node = nodesMap.get(id);
   myassert(node);
-  if (node.type === "SCOPE") {
+  if (node.type === "SCOPE" && !node.data.folded) {
     const children = node.data.childrenIds.map((childId) => {
       return getSubtreeNodes(childId, nodesMap);
     });
@@ -210,6 +210,43 @@ export function updateView(get: Getter, set: Setter) {
 }
 
 export const ATOM_updateView = atom(null, updateView);
+
+// fold a scope
+function toggleFold(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "SCOPE");
+  node.data.folded = !node.data.folded;
+  nodesMap.set(id, node);
+  updateView(get, set);
+}
+
+export const ATOM_toggleFold = atom(null, toggleFold);
+
+function foldAll(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  nodesMap.forEach((node) => {
+    if (node.type === "SCOPE") {
+      node.data.folded = true;
+      nodesMap.set(node.id, node);
+    }
+  });
+  updateView(get, set);
+}
+export const ATOM_foldAll = atom(null, foldAll);
+
+function unfoldAll(get: Getter, set: Setter) {
+  const nodesMap = get(ATOM_nodesMap);
+  nodesMap.forEach((node) => {
+    if (node.type === "SCOPE") {
+      node.data.folded = false;
+      nodesMap.set(node.id, node);
+    }
+  });
+  updateView(get, set);
+}
+export const ATOM_unfoldAll = atom(null, unfoldAll);
 
 function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   const t1 = performance.now();
