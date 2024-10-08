@@ -241,14 +241,18 @@ function propagateST(get: Getter, set: Setter, id: string) {
   }
 }
 
-function parseAllPods(get: Getter, set: Setter) {
+async function parseAllPods(get: Getter, set: Setter) {
   const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
-  nodesMap.forEach((node) => {
-    if (node.type === "CODE") {
-      parsePod(get, set, node.id);
-    }
-  });
+  const nodes = Array.from<AppNode>(nodesMap.values());
+  // parse all code pods in parallel
+  await Promise.all(
+    nodes.map(async (node) => {
+      if (node.type === "CODE") {
+        await parsePod(get, set, node.id);
+      }
+    })
+  );
   const t2 = performance.now();
   console.debug("[perf] parseAllPods took " + (t2 - t1).toFixed(2) + " ms.");
 }
@@ -385,28 +389,31 @@ function setRunning(get: Getter, set: Setter, podId: string) {
   resultMap.set(podId, { running: true, data: [] });
 }
 
-function preprocessChainWithRewrite(get: Getter, set: Setter, ids: string[]) {
-  let specs = ids.map((id) => {
-    const nodesMap = get(ATOM_nodesMap);
-    const node = nodesMap.get(id);
-    if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
-    // Actually send the run request.
-    // Analyze code and set symbol table
-    parsePod(get, set, id);
-    // FIXME performance. I'm propagating all STs for all pods when parsing a single pod, so that I can avoid:
-    // 1. remove old symbols from ST
-    // 2. there was a delay in the symbol to be appear in the ST UI of parent node.
-    //
-    // propagateST(get, set, id);
-    propagateAllST(get, set);
-    // update anontations according to st
-    resolvePod(get, set, id);
-    const newcode = rewriteCode(id, get);
-    // console.log("newcode", newcode);
-    const lang = node?.data.lang;
-    return { podId: id, code: newcode || "", kernelName: lang || "python" };
-  });
+async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
+  let specs = await Promise.all(
+    ids.map(async (id) => {
+      const nodesMap = get(ATOM_nodesMap);
+      const node = nodesMap.get(id);
+      if (!node) throw new Error(`Node not found for id: ${id}`);
+      if (node.type !== "CODE")
+        throw new Error(`Node is not a code pod: ${id}`);
+      // Actually send the run request.
+      // Analyze code and set symbol table
+      await parsePod(get, set, id);
+      // FIXME performance. I'm propagating all STs for all pods when parsing a single pod, so that I can avoid:
+      // 1. remove old symbols from ST
+      // 2. there was a delay in the symbol to be appear in the ST UI of parent node.
+      //
+      // propagateST(get, set, id);
+      propagateAllST(get, set);
+      // update anontations according to st
+      resolvePod(get, set, id);
+      const newcode = rewriteCode(id, get);
+      // console.log("newcode", newcode);
+      const lang = node?.data.lang;
+      return { podId: id, code: newcode || "", kernelName: lang || "python" };
+    })
+  );
   return specs.filter(({ podId, code }) => {
     if (code.length > 0) {
       clearResults(get, set, podId);
@@ -415,41 +422,13 @@ function preprocessChainWithRewrite(get: Getter, set: Setter, ids: string[]) {
     }
     return false;
   });
-}
-
-function preprocessChainNoRewrite(get: Getter, set: Setter, ids: string[]) {
-  let specs = ids.map((id) => {
-    const nodesMap = get(ATOM_nodesMap);
-    const node = nodesMap.get(id);
-    if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
-    const codeMap = get(ATOM_codeMap);
-    const code = codeMap.get(id)?.toString() || "";
-    const lang = node?.data.lang;
-    return { podId: id, code, kernelName: lang || "python" };
-  });
-  return specs.filter(({ podId, code }) => {
-    if (code.length > 0) {
-      clearResults(get, set, podId);
-      setRunning(get, set, podId);
-      return true;
-    }
-    return false;
-  });
-}
-
-function preprocessChain(get: Getter, set: Setter, ids: string[]) {
-  if (get(ATOM_disableCodeRewrite)) {
-    return preprocessChainNoRewrite(get, set, ids);
-  }
-  return preprocessChainWithRewrite(get, set, ids);
 }
 
 export const ATOM_preprocessChain = atom(null, preprocessChain);
 
-function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
+async function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
   // parse and resolve
-  parseAllPods(get, set);
+  await parseAllPods(get, set);
   propagateAllST(get, set);
   resolveAllPods(get, set);
   // get all non-test pods

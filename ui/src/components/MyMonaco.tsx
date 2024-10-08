@@ -501,11 +501,11 @@ function useInitEditor({
         id: "Run",
         label: "Run",
         keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-        run: () => {
+        run: async () => {
           if (!runtimeReady) {
             toast.error("Runtime is not ready.");
           } else {
-            const specs = preprocessChain([node.id]);
+            const specs = await preprocessChain([node.id]);
             if (specs) runChain.mutate({ repoId, specs });
           }
         },

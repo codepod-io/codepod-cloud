@@ -167,17 +167,20 @@ function ParserWrapper({ children }) {
   const updateView = useSetAtom(ATOM_updateView);
 
   useEffect(() => {
-    if (
-      parserReady_python &&
-      parserReady_racket &&
-      parserReady_javascript &&
-      parserReady_julia
-    ) {
-      parseAllPods();
-      propagateAllST();
-      resolveAllPods();
-      updateView();
+    async function func() {
+      if (
+        parserReady_python &&
+        parserReady_racket &&
+        parserReady_javascript &&
+        parserReady_julia
+      ) {
+        await parseAllPods();
+        propagateAllST();
+        resolveAllPods();
+        updateView();
+      }
     }
+    func();
   }, [
     parseAllPods,
     resolveAllPods,

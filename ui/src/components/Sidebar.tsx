@@ -451,8 +451,8 @@ function DebugPanel() {
 
       <Separator my="3" size="4" />
       <Button
-        onClick={() => {
-          const specs = preprocessAllPodsExceptTest();
+        onClick={async () => {
+          const specs = await preprocessAllPodsExceptTest();
           if (specs) runChain.mutate({ repoId, specs });
         }}
         variant="outline"
