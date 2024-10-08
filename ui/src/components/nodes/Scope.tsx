@@ -10,6 +10,7 @@ import {
   NodeResizer,
   Position,
   useConnection,
+  useReactFlow,
   useStore,
   XYPosition,
 } from "@xyflow/react";
@@ -20,6 +21,7 @@ import {
   ATOM_escapedIds,
   ATOM_insertMode,
   ATOM_toggleFold,
+  getAbsPos,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
 import { memo, useEffect, useState } from "react";
@@ -39,6 +41,10 @@ import {
   ATOM_deleteSubTree,
   ATOM_duplicateScope,
 } from "@/lib/store/canvasSlice_addNode";
+import {
+  getOrCreate_ATOM_privateST,
+  getOrCreate_ATOM_publicST,
+} from "@/lib/store/runtimeSlice";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const zoom = useStore((s) => Math.max(s.transform[2], 0.1));
@@ -247,13 +253,13 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
             // make the text big to be the same size as the node
             // fontSize: "10em",
             fontSize: `${(node.data.mywidth ?? 600) / 500}em`,
+            pointerEvents: "all",
           }}
         >
           <Button
             style={{
               fontSize: "1em",
               padding: "1em 2em",
-              pointerEvents: "all",
             }}
             onClick={() => {
               toggleFold(id);
@@ -262,6 +268,7 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
             <EyeOff /> Unfold
           </Button>
           Number of pods: {node.data.childrenIds.length}
+          <FoldedSymbolTable id={id} />
         </div>
       ) : (
         <Flex
@@ -301,6 +308,115 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
         <MyToolbar id={id} />
       </div>
       <MyNodeResizer borderWidth={borderWidth} />
+    </Box>
+  );
+});
+
+const FoldedSymbolTable = memo(function FoldedSymbolTable({
+  id,
+}: {
+  id: string;
+}) {
+  const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
+  const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  const reactFlowInstance = useReactFlow();
+  if (!node) throw new Error(`Node ${id} not found.`);
+  return (
+    <Box>
+      {/* LEFT: show public ST of this scope. */}
+      <Box
+        style={{
+          color: "green",
+        }}
+      >
+        {[...publicSt.keys()].slice(0, 20).map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const targetId = publicSt.get(key);
+                myassert(targetId);
+                const targetNode = nodesMap.get(targetId);
+                if (!targetNode) return;
+                const pos = getAbsPos(targetNode, nodesMap);
+                reactFlowInstance.setCenter(
+                  pos.x + (targetNode.measured?.width || 0) / 2,
+                  pos.y + (targetNode.measured?.height || 0) / 2,
+                  {
+                    zoom: reactFlowInstance.getZoom(),
+                    duration: 800,
+                  }
+                );
+              }}
+              variant="ghost"
+              style={{
+                fontSize: "inherit",
+                padding: "0.5em 1em",
+                color: "inherit",
+              }}
+            >
+              <code>{key}</code>
+            </Button>
+          </Flex>
+        ))}
+        {[...publicSt.keys()].slice(20).length > 0 && (
+          <Flex align="center">
+            <Button
+              style={{
+                fontSize: "inherit",
+                padding: "0.5em 1em",
+                color: "inherit",
+              }}
+              variant="ghost"
+            >
+              <code>...({[...publicSt.keys()].slice(20).length} more)</code>
+            </Button>
+          </Flex>
+        )}
+      </Box>
+      {/* RIGHT: show private ST of this scope. */}
+      <Flex wrap="wrap" direction="column">
+        {[...privateSt.keys()].slice(0, 20).map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const targetId = privateSt.get(key)!;
+                const targetNode = nodesMap.get(targetId);
+                if (!targetNode) return;
+                const pos = getAbsPos(targetNode, nodesMap);
+                reactFlowInstance.setCenter(
+                  pos.x + (targetNode.measured?.width || 0) / 2,
+                  pos.y + (targetNode.measured?.height || 0) / 2,
+                  {
+                    zoom: reactFlowInstance.getZoom(),
+                    duration: 800,
+                  }
+                );
+              }}
+              variant="ghost"
+              style={{ fontSize: "inherit", padding: "0.5em 1em" }}
+            >
+              <code>{key}</code>
+            </Button>
+          </Flex>
+        ))}
+        {[...privateSt.keys()].slice(20).length > 0 && (
+          <Flex align="center">
+            <Button
+              style={{
+                fontSize: "inherit",
+                padding: "0.5em 1em",
+              }}
+              variant="ghost"
+            >
+              <code>...({[...privateSt.keys()].slice(20).length} more)</code>
+            </Button>
+          </Flex>
+        )}
+      </Flex>
     </Box>
   );
 });
