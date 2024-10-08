@@ -115,9 +115,9 @@ function generateCallEdges(get: Getter, set: Setter) {
       // do not show self-connections
       if (node.id === value) continue;
       res.push({
-        id: `${node.id}-${key}`,
-        source: node.id,
-        target: value,
+        id: `${key}-${node.id}`,
+        source: value,
+        target: node.id,
         // sourceHandle: "right",
         // targetHandle: "left",
         markerEnd: {

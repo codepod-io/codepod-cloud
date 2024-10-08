@@ -287,8 +287,14 @@ function CanvasImpl() {
           pointer-events: none !important;
         }
         // This is still needed so that edges are shown on top of ReactFlow Handles in Connect mode.
+        // This also put the edges on top of the symbol table.
+        // - UPDATE: no, the symbol table is still on top.
         .react-flow__edges {
-          z-index: 9999 !important;
+          z-index: 1;
+        }
+        // But put the nodes on top of the edges.
+        .react-flow__nodes {
+          z-index: 2;
         }
       `}
     >
@@ -305,8 +311,8 @@ function CanvasImpl() {
           g_nonSelectableScopes.clear();
         }}
         attributionPosition="top-right"
-        maxZoom={2}
-        minZoom={0.1}
+        maxZoom={3}
+        minZoom={0.01}
         onPaneContextMenu={onPaneContextMenu}
         nodeTypes={nodeTypes}
         // custom edge for easy connect

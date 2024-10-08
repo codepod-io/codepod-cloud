@@ -568,6 +568,7 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
           top: 0,
           left: 0,
           transform: "translateY(-100%) translateY(-10px)",
+          pointerEvents: "none",
         }}
         direction={"column"}
         gap="4"
@@ -617,7 +618,7 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
           <Flex align="center" key={key}>
             <code
               style={{
-                fontSize: "2.5em",
+                fontSize: "4em",
                 color: "black",
                 // lineHeight: "var(--line-height-1)",
                 // lineHeight: "10px",
