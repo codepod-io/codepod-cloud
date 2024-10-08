@@ -40,8 +40,6 @@ export type Annotation = {
 };
 
 export type ParseResult = {
-  ispublic: boolean;
-  istest: boolean;
   annotations: Annotation[];
   errors?: string[];
   error_messages?: string[];
@@ -49,64 +47,16 @@ export type ParseResult = {
 };
 
 /**
- * If code starts with lines containing
- * - @export
- * - @def XXX
- * - @use XXX
- *
- * These annotations have to be at the beginning lines of code. Stop processing
- * the rest of the text when a line does not match these. Empty lines are
- * allowed.
- *
- * Return {code: string, ispublic: boolean, defs: string[], uses: string[]}
- * - code: the code without the annotations
- * - ispublic: true if there's @export
- * - defs: the list of function names defined in the code
- * - uses: the list of function names used in the code
- */
-export function preprocess(code: string): {
-  code: string;
-  ispublic: boolean;
-  istest: boolean;
-} {
-  const lines = code.split("\n");
-  const result = {
-    code: "",
-    ispublic: false,
-    istest: false,
-  };
-
-  let i = 0;
-  for (; i < lines.length; i++) {
-    const line = lines[i].trim();
-
-    if (line === "") continue;
-
-    if (line === "@export") {
-      result.ispublic = true;
-    } else if (line === "@test") {
-      result.istest = true;
-    } else {
-      break;
-    }
-  }
-
-  result.code = lines.slice(i).join("\n");
-  return result;
-}
-
-/**
  * Use tree-sitter query to analyze the code. This only work for functions.
  * @param code
  */
-export function parsePython(code0: string): ParseResult {
-  if (!code0) return { ispublic: false, istest: false, annotations: [] };
+export function parsePython(code: string): ParseResult {
+  if (!code) return { annotations: [] };
 
   let annotations: Annotation[] = [];
-  const { code, ispublic, istest } = preprocess(code0);
 
   // magic commands
-  if (code.startsWith("!")) return { ispublic, istest, annotations };
+  if (code.startsWith("!")) return { annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -147,5 +97,5 @@ export function parsePython(code0: string): ParseResult {
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, istest, annotations };
+  return { annotations };
 }

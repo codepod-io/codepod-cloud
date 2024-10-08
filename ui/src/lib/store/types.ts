@@ -14,6 +14,10 @@ type CommonData = {
   myheight?: number;
   // If true, this pod is shown when the scope is folded.
   isReadme?: boolean;
+  // If true, this pod or scope is marked as a test, and won't be executed when "run all".
+  isTest?: boolean;
+  // If true, the pod is marked as public API.
+  isPublic?: boolean;
 };
 
 export type SupportedLanguage = "python" | "julia" | "javascript" | "racket";

@@ -18,13 +18,21 @@ import {
   useStore,
   XYPosition,
 } from "@xyflow/react";
-import { Box, Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
+import {
+  Box,
+  Text,
+  Button,
+  DropdownMenu,
+  Flex,
+  IconButton,
+} from "@radix-ui/themes";
 import { myassert } from "@/lib/utils/utils";
 import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
   ATOM_toggleFold,
+  ATOM_toggleTest,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
@@ -35,6 +43,8 @@ import {
   Ellipsis,
   Eye,
   EyeOff,
+  FlaskConical,
+  FlaskConicalOff,
   GripVertical,
   Trash2,
 } from "lucide-react";
@@ -81,6 +91,7 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
   const duplicateScope = useSetAtom(ATOM_duplicateScope);
   const toggleFold = useSetAtom(ATOM_toggleFold);
+  const toggleTest = useSetAtom(ATOM_toggleTest);
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
@@ -130,6 +141,22 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
             ) : (
               <>
                 <Eye /> Toggle Fold
+              </>
+            )}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              toggleTest(id);
+            }}
+          >
+            {node.data.isTest ? (
+              <>
+                <FlaskConicalOff />
+                Toggle Test
+              </>
+            ) : (
+              <>
+                <FlaskConical /> Toggle Test
               </>
             )}
           </DropdownMenu.Item>
@@ -258,17 +285,7 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
           Drag to move
         </Box>
       )}
-      <Flex
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          transform: "translate(0, -100%)",
-        }}
-      >
-        {" "}
-        Scope {id}
-      </Flex>
+      <Tags id={id} />
       {node.data.folded ? (
         <div
           style={{
@@ -366,6 +383,53 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
     </Box>
   );
 });
+
+const Tags = function Tags({ id }: { id: string }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  const reactFlowInstance = useReactFlow();
+  if (!node) throw new Error(`Node ${id} not found.`);
+  myassert(node.type === "SCOPE");
+  return (
+    <>
+      {/* TOP: show self symbol table at the top, big font */}
+      <Flex
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translateY(-100%) translateY(-10px)",
+          pointerEvents: "none",
+        }}
+        direction={"column"}
+        gap="4"
+        wrap="wrap"
+      >
+        {/* tags */}
+        {node.data.isTest && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "yellow",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              test
+            </Text>
+          </div>
+        )}
+      </Flex>
+    </>
+  );
+};
 
 const FoldedSymbolTable = memo(function FoldedSymbolTable({
   id,

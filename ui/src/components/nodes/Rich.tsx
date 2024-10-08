@@ -408,6 +408,7 @@ export const RichNode = function ({
             </div>
           )}
           <RichEditorWrapper id={id} />
+          <Tags id={id} />
 
           <MyNodeResizer />
           <MyHandle hover={hover} isTarget={isTarget} />

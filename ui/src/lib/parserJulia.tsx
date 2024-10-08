@@ -1,7 +1,7 @@
 // racket parser
 
 import Parser from "web-tree-sitter";
-import { Annotation, ParseResult, preprocess } from "./parser";
+import { Annotation, ParseResult } from "./parser";
 import { atom } from "jotai";
 import { Mutex } from "async-mutex";
 
@@ -35,12 +35,11 @@ export const ATOM_loadParser = atom(null, async (get, set) => {
  * Use tree-sitter query to analyze the code. This only work for functions.
  * @param code
  */
-export function parseJulia(code0: string): ParseResult {
-  if (!code0) return { ispublic: false, istest: false, annotations: [] };
+export function parseJulia(code: string): ParseResult {
+  if (!code) return { annotations: [] };
   let annotations: Annotation[] = [];
-  const { code, ispublic, istest } = preprocess(code0);
   // magic commands
-  if (code.startsWith("!")) return { ispublic, istest, annotations };
+  if (code.startsWith("!")) return { annotations };
   if (!parser) {
     throw Error("warning: parser not ready");
   }
@@ -81,5 +80,5 @@ export function parseJulia(code0: string): ParseResult {
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, istest, annotations };
+  return { annotations };
 }
