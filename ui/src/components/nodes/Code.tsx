@@ -386,8 +386,8 @@ const MyPodToolbar = memo(function MyPodToolbar({
           padding: 0,
         }}
         disabled={!runtimeReady}
-        onClick={() => {
-          const specs = preprocessChain([id]);
+        onClick={async () => {
+          const specs = await preprocessChain([id]);
           if (specs) runChain.mutate({ repoId, specs });
         }}
       >
@@ -410,8 +410,8 @@ const MyPodToolbar = memo(function MyPodToolbar({
         <DropdownMenu.Content color="yellow">
           <DropdownMenu.Item
             shortcut="⇧ ⏎"
-            onSelect={() => {
-              const specs = preprocessChain([id]);
+            onSelect={async () => {
+              const specs = await preprocessChain([id]);
               if (specs) runChain.mutate({ repoId, specs });
             }}
             disabled={!runtimeReady}
@@ -420,9 +420,9 @@ const MyPodToolbar = memo(function MyPodToolbar({
           </DropdownMenu.Item>
           <DropdownMenu.Item
             disabled={!runtimeReady}
-            onSelect={() => {
+            onSelect={async () => {
               const chain = getEdgeChain(id);
-              const specs = preprocessChain(chain);
+              const specs = await preprocessChain(chain);
               if (specs) runChain.mutate({ repoId, specs });
             }}
           >
