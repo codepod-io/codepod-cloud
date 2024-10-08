@@ -18,6 +18,7 @@ import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  ATOM_toggleFold,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
 import { memo, useState } from "react";
@@ -35,6 +36,7 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const deleteScope = useSetAtom(ATOM_deleteScope);
   const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
   const duplicateScope = useSetAtom(ATOM_duplicateScope);
+  const toggleFold = useSetAtom(ATOM_toggleFold);
   return (
     <Flex
       align="center"
@@ -78,6 +80,13 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
         <DropdownMenu.Content color="yellow">
           <ChangeScopeItem id={id} />
           <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={() => {
+              toggleFold(id);
+            }}
+          >
+            Toggle Fold
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => {
               duplicateScope(id);
@@ -143,9 +152,12 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
   const collisionIds = useAtomValue(ATOM_collisionIds);
   const escapedIds = useAtomValue(ATOM_escapedIds);
 
+  const toggleFold = useSetAtom(ATOM_toggleFold);
+
   const borderWidth = 4;
 
   if (!node) return null;
+  myassert(node.type === "SCOPE");
 
   return (
     <Box
@@ -186,14 +198,45 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
           Drag to move
         </Box>
       )}
-      <Flex
-        style={{
-          width: "100%",
-          height: "100%",
-          backgroundColor: "lightblue",
-          opacity: 0.1,
-        }}
-      ></Flex>
+      {node.data.folded ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            opacity: 1,
+            backgroundColor: "lightblue",
+            width: "100%",
+            height: "100%",
+            // make the text big to be the same size as the node
+            fontSize: "10em",
+          }}
+        >
+          <Button
+            style={{
+              fontSize: "1em",
+              padding: "1em 2em",
+              pointerEvents: "all",
+            }}
+            onClick={() => {
+              toggleFold(id);
+            }}
+          >
+            Unfold
+          </Button>
+          Number of pods: {node.data.childrenIds.length}
+        </div>
+      ) : (
+        <Flex
+          style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: "lightblue",
+            opacity: 0.1,
+          }}
+        ></Flex>
+      )}
       <Box
         style={{
           pointerEvents: "all",
