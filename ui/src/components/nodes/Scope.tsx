@@ -10,9 +10,10 @@ import {
   NodeResizer,
   Position,
   useConnection,
+  useStore,
   XYPosition,
 } from "@xyflow/react";
-import { Box, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
+import { Box, Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { myassert } from "@/lib/utils/utils";
 import {
   ATOM_collisionIds,
@@ -33,25 +34,37 @@ import {
 } from "@/lib/store/canvasSlice_addNode";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
-  const deleteScope = useSetAtom(ATOM_deleteScope);
-  const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
-  const duplicateScope = useSetAtom(ATOM_duplicateScope);
-  const toggleFold = useSetAtom(ATOM_toggleFold);
+  const zoom = useStore((s) => Math.max(s.transform[2], 0.1));
+
   return (
-    <Flex
-      align="center"
+    <div
       style={{
-        position: "fixed",
+        display: "flex",
+        alignItems: "center",
+        position: "absolute",
         top: 0,
         right: 0,
         // border: "solid 1px var(--gray-8)",
-        transform: "translateY(-100%) translateX(-10%)",
+        transform: `translate(0%, -100%) scale(${1 / zoom})`,
+        transformOrigin: "bottom right",
         backgroundColor: "white",
         borderRadius: "5px",
         boxShadow: "0 0 10px rgba(0,0,0,0.2)",
         cursor: "auto",
       }}
     >
+      <MyToolbarImpl id={id} />
+    </div>
+  );
+});
+
+const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
+  const deleteScope = useSetAtom(ATOM_deleteScope);
+  const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
+  const duplicateScope = useSetAtom(ATOM_duplicateScope);
+  const toggleFold = useSetAtom(ATOM_toggleFold);
+  return (
+    <>
       {/* drag handle */}
       <Box
         className="custom-drag-handle"
@@ -124,7 +137,7 @@ const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    </Flex>
+    </>
   );
 });
 
