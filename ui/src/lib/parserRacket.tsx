@@ -53,7 +53,7 @@ export function parseRacket(code0: string): ParseResult {
   const syntax_def = "(program (binding_syntax (identifier) @function))";
   const callsite = `(procedure_call (identifier) @callsite)`;
   // top-level variable definition
-  const vardef = "(program (binding_variable (identifier) @vardef))";
+  const vardef = "(program (binding_variable name: (identifier) @vardef))";
   const varuse = "((identifier) @varuse)";
 
   let query_func = parser.getLanguage().query(`
