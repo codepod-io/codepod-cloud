@@ -422,6 +422,39 @@ async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
 
 export const ATOM_preprocessChain = atom(null, preprocessChain);
 
+/**
+ * Get the list of nodes in the subtree rooted at id, including the root.
+ * @param id subtree root
+ */
+function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
+  const node = nodesMap.get(id);
+  myassert(node);
+  if (node.type === "CODE" && !node.data.isTest) {
+    return [node];
+  } else if (node.type === "SCOPE" && !node.data.isTest) {
+    const children = node.data.childrenIds.map((childId) => {
+      return getSubtreeNodes(childId, nodesMap);
+    });
+    return [...children.flatMap((child) => child)];
+  } else {
+    return [];
+  }
+}
+
+function getAllCode(get: Getter, set: Setter) {
+  // 1. get root nodes
+  const nodesMap = get(ATOM_nodesMap);
+  let nodes0 = Array.from<AppNode>(nodesMap.values());
+  const rootNodes = nodes0.filter((node) => !node.parentId);
+  // 2. recursively get subtree nodes
+  const nodes1 = rootNodes
+    .map(({ id }) => {
+      return getSubtreeNodes(id, nodesMap);
+    })
+    .flatMap((child) => child);
+  return nodes1;
+}
+
 async function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
   // parse and resolve
   await parseAllPods(get, set);
@@ -429,25 +462,22 @@ async function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
   resolveAllPods(get, set);
   // get all non-test pods
   const nodesMap = get(ATOM_nodesMap);
-  let ids = Array.from(nodesMap.keys());
-  ids = ids.filter((id) => {
-    const node = nodesMap.get(id);
-    if (!node) return false;
-    if (node.type !== "CODE") return false;
-    const parseResult = get(getOrCreate_ATOM_parseResult(id));
-    return !node.data.isTest;
-  });
+  // run dfs, skip test scopes and pods
+  // TODO the order should be topological
+  const codeNodes = getAllCode(get, set);
+
   // rewrite code and construct specs
-  let specs = ids.map((id) => {
-    const nodesMap = get(ATOM_nodesMap);
-    const node = nodesMap.get(id);
-    if (!node) throw new Error(`Node not found for id: ${id}`);
-    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
+  let specs = codeNodes.map((node) => {
+    myassert(node.type === "CODE");
     // skip parsing and resolving
-    const newcode = rewriteCode(id, get);
+    const newcode = rewriteCode(node.id, get);
     // console.log("newcode", newcode);
     const lang = node?.data.lang;
-    return { podId: id, code: newcode || "", kernelName: lang || "python" };
+    return {
+      podId: node.id,
+      code: newcode || "",
+      kernelName: lang || "python",
+    };
   });
   // filter out empty code
   specs = specs.filter(({ podId, code }) => {
