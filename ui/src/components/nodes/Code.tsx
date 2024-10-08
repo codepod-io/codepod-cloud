@@ -14,6 +14,7 @@ import {
   Handle,
   Position,
   useConnection,
+  useStore,
 } from "@xyflow/react";
 import { ResizeControlVariant } from "@xyflow/react";
 
@@ -336,6 +337,41 @@ const MyPodToolbar = memo(function MyPodToolbar({
 }: {
   node: CodeNodeType;
 }) {
+  // This will not trigger change.
+  // const { getZoom } = useReactFlow();
+  // const zoom = getZoom();
+  // console.log("zoom", zoom);
+
+  // This will trigger change when zooming.
+  const zoom = useStore((s) => Math.max(s.transform[2], 0.3));
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        position: "absolute",
+        top: 0,
+        right: 0,
+        // border: "solid 1px var(--gray-8)",
+        transform: `translate(0%, -100%) scale(${1 / zoom})`,
+        transformOrigin: "bottom right",
+        backgroundColor: "white",
+        borderRadius: "5px",
+        boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+        cursor: "auto",
+      }}
+    >
+      <MyPodToolbarImpl node={node} />
+    </div>
+  );
+});
+
+const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
+  node,
+}: {
+  node: CodeNodeType;
+}) {
   const id = node.id;
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
@@ -352,20 +388,7 @@ const MyPodToolbar = memo(function MyPodToolbar({
   const deletePod = useSetAtom(ATOM_deletePod);
 
   return (
-    <Flex
-      align="center"
-      style={{
-        position: "fixed",
-        top: 0,
-        right: 0,
-        // border: "solid 1px var(--gray-8)",
-        transform: "translateY(-120%)",
-        backgroundColor: "white",
-        borderRadius: "5px",
-        boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-        cursor: "auto",
-      }}
-    >
+    <>
       {/* drag handle */}
       <Box
         className="custom-drag-handle"
@@ -455,7 +478,7 @@ const MyPodToolbar = memo(function MyPodToolbar({
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    </Flex>
+    </>
   );
 });
 

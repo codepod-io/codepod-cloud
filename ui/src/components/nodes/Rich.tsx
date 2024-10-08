@@ -8,6 +8,7 @@ import {
   Position,
   NodeProps,
   useConnection,
+  useStore,
 } from "@xyflow/react";
 
 import * as Y from "yjs";
@@ -55,26 +56,42 @@ import { ChangeScopeItem, MyHandle } from "./Code";
 import { ATOM_deletePod } from "@/lib/store/canvasSlice_addNode";
 
 const MyPodToolbar = memo(function MyPodToolbar({ id }: { id: string }) {
-  const nodesMap = useAtomValue(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
+  const zoom = useStore((s) => Math.max(s.transform[2], 0.3));
 
-  const deletePod = useSetAtom(ATOM_deletePod);
   return (
-    <Flex
-      align="center"
+    <div
       style={{
-        position: "fixed",
+        display: "flex",
+        alignItems: "center",
+        position: "absolute",
         top: 0,
         right: 0,
         // border: "solid 1px var(--gray-8)",
-        transform: "translateY(-120%)",
+        transform: `translate(0%, -100%) scale(${1 / zoom})`,
+        transformOrigin: "bottom right",
         backgroundColor: "white",
         borderRadius: "5px",
         boxShadow: "0 0 10px rgba(0,0,0,0.2)",
         cursor: "auto",
       }}
     >
+      <MyPodToolbarImpl id={id} />
+    </div>
+  );
+});
+
+const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
+  id,
+}: {
+  id: string;
+}) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+
+  const deletePod = useSetAtom(ATOM_deletePod);
+  return (
+    <>
       {/* drag handle */}
       <Box
         className="custom-drag-handle"
@@ -118,7 +135,7 @@ const MyPodToolbar = memo(function MyPodToolbar({ id }: { id: string }) {
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    </Flex>
+    </>
   );
 });
 
@@ -257,6 +274,8 @@ export const RichNode = function ({
         width: node.data.mywidth,
         minWidth: "300px",
       }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
       {insertMode === "Move" && (
         <Box
@@ -299,14 +318,12 @@ export const RichNode = function ({
                 ? "orange"
                 : collisionIds.includes(id)
                   ? "pink"
-                  : "transparent",
+                  : "var(--gray-2)",
           // add shadow
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
         }}
       >
         <div
-          onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
           style={{
             display: "flex",
             flexDirection: "column",
