@@ -1,5 +1,9 @@
-import { useAtomValue, useSetAtom } from "jotai";
-import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import {
+  ATOM_nodesMap,
+  ATOM_provider,
+  ATOM_richMap,
+} from "@/lib/store/yjsSlice";
 import { AppNode } from "@/lib/store/types";
 
 import * as Y from "yjs";
@@ -45,6 +49,7 @@ import {
   getOrCreate_ATOM_privateST,
   getOrCreate_ATOM_publicST,
 } from "@/lib/store/runtimeSlice";
+import { RichEditor } from "./Rich_Editor";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const zoom = useStore((s) => Math.max(s.transform[2], 0.1));
@@ -169,6 +174,20 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   );
 });
 
+const RichEditorWrapper = memo(({ id }: { id: string }) => {
+  // the Yjs extension for Remirror
+  const [provider] = useAtom(ATOM_provider);
+
+  const [richMap] = useAtom(ATOM_richMap);
+  if (!richMap.has(id)) {
+    throw new Error("richMap does not have id " + id);
+  }
+  const yXml = richMap.get(id);
+  if (!yXml) return null;
+  if (!provider) return null;
+  return <RichEditor yXml={yXml} provider={provider} id={id} />;
+});
+
 export const ScopeNode = memo(function ScopeNode({ id }: NodeProps) {
   return <ScopeNodeImpl id={id} />;
 });
@@ -239,36 +258,72 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
           Drag to move
         </Box>
       )}
+      <Flex
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translate(0, -100%)",
+        }}
+      >
+        {" "}
+        Scope {id}
+      </Flex>
       {node.data.folded ? (
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            gap: "1em",
             alignItems: "center",
             opacity: 1,
             backgroundColor: "lightblue",
+            // This is full height and set the background color.
             width: "100%",
             height: "100%",
-            // make the text big to be the same size as the node
-            // fontSize: "10em",
-            fontSize: `${(node.data.mywidth ?? 600) / 500}em`,
             pointerEvents: "all",
           }}
         >
-          <Button
+          <Flex
+            direction={"column"}
+            align="center"
+            gap="2"
             style={{
-              fontSize: "1em",
-              padding: "1em 2em",
-            }}
-            onClick={() => {
-              toggleFold(id);
+              // The components of this flex will be scaled for visibility.
+              transform: `scale(${((node.data.mywidth ?? 600) * 1) / 800})`,
+              pointerEvents: "all",
             }}
           >
-            <EyeOff /> Unfold
-          </Button>
-          Number of pods: {node.data.childrenIds.length}
-          <FoldedSymbolTable id={id} />
+            {/* README if any */}
+            {node.data.childrenIds.map((childId) => {
+              const childNode = nodesMap.get(childId);
+              if (!childNode) return null;
+              if (childNode.data.isReadme) {
+                myassert(childNode.type === "RICH");
+                return (
+                  <div
+                    key={childId}
+                    style={{
+                      display: "flex",
+                    }}
+                  >
+                    <RichEditorWrapper id={childId} />
+                  </div>
+                );
+              }
+              return null;
+            })}
+            <Button
+              onClick={() => {
+                toggleFold(id);
+              }}
+            >
+              <EyeOff /> Unfold
+            </Button>
+            Number of pods: {node.data.childrenIds.length}
+            <FoldedSymbolTable id={id} />
+          </Flex>
         </div>
       ) : (
         <Flex

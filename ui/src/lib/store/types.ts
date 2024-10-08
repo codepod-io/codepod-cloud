@@ -12,6 +12,8 @@ type CommonData = {
   level?: number;
   mywidth?: number;
   myheight?: number;
+  // If true, this pod is shown when the scope is folded.
+  isReadme?: boolean;
 };
 
 export type SupportedLanguage = "python" | "julia" | "javascript" | "racket";

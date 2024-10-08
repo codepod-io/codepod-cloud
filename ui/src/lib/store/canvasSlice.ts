@@ -211,6 +211,18 @@ export function updateView(get: Getter, set: Setter) {
 
 export const ATOM_updateView = atom(null, updateView);
 
+function toggleReadme(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "RICH");
+  node.data.isReadme = !node.data.isReadme;
+  nodesMap.set(id, node);
+  updateView(get, set);
+}
+
+export const ATOM_toggleReadme = atom(null, toggleReadme);
+
 // fold a scope
 function toggleFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
