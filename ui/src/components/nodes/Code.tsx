@@ -49,6 +49,8 @@ import {
   CornerDownLeft,
   CornerRightUp,
   Ellipsis,
+  FlaskConical,
+  FlaskConicalOff,
   GripVertical,
   Group,
   ListVideo,
@@ -60,6 +62,7 @@ import {
   X,
 } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
+import { TbApi, TbApiOff } from "react-icons/tb";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
@@ -87,6 +90,8 @@ import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  ATOM_togglePublic,
+  ATOM_toggleTest,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
 import {
@@ -390,6 +395,8 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
   const resolvePod = useSetAtom(ATOM_resolvePod);
 
   const deletePod = useSetAtom(ATOM_deletePod);
+  const toggleTest = useSetAtom(ATOM_toggleTest);
+  const togglePublic = useSetAtom(ATOM_togglePublic);
 
   return (
     <>
@@ -462,6 +469,38 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
           <DropdownMenu.Item onSelect={() => resolvePod(id)}>
             <ShieldQuestion />
             Resolve
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              toggleTest(id);
+            }}
+          >
+            {node.data.isTest ? (
+              <>
+                <FlaskConicalOff />
+                Toggle Test
+              </>
+            ) : (
+              <>
+                <FlaskConical /> Toggle Test
+              </>
+            )}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              togglePublic(id);
+            }}
+          >
+            {node.data.isPublic ? (
+              <>
+                <TbApiOff />
+                Toggle Public
+              </>
+            ) : (
+              <>
+                <TbApi /> Toggle Public
+              </>
+            )}
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           {/* assign group */}
@@ -730,6 +769,7 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
             flexDirection: "column",
           }}
         >
+          <Tags id={id} />
           {!env.READ_ONLY && (
             // <motion.div
             //   animate={{
@@ -764,6 +804,89 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
     </div>
   );
 });
+
+const Tags = function Tags({ id }: { id: string }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
+  const reactFlowInstance = useReactFlow();
+  if (!node) throw new Error(`Node ${id} not found.`);
+  return (
+    <>
+      {/* TOP: show self symbol table at the top, big font */}
+      <Flex
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translateY(-100%) translateY(-10px)",
+          pointerEvents: "none",
+        }}
+        direction={"column"}
+        gap="4"
+        wrap="wrap"
+      >
+        {/* tags */}
+        {node.data.isTest && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "yellow",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              test
+            </Text>
+          </div>
+        )}
+        {node.data.isPublic && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "lightgreen",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              public
+            </Text>
+          </div>
+        )}
+        {[...selfSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <code
+              style={{
+                fontSize: "4em",
+                color: "black",
+                // lineHeight: "var(--line-height-1)",
+                // lineHeight: "10px",
+                lineHeight: "0.5em",
+                // do not wrap
+                whiteSpace: "nowrap",
+              }}
+            >
+              {key}
+            </code>
+          </Flex>
+        ))}
+      </Flex>
+    </>
+  );
+};
 
 const Language = memo(function Language({ lang }: { lang: string }) {
   return (

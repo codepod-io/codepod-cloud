@@ -1,7 +1,7 @@
 import { Getter, PrimitiveAtom, Setter, atom } from "jotai";
 import * as Y from "yjs";
 
-import { parsePython, preprocess } from "../parser";
+import { parsePython } from "../parser";
 import { parseRacket } from "../parserRacket";
 import {
   ATOM_codeMap,
@@ -47,8 +47,6 @@ function rewriteCode(id: string, get: Getter): string | null {
   if (!node) return null;
   if (!codeMap.has(id)) return null;
   let code = codeMap.get(id)!.toString();
-  const { code: code1 } = preprocess(code);
-  code = code1;
   if (code.startsWith("!")) return code;
   // replace with symbol table
   let newcode = "";
@@ -98,8 +96,6 @@ export function getOrCreate_ATOM_parseResult(id: string) {
     return id2_ATOM_parseResult.get(id)!;
   }
   const res = atom<ParseResult>({
-    ispublic: false,
-    istest: false,
     annotations: [],
   });
   id2_ATOM_parseResult.set(id, res);
@@ -218,7 +214,7 @@ function propagateST(get: Getter, set: Setter, id: string) {
     });
   // set(getOrCreate_ATOM_privateST(parentScopeId), parentScopeSt);
   // If it is public, insert to one layer up
-  if (node.parentId && parseResult.ispublic) {
+  if (node.parentId && node.data.isPublic) {
     const parent = nodesMap.get(node.parentId);
     myassert(parent);
     const grandParentSt = get(
@@ -439,7 +435,7 @@ async function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
     if (!node) return false;
     if (node.type !== "CODE") return false;
     const parseResult = get(getOrCreate_ATOM_parseResult(id));
-    return !parseResult.istest;
+    return !node.data.isTest;
   });
   // rewrite code and construct specs
   let specs = ids.map((id) => {

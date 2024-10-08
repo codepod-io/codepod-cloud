@@ -574,46 +574,6 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
         gap="4"
         wrap="wrap"
       >
-        {/* tags */}
-        {parseResult.ispublic && (
-          <div
-            style={{
-              fontSize: "1.5em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <Text
-              style={{
-                color: "black",
-                backgroundColor: "lightgreen",
-                borderRadius: "5px",
-                padding: "2px 5px",
-              }}
-            >
-              public
-            </Text>
-          </div>
-        )}
-        {parseResult.istest && (
-          <div
-            style={{
-              fontSize: "1.5em",
-              // lineHeight: "0.5em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <Text
-              style={{
-                color: "black",
-                backgroundColor: "yellow",
-                borderRadius: "5px",
-                padding: "2px 5px",
-              }}
-            >
-              test
-            </Text>
-          </div>
-        )}
         {[...selfSt.keys()].map((key) => (
           <Flex align="center" key={key}>
             <code
