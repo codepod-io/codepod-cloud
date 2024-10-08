@@ -56,6 +56,7 @@ export const ATOM_addNode = atom(
             parentId: scopeId,
             data: {
               lang,
+              mywidth: 600,
             },
           };
           nodesMap.set(id, node);
@@ -70,7 +71,9 @@ export const ATOM_addNode = atom(
             position,
             dragHandle: ".custom-drag-handle",
             parentId: scopeId,
-            data: {},
+            data: {
+              mywidth: 600,
+            },
           };
           nodesMap.set(id, node);
           get(ATOM_richMap).set(id, new Y.XmlFragment());
