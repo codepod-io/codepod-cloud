@@ -45,6 +45,7 @@ export type ParseResult = {
   annotations: Annotation[];
   errors?: string[];
   error_messages?: string[];
+  hash?: string;
 };
 
 /**

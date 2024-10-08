@@ -142,11 +142,19 @@ export function getOrCreate_ATOM_publicST(id: string) {
   return res;
 }
 
+async function computeHash(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 /**
  * Parse the code for defined variables and functions.
  * @param id paod
  */
-function parsePod(get: Getter, set: Setter, id: string) {
+async function parsePod(get: Getter, set: Setter, id: string) {
   // console.log("parsePod", id);
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
@@ -164,7 +172,15 @@ function parsePod(get: Getter, set: Setter, id: string) {
     // set(getOrCreate_ATOM_parseResult(id), null);
     return;
   }
-  const parseResult = analyzeCode(codeMap.get(id)?.toString() || "");
+  const code = codeMap.get(id)?.toString() || "";
+  // compute hash. If the hash is the same, return the previous result.
+  const hash = await computeHash(code);
+  const prevResult = get(getOrCreate_ATOM_parseResult(id));
+  if (prevResult.hash === hash) {
+    return;
+  }
+  const parseResult = analyzeCode(code);
+  parseResult.hash = hash;
   set(getOrCreate_ATOM_parseResult(id), parseResult);
 }
 
