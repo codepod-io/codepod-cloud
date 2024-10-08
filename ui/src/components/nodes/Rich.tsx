@@ -15,7 +15,7 @@ import * as Y from "yjs";
 
 // Local Imports
 
-import { ConfirmedDelete, SymbolTable } from "./utils";
+import { ConfirmedDelete } from "./utils";
 
 import {
   Box,
@@ -28,6 +28,7 @@ import {
   Heading,
 } from "@radix-ui/themes";
 import {
+  BookOpenText,
   CornerDownLeft,
   CornerRightUp,
   Ellipsis,
@@ -51,6 +52,7 @@ import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  ATOM_toggleReadme,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
 import { ATOM_deletePod } from "@/lib/store/canvasSlice_addNode";
@@ -90,6 +92,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
   myassert(node);
 
   const deletePod = useSetAtom(ATOM_deletePod);
+  const toggleReadme = useSetAtom(ATOM_toggleReadme);
   return (
     <>
       {/* drag handle */}
@@ -119,6 +122,15 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
           <ChangeScopeItem id={id} />
+          <DropdownMenu.Item
+            onSelect={() => {
+              toggleReadme(id);
+            }}
+          >
+            <BookOpenText />
+            toggle Readme
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
           <ConfirmedDelete
             color="red"
             onSelect={() => {
@@ -201,6 +213,52 @@ function FoldedRichPod({ id }: { id: string }) {
   if (title) return title;
   return <Text>Folded Note</Text>;
 }
+
+const Tags = function Tags({ id }: { id: string }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  const reactFlowInstance = useReactFlow();
+  if (!node) throw new Error(`Node ${id} not found.`);
+  return (
+    <>
+      {/* TOP: show self symbol table at the top, big font */}
+      <Flex
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translateY(-100%) translateY(-10px)",
+          pointerEvents: "none",
+        }}
+        direction={"column"}
+        gap="4"
+        wrap="wrap"
+      >
+        {/* tags */}
+        {node.data.isReadme && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "lightgreen",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              readme
+            </Text>
+          </div>
+        )}
+      </Flex>
+    </>
+  );
+};
 
 /**
  * The React Flow node.
