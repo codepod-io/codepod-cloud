@@ -11,7 +11,14 @@ import {
 import { Box, Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ATOM_nodes } from "@/lib/store/canvasSlice";
-import { FileUp, NotebookPen, Clipboard, Trash2 } from "lucide-react";
+import {
+  FileUp,
+  NotebookPen,
+  Clipboard,
+  Trash2,
+  Copy,
+  Group,
+} from "lucide-react";
 import {
   ConfirmedDelete,
   JavaScriptLogo,
@@ -408,7 +415,7 @@ export function useSelectionContextMenu() {
               addScope(selectedNodes);
             }}
           >
-            Create Scope
+            <Group /> Create Scope
           </DropdownMenu.Item>
           <DropdownMenu.Item
             shortcut="⌘ D"
@@ -417,7 +424,7 @@ export function useSelectionContextMenu() {
               duplicateSelection(selectedNodes);
             }}
           >
-            Duplicate
+            <Copy /> Duplicate
           </DropdownMenu.Item>
           <ConfirmedDelete
             color="red"
