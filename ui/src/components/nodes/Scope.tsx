@@ -22,9 +22,16 @@ import {
   ATOM_toggleFold,
 } from "@/lib/store/canvasSlice";
 import { ChangeScopeItem, MyHandle } from "./Code";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Ellipsis, GripVertical, Trash2 } from "lucide-react";
+import {
+  Copy,
+  Ellipsis,
+  Eye,
+  EyeOff,
+  GripVertical,
+  Trash2,
+} from "lucide-react";
 import { css } from "@emotion/css";
 import { ConfirmedDelete, SymbolTable } from "./utils";
 import {
@@ -63,6 +70,12 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   const deleteSubTree = useSetAtom(ATOM_deleteSubTree);
   const duplicateScope = useSetAtom(ATOM_duplicateScope);
   const toggleFold = useSetAtom(ATOM_toggleFold);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "SCOPE");
+  // FIXME this component does not monitor folding status.
+  // useEffect(() => {}, [node?.data.folded]);
   return (
     <>
       {/* drag handle */}
@@ -98,14 +111,23 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
               toggleFold(id);
             }}
           >
-            Toggle Fold
+            {node.data.folded ? (
+              <>
+                <EyeOff />
+                Toggle Fold
+              </>
+            ) : (
+              <>
+                <Eye /> Toggle Fold
+              </>
+            )}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => {
               duplicateScope(id);
             }}
           >
-            Duplicate
+            <Copy /> Duplicate
           </DropdownMenu.Item>
           <ConfirmedDelete
             color="red"
@@ -223,7 +245,8 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
             width: "100%",
             height: "100%",
             // make the text big to be the same size as the node
-            fontSize: "10em",
+            // fontSize: "10em",
+            fontSize: `${(node.data.mywidth ?? 600) / 500}em`,
           }}
         >
           <Button
@@ -236,7 +259,7 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
               toggleFold(id);
             }}
           >
-            Unfold
+            <EyeOff /> Unfold
           </Button>
           Number of pods: {node.data.childrenIds.length}
         </div>

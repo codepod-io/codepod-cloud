@@ -50,9 +50,13 @@ import {
   CornerRightUp,
   Ellipsis,
   GripVertical,
+  Group,
+  ListVideo,
   Play,
   ScissorsLineDashed,
+  ShieldQuestion,
   Trash2,
+  Variable,
   X,
 } from "lucide-react";
 import { CaretDownIcon } from "@radix-ui/react-icons";
@@ -326,7 +330,7 @@ export function ChangeScopeItem({ id }: { id: string }) {
         }
       }}
     >
-      Change Scope
+      <Group /> Change Scope
     </DropdownMenu.Item>
   );
 }
@@ -439,7 +443,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
             }}
             disabled={!runtimeReady}
           >
-            Run
+            <Play /> Run
           </DropdownMenu.Item>
           <DropdownMenu.Item
             disabled={!runtimeReady}
@@ -449,13 +453,14 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
               if (specs) runChain.mutate({ repoId, specs });
             }}
           >
-            Run Chain
+            <ListVideo /> Run Chain
           </DropdownMenu.Item>
 
           <DropdownMenu.Item onSelect={() => parsePod(id)}>
-            Parse
+            <Variable /> Parse
           </DropdownMenu.Item>
           <DropdownMenu.Item onSelect={() => resolvePod(id)}>
+            <ShieldQuestion />
             Resolve
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
