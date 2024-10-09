@@ -205,14 +205,15 @@ function CanvasImpl() {
       const node = selectedPods.values().next().value;
       const pos = getAbsPos(nodesMap.get(node)!, nodesMap);
 
-      reactFlowInstance.setCenter(
-        pos.x + (nodesMap.get(node)?.measured?.width || 0) / 2,
-        pos.y + (nodesMap.get(node)?.measured?.height || 0) / 2,
-        {
-          zoom: reactFlowInstance.getZoom(),
-          duration: 800,
-        }
-      );
+      const width = nodesMap.get(node)?.measured?.width || 0;
+      const height = nodesMap.get(node)?.measured?.height || 0;
+
+      reactFlowInstance.setCenter(pos.x + width / 2, pos.y + height / 2, {
+        // zoom: reactFlowInstance.getZoom(),
+        // On centering, also adjust the zoom level to make the pod visible.
+        zoom: 20 / Math.sqrt(width),
+        duration: 800,
+      });
       setCenterSelection(false);
     }
   }, [centerSelection, setCenterSelection]);
