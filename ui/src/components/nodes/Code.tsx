@@ -54,6 +54,7 @@ import {
   GripVertical,
   Group,
   ListVideo,
+  Pin,
   Play,
   ScissorsLineDashed,
   ShieldQuestion,
@@ -90,6 +91,7 @@ import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  ATOM_togglePinPod,
   ATOM_togglePublic,
   ATOM_toggleTest,
   getAbsPos,
@@ -397,6 +399,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
   const deletePod = useSetAtom(ATOM_deletePod);
   const toggleTest = useSetAtom(ATOM_toggleTest);
   const togglePublic = useSetAtom(ATOM_togglePublic);
+  const togglePinPod = useSetAtom(ATOM_togglePinPod);
 
   return (
     <>
@@ -502,6 +505,15 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
               </>
             )}
           </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            onSelect={() => {
+              togglePinPod(id);
+            }}
+          >
+            <Pin /> Toggle Pin
+          </DropdownMenu.Item>
+
           <DropdownMenu.Separator />
           {/* assign group */}
           <ChangeScopeItem id={id} />
@@ -888,7 +900,7 @@ const Tags = function Tags({ id }: { id: string }) {
   );
 };
 
-const Language = memo(function Language({ lang }: { lang: string }) {
+export const Language = memo(function Language({ lang }: { lang: string }) {
   return (
     <div
       style={{

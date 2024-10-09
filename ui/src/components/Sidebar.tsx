@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useContext, useState, memo } from "react";
 
 import {
   Text,
@@ -33,6 +33,7 @@ import {
   TextCursor,
   Move,
   Unplug,
+  Play,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -63,6 +64,7 @@ import {
   ATOM_foldAll,
   ATOM_insertMode,
   ATOM_nodes,
+  ATOM_pinnedPods,
   ATOM_search,
   ATOM_selectedPods,
   ATOM_selectPod,
@@ -79,6 +81,7 @@ import {
   ATOM_ydoc,
   ATOM_yjsStatus,
   ATOM_yjsSyncStatus,
+  getOrCreate_ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
 import { ATOM_repoData } from "@/lib/store/atom";
 import { FpsMeter } from "@/lib/FpsMeter";
@@ -87,6 +90,7 @@ import { toast } from "react-toastify";
 import {
   ATOM_parseAllPods,
   ATOM_preprocessAllPodsExceptTest,
+  ATOM_preprocessChain,
   ATOM_propagateAllST,
   ATOM_resolveAllPods,
 } from "@/lib/store/runtimeSlice";
@@ -95,6 +99,8 @@ import { ExportPDF, ExportYDoc, ImportYDoc } from "./Sidebar_Download";
 import { MyTabs } from "./Sidebar_Tabs";
 import { TableofPods } from "./Sidebar_ToC";
 import { css } from "@emotion/css";
+import { MyMonaco } from "./MyMonaco";
+import { Language, ResultBlock } from "./nodes/Code";
 
 function SidebarSettings() {
   const [showLineNumbers, setShowLineNumbers] = useAtom(ATOM_showLineNumbers);
@@ -717,6 +723,91 @@ function NodesMapInspector() {
   );
 }
 
+const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+
+  const selectPod = useSetAtom(ATOM_selectPod);
+  const setSelectedPods = useSetAtom(ATOM_selectedPods);
+  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  myassert(node);
+  myassert(node.type === "CODE");
+  const runtimeReady = useAtomValue(
+    getOrCreate_ATOM_runtimeReady(node.data.lang)
+  );
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Flex>
+        <Button
+          onClick={() => {
+            setSelectedPods(new Set<string>());
+            selectPod({ id, selected: true });
+            setCenterSelection(true);
+          }}
+          variant="outline"
+          style={{
+            alignSelf: "flex-start",
+          }}
+          size="1"
+        >
+          {id.substring(0, 7)}
+        </Button>
+        <Flex flexGrow="1" />
+        <IconButton
+          variant="ghost"
+          radius="small"
+          style={{
+            margin: 3,
+            padding: 0,
+          }}
+          disabled={!runtimeReady}
+          onClick={async () => {
+            const specs = await preprocessChain([id]);
+            if (specs) runChain.mutate({ repoId: repoData.id, specs });
+          }}
+        >
+          <Play />
+        </IconButton>
+      </Flex>
+      <div
+        style={{
+          position: "relative",
+          border: "1px solid var(--gray-3)",
+        }}
+      >
+        <MyMonaco id={id} />
+        <Language lang={node.data.lang} />
+      </div>
+      <ResultBlock id={id} />
+    </div>
+  );
+});
+
+function PinnedPodList() {
+  const pinnedPods = useAtomValue(ATOM_pinnedPods);
+  return (
+    <Flex direction="column" gap="3">
+      <Heading size="2">Pinned Pods</Heading>
+      {Array.from(pinnedPods).map((id) => (
+        <Box key={id}>
+          <PinnedPod id={id} />
+        </Box>
+      ))}
+    </Flex>
+  );
+}
+
 export function SidebarRight() {
   const debugMode = useAtomValue(ATOM_debugMode);
   return (
@@ -752,6 +843,7 @@ export function SidebarRight() {
                     </Heading>
                     <FpsMeter />
                     <Versions />
+                    <PinnedPodList />
                     <Separator my="3" size="4" />
                     <SearchPanel />
                     {/* <Heading size="2">ToC</Heading> */}
