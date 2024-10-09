@@ -282,6 +282,61 @@ function unfoldAll(get: Getter, set: Setter) {
 }
 export const ATOM_unfoldAll = atom(null, unfoldAll);
 
+function search(get: Getter, set: Setter, query: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const nodes = Array.from<AppNode>(nodesMap.values()).filter(
+    (node) => node.type === "CODE"
+  );
+  const codeMap = get(ATOM_codeMap);
+  const documents = nodes.map((node) => {
+    const code = codeMap.get(node.id);
+    myassert(code);
+    const codestr = code.toString();
+    return {
+      id: node.id,
+      text: codestr,
+    };
+  });
+
+  const results = fullTextSearch(documents, query);
+  return results;
+}
+
+/**
+ * Full text search for query in documents. Return all matches.
+ */
+function fullTextSearch(
+  documents: { id: string; text: string }[],
+  query: string
+): { id: string; text: string; matches: { start: number; end: number }[] }[] {
+  // Escape special characters for regex
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const queryRegex = new RegExp(escapedQuery, "gi");
+
+  return documents
+    .map((document) => {
+      const matches: { start: number; end: number }[] = [];
+      let match;
+
+      // Find all matches of the query in the document text
+      while ((match = queryRegex.exec(document.text)) !== null) {
+        matches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+        });
+      }
+
+      return {
+        id: document.id,
+        text: document.text,
+        matches,
+      };
+    })
+    .filter((result) => result.matches.length > 0); // Only return documents with matches
+}
+
+export const ATOM_search = atom(null, search);
+
 function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
   const t1 = performance.now();
   // compute the helper lines
