@@ -223,6 +223,28 @@ function toggleReadme(get: Getter, set: Setter, id: string) {
 
 export const ATOM_toggleReadme = atom(null, toggleReadme);
 
+function toggleTest(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  node.data.isTest = !node.data.isTest;
+  nodesMap.set(id, node);
+  updateView(get, set);
+}
+
+export const ATOM_toggleTest = atom(null, toggleTest);
+
+function togglePublic(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  node.data.isPublic = !node.data.isPublic;
+  nodesMap.set(id, node);
+  updateView(get, set);
+}
+
+export const ATOM_togglePublic = atom(null, togglePublic);
+
 // fold a scope
 function toggleFold(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
