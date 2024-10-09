@@ -59,10 +59,13 @@ import {
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
+  ATOM_centerSelection,
   ATOM_foldAll,
   ATOM_insertMode,
   ATOM_nodes,
+  ATOM_search,
   ATOM_selectedPods,
+  ATOM_selectPod,
   ATOM_unfoldAll,
   ATOM_updateView,
 } from "@/lib/store/canvasSlice";
@@ -395,6 +398,102 @@ function ModeSwitch() {
   );
 }
 
+function SearchPanel() {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const search = useSetAtom(ATOM_search);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<
+    {
+      id: string;
+      text: string;
+      matches: {
+        start: number;
+        end: number;
+      }[];
+    }[]
+  >([]);
+
+  const selectPod = useSetAtom(ATOM_selectPod);
+  const setSelectedPods = useSetAtom(ATOM_selectedPods);
+  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+  return (
+    <Flex direction="column" gap="3">
+      <Heading size="2">Search</Heading>
+      <TextField.Root
+        placeholder="Search"
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <Button
+        variant="outline"
+        disabled={query.length === 0}
+        onClick={() => {
+          const results = search(query);
+          console.log("results", results);
+          setResults(results);
+        }}
+      >
+        Search
+      </Button>
+      {/* result */}
+      {results.map((r) => (
+        <Flex key={r.id} direction="column" gap="3">
+          <Button
+            onClick={() => {
+              setSelectedPods(new Set<string>());
+              selectPod({ id: r.id, selected: true });
+              setCenterSelection(true);
+            }}
+            variant="outline"
+            style={{
+              alignSelf: "flex-start",
+            }}
+            size="1"
+          >
+            {r.id.substring(0, 7)}
+          </Button>
+          <Flex
+            direction="column"
+            gap="3"
+            style={{
+              paddingLeft: "15px",
+            }}
+          >
+            {r.matches.map((m) => (
+              <div key={m.start}>
+                <code
+                  style={{
+                    color: "gray",
+                    whiteSpace: "pre",
+                  }}
+                >
+                  {r.text.substring(m.start - 20, m.start)}
+                </code>
+                <code
+                  style={{
+                    color: "red",
+                    whiteSpace: "pre",
+                  }}
+                >
+                  {/* white space should count */}
+                  {r.text.substring(m.start, m.end)}
+                </code>
+                <code
+                  style={{
+                    color: "gray",
+                    whiteSpace: "pre",
+                  }}
+                >
+                  {r.text.substring(m.end, m.end + 20)}
+                </code>
+              </div>
+            ))}
+          </Flex>
+        </Flex>
+      ))}
+    </Flex>
+  );
+}
+
 function DebugPanel() {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
@@ -630,8 +729,9 @@ export function SidebarRight() {
           icon: <ListTree />,
           // content: "Make changes to your account.".repeat(10),
           content: (
-            <Flex direction="column">
+            <Flex direction="column" gap="3">
               <Versions />
+              <SearchPanel />
               {/* <Heading size="2" my="3">
                 ToC
               </Heading> */}
@@ -653,6 +753,7 @@ export function SidebarRight() {
                     <FpsMeter />
                     <Versions />
                     <Separator my="3" size="4" />
+                    <SearchPanel />
                     {/* <Heading size="2">ToC</Heading> */}
                     {/* <TableofPods /> */}
                     <Separator my="3" size="4" />
