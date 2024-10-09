@@ -10,7 +10,9 @@ FROM racket/racket:8.1-full
 #
 # install build deps so that I'll just run local install everytime a new
 # contianer is created
-RUN raco pkg install --auto zeromq-r-lib uuid sha
+RUN raco pkg install --auto --no-docs zeromq-r-lib uuid sha
+RUN raco pkg install --auto --no-docs graph rebellion
+RUN mkdir -p ~/.config/bhdl && git clone --recursive https://github.com/bhdl/bhdl-footprints ~/.config/bhdl/bhdl-footprints
 
 # RUN raco pkg install iracket
 # I added trusted code inspector so that installing a package can be loaded in already started kernels.
