@@ -202,11 +202,14 @@ function CanvasImpl() {
     // move the viewport to the to node
     // get the absolute position of the to node
     if (centerSelection && selectedPods.size > 0) {
-      const node = selectedPods.values().next().value;
-      const pos = getAbsPos(nodesMap.get(node)!, nodesMap);
+      const id = selectedPods.values().next().value;
+      if (!id) return;
+      const node = nodesMap.get(id);
+      if (!node) return;
+      const pos = getAbsPos(node, nodesMap);
 
-      const width = nodesMap.get(node)?.measured?.width || 0;
-      const height = nodesMap.get(node)?.measured?.height || 0;
+      const width = node.measured?.width || 0;
+      const height = node.measured?.height || 0;
 
       reactFlowInstance.setCenter(pos.x + width / 2, pos.y + height / 2, {
         // zoom: reactFlowInstance.getZoom(),
