@@ -39,7 +39,7 @@ RUN apt update && apt install -y git procps
 # RUN raco pkg install --auto --no-docs https://github.com/bhdl/bhdl.git?path=src
 
 RUN raco pkg install --auto --no-docs graph rebellion
-RUN mkdir -p ~/.config/bhdl && git clone --recursive https://github.com/bhdl/bhdl-footprints ~/.config/bhdl/bhdl-footprints
+# RUN mkdir -p ~/.config/bhdl && git clone --recursive https://github.com/bhdl/bhdl-footprints ~/.config/bhdl/bhdl-footprints
 
 # FIXME I need to map the ports
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]
