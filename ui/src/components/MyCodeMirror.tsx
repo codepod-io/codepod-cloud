@@ -26,6 +26,9 @@ import { scheme } from "@codemirror/legacy-modes/mode/scheme";
 import { julia } from "@codemirror/legacy-modes/mode/julia";
 import { clojure } from "@codemirror/legacy-modes/mode/clojure";
 
+import { githubLight, githubDark } from "@uiw/codemirror-theme-github";
+import { vscodeLight } from "@uiw/codemirror-theme-vscode";
+
 // ------------------------------
 // other deps
 // ------------------------------
@@ -133,6 +136,8 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
+          // githubLight,
+          vscodeLight,
           highlightExtension(),
           match(node.data.lang)
             .with("javascript", () => javascript())
