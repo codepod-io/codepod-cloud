@@ -32,7 +32,7 @@ export const ATOM_loadParser = atom(null, async (get, set) => {
 
 export type Annotation = {
   name: string;
-  type: "function" | "callsite" | "vardef" | "varuse" | "bridge";
+  type: "function" | "callsite" | "vardef" | "varuse";
   startIndex: number;
   endIndex: number;
   startPosition: { row: number; column: number };

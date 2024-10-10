@@ -100,6 +100,7 @@ import {
   ATOM_changeScope,
   ATOM_deletePod,
 } from "@/lib/store/canvasSlice_addNode";
+import { MyCodeMirror } from "../MyCodeMirror";
 
 function Timer({ lastExecutedAt }) {
   useTick(1000);
@@ -721,6 +722,8 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
       style={{
         width: node.data.mywidth,
         minWidth: "300px",
+        // code mirror doesn't come with a default background color.
+        backgroundColor: "white",
       }}
     >
       {insertMode === "Move" && (
@@ -803,7 +806,8 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
               position: "relative",
             }}
           >
-            <MyMonaco id={id} />
+            {/* <MyMonaco id={id} /> */}
+            <MyCodeMirror id={id} />
             <Language lang={node.data.lang} />
           </div>
           <ResultBlock id={id} />
