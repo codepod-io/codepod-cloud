@@ -615,3 +615,17 @@ function hasEscaped(rect: AppNode, parent: AppNode): boolean {
       (parent.measured?.height ?? 0)
   );
 }
+
+// pinning a pod
+export const ATOM_pinnedPods = atom<Set<string>>(new Set<string>());
+function togglePinPod(get: Getter, set: Setter, id: string) {
+  const pinnedPods = get(ATOM_pinnedPods);
+  if (pinnedPods.has(id)) {
+    pinnedPods.delete(id);
+  } else {
+    pinnedPods.add(id);
+  }
+  console.log("togglePinPod", pinnedPods);
+  set(ATOM_pinnedPods, structuredClone(pinnedPods));
+}
+export const ATOM_togglePinPod = atom(null, togglePinPod);
