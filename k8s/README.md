@@ -11,23 +11,6 @@ Observability
 
 ## Prepare the cluster
 
-First, install a rancher for privisioning clusters:
-
-1. install k3s
-2. install rancher
-
-Next, use rancher to privision the cluster:
-
-1. create master VMs and runtime VMs. **Install open-iscsi on master VMs otherwise longhorn will not work.**
-   1. master nodes: no taint or label. This is used to schedule the app.
-   2. worker nodes: a node with `runtime=true` label and `runtime=true` taint.
-      This node is used to schedule kernels.
-2. provision k3s from rancher, set taint and label for runtime nodes
-3. install longhorn in the VM
-4. install CNPG operator
-
-## Update v2: use rancher to provision
-
 1. run rancher-on-docker on a separate VM
 2. set server-url to local-network-ip
 3. create cluster, select k3s and deselect traefik
@@ -48,11 +31,20 @@ helm upgrade --install ingress-nginx ingress-nginx \
 
 5. install longhorn
 
+First, install open-iscsi on master VMs otherwise longhorn will not work.
+
 ```sh
 helm repo add longhorn https://charts.longhorn.io
 helm repo update
 helm install longhorn longhorn/longhorn --namespace longhorn-system --create-namespace --version 1.7.1
 kubectl -n longhorn-system get pod
+```
+
+install longhorn nfsv4 for read-write-many volumes:
+
+```sh
+# https://longhorn.io/docs/1.7.1/deploy/install/#installing-nfsv4-client
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.7.1/deploy/prerequisite/longhorn-nfs-installation.yaml
 ```
 
 6. install CNPG operator chart
@@ -65,7 +57,7 @@ helm upgrade --install cnpg \
   cnpg/cloudnative-pg
 ```
 
-## Update: use k3s on baremetal without rancher provisioning
+## DEPRECATED: use k3s on baremetal without rancher provisioning
 
 ```sh
 # curl -sfL https://get.k3s.io | sh -
