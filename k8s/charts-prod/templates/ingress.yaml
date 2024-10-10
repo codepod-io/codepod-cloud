@@ -4,6 +4,7 @@ metadata:
   name: codepod-ingress
   annotations:
     nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri" # Perform hashing based on the request URI.
+    nginx.ingress.kubernetes.io/proxy-body-size: 20m
 spec:
   # use nginx ingress controller to have consistent hashing for yjs routing
   ingressClassName: nginx
