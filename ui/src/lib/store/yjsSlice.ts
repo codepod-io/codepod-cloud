@@ -11,7 +11,7 @@ import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
 import { ATOM_repoData } from "./atom";
-import { addAwarenessStyle, myassert } from "../utils/utils";
+import { myassert } from "../utils/utils";
 
 // The atoms
 
@@ -125,22 +125,20 @@ function setRuntimeReady(
   });
 }
 
-const ATOM_clients = atom(new Map<string, { name: string; color: string }>());
+/**
+ * Get a random background color suitable for displaying black text on it.
+ * Return the color in hex format.
+ */
 function getRandomLightColor() {
-  // Generate a random number between 128+64 and 255 for each color component
-  const r = Math.floor(Math.random() * 64 + 128 + 64)
-    .toString(16)
-    .padStart(2, "0");
-  const g = Math.floor(Math.random() * 64 + 128 + 64)
-    .toString(16)
-    .padStart(2, "0");
-  const b = Math.floor(Math.random() * 64 + 128 + 64)
-    .toString(16)
-    .padStart(2, "0");
+  // Generate random values for RGB with a minimum of 128 for each component to avoid dark colors.
+  const r = Math.floor(Math.random() * 64) + 128 + 6;
+  const g = Math.floor(Math.random() * 64) + 128 + 6;
+  const b = Math.floor(Math.random() * 64) + 128 + 6;
 
-  // Return the color in hex format
-  return `#${r}${g}${b}`;
+  // Convert RGB to hex format
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
+
 // generate a light color string
 const mycolor = getRandomLightColor();
 
@@ -180,32 +178,16 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
   provider.awareness.setLocalStateField("user", {
     name,
     color: mycolor,
-  });
-  provider.awareness.on("update", (change) => {
-    const states = provider.awareness.getStates();
-    const nodes = change.added.concat(change.updated);
-    nodes.forEach((clientID) => {
-      const user = states.get(clientID)?.user;
-      if (user) {
-        // add client
-        addAwarenessStyle(clientID, user.color, user.name);
-        set(
-          ATOM_clients,
-          produce((clients: Map<string, any>) => {
-            clients.set(clientID, { name: user.name, color: user.color });
-          })
-        );
-      }
-    });
-    change.removed.forEach((clientID) => {
-      // delete client
-      set(
-        ATOM_clients,
-        produce((clients: Map<string, any>) => {
-          clients.delete(clientID);
-        })
-      );
-    });
+    // FIXME blocknote seems to modify provider.awareness to have only name and
+    // color. This colorLight is removed. Therefore, if rich text editor is
+    // present, the colorLight is not set and will be y-codemirror.next's
+    // default +33, which is too light.
+    //
+    // For the same reason, if above simpleAwareness must be set, otherwise, if
+    // rich text editor is present, the color will be default empty.
+    //
+    // In a word, this setting will be override by simpleAwareness in BlockNote.
+    colorLight: mycolor + "55",
   });
   provider.on("status", ({ status }) => {
     set(ATOM_yjsStatus, status);

@@ -299,8 +299,6 @@ function highlightAnnotations(
                 } else {
                   return "myDecoration-unresolved";
                 }
-              case "bridge":
-                return "myDecoration-bridge-unused";
               default:
                 throw new Error("unknown type: " + type);
             }
