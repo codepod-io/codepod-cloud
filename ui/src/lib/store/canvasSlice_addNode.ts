@@ -59,8 +59,8 @@ export const ATOM_addNode = atom(
               mywidth: 600,
             },
           };
-          nodesMap.set(id, node);
           get(ATOM_codeMap).set(id, new Y.Text());
+          nodesMap.set(id, node);
         }
         break;
       case "RICH":
@@ -75,8 +75,8 @@ export const ATOM_addNode = atom(
               mywidth: 600,
             },
           };
-          nodesMap.set(id, node);
           get(ATOM_richMap).set(id, new Y.XmlFragment());
+          nodesMap.set(id, node);
         }
         break;
     }
