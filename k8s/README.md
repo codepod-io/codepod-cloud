@@ -57,6 +57,10 @@ helm upgrade --install cnpg \
   cnpg/cloudnative-pg
 ```
 
+7. download kernel images to all nodes
+
+Remember to download kernel images to all nodes by scaling example kernels to the number of k8s nodes.
+
 ## DEPRECATED: use k3s on baremetal without rancher provisioning
 
 ```sh
