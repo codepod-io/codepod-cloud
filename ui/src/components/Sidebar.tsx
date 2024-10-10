@@ -245,10 +245,62 @@ function Versions() {
     },
   });
   return (
-    <Flex direction="column" gap="3">
+    <Flex
+      direction="column"
+      gap="3"
+      style={{
+        maxHeight: "200px",
+        overflowY: "auto",
+      }}
+    >
       <Heading size="2" my="3">
-        Versinos ({repoData.versions.length})
+        Versions ({repoData.versions.length})
       </Heading>
+
+      {/* Open a dialog for user to enter a commit message. */}
+      <Dialog.Root>
+        <Dialog.Trigger>
+          <Button variant="outline" size="1">
+            Commit
+          </Button>
+        </Dialog.Trigger>
+
+        <Dialog.Content maxWidth="450px">
+          <Dialog.Title>Commit</Dialog.Title>
+          <Dialog.Description size="2" mb="4">
+            Enter a message to commit a new version.
+            {/* TODO show version history */}
+            {/* TODO show current changes (loc of changes) */}
+          </Dialog.Description>
+
+          <Flex direction="column" gap="3">
+            <TextField.Root
+              placeholder="Enter a commit message"
+              onChange={(e) => {
+                setMessage(e.target.value);
+              }}
+            />
+          </Flex>
+
+          <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Dialog.Close>
+              <Button
+                disabled={message.length === 0}
+                onClick={() => {
+                  createVersion.mutate({ repoId: repoData.id, message });
+                }}
+              >
+                Save
+              </Button>
+            </Dialog.Close>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
       {repoData.versions.map((v) => (
         <Flex
           key={v.id}
@@ -315,50 +367,6 @@ function Versions() {
           </Text>
         </Flex>
       ))}
-      {/* Open a dialog for user to enter a commit message. */}
-      <Dialog.Root>
-        <Dialog.Trigger>
-          <Button variant="outline" size="1">
-            Commit
-          </Button>
-        </Dialog.Trigger>
-
-        <Dialog.Content maxWidth="450px">
-          <Dialog.Title>Commit</Dialog.Title>
-          <Dialog.Description size="2" mb="4">
-            Enter a message to commit a new version.
-            {/* TODO show version history */}
-            {/* TODO show current changes (loc of changes) */}
-          </Dialog.Description>
-
-          <Flex direction="column" gap="3">
-            <TextField.Root
-              placeholder="Enter a commit message"
-              onChange={(e) => {
-                setMessage(e.target.value);
-              }}
-            />
-          </Flex>
-
-          <Flex gap="3" mt="4" justify="end">
-            <Dialog.Close>
-              <Button variant="soft" color="gray">
-                Cancel
-              </Button>
-            </Dialog.Close>
-            <Dialog.Close>
-              <Button
-                disabled={message.length === 0}
-                onClick={() => {
-                  createVersion.mutate({ repoId: repoData.id, message });
-                }}
-              >
-                Save
-              </Button>
-            </Dialog.Close>
-          </Flex>
-        </Dialog.Content>
-      </Dialog.Root>
     </Flex>
   );
 }
@@ -423,7 +431,14 @@ function SearchPanel() {
   const setSelectedPods = useSetAtom(ATOM_selectedPods);
   const setCenterSelection = useSetAtom(ATOM_centerSelection);
   return (
-    <Flex direction="column" gap="3">
+    <Flex
+      direction="column"
+      gap="3"
+      style={{
+        maxHeight: "200px",
+        overflowY: "auto",
+      }}
+    >
       <Heading size="2">Search</Heading>
       <TextField.Root
         placeholder="Search"
@@ -431,14 +446,18 @@ function SearchPanel() {
       />
       <Button
         variant="outline"
-        disabled={query.length === 0}
+        disabled={query.length === 0 && results.length === 0}
         onClick={() => {
+          if (query.length === 0) {
+            setResults([]);
+            return;
+          }
           const results = search(query);
           console.log("results", results);
           setResults(results);
         }}
       >
-        Search
+        {query.length === 0 && results.length > 0 ? "Clear" : "Search"}
       </Button>
       {/* result */}
       {results.map((r) => (
@@ -671,7 +690,7 @@ function NodesMapInspector() {
   return (
     <Flex direction="column">
       <Box>Nodes: {nodes.length}</Box>
-      <Flex
+      {/* <Flex
         style={{
           paddingLeft: "15px",
         }}
@@ -680,10 +699,10 @@ function NodesMapInspector() {
         {nodes.map(({ id }) => (
           <Box key={id}>{id.substring(0, 6)}</Box>
         ))}
-      </Flex>
+      </Flex> */}
 
       <Box>nodesMap: {nodesMap.size} </Box>
-      <Flex
+      {/* <Flex
         style={{
           paddingLeft: "15px",
         }}
@@ -692,11 +711,11 @@ function NodesMapInspector() {
         {Array.from(nodesMap.keys()).map((key) => (
           <Box key={key}>{key.substring(0, 6)}</Box>
         ))}
-      </Flex>
+      </Flex> */}
       <Box>
         Code: {codeMap.size} {codeMap.keys()}
       </Box>
-      <Flex
+      {/* <Flex
         style={{
           paddingLeft: "15px",
         }}
@@ -705,11 +724,11 @@ function NodesMapInspector() {
         {Array.from(codeMap.keys()).map((key) => (
           <Box key={key}>{key.substring(0, 6)}</Box>
         ))}
-      </Flex>
+      </Flex> */}
       <Box>
         Rich: {richMap.size} {richMap.keys()}
       </Box>
-      <Flex
+      {/* <Flex
         style={{
           paddingLeft: "15px",
         }}
@@ -718,7 +737,7 @@ function NodesMapInspector() {
         {Array.from(richMap.keys()).map((key) => (
           <Box key={key}>{key.substring(0, 6)}</Box>
         ))}
-      </Flex>
+      </Flex> */}
     </Flex>
   );
 }
@@ -842,7 +861,9 @@ export function SidebarRight() {
                       Right Sidebar
                     </Heading>
                     <FpsMeter />
+                    <Separator my="3" size="4" />
                     <Versions />
+                    <Separator my="3" size="4" />
                     <PinnedPodList />
                     <Separator my="3" size="4" />
                     <SearchPanel />

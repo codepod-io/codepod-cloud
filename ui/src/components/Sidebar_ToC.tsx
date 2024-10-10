@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useContext, useState, memo } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -206,7 +206,7 @@ function PodTreeItem({ id }) {
   );
 }
 
-export function TableofPods() {
+export const TableofPods = memo(function TableofPods() {
   // listen to nodes change.
   const [nodes] = useAtom(ATOM_nodes);
   // get root nodes
@@ -219,4 +219,4 @@ export function TableofPods() {
       ))}
     </Box>
   );
-}
+});
