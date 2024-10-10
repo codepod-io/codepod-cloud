@@ -77,7 +77,7 @@ metadata:
   labels:
     app: example-python-kernel
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: example-python-kernel
@@ -114,7 +114,7 @@ metadata:
   labels:
     app: example-julia-kernel
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: example-julia-kernel
@@ -149,7 +149,7 @@ metadata:
   labels:
     app: example-javascript-kernel
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: example-javascript-kernel
@@ -184,7 +184,7 @@ metadata:
   labels:
     app: example-racket-kernel
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: example-racket-kernel
