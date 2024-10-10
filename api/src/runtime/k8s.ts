@@ -27,10 +27,12 @@ const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
 const k8sMetricsClient = new Metrics(kc);
 
 function getDeploymentSpec({
+  userId,
   repoId,
   image,
   kernelName,
 }: {
+  userId: string;
   repoId: string;
   image: string;
   kernelName: string;
@@ -49,19 +51,6 @@ function getDeploymentSpec({
       template: {
         metadata: { labels: { app: `rt-${repoId}-${kernelName}` } },
         spec: {
-          // only schedule to runtime nodes
-          nodeSelector: {
-            runtime: "true",
-          },
-          // can tolerate runtime nodes taint
-          tolerations: [
-            {
-              key: "runtime",
-              operator: "Equal",
-              value: "true",
-              effect: "NoSchedule",
-            },
-          ],
           dnsPolicy: "None",
           dnsConfig: {
             nameservers: ["8.8.8.8", "1.1.1.1"],
@@ -78,6 +67,12 @@ function getDeploymentSpec({
                 { containerPort: 55695 },
                 { containerPort: 55696 },
               ],
+              volumeMounts: [
+                {
+                  name: "myvolume",
+                  mountPath: "/mnt/data",
+                },
+              ],
               resources: {
                 limits: {
                   memory: "2560Mi",
@@ -87,6 +82,14 @@ function getDeploymentSpec({
                   memory: "128Mi",
                   cpu: "0.2",
                 },
+              },
+            },
+          ],
+          volumes: [
+            {
+              name: "myvolume",
+              persistentVolumeClaim: {
+                claimName: `vol-${userId}`,
               },
             },
           ],
@@ -191,6 +194,42 @@ export async function createDeployment(ns, deploy_spec) {
   }
 }
 
+/**
+ * Create volume named vol-{userId} in the namespace ns. The storage class is
+ * longhorn. The volume type is RWX, and do not create if already exists.
+ * @param ns
+ * @param userId
+ * @returns
+ */
+async function createVolume({ ns, userId }: { ns: string; userId: string }) {
+  try {
+    await k8sApi.createNamespacedPersistentVolumeClaim(ns, {
+      apiVersion: "v1",
+      kind: "PersistentVolumeClaim",
+      metadata: {
+        name: `vol-${userId}`,
+        namespace: `${ns}`, // Ensure this matches your desired namespace
+      },
+      spec: {
+        accessModes: ["ReadWriteMany"],
+        storageClassName: "longhorn",
+        resources: {
+          requests: {
+            storage: "1Gi",
+          },
+        },
+      },
+    });
+  } catch (e: any) {
+    if (e.body.reason === "AlreadyExists") {
+      console.log("Volume already exists");
+    } else {
+      console.log("ERROR", e.body.message);
+      return false;
+    }
+  }
+}
+
 export async function createService(ns: string, service_spec) {
   try {
     await k8sApi.createNamespacedService(ns, service_spec);
@@ -272,11 +311,13 @@ async function wairForServiceReady(url) {
 }
 
 async function createKernel({
+  userId,
   repoId,
   kernelName,
   image,
   ns,
 }: {
+  userId: string;
   kernelName: SupportedLanguage;
   ns: string;
   image: string;
@@ -284,8 +325,10 @@ async function createKernel({
 }) {
   // python kernel
   console.log(`creating ${kernelName} kernel ..`);
-  let deploy_spec = getDeploymentSpec({ repoId, kernelName, image });
+  let deploy_spec = getDeploymentSpec({ userId, repoId, kernelName, image });
   let service_spec = getServiceSpec({ repoId, kernelName });
+
+  await createVolume({ ns, userId });
 
   await createDeployment(ns, deploy_spec);
   await createService(ns, service_spec);
@@ -337,73 +380,77 @@ export const k8sRouter = router({
         kernelName: z.enum(["python", "julia", "javascript", "racket"]),
       })
     )
-    .mutation(async ({ input: { repoId, kernelName }, ctx: { token } }) => {
-      console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
-      if (myenv.READ_ONLY) throw Error("Read only mode");
-      if (!repoId2wireMap.has(repoId)) {
-        repoId2wireMap.set(repoId, new Map());
-      }
-      const wireMap = repoId2wireMap.get(repoId)!;
-      if (wireMap.has(kernelName)) {
-        console.log("kernel already exists");
-        return false;
-      }
+    .mutation(
+      async ({ input: { repoId, kernelName }, ctx: { token, userId } }) => {
+        console.log(`create ${kernelName} kernel ===== for repo ${repoId} ..`);
+        assert(userId);
+        if (myenv.READ_ONLY) throw Error("Read only mode");
+        if (!repoId2wireMap.has(repoId)) {
+          repoId2wireMap.set(repoId, new Map());
+        }
+        const wireMap = repoId2wireMap.get(repoId)!;
+        if (wireMap.has(kernelName)) {
+          console.log("kernel already exists");
+          return false;
+        }
 
-      const ydoc = await ensureYDoc({ repoId, token });
+        const ydoc = await ensureYDoc({ repoId, token });
 
-      // set the runtime status to "starting"
-      const runtimeMap = ydoc
-        .getMap("rootMap")
-        .get("runtimeMap") as Y.Map<RuntimeInfo>;
-      console.log("setting runtime status to starting");
-      runtimeMap.set(kernelName, { status: "starting" });
+        // set the runtime status to "starting"
+        const runtimeMap = ydoc
+          .getMap("rootMap")
+          .get("runtimeMap") as Y.Map<RuntimeInfo>;
+        console.log("setting runtime status to starting");
+        runtimeMap.set(kernelName, { status: "starting" });
 
-      // call k8s api to create a container
-      console.log("Using k8s ns:", myenv.RUNTIME_NS);
+        // call k8s api to create a container
+        console.log("Using k8s ns:", myenv.RUNTIME_NS);
 
-      // python kernel
-      const wire = await createKernel({
-        repoId,
-        kernelName,
-        image: match(kernelName)
-          .with("python", () => myenv.KERNEL_IMAGE_PYTHON)
-          .with("julia", () => myenv.KERNEL_IMAGE_JULIA)
-          .with("javascript", () => myenv.KERNEL_IMAGE_JAVASCRIPT)
-          .with("racket", () => myenv.KERNEL_IMAGE_RACKET)
-          .exhaustive(),
-        ns: myenv.RUNTIME_NS,
-      });
+        // python kernel
+        const wire = await createKernel({
+          repoId,
+          userId,
+          kernelName,
+          image: match(kernelName)
+            .with("python", () => myenv.KERNEL_IMAGE_PYTHON)
+            .with("julia", () => myenv.KERNEL_IMAGE_JULIA)
+            .with("javascript", () => myenv.KERNEL_IMAGE_JAVASCRIPT)
+            .with("racket", () => myenv.KERNEL_IMAGE_RACKET)
+            .exhaustive(),
+          ns: myenv.RUNTIME_NS,
+        });
 
-      console.log("binding zmq and yjs");
-      bindZmqYjs({ wire, ydoc, kernelName });
+        console.log("binding zmq and yjs");
+        bindZmqYjs({ wire, ydoc, kernelName });
 
-      wireMap.set(kernelName, wire);
+        wireMap.set(kernelName, wire);
 
-      // set start time
-      const kernel = await prisma.kernel.findFirst({
-        where: {
-          name: kernelName,
-          repo: {
-            id: repoId,
+        // set start time
+        const kernel = await prisma.kernel.findFirst({
+          where: {
+            name: kernelName,
+            repo: {
+              id: repoId,
+            },
           },
-        },
-      });
-      // convert from date to number
-      // const createdAt = kernel?.createdAt
-      assert(kernel);
-      const createdAt = kernel.createdAt.getTime();
-      runtimeMap.set(kernelName, {
-        status: "refreshing",
-        createdAt,
-        recycledAt: createdAt + kernelMaxLifetime,
-      });
-      // 3. run some code to test
-      console.log("requesting kernel status");
-      wire.requestKernelStatus();
-      wire.runCode({ code: "3+4", msg_id: "123" });
+        });
+        // convert from date to number
+        // const createdAt = kernel?.createdAt
+        assert(kernel);
+        const createdAt = kernel.createdAt.getTime();
+        runtimeMap.set(kernelName, {
+          status: "refreshing",
+          createdAt,
+          recycledAt: createdAt + kernelMaxLifetime,
+        });
+        // 3. run some code to test
+        console.log("requesting kernel status");
+        wire.requestKernelStatus();
+        wire.runCode({ code: "3+4", msg_id: "123" });
 
-      return true;
-    }),
+        return true;
+      }
+    ),
   // Stop the runtime container for a repo.
   stop: protectedProcedure
     .input(

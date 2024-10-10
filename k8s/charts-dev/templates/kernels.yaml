@@ -55,6 +55,20 @@ spec:
     #       port: 53 # DNS
 
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: testuser-volume
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -72,13 +86,6 @@ spec:
       labels:
         app: example-python-kernel
     spec:
-      nodeSelector:
-        runtime: "true"
-      tolerations:
-        - key: runtime
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
       # The pods do not have access to the internal DNS due to the network
       # policy. Therefore, we need to specify the DNS server. dnsPolicy: None
       dnsPolicy: None
@@ -89,6 +96,13 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.python }}"
+          volumeMounts:
+            - name: myvolume
+              mountPath: /mnt/data
+      volumes:
+        - name: myvolume
+          persistentVolumeClaim:
+            claimName: testuser-volume
 
 ---
 # this deployment is for pulling in the kernel images
@@ -109,13 +123,6 @@ spec:
       labels:
         app: example-julia-kernel
     spec:
-      nodeSelector:
-        runtime: "true"
-      tolerations:
-        - key: runtime
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
       dnsPolicy: None
       dnsConfig:
         nameservers:
@@ -124,6 +131,13 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.julia }}"
+          volumeMounts:
+            - name: myvolume
+              mountPath: /mnt/data
+      volumes:
+        - name: myvolume
+          persistentVolumeClaim:
+            claimName: testuser-volume
 
 ---
 # this deployment is for pulling in the kernel images
@@ -144,13 +158,6 @@ spec:
       labels:
         app: example-javascript-kernel
     spec:
-      nodeSelector:
-        runtime: "true"
-      tolerations:
-        - key: runtime
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
       dnsPolicy: None
       dnsConfig:
         nameservers:
@@ -159,6 +166,13 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.javascript }}"
+          volumeMounts:
+            - name: myvolume
+              mountPath: /mnt/data
+      volumes:
+        - name: myvolume
+          persistentVolumeClaim:
+            claimName: testuser-volume
 
 ---
 # this deployment is for pulling in the kernel images
@@ -179,13 +193,6 @@ spec:
       labels:
         app: example-racket-kernel
     spec:
-      nodeSelector:
-        runtime: "true"
-      tolerations:
-        - key: runtime
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
       dnsPolicy: None
       dnsConfig:
         nameservers:
@@ -194,3 +201,10 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.racket }}"
+          volumeMounts:
+            - name: myvolume
+              mountPath: /mnt/data
+      volumes:
+        - name: myvolume
+          persistentVolumeClaim:
+            claimName: testuser-volume
