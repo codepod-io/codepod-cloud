@@ -105,6 +105,30 @@ function compareMaps(map1: T_id2parent, map2: T_id2parent) {
   return true;
 }
 
+/**
+ * Go up until a scope that is folded is found, and return its id. If no such scope is found, return undefined.
+ * @param id
+ * @param nodesMap
+ * @returns
+ */
+function getMaybeFoldedScopeId(
+  id: string,
+  nodesMap: Y.Map<AppNode>
+): string | null {
+  let node = nodesMap.get(id);
+  while (node) {
+    if (node.type === "SCOPE" && node.data.folded) {
+      return node.id;
+    }
+    if (node.parentId) {
+      node = nodesMap.get(node.parentId);
+    } else {
+      return null;
+    }
+  }
+  return null;
+}
+
 function generateCallEdges(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   const res: Edge[] = [];
@@ -114,10 +138,15 @@ function generateCallEdges(get: Getter, set: Setter) {
     for (let [key, value] of resolveResult.resolved) {
       // do not show self-connections
       if (node.id === value) continue;
+      // if the node is not visible, find the folded scope and connect to it
+      const sourceId = value;
+      const targetId = node.id;
+      const sourceId2 = getMaybeFoldedScopeId(sourceId, nodesMap) ?? sourceId;
+      const targetId2 = getMaybeFoldedScopeId(targetId, nodesMap) ?? targetId;
       res.push({
         id: `${key}-${node.id}`,
-        source: value,
-        target: node.id,
+        source: sourceId2,
+        target: targetId2,
         // sourceHandle: "right",
         // targetHandle: "left",
         markerEnd: {
