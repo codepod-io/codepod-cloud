@@ -9,15 +9,52 @@ import {
   Extension,
   StateField,
 } from "@codemirror/state";
-import { Decoration, DecorationSet } from "@codemirror/view";
-import { javascript } from "@codemirror/lang-javascript";
+import {
+  crosshairCursor,
+  Decoration,
+  DecorationSet,
+  drawSelection,
+  dropCursor,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  keymap,
+  rectangularSelection,
+} from "@codemirror/view";
+
+import { defaultKeymap, indentWithTab } from "@codemirror/commands";
+
+import { foldKeymap } from "@codemirror/language";
+// import {history, historyKeymap} from "@codemirror/commands"
+import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import {
+  autocompletion,
+  completionKeymap,
+  closeBrackets,
+  closeBracketsKeymap,
+} from "@codemirror/autocomplete";
+import { lintKeymap } from "@codemirror/lint";
 
 import { yCollab } from "y-codemirror.next";
+
+// Themes
+import { githubLight, githubDark } from "@uiw/codemirror-theme-github";
+import { vscodeLight } from "@uiw/codemirror-theme-vscode";
 
 // ------------------------------
 // language modes
 // ------------------------------
-import { StreamLanguage } from "@codemirror/language";
+import { javascript } from "@codemirror/lang-javascript";
+
+import {
+  bracketMatching,
+  defaultHighlightStyle,
+  foldGutter,
+  indentOnInput,
+  indentUnit,
+  StreamLanguage,
+  syntaxHighlighting,
+} from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 // import { racket } from "@codemirror/lang-racket";
 // import { julia } from "@codemirror/lang-julia";
@@ -25,9 +62,6 @@ import { scheme } from "@codemirror/legacy-modes/mode/scheme";
 // import { commonLisp } from "@codemirror/legacy-modes/mode/commonlisp";
 import { julia } from "@codemirror/legacy-modes/mode/julia";
 import { clojure } from "@codemirror/legacy-modes/mode/clojure";
-
-import { githubLight, githubDark } from "@uiw/codemirror-theme-github";
-import { vscodeLight } from "@uiw/codemirror-theme-vscode";
 
 // ------------------------------
 // other deps
@@ -114,6 +148,35 @@ const highlightExtension = (): Extension => {
 // MyCodeMirror component
 // ------------------------------
 
+const myBasicSetup: Extension = (() => [
+  // lineNumbers(),
+  highlightActiveLineGutter(),
+  highlightSpecialChars(),
+  // history(),
+  // foldGutter(),
+  drawSelection(),
+  dropCursor(),
+  EditorState.allowMultipleSelections.of(true),
+  indentOnInput(),
+  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+  bracketMatching(),
+  closeBrackets(),
+  autocompletion(),
+  rectangularSelection(),
+  crosshairCursor(),
+  highlightActiveLine(),
+  highlightSelectionMatches(),
+  keymap.of([
+    ...closeBracketsKeymap,
+    ...defaultKeymap,
+    ...searchKeymap,
+    // ...historyKeymap,
+    ...foldKeymap,
+    ...completionKeymap,
+    ...lintKeymap,
+  ]),
+])();
+
 function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
   const codeMap = useAtomValue(ATOM_codeMap);
 
@@ -134,10 +197,13 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
       const state = EditorState.create({
         doc: ytext.toString(),
         extensions: [
-          basicSetup,
+          myBasicSetup,
           EditorView.lineWrapping,
           // githubLight,
           vscodeLight,
+          EditorState.tabSize.of(4),
+          indentUnit.of("    "),
+          keymap.of([indentWithTab]),
           highlightExtension(),
           match(node.data.lang)
             .with("javascript", () => javascript())
@@ -206,7 +272,7 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
           highlightByIndex(
             annotation.startIndex,
             annotation.endIndex,
-            "yellow"
+            "#fcff3466"
           );
           break;
         // return "myDecoration-function";
@@ -227,7 +293,7 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
             highlightByIndex(
               annotation.startIndex,
               annotation.endIndex,
-              "lightyellow"
+              "#ffed8633"
             );
             // return "myDecoration-callsite";
           } else {
@@ -257,7 +323,10 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
 
   return (
     <div
-      style={{ border: "1px solid #ccc", cursor: "auto" }}
+      style={{
+        border: "1px solid #ccc",
+        cursor: "auto",
+      }}
       className={css`
         .cm-ySelectionInfo {
           opacity: 1;
