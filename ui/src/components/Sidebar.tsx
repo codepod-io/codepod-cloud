@@ -101,6 +101,7 @@ import { TableofPods } from "./Sidebar_ToC";
 import { css } from "@emotion/css";
 import { MyMonaco } from "./MyMonaco";
 import { Language, ResultBlock } from "./nodes/Code";
+import { MyCodeMirror } from "./MyCodeMirror";
 
 function SidebarSettings() {
   const [showLineNumbers, setShowLineNumbers] = useAtom(ATOM_showLineNumbers);
@@ -805,7 +806,8 @@ const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
           border: "1px solid var(--gray-3)",
         }}
       >
-        <MyMonaco id={id} />
+        {/* <MyMonaco id={id} /> */}
+        <MyCodeMirror id={id} />
         <Language lang={node.data.lang} />
       </div>
       <ResultBlock id={id} />
