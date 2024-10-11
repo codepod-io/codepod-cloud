@@ -724,6 +724,8 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
         minWidth: "300px",
         // code mirror doesn't come with a default background color.
         backgroundColor: "white",
+        // this needs to be in sync with the radius below, otherwise the node is still rectangular.
+        borderRadius: "8px",
       }}
     >
       {insertMode === "Move" && (

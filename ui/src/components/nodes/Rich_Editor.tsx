@@ -300,11 +300,12 @@ okay
   }, [editor]);
   return (
     <div
-      // style={{
-      //   margin: "10px",
-      //   padding: "10px",
-      //   border: "1px solid black",
-      // }}
+      style={{
+        cursor: "auto",
+        // margin: "10px",
+        // padding: "10px",
+        // border: "1px solid black",
+      }}
       className={css`
         .bn-editor {
           padding: 10px;

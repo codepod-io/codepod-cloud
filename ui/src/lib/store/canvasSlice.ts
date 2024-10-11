@@ -418,8 +418,6 @@ function onNodesChange(get: Getter, set: Setter, changes: NodeChange[]) {
           // There's a weird dimencion change event fired at the end of
           // resizing a node.
           if (!change.dimensions) return;
-          // if change.id is xxx_SVG, it's a SVG node, we ignore it.
-          if (change.id.endsWith("_SVG")) return;
 
           // Since CodeNode doesn't have a height, this dimension change will
           // be filed for CodeNode at the beginning or anytime the node height
