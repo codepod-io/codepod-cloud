@@ -41,7 +41,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
-            type=raw,value={{branch}}-{{sha}}-{{date 'YYYYMMDD-HHmm' tz='America/Los_Angeles'}},enable=true
+            type=raw,value={{branch}}-{{sha}}-{{date 'YYYYMMDD-HHmm' tz='America/Los_Angeles'}},enable=${{ startsWith(github.ref, 'refs/heads/') }}
             type=raw,value=latest,enable=true
       -
         name: Set up QEMU
