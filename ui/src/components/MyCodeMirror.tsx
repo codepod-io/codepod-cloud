@@ -25,7 +25,7 @@ import {
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 
 import { foldKeymap } from "@codemirror/language";
-// import {history, historyKeymap} from "@codemirror/commands"
+import { history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import {
   autocompletion,
@@ -152,7 +152,7 @@ const myBasicSetup: Extension = (() => [
   // lineNumbers(),
   highlightActiveLineGutter(),
   highlightSpecialChars(),
-  // history(),
+  history(),
   // foldGutter(),
   drawSelection(),
   dropCursor(),
@@ -170,7 +170,7 @@ const myBasicSetup: Extension = (() => [
     ...closeBracketsKeymap,
     ...defaultKeymap,
     ...searchKeymap,
-    // ...historyKeymap,
+    ...historyKeymap,
     ...foldKeymap,
     ...completionKeymap,
     ...lintKeymap,
