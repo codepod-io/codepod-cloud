@@ -155,9 +155,16 @@ function AuthValidationImpl() {
       // This will happen when:
       // 1. we changed the JWT secret
       // 2. TODO the JWT token is expired
-      if (error.message === "invalid signature") {
+      if (
+        error.message === "invalid signature" ||
+        error.message === "Authorization token is not valid"
+      ) {
         console.log("invalid token");
         // sign out
+        signOut();
+      } else {
+        console.error("AuthValidationImpl unknown error", error);
+        // FIXME We're signing user out on TRPC error. This is likely due to invalid user token.
         signOut();
       }
     },
