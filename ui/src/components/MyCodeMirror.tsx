@@ -22,7 +22,11 @@ import {
   rectangularSelection,
 } from "@codemirror/view";
 
-import { defaultKeymap, indentWithTab } from "@codemirror/commands";
+import {
+  defaultKeymap,
+  indentSelection,
+  indentWithTab,
+} from "@codemirror/commands";
 
 import { foldKeymap } from "@codemirror/language";
 import { history, historyKeymap } from "@codemirror/commands";
@@ -177,6 +181,21 @@ const myBasicSetup: Extension = (() => [
   ]),
 ])();
 
+// Define the format code command
+function formatCode(view) {
+  console.log("formatCode");
+  indentSelection(view);
+  return true; // Indicate the command was successful
+}
+
+// Create a keymap for the format command
+const formatKeymap = keymap.of([
+  {
+    key: "Cmd-Shift-f", // Keybinding for "Ctrl + Shift + F"
+    run: formatCode,
+  },
+]);
+
 function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
   const codeMap = useAtomValue(ATOM_codeMap);
 
@@ -204,6 +223,7 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
           EditorState.tabSize.of(4),
           indentUnit.of("    "),
           keymap.of([indentWithTab]),
+          formatKeymap,
           highlightExtension(),
           match(node.data.lang)
             .with("javascript", () => javascript())
