@@ -517,12 +517,11 @@ export const ATOM_getScopeChain = atom(null, getScopeChain);
  */
 function getEdgeChain(get: Getter, set: Setter, id: string) {
   // Get the chain: get the edges, and then get the pods
-  const edgesMap = get(ATOM_edgesMap);
-  let edges = Array.from<Edge>(edgesMap.values());
-  const defuseEdges = get(ATOM_edges);
+  // These edges include both defuse edges and manual edges.
+  const edges = get(ATOM_edges);
   // build a node2target map
   let node2targets = new Map<string, Set<string>>();
-  [...edges, ...defuseEdges].forEach(({ source, target }) => {
+  edges.forEach(({ source, target }) => {
     // TODO support multiple targets
     if (!node2targets.has(source)) {
       node2targets.set(source, new Set());
