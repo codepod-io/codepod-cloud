@@ -424,7 +424,7 @@ export const ATOM_preprocessChain = atom(null, preprocessChain);
 
 /**
  * Topological sort the ids.
- * If a cycle is detected, remove the edge causing the cycle and continue.
+ * If a cycle is detected, skip the edge causing the cycle and continue.
  */
 function topoSort(
   ids: string[],
@@ -434,27 +434,16 @@ function topoSort(
   const sorted: string[] = [];
   const visited: Set<string> = new Set();
   const visiting: Set<string> = new Set(); // To detect cycles
-  const adjacencyList: Map<string, string[]> = new Map();
+  const adjacencySet: Map<string, Set<string>> = new Map();
 
-  // Build the adjacency list
+  // Build the adjacency set
   edges.forEach((edge) => {
     const { source, target } = edge;
-    if (!adjacencyList.has(source)) {
-      adjacencyList.set(source, []);
+    if (!adjacencySet.has(source)) {
+      adjacencySet.set(source, new Set());
     }
-    adjacencyList.get(source)!.push(target);
+    adjacencySet.get(source)!.add(target);
   });
-
-  // Remove an edge from the adjacency list
-  function removeEdge(source: string, target: string) {
-    const neighbors = adjacencyList.get(source);
-    if (neighbors) {
-      adjacencyList.set(
-        source,
-        neighbors.filter((n) => n !== target)
-      );
-    }
-  }
 
   // Helper function to perform DFS
   function dfs(nodeId: string): boolean {
@@ -463,14 +452,18 @@ function topoSort(
 
     visiting.add(nodeId);
 
-    const neighbors = adjacencyList.get(nodeId) || [];
+    const neighbors = adjacencySet.get(nodeId) || new Set();
     for (const neighbor of neighbors) {
-      if (!dfs(neighbor)) {
-        // A cycle is detected, remove the edge causing the cycle and warn
+      if (visiting.has(neighbor)) {
+        // Cycle detected, skip this edge
         console.warn(
-          `Cycle detected between ${nodeId} and ${neighbor}. Removing edge.`
+          `Cycle detected between ${nodeId} and ${neighbor}. Skipping edge.`
         );
-        removeEdge(nodeId, neighbor); // Remove the edge causing the cycle
+        continue;
+      }
+      if (!dfs(neighbor)) {
+        // If the neighbor caused a cycle, continue without modifying the adjacency set
+        continue;
       }
     }
 
