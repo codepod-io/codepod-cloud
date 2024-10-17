@@ -165,7 +165,8 @@ function AuthValidationImpl() {
       } else {
         console.error("AuthValidationImpl unknown error", error);
         // FIXME We're signing user out on TRPC error. This is likely due to invalid user token.
-        signOut();
+        // FIXME there's some case where this is triggered.
+        // signOut();
       }
     },
   });
