@@ -130,10 +130,18 @@ function GradientEdge({
   );
 }
 
+/**
+ * Naming:
+ * - floating is for manual edges
+ * - gradient is for defuse edges
+ *
+ * FIXME: We should replace the "floating" and "gradient" with "manual" and
+ * "defuse". But this requires a migration of user data in the database.
+ */
+export const MANUAL_EDGE = "floating";
+export const DEFUSE_EDGE = "gradient";
 const edgeTypes = {
-  // Naming: floating is for manual edges
   floating: StraightFloatingEdgeGradient_GreenToOrange,
-  // Naming: gradient is for defuse edges
   gradient: StraightFloatingEdgeGradient_BlueToRed,
 };
 

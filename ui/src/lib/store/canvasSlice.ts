@@ -27,6 +27,7 @@ import { AppNode } from "./types";
 
 import debounce from "lodash/debounce";
 import { ATOM_cutId } from "./atom";
+import { DEFUSE_EDGE, MANUAL_EDGE } from "@/components/Canvas";
 import { toast } from "react-toastify";
 import { getOrCreate_ATOM_resolveResult, propagateAllST } from "./runtimeSlice";
 
@@ -154,7 +155,7 @@ function generateCallEdges(get: Getter, set: Setter) {
         //   color: "red",
         //   // strokeWidth: 4,
         // },
-        type: "gradient",
+        type: DEFUSE_EDGE,
         // Caution: animated edges have a huge performance hit.
         // animated: true,
       });
@@ -510,7 +511,7 @@ function onConnect(get: Getter, set: Setter, connection: Connection) {
     source: connection.source,
     // sourceHandle: "top",
     target: connection.target,
-    type: "floating",
+    type: MANUAL_EDGE,
     // targetHandle: "top",
 
     // NOTE: I should not add styles here. Instead, it should be default so that
