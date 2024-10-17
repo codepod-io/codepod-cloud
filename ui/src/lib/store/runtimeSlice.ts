@@ -519,20 +519,37 @@ function getEdgeChain(get: Getter, set: Setter, id: string) {
   // Get the chain: get the edges, and then get the pods
   const edgesMap = get(ATOM_edgesMap);
   let edges = Array.from<Edge>(edgesMap.values());
+  const defuseEdges = get(ATOM_edges);
   // build a node2target map
-  let node2target = {};
-  edges.forEach(({ source, target }) => {
+  let node2targets = new Map<string, Set<string>>();
+  [...edges, ...defuseEdges].forEach(({ source, target }) => {
     // TODO support multiple targets
-    node2target[source] = target;
+    if (!node2targets.has(source)) {
+      node2targets.set(source, new Set());
+    }
+    node2targets.get(source)!.add(target);
   });
   // Get the chain
   let chain: string[] = [];
-  let nodeid = id;
-  while (nodeid) {
-    // if the nodeid is already in the chain, then there is a loop
-    if (chain.includes(nodeid)) break;
+  const heads = new Set<string>();
+  const visited = new Set<string>();
+  heads.add(id);
+  while (heads.size > 0) {
+    const nodeid = heads.values().next().value;
+    myassert(nodeid);
+    heads.delete(nodeid);
     chain.push(nodeid);
-    nodeid = node2target[nodeid];
+    visited.add(nodeid);
+
+    const targets = node2targets.get(nodeid);
+    targets?.forEach((node) => {
+      // If the nodeid is already in the chain, then there is a loop. In this
+      // case, we want to skip it and continue processing. Effectively, this break
+      // up the loops if any.
+      if (!visited.has(node)) {
+        heads.add(node);
+      }
+    });
   }
   return chain;
 }
