@@ -116,13 +116,42 @@ export function StraightFloatingEdge({
   );
 }
 
-export function StraightFloatingEdgeGradient({
+export function StraightFloatingEdgeGradient_BlueToRed(props: EdgeProps) {
+  return StraightFloatingEdgeGradient({
+    ...props,
+    startColor: "blue",
+    stopColor: "red",
+    // This marker svg resource is defined in index.html
+    markerEnd: "url('#marker-red')",
+    style: {
+      ...props.style,
+      // stroke: "url(#edge-blue-to-red)",
+    },
+  });
+}
+
+export function StraightFloatingEdgeGradient_GreenToOrange(props: EdgeProps) {
+  return StraightFloatingEdgeGradient({
+    ...props,
+    startColor: "green",
+    stopColor: "orange",
+    markerEnd: "url('#marker-orange')",
+    style: {
+      ...props.style,
+      // stroke: "url(#edge-green-to-orange)",
+    },
+  });
+}
+
+function StraightFloatingEdgeGradient({
   id,
   source,
   target,
   markerEnd,
   style,
-}: EdgeProps) {
+  startColor,
+  stopColor,
+}: EdgeProps & { startColor: string; stopColor: string }) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
 
@@ -166,8 +195,11 @@ export function StraightFloatingEdgeGradient({
           // gradientUnits="objectBoundingBox"
           // gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" style={{ stopColor: "blue", stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: "red", stopOpacity: 1 }} />
+          <stop offset="0%" style={{ stopColor: startColor, stopOpacity: 1 }} />
+          <stop
+            offset="100%"
+            style={{ stopColor: stopColor, stopOpacity: 1 }}
+          />
         </linearGradient>
       </defs>
       <path

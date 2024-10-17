@@ -149,11 +149,11 @@ function generateCallEdges(get: Getter, set: Setter) {
         target: targetId2,
         // sourceHandle: "right",
         // targetHandle: "left",
-        markerEnd: {
-          type: MarkerType.Arrow,
-          color: "red",
-          // strokeWidth: 4,
-        },
+        // markerEnd: {
+        //   type: MarkerType.Arrow,
+        //   color: "red",
+        //   // strokeWidth: 4,
+        // },
         type: "gradient",
         // Caution: animated edges have a huge performance hit.
         // animated: true,

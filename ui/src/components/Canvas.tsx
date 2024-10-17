@@ -28,7 +28,8 @@ import { FloatingEdge } from "./nodes/FloatingEdge";
 import {
   ConnectionLineStraight,
   StraightFloatingEdge,
-  StraightFloatingEdgeGradient,
+  StraightFloatingEdgeGradient_BlueToRed,
+  StraightFloatingEdgeGradient_GreenToOrange,
 } from "./nodes/FloatingEdge_Straight";
 
 import HelperLines from "./HelperLines";
@@ -130,10 +131,10 @@ function GradientEdge({
 }
 
 const edgeTypes = {
-  // floating: FloatingEdge,
-  floating: StraightFloatingEdge,
-  // gradient: GradientEdge,
-  gradient: StraightFloatingEdgeGradient,
+  // Naming: floating is for manual edges
+  floating: StraightFloatingEdgeGradient_GreenToOrange,
+  // Naming: gradient is for defuse edges
+  gradient: StraightFloatingEdgeGradient_BlueToRed,
 };
 
 /**
@@ -330,10 +331,10 @@ function CanvasImpl() {
           //   type: MarkerType.ArrowClosed,
           //   color: "black",
           // },
-          markerEnd: {
-            type: MarkerType.Arrow,
-            // color: "red",
-          },
+          // markerEnd: {
+          //   type: MarkerType.Arrow,
+          //   // color: "red",
+          // },
           style: {
             strokeWidth: 5,
             // stroke: "black",
