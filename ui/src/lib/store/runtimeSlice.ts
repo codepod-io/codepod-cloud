@@ -423,6 +423,75 @@ async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
 export const ATOM_preprocessChain = atom(null, preprocessChain);
 
 /**
+ * Topological sort the ids.
+ * If a cycle is detected, remove the edge causing the cycle and continue.
+ */
+function topoSort(
+  ids: string[],
+  nodesMap: Y.Map<AppNode>,
+  edges: Edge[]
+): string[] {
+  const sorted: string[] = [];
+  const visited: Set<string> = new Set();
+  const visiting: Set<string> = new Set(); // To detect cycles
+  const adjacencyList: Map<string, string[]> = new Map();
+
+  // Build the adjacency list
+  edges.forEach((edge) => {
+    const { source, target } = edge;
+    if (!adjacencyList.has(source)) {
+      adjacencyList.set(source, []);
+    }
+    adjacencyList.get(source)!.push(target);
+  });
+
+  // Remove an edge from the adjacency list
+  function removeEdge(source: string, target: string) {
+    const neighbors = adjacencyList.get(source);
+    if (neighbors) {
+      adjacencyList.set(
+        source,
+        neighbors.filter((n) => n !== target)
+      );
+    }
+  }
+
+  // Helper function to perform DFS
+  function dfs(nodeId: string): boolean {
+    if (visited.has(nodeId)) return true; // Already processed
+    if (visiting.has(nodeId)) return false; // Cycle detected
+
+    visiting.add(nodeId);
+
+    const neighbors = adjacencyList.get(nodeId) || [];
+    for (const neighbor of neighbors) {
+      if (!dfs(neighbor)) {
+        // A cycle is detected, remove the edge causing the cycle and warn
+        console.warn(
+          `Cycle detected between ${nodeId} and ${neighbor}. Removing edge.`
+        );
+        removeEdge(nodeId, neighbor); // Remove the edge causing the cycle
+      }
+    }
+
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    sorted.push(nodeId);
+
+    return true;
+  }
+
+  // Perform DFS on all nodes
+  for (const id of ids) {
+    if (!visited.has(id)) {
+      dfs(id);
+    }
+  }
+
+  return sorted.reverse(); // Reverse because we want to return in topological order
+}
+
+/**
  * Get the list of nodes in the subtree rooted at id, including the root.
  * @param id subtree root
  */
@@ -545,12 +614,16 @@ function getEdgeChain(get: Getter, set: Setter, id: string) {
       // If the nodeid is already in the chain, then there is a loop. In this
       // case, we want to skip it and continue processing. Effectively, this break
       // up the loops if any.
+      //
+      // UPDATE: this is not enough. We should do topoSort.
       if (!visited.has(node)) {
         heads.add(node);
       }
     });
   }
-  return chain;
+  // topo sort
+  const sortedChain = topoSort(chain, get(ATOM_nodesMap), edges);
+  return sortedChain;
 }
 
 export const ATOM_getEdgeChain = atom(null, getEdgeChain);
