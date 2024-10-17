@@ -423,17 +423,74 @@ async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
 export const ATOM_preprocessChain = atom(null, preprocessChain);
 
 /**
+ * Topological sort the ids.
+ * If a cycle is detected, skip the edge causing the cycle and continue.
+ */
+function topoSort(
+  ids: string[],
+  nodesMap: Y.Map<AppNode>,
+  adjacencySet: Map<string, Set<string>>
+): string[] {
+  const sorted: string[] = [];
+  const visited: Set<string> = new Set();
+  const visiting: Set<string> = new Set(); // To detect cycles
+
+  // Helper function to perform DFS
+  function dfs(nodeId: string): boolean {
+    if (visited.has(nodeId)) return true; // Already processed
+    if (visiting.has(nodeId)) return false; // Cycle detected
+
+    visiting.add(nodeId);
+
+    const neighbors = adjacencySet.get(nodeId) || new Set();
+    for (const neighbor of neighbors) {
+      if (visiting.has(neighbor)) {
+        // Cycle detected, skip this edge
+        console.warn(
+          `Cycle detected between ${nodeId} and ${neighbor}. Skipping edge.`
+        );
+        continue;
+      }
+      if (!dfs(neighbor)) {
+        // If the neighbor caused a cycle, continue without modifying the adjacency set
+        continue;
+      }
+    }
+
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    sorted.push(nodeId);
+
+    return true;
+  }
+
+  // Perform DFS on all nodes
+  for (const id of ids) {
+    if (!visited.has(id)) {
+      dfs(id);
+    }
+  }
+
+  return sorted.reverse(); // Reverse because we want to return in topological order
+}
+
+/**
  * Get the list of nodes in the subtree rooted at id, including the root.
  * @param id subtree root
  */
-function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
+function getSubtreeNodes(
+  id: string,
+  nodesMap: Y.Map<AppNode>,
+  adjacencySet: Map<string, Set<string>>
+): AppNode[] {
   const node = nodesMap.get(id);
   myassert(node);
   if (node.type === "CODE" && !node.data.isTest) {
     return [node];
   } else if (node.type === "SCOPE" && !node.data.isTest) {
-    const children = node.data.childrenIds.map((childId) => {
-      return getSubtreeNodes(childId, nodesMap);
+    const childrenIds = topoSort(node.data.childrenIds, nodesMap, adjacencySet);
+    const children = childrenIds.map((childId) => {
+      return getSubtreeNodes(childId, nodesMap, adjacencySet);
     });
     return [...children.flatMap((child) => child)];
   } else {
@@ -441,15 +498,27 @@ function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
   }
 }
 
-function getAllCode(get: Getter, set: Setter) {
+export function getAllCode(get: Getter, set: Setter) {
   // 1. get root nodes
   const nodesMap = get(ATOM_nodesMap);
   let nodes0 = Array.from<AppNode>(nodesMap.values());
+  const edges = get(ATOM_edges);
   const rootNodes = nodes0.filter((node) => !node.parentId);
+  const rootIds = rootNodes.map((node) => node.id);
+  // Build the adjacency set
+  const adjacencySet: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    const { source, target } = edge;
+    if (!adjacencySet.has(source)) {
+      adjacencySet.set(source, new Set());
+    }
+    adjacencySet.get(source)!.add(target);
+  });
+  const sortedRootIds = topoSort(rootIds, nodesMap, adjacencySet);
   // 2. recursively get subtree nodes
-  const nodes1 = rootNodes
-    .map(({ id }) => {
-      return getSubtreeNodes(id, nodesMap);
+  const nodes1 = sortedRootIds
+    .map((id) => {
+      return getSubtreeNodes(id, nodesMap, adjacencySet);
     })
     .flatMap((child) => child);
   return nodes1;
@@ -517,24 +586,54 @@ export const ATOM_getScopeChain = atom(null, getScopeChain);
  */
 function getEdgeChain(get: Getter, set: Setter, id: string) {
   // Get the chain: get the edges, and then get the pods
-  const edgesMap = get(ATOM_edgesMap);
-  let edges = Array.from<Edge>(edgesMap.values());
+  // These edges include both defuse edges and manual edges.
+  const edges = get(ATOM_edges);
   // build a node2target map
-  let node2target = {};
+  let node2targets = new Map<string, Set<string>>();
   edges.forEach(({ source, target }) => {
     // TODO support multiple targets
-    node2target[source] = target;
+    if (!node2targets.has(source)) {
+      node2targets.set(source, new Set());
+    }
+    node2targets.get(source)!.add(target);
   });
   // Get the chain
   let chain: string[] = [];
-  let nodeid = id;
-  while (nodeid) {
-    // if the nodeid is already in the chain, then there is a loop
-    if (chain.includes(nodeid)) break;
+  const heads = new Set<string>();
+  const visited = new Set<string>();
+  heads.add(id);
+  while (heads.size > 0) {
+    const nodeid = heads.values().next().value;
+    myassert(nodeid);
+    heads.delete(nodeid);
     chain.push(nodeid);
-    nodeid = node2target[nodeid];
+    visited.add(nodeid);
+
+    const targets = node2targets.get(nodeid);
+    targets?.forEach((node) => {
+      // If the nodeid is already in the chain, then there is a loop. In this
+      // case, we want to skip it and continue processing. Effectively, this break
+      // up the loops if any.
+      //
+      // UPDATE: this is not enough. We should do topoSort.
+      if (!visited.has(node)) {
+        heads.add(node);
+      }
+    });
   }
-  return chain;
+
+  // Build the adjacency set
+  const adjacencySet: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    const { source, target } = edge;
+    if (!adjacencySet.has(source)) {
+      adjacencySet.set(source, new Set());
+    }
+    adjacencySet.get(source)!.add(target);
+  });
+  // topo sort
+  const sortedChain = topoSort(chain, get(ATOM_nodesMap), adjacencySet);
+  return sortedChain;
 }
 
 export const ATOM_getEdgeChain = atom(null, getEdgeChain);
