@@ -230,9 +230,20 @@ export function updateView(get: Getter, set: Setter) {
   // from edgesMap
   const edgesMap = get(ATOM_edgesMap);
   const edges0 = Array.from(edgesMap.values());
+  // When some node is removed, the edgesMap is not updated. Here, we clean up
+  // the edgesMap. The onEdgesChange will not be triggrered in this case, so we
+  // cannot handle it there.
+  edges0.forEach((edge) => {
+    if (!nodesMap.has(edge.source) || !nodesMap.has(edge.target)) {
+      edgesMap.delete(edge.id);
+    }
+  });
+  const edges1 = Array.from(edgesMap.values());
+
   // Generate edges for caller-callee relationship.
-  const edges1 = generateCallEdges(get, set);
-  set(ATOM_edges, [...edges0, ...edges1]);
+  const edges2 = generateCallEdges(get, set);
+  const allEdges = [...edges1, ...edges2];
+  set(ATOM_edges, allEdges);
   computeCollisions(get, set);
   const t2 = performance.now();
   console.debug("[perf] updateView took:", (t2 - t1).toFixed(2), "ms");
