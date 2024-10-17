@@ -429,21 +429,11 @@ export const ATOM_preprocessChain = atom(null, preprocessChain);
 function topoSort(
   ids: string[],
   nodesMap: Y.Map<AppNode>,
-  edges: Edge[]
+  adjacencySet: Map<string, Set<string>>
 ): string[] {
   const sorted: string[] = [];
   const visited: Set<string> = new Set();
   const visiting: Set<string> = new Set(); // To detect cycles
-  const adjacencySet: Map<string, Set<string>> = new Map();
-
-  // Build the adjacency set
-  edges.forEach((edge) => {
-    const { source, target } = edge;
-    if (!adjacencySet.has(source)) {
-      adjacencySet.set(source, new Set());
-    }
-    adjacencySet.get(source)!.add(target);
-  });
 
   // Helper function to perform DFS
   function dfs(nodeId: string): boolean {
@@ -491,16 +481,16 @@ function topoSort(
 function getSubtreeNodes(
   id: string,
   nodesMap: Y.Map<AppNode>,
-  edges: Edge[]
+  adjacencySet: Map<string, Set<string>>
 ): AppNode[] {
   const node = nodesMap.get(id);
   myassert(node);
   if (node.type === "CODE" && !node.data.isTest) {
     return [node];
   } else if (node.type === "SCOPE" && !node.data.isTest) {
-    const childrenIds = topoSort(node.data.childrenIds, nodesMap, edges);
+    const childrenIds = topoSort(node.data.childrenIds, nodesMap, adjacencySet);
     const children = childrenIds.map((childId) => {
-      return getSubtreeNodes(childId, nodesMap, edges);
+      return getSubtreeNodes(childId, nodesMap, adjacencySet);
     });
     return [...children.flatMap((child) => child)];
   } else {
@@ -515,11 +505,20 @@ export function getAllCode(get: Getter, set: Setter) {
   const edges = get(ATOM_edges);
   const rootNodes = nodes0.filter((node) => !node.parentId);
   const rootIds = rootNodes.map((node) => node.id);
-  const sortedRootIds = topoSort(rootIds, nodesMap, edges);
+  // Build the adjacency set
+  const adjacencySet: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    const { source, target } = edge;
+    if (!adjacencySet.has(source)) {
+      adjacencySet.set(source, new Set());
+    }
+    adjacencySet.get(source)!.add(target);
+  });
+  const sortedRootIds = topoSort(rootIds, nodesMap, adjacencySet);
   // 2. recursively get subtree nodes
   const nodes1 = sortedRootIds
     .map((id) => {
-      return getSubtreeNodes(id, nodesMap, edges);
+      return getSubtreeNodes(id, nodesMap, adjacencySet);
     })
     .flatMap((child) => child);
   return nodes1;
@@ -622,8 +621,18 @@ function getEdgeChain(get: Getter, set: Setter, id: string) {
       }
     });
   }
+
+  // Build the adjacency set
+  const adjacencySet: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    const { source, target } = edge;
+    if (!adjacencySet.has(source)) {
+      adjacencySet.set(source, new Set());
+    }
+    adjacencySet.get(source)!.add(target);
+  });
   // topo sort
-  const sortedChain = topoSort(chain, get(ATOM_nodesMap), edges);
+  const sortedChain = topoSort(chain, get(ATOM_nodesMap), adjacencySet);
   return sortedChain;
 }
 
