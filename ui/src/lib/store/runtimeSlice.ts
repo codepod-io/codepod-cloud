@@ -495,14 +495,19 @@ function topoSort(
  * Get the list of nodes in the subtree rooted at id, including the root.
  * @param id subtree root
  */
-function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
+function getSubtreeNodes(
+  id: string,
+  nodesMap: Y.Map<AppNode>,
+  edges: Edge[]
+): AppNode[] {
   const node = nodesMap.get(id);
   myassert(node);
   if (node.type === "CODE" && !node.data.isTest) {
     return [node];
   } else if (node.type === "SCOPE" && !node.data.isTest) {
-    const children = node.data.childrenIds.map((childId) => {
-      return getSubtreeNodes(childId, nodesMap);
+    const childrenIds = topoSort(node.data.childrenIds, nodesMap, edges);
+    const children = childrenIds.map((childId) => {
+      return getSubtreeNodes(childId, nodesMap, edges);
     });
     return [...children.flatMap((child) => child)];
   } else {
@@ -510,15 +515,18 @@ function getSubtreeNodes(id: string, nodesMap: Y.Map<AppNode>): AppNode[] {
   }
 }
 
-function getAllCode(get: Getter, set: Setter) {
+export function getAllCode(get: Getter, set: Setter) {
   // 1. get root nodes
   const nodesMap = get(ATOM_nodesMap);
   let nodes0 = Array.from<AppNode>(nodesMap.values());
+  const edges = get(ATOM_edges);
   const rootNodes = nodes0.filter((node) => !node.parentId);
+  const rootIds = rootNodes.map((node) => node.id);
+  const sortedRootIds = topoSort(rootIds, nodesMap, edges);
   // 2. recursively get subtree nodes
-  const nodes1 = rootNodes
-    .map(({ id }) => {
-      return getSubtreeNodes(id, nodesMap);
+  const nodes1 = sortedRootIds
+    .map((id) => {
+      return getSubtreeNodes(id, nodesMap, edges);
     })
     .flatMap((child) => child);
   return nodes1;
