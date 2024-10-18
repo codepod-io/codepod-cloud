@@ -46,6 +46,8 @@ import {
   FlaskConical,
   FlaskConicalOff,
   GripVertical,
+  ListVideo,
+  Play,
   Trash2,
 } from "lucide-react";
 import { css } from "@emotion/css";
@@ -56,10 +58,15 @@ import {
   ATOM_duplicateScope,
 } from "@/lib/store/canvasSlice_addNode";
 import {
+  ATOM_getEdgeChain,
+  ATOM_getScopeChain,
+  ATOM_preprocessChain,
   getOrCreate_ATOM_privateST,
   getOrCreate_ATOM_publicST,
 } from "@/lib/store/runtimeSlice";
 import { RichEditor } from "./Rich_Editor";
+import { runtimeTrpc } from "@/lib/trpc";
+import { ATOM_repoData } from "@/lib/store/atom";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const zoom = useStore((s) => Math.max(s.transform[2], 0.1));
@@ -92,6 +99,14 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   const duplicateScope = useSetAtom(ATOM_duplicateScope);
   const toggleFold = useSetAtom(ATOM_toggleFold);
   const toggleTest = useSetAtom(ATOM_toggleTest);
+
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
+  const getScopeChain = useSetAtom(ATOM_getScopeChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
@@ -126,6 +141,27 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
           </IconButton>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content color="yellow">
+          <DropdownMenu.Item
+            onSelect={async () => {
+              const chain = getScopeChain(id);
+              console.log("scope nodes", chain);
+              const specs = await preprocessChain(chain);
+              if (specs) runChain.mutate({ repoId: repoData.id, specs });
+            }}
+          >
+            <Play /> Run All Pods
+          </DropdownMenu.Item>
+          {/* run chain */}
+          <DropdownMenu.Item
+            onSelect={async () => {
+              const chain = getEdgeChain(id);
+              const specs = await preprocessChain(chain);
+              if (specs) runChain.mutate({ repoId: repoData.id, specs });
+            }}
+          >
+            <ListVideo /> Run Chain
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
           <ChangeScopeItem id={id} />
           <DropdownMenu.Separator />
           <DropdownMenu.Item
