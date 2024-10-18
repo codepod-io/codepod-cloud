@@ -21,6 +21,7 @@ import { parseJulia } from "../parserJulia";
 import { myassert } from "../utils/utils";
 import { ATOM_disableCodeRewrite } from "./settingSlice";
 import { AppNode } from "./types";
+import { topoSort } from "./topoSort";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -386,30 +387,26 @@ function setRunning(get: Getter, set: Setter, podId: string) {
 }
 
 async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
-  let specs = await Promise.all(
-    ids.map(async (id) => {
-      const nodesMap = get(ATOM_nodesMap);
-      const node = nodesMap.get(id);
-      if (!node) throw new Error(`Node not found for id: ${id}`);
-      if (node.type !== "CODE")
-        throw new Error(`Node is not a code pod: ${id}`);
-      // Actually send the run request.
-      // Analyze code and set symbol table
-      await parsePod(get, set, id);
-      // FIXME performance. I'm propagating all STs for all pods when parsing a single pod, so that I can avoid:
-      // 1. remove old symbols from ST
-      // 2. there was a delay in the symbol to be appear in the ST UI of parent node.
-      //
-      // propagateST(get, set, id);
-      propagateAllST(get, set);
-      // update anontations according to st
-      resolvePod(get, set, id);
-      const newcode = rewriteCode(id, get);
-      // console.log("newcode", newcode);
-      const lang = node?.data.lang;
-      return { podId: id, code: newcode || "", kernelName: lang || "python" };
-    })
-  );
+  // 1. parse
+  await Promise.all(ids.map((id) => parsePod(get, set, id)));
+  // 2. propagate
+  // FIXME performance. I'm propagating all STs for all pods when parsing a single pod, so that I can avoid:
+  // - remove old symbols from ST
+  // - there was a delay in the symbol to be appear in the ST UI of parent node.
+  propagateAllST(get, set);
+  // 3. resolve & rewrite
+  let specs = ids.map((id) => {
+    const nodesMap = get(ATOM_nodesMap);
+    const node = nodesMap.get(id);
+    if (!node) throw new Error(`Node not found for id: ${id}`);
+    if (node.type !== "CODE") throw new Error(`Node is not a code pod: ${id}`);
+    // update anontations according to st
+    resolvePod(get, set, id);
+    const newcode = rewriteCode(id, get);
+    // console.log("newcode", newcode);
+    const lang = node?.data.lang;
+    return { podId: id, code: newcode || "", kernelName: lang || "python" };
+  });
   return specs.filter(({ podId, code }) => {
     if (code.length > 0) {
       clearResults(get, set, podId);
@@ -421,58 +418,6 @@ async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
 }
 
 export const ATOM_preprocessChain = atom(null, preprocessChain);
-
-/**
- * Topological sort the ids.
- * If a cycle is detected, skip the edge causing the cycle and continue.
- */
-function topoSort(
-  ids: string[],
-  nodesMap: Y.Map<AppNode>,
-  adjacencySet: Map<string, Set<string>>
-): string[] {
-  const sorted: string[] = [];
-  const visited: Set<string> = new Set();
-  const visiting: Set<string> = new Set(); // To detect cycles
-
-  // Helper function to perform DFS
-  function dfs(nodeId: string): boolean {
-    if (visited.has(nodeId)) return true; // Already processed
-    if (visiting.has(nodeId)) return false; // Cycle detected
-
-    visiting.add(nodeId);
-
-    const neighbors = adjacencySet.get(nodeId) || new Set();
-    for (const neighbor of neighbors) {
-      if (visiting.has(neighbor)) {
-        // Cycle detected, skip this edge
-        console.warn(
-          `Cycle detected between ${nodeId} and ${neighbor}. Skipping edge.`
-        );
-        continue;
-      }
-      if (!dfs(neighbor)) {
-        // If the neighbor caused a cycle, continue without modifying the adjacency set
-        continue;
-      }
-    }
-
-    visiting.delete(nodeId);
-    visited.add(nodeId);
-    sorted.push(nodeId);
-
-    return true;
-  }
-
-  // Perform DFS on all nodes
-  for (const id of ids) {
-    if (!visited.has(id)) {
-      dfs(id);
-    }
-  }
-
-  return sorted.reverse(); // Reverse because we want to return in topological order
-}
 
 /**
  * Get the list of nodes in the subtree rooted at id, including the root.
@@ -488,7 +433,7 @@ function getSubtreeNodes(
   if (node.type === "CODE" && !node.data.isTest) {
     return [node];
   } else if (node.type === "SCOPE" && !node.data.isTest) {
-    const childrenIds = topoSort(node.data.childrenIds, nodesMap, adjacencySet);
+    const childrenIds = topoSort(node.data.childrenIds, adjacencySet);
     const children = childrenIds.map((childId) => {
       return getSubtreeNodes(childId, nodesMap, adjacencySet);
     });
@@ -496,6 +441,18 @@ function getSubtreeNodes(
   } else {
     return [];
   }
+}
+
+function buildAdjacencySet(edges: Edge[]): Map<string, Set<string>> {
+  const adjacencySet: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    const { source, target } = edge;
+    if (!adjacencySet.has(source)) {
+      adjacencySet.set(source, new Set());
+    }
+    adjacencySet.get(source)!.add(target);
+  });
+  return adjacencySet;
 }
 
 export function getAllCode(get: Getter, set: Setter) {
@@ -506,15 +463,8 @@ export function getAllCode(get: Getter, set: Setter) {
   const rootNodes = nodes0.filter((node) => !node.parentId);
   const rootIds = rootNodes.map((node) => node.id);
   // Build the adjacency set
-  const adjacencySet: Map<string, Set<string>> = new Map();
-  edges.forEach((edge) => {
-    const { source, target } = edge;
-    if (!adjacencySet.has(source)) {
-      adjacencySet.set(source, new Set());
-    }
-    adjacencySet.get(source)!.add(target);
-  });
-  const sortedRootIds = topoSort(rootIds, nodesMap, adjacencySet);
+  const adjacencySet = buildAdjacencySet(edges);
+  const sortedRootIds = topoSort(rootIds, adjacencySet);
   // 2. recursively get subtree nodes
   const nodes1 = sortedRootIds
     .map((id) => {
@@ -568,13 +518,14 @@ export const ATOM_preprocessAllPodsExceptTest = atom(
   preprocessAllPodsExceptTest
 );
 
-function getScopeChain(get: Getter, set: Setter, id: string) {
+function getScopeChain(get: Getter, set: Setter, id: string): string[] {
   const nodesMap = get(ATOM_nodesMap);
-  const nodes = Array.from<Node>(nodesMap.values());
   const node = nodesMap.get(id);
-  if (!node) return [];
-  const chain = getDescendants(node, nodes);
-  return chain;
+  myassert(node && node.type === "SCOPE");
+  const edges = get(ATOM_edges);
+  const adjacencySet = buildAdjacencySet(edges);
+  const nodes = getSubtreeNodes(id, nodesMap, adjacencySet);
+  return nodes.map((node) => node.id);
 }
 
 export const ATOM_getScopeChain = atom(null, getScopeChain);
@@ -584,7 +535,7 @@ export const ATOM_getScopeChain = atom(null, getScopeChain);
  * @param id the id of the pod to start the chain
  * @returns
  */
-function getEdgeChain(get: Getter, set: Setter, id: string) {
+function getEdgeChain(get: Getter, set: Setter, id: string): string[] {
   // Get the chain: get the edges, and then get the pods
   // These edges include both defuse edges and manual edges.
   const edges = get(ATOM_edges);
@@ -623,38 +574,22 @@ function getEdgeChain(get: Getter, set: Setter, id: string) {
   }
 
   // Build the adjacency set
-  const adjacencySet: Map<string, Set<string>> = new Map();
-  edges.forEach((edge) => {
-    const { source, target } = edge;
-    if (!adjacencySet.has(source)) {
-      adjacencySet.set(source, new Set());
-    }
-    adjacencySet.get(source)!.add(target);
-  });
+  const adjacencySet = buildAdjacencySet(edges);
   // topo sort
-  const sortedChain = topoSort(chain, get(ATOM_nodesMap), adjacencySet);
-  return sortedChain;
+  const sortedChain = topoSort(chain, adjacencySet);
+  // If there're scopes, get all the nodes in the scopes.
+  const nodesMap = get(ATOM_nodesMap);
+  const res: string[] = [];
+  sortedChain.forEach((id) => {
+    const node = nodesMap.get(id);
+    if (node && node.type === "SCOPE") {
+      const scopeChain = getScopeChain(get, set, id);
+      res.push(...scopeChain);
+    } else {
+      res.push(id);
+    }
+  });
+  return res;
 }
 
 export const ATOM_getEdgeChain = atom(null, getEdgeChain);
-
-/**
- * Get all code pods inside a scope by geographical order.
- */
-function getDescendants(node: Node, nodes: Node[]): string[] {
-  if (node.type === "CODE") return [node.id];
-  if (node.type === "SCOPE") {
-    let children = nodes.filter((n) => n.parentId === node.id);
-    children.sort((a, b) => {
-      if (a.position.y === b.position.y) {
-        return a.position.x - b.position.x;
-      } else {
-        return a.position.y - b.position.y;
-      }
-    });
-    return ([] as string[]).concat(
-      ...children.map((n) => getDescendants(n, nodes))
-    );
-  }
-  return [];
-}
