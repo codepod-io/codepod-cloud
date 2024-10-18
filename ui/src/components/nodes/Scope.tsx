@@ -32,6 +32,7 @@ import {
   ATOM_escapedIds,
   ATOM_insertMode,
   ATOM_toggleFold,
+  ATOM_toggleIsInit,
   ATOM_toggleTest,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
@@ -99,6 +100,7 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   const duplicateScope = useSetAtom(ATOM_duplicateScope);
   const toggleFold = useSetAtom(ATOM_toggleFold);
   const toggleTest = useSetAtom(ATOM_toggleTest);
+  const toggleIsInit = useSetAtom(ATOM_toggleIsInit);
 
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
@@ -166,6 +168,26 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
           <DropdownMenu.Separator />
           <DropdownMenu.Item
             onSelect={() => {
+              toggleIsInit(id);
+            }}
+          >
+            <div
+              style={{
+                borderRadius: "50%",
+                width: "1em",
+                height: "1em",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid black",
+              }}
+            >
+              1
+            </div>
+            Toggle Init
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
               toggleFold(id);
             }}
           >
@@ -196,6 +218,8 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
               </>
             )}
           </DropdownMenu.Item>
+          {/* separator */}
+          <DropdownMenu.Separator />
           <DropdownMenu.Item
             onSelect={() => {
               duplicateScope(id);
@@ -459,6 +483,25 @@ const Tags = function Tags({ id }: { id: string }) {
               }}
             >
               test
+            </Text>
+          </div>
+        )}
+        {node.data.isInit && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "lightpink",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              init
             </Text>
           </div>
         )}
