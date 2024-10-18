@@ -91,6 +91,7 @@ import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  ATOM_toggleIsInit,
   ATOM_togglePinPod,
   ATOM_togglePublic,
   ATOM_toggleTest,
@@ -401,6 +402,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
   const toggleTest = useSetAtom(ATOM_toggleTest);
   const togglePublic = useSetAtom(ATOM_togglePublic);
   const togglePinPod = useSetAtom(ATOM_togglePinPod);
+  const toggleIsInit = useSetAtom(ATOM_toggleIsInit);
 
   return (
     <>
@@ -473,6 +475,29 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
           <DropdownMenu.Item onSelect={() => resolvePod(id)}>
             <ShieldQuestion />
             Resolve
+          </DropdownMenu.Item>
+          {/* separator */}
+          <DropdownMenu.Separator />
+          {/* toggle init */}
+          <DropdownMenu.Item
+            onSelect={() => {
+              toggleIsInit(id);
+            }}
+          >
+            <div
+              style={{
+                borderRadius: "50%",
+                width: "1em",
+                height: "1em",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid black",
+              }}
+            >
+              1
+            </div>
+            Toggle Init
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => {
@@ -862,6 +887,25 @@ const Tags = function Tags({ id }: { id: string }) {
               }}
             >
               test
+            </Text>
+          </div>
+        )}
+        {node.data.isInit && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "lightpink",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              init
             </Text>
           </div>
         )}

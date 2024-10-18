@@ -36,10 +36,7 @@ describe("topoSort", () => {
       ["c", []],
     ]);
     const result = topoSort(ids, adjSet);
-    expect(result).toContain("a");
-    expect(result).toContain("c");
-    expect(result.length).toBe(2);
-    expect(result.indexOf("a")).toBeLessThan(result.indexOf("c"));
+    expect(result).toEqual(["a", "c"]);
   });
 
   test("skip cycle-causing edge", () => {
@@ -50,8 +47,7 @@ describe("topoSort", () => {
       ["c", ["a"]], // creates cycle
     ]);
     const result = topoSort(ids, adjSet);
-    expect(result.length).toBe(3);
-    expect(new Set(result)).toEqual(new Set(["a", "b", "c"]));
+    expect(result).toEqual(["a", "b", "c"]);
   });
 
   test("complex graph with multiple paths", () => {

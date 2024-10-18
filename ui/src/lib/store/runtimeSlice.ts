@@ -423,19 +423,44 @@ export const ATOM_preprocessChain = atom(null, preprocessChain);
  * Get the list of nodes in the subtree rooted at id, including the root.
  * @param id subtree root
  */
-function getSubtreeNodes(
-  id: string,
-  nodesMap: Y.Map<AppNode>,
-  adjacencySet: Map<string, Set<string>>
-): AppNode[] {
+function getSubtreeNodes({
+  id,
+  nodesMap,
+  adjacencySet,
+  reverseAdjacencySet,
+}: {
+  id: string;
+  nodesMap: Y.Map<AppNode>;
+  adjacencySet: Map<string, Set<string>>;
+  reverseAdjacencySet: Map<string, Set<string>>;
+}): AppNode[] {
   const node = nodesMap.get(id);
   myassert(node);
   if (node.type === "CODE" && !node.data.isTest) {
     return [node];
   } else if (node.type === "SCOPE" && !node.data.isTest) {
+    // get init nodes
+    const initIds = node.data.childrenIds.filter((childId) => {
+      const child = nodesMap.get(childId);
+      myassert(child);
+      if (!child.data.isInit) return false;
+      if (!reverseAdjacencySet.has(childId)) return true;
+      return reverseAdjacencySet.get(childId)!.size === 0;
+    });
     const childrenIds = topoSort(node.data.childrenIds, adjacencySet);
-    const children = childrenIds.map((childId) => {
-      return getSubtreeNodes(childId, nodesMap, adjacencySet);
+    // put init ids in the front, remove them from sorted ids
+    const initInFront = [
+      ...initIds,
+      ...childrenIds.filter((id) => !initIds.includes(id)),
+    ];
+
+    const children = initInFront.map((childId) => {
+      return getSubtreeNodes({
+        id: childId,
+        nodesMap,
+        adjacencySet,
+        reverseAdjacencySet,
+      });
     });
     return [...children.flatMap((child) => child)];
   } else {
@@ -443,16 +468,24 @@ function getSubtreeNodes(
   }
 }
 
-function buildAdjacencySet(edges: Edge[]): Map<string, Set<string>> {
+function buildAdjacencySet(edges: Edge[]): {
+  adjacencySet: Map<string, Set<string>>;
+  reverseAdjacencySet: Map<string, Set<string>>;
+} {
   const adjacencySet: Map<string, Set<string>> = new Map();
+  const reverseAdjacencySet: Map<string, Set<string>> = new Map();
   edges.forEach((edge) => {
     const { source, target } = edge;
     if (!adjacencySet.has(source)) {
       adjacencySet.set(source, new Set());
     }
     adjacencySet.get(source)!.add(target);
+    if (!reverseAdjacencySet.has(target)) {
+      reverseAdjacencySet.set(target, new Set());
+    }
+    reverseAdjacencySet.get(target)!.add(source);
   });
-  return adjacencySet;
+  return { adjacencySet, reverseAdjacencySet };
 }
 
 export function getAllCode(get: Getter, set: Setter) {
@@ -463,12 +496,17 @@ export function getAllCode(get: Getter, set: Setter) {
   const rootNodes = nodes0.filter((node) => !node.parentId);
   const rootIds = rootNodes.map((node) => node.id);
   // Build the adjacency set
-  const adjacencySet = buildAdjacencySet(edges);
+  const { adjacencySet, reverseAdjacencySet } = buildAdjacencySet(edges);
   const sortedRootIds = topoSort(rootIds, adjacencySet);
   // 2. recursively get subtree nodes
   const nodes1 = sortedRootIds
     .map((id) => {
-      return getSubtreeNodes(id, nodesMap, adjacencySet);
+      return getSubtreeNodes({
+        id,
+        nodesMap,
+        adjacencySet,
+        reverseAdjacencySet,
+      });
     })
     .flatMap((child) => child);
   return nodes1;
@@ -523,8 +561,13 @@ function getScopeChain(get: Getter, set: Setter, id: string): string[] {
   const node = nodesMap.get(id);
   myassert(node && node.type === "SCOPE");
   const edges = get(ATOM_edges);
-  const adjacencySet = buildAdjacencySet(edges);
-  const nodes = getSubtreeNodes(id, nodesMap, adjacencySet);
+  const { adjacencySet, reverseAdjacencySet } = buildAdjacencySet(edges);
+  const nodes = getSubtreeNodes({
+    id,
+    nodesMap,
+    adjacencySet,
+    reverseAdjacencySet,
+  });
   return nodes.map((node) => node.id);
 }
 
@@ -574,7 +617,7 @@ function getEdgeChain(get: Getter, set: Setter, id: string): string[] {
   }
 
   // Build the adjacency set
-  const adjacencySet = buildAdjacencySet(edges);
+  const { adjacencySet } = buildAdjacencySet(edges);
   // topo sort
   const sortedChain = topoSort(chain, adjacencySet);
   // If there're scopes, get all the nodes in the scopes.

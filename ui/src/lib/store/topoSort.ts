@@ -6,89 +6,57 @@
  *   ids that are in the input.
  * - If a -> b -> c in adjacencySet, and only a and c are in ids, then the
  *   result should only contain a and c, and a should appear before c.
+ * - [DEPRECATED] It should be stable, i.e., if topoSort doesn't affect the order of a and b,
+ *   they should preserve the relative order as in the input.
  */
 export function topoSort(
   ids: string[],
   adjacencySet: Map<string, Set<string>>
 ): string[] {
-  // Create a set of input ids for O(1) lookup
-  const idSet = new Set(ids);
+  const sorted: string[] = [];
+  const visited: Set<string> = new Set();
+  const visiting: Set<string> = new Set(); // To detect cycles
 
-  // Create a map to track visited nodes during DFS
-  const visited = new Map<string, boolean>();
-  // Track nodes in current DFS path to detect cycles
-  const inPath = new Set<string>();
-  // Store the result in reverse order (will reverse at end)
-  const result: string[] = [];
+  // Helper function to perform DFS
+  function dfs(nodeId: string): boolean {
+    if (visited.has(nodeId)) return true; // Already processed
+    if (visiting.has(nodeId)) return false; // Cycle detected
 
-  // Helper function to get direct and indirect dependencies that exist in input ids
-  function getReachableDependencies(
-    id: string,
-    seen = new Set<string>()
-  ): Set<string> {
-    // If we've seen this node before in this traversal, return empty set to avoid cycles
-    if (seen.has(id)) return new Set();
+    visiting.add(nodeId);
 
-    seen.add(id);
-    const reachable = new Set<string>();
-    const deps = adjacencySet.get(id);
-    if (!deps) return reachable;
-
-    for (const dep of deps) {
-      if (idSet.has(dep)) {
-        reachable.add(dep);
+    const neighbors = adjacencySet.get(nodeId) || new Set();
+    for (const neighbor of neighbors) {
+      if (visiting.has(neighbor)) {
+        // Cycle detected, skip this edge
+        console.warn(
+          `Cycle detected between ${nodeId} and ${neighbor}. Skipping edge.`
+        );
+        continue;
       }
-      // Add indirect dependencies that exist in input ids
-      const indirectDeps = getReachableDependencies(dep, seen);
-      for (const indirectDep of indirectDeps) {
-        if (idSet.has(indirectDep)) {
-          reachable.add(indirectDep);
-        }
+      if (!dfs(neighbor)) {
+        // If the neighbor caused a cycle, continue without modifying the adjacency set
+        continue;
       }
     }
-    return reachable;
+
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    sorted.push(nodeId);
+
+    return true;
   }
 
-  // DFS function that handles cycles by skipping problematic edges
-  function dfs(id: string): void {
-    // Skip if already fully visited
-    if (visited.get(id)) return;
-
-    // Mark as being processed in current path
-    inPath.add(id);
-
-    // Get all reachable dependencies that exist in input ids
-    const deps = getReachableDependencies(id);
-
-    for (const dep of deps) {
-      // Skip this edge if it would create a cycle
-      if (inPath.has(dep)) continue;
-
-      // Process dependency if not already done
-      if (!visited.get(dep)) {
-        dfs(dep);
-      }
-    }
-
-    // Mark as visited and remove from current path
-    visited.set(id, true);
-    inPath.delete(id);
-
-    // Only add to result if it's in the original input ids
-    if (idSet.has(id)) {
-      result.push(id);
-    }
-  }
-
-  // Process all input ids
+  // Perform DFS on all nodes
   for (const id of ids) {
-    if (!visited.get(id)) {
+    if (!visited.has(id)) {
       dfs(id);
     }
   }
 
-  // Return reversed result (since we built it in reverse order)
-  return result.reverse();
+  const result = sorted.reverse(); // Reverse because we want to return in topological order
+  // return only the ids that were in the input
+  const idSet = new Set(ids);
+  return result.filter((id) => idSet.has(id));
 }
 
 function runTests() {
