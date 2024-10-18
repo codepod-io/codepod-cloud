@@ -148,6 +148,102 @@ const highlightExtension = (): Extension => {
   return [highlightField, highlightTheme];
 };
 
+function useHighlight(
+  viewRef: React.MutableRefObject<EditorView | null>,
+  node: CodeNodeType
+) {
+  const highlight = (
+    from: { row: number; col: number },
+    to: { row: number; col: number },
+    color: string
+  ) => {
+    if (viewRef.current) {
+      const fromPos =
+        viewRef.current.state.doc.line(from.row).from + from.col - 1;
+      const toPos = viewRef.current.state.doc.line(to.row).from + to.col - 1;
+
+      viewRef.current.dispatch({
+        effects: highlightEffect.of({ from: fromPos, to: toPos, color }),
+      });
+    }
+  };
+
+  const highlightByIndex = (
+    startIndex: number,
+    endIndex: number,
+    color = "yellow"
+  ) => {
+    if (viewRef.current) {
+      const fromPos = startIndex;
+      const toPos = endIndex;
+      viewRef.current.dispatch({
+        effects: highlightEffect.of({ from: fromPos, to: toPos, color }),
+      });
+    }
+  };
+
+  const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(node.id));
+  const resolveResult = useAtomValue(getOrCreate_ATOM_resolveResult(node.id));
+
+  useEffect(() => {
+    parseResult.annotations.forEach((annotation) => {
+      // annotation.startIndex
+      // annotation.startPosition
+      const name = annotation.name;
+      const type = annotation.type;
+      switch (type) {
+        case "function":
+          highlightByIndex(
+            annotation.startIndex,
+            annotation.endIndex,
+            "#fcff3466"
+          );
+          break;
+        // return "myDecoration-function";
+        case "vardef":
+          highlightByIndex(
+            annotation.startIndex,
+            annotation.endIndex,
+            // "lightpink"
+            // # 255,173,185
+            // # add opacity 66 to def, 33 to use
+            "#FFA9B966"
+          );
+          // return "myDecoration-vardef";
+          break;
+        case "callsite":
+          // NOTE using the same style for both callsite and varuse.
+          if (resolveResult?.resolved.has(name)) {
+            highlightByIndex(
+              annotation.startIndex,
+              annotation.endIndex,
+              "#ffed8633"
+            );
+            // return "myDecoration-callsite";
+          } else {
+            // return "myDecoration-unresolved";
+          }
+          break;
+        // return "myDecoration-varuse";
+        case "varuse":
+          if (resolveResult?.resolved.has(name)) {
+            highlightByIndex(
+              annotation.startIndex,
+              annotation.endIndex,
+              "#FFA9B933"
+            );
+            // return "myDecoration-varuse";
+          } else {
+            // return "myDecoration-unresolved";
+          }
+          break;
+        default:
+          throw new Error("unknown type: " + type);
+      }
+    });
+  }, [parseResult, resolveResult]);
+}
+
 // ------------------------------
 // MyCodeMirror component
 // ------------------------------
@@ -248,96 +344,7 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
     };
   }, []);
 
-  const highlight = (
-    from: { row: number; col: number },
-    to: { row: number; col: number },
-    color: string
-  ) => {
-    if (viewRef.current) {
-      const fromPos =
-        viewRef.current.state.doc.line(from.row).from + from.col - 1;
-      const toPos = viewRef.current.state.doc.line(to.row).from + to.col - 1;
-
-      viewRef.current.dispatch({
-        effects: highlightEffect.of({ from: fromPos, to: toPos, color }),
-      });
-    }
-  };
-
-  const highlightByIndex = (
-    startIndex: number,
-    endIndex: number,
-    color = "yellow"
-  ) => {
-    if (viewRef.current) {
-      const fromPos = startIndex;
-      const toPos = endIndex;
-      viewRef.current.dispatch({
-        effects: highlightEffect.of({ from: fromPos, to: toPos, color }),
-      });
-    }
-  };
-
-  const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(node.id));
-  const resolveResult = useAtomValue(getOrCreate_ATOM_resolveResult(node.id));
-
-  useEffect(() => {
-    parseResult.annotations.forEach((annotation) => {
-      // annotation.startIndex
-      // annotation.startPosition
-      const name = annotation.name;
-      const type = annotation.type;
-      switch (type) {
-        case "function":
-          highlightByIndex(
-            annotation.startIndex,
-            annotation.endIndex,
-            "#fcff3466"
-          );
-          break;
-        // return "myDecoration-function";
-        case "vardef":
-          highlightByIndex(
-            annotation.startIndex,
-            annotation.endIndex,
-            // "lightpink"
-            // # 255,173,185
-            // # add opacity 66 to def, 33 to use
-            "#FFA9B966"
-          );
-          // return "myDecoration-vardef";
-          break;
-        case "callsite":
-          // NOTE using the same style for both callsite and varuse.
-          if (resolveResult?.resolved.has(name)) {
-            highlightByIndex(
-              annotation.startIndex,
-              annotation.endIndex,
-              "#ffed8633"
-            );
-            // return "myDecoration-callsite";
-          } else {
-            // return "myDecoration-unresolved";
-          }
-          break;
-        // return "myDecoration-varuse";
-        case "varuse":
-          if (resolveResult?.resolved.has(name)) {
-            highlightByIndex(
-              annotation.startIndex,
-              annotation.endIndex,
-              "#FFA9B933"
-            );
-            // return "myDecoration-varuse";
-          } else {
-            // return "myDecoration-unresolved";
-          }
-          break;
-        default:
-          throw new Error("unknown type: " + type);
-      }
-    });
-  }, [parseResult, resolveResult]);
+  useHighlight(viewRef, node);
 
   // return <pre>{"hello"}</pre>;
 
