@@ -137,7 +137,20 @@ function RepoLoader({ children }) {
     return <NotFoundAlert />;
   }
   // FIXME set data in useEffect is buggy, the children might be rendered before the data is set.
-  if (!loaded) return null;
+  if (!loaded) {
+    // show unknown error, and a button to go back to dashboard.
+    return (
+      <Callout.Root color="red">
+        <Callout.Icon>
+          <InfoCircledIcon /> Error
+        </Callout.Icon>
+        <Callout.Text>
+          Unknown error. Please go back to the{" "}
+          <ReactLink to="/">dashboard</ReactLink>.
+        </Callout.Text>
+      </Callout.Root>
+    );
+  }
   return children;
 }
 
