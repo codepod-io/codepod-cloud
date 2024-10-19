@@ -116,13 +116,10 @@ function setRuntimeReady(
   set: Setter,
   runtimeMap: Y.Map<RuntimeInfo>
 ) {
-  // if there's no runtimeMap, set all runtimeReady to false
-  if (runtimeMap.size === 0) {
-    lang2_ATOM_runtimeReady.forEach((atom) => {
-      set(atom, false);
-    });
-    return;
-  }
+  lang2_ATOM_runtimeReady.forEach((atom, kernelName) => {
+    // If the runtimeMap doesn't have the kernelName, set it to false.
+    if (!runtimeMap.has(kernelName)) set(atom, false);
+  });
   runtimeMap.forEach((value, kernelName) => {
     if (["idle", "busy"].includes(value.status || "")) {
       set(getOrCreate_ATOM_runtimeReady(kernelName), true);

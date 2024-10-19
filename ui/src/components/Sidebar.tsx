@@ -76,7 +76,6 @@ import {
   ATOM_nodesMap,
   ATOM_resultMap,
   ATOM_richMap,
-  ATOM_runtimeChanged,
   ATOM_runtimeMap,
   ATOM_ydoc,
   ATOM_yjsStatus,
