@@ -92,6 +92,8 @@ import {
   getOrCreate_ATOM_parseResult,
   getOrCreate_ATOM_resolveResult,
 } from "@/lib/store/runtimeSlice";
+import { ATOM_previousVersion } from "@/pages/repo";
+import { gitGutterExtension } from "./MyCodeMirror_GitGutter";
 
 const myScheme = {
   name: "scheme",
@@ -279,7 +281,6 @@ const myBasicSetup: Extension = (() => [
 
 // Define the format code command
 function formatCode(view) {
-  console.log("formatCode");
   indentSelection(view);
   return true; // Indicate the command was successful
 }
@@ -292,6 +293,27 @@ const formatKeymap = keymap.of([
   },
 ]);
 
+function usePreviousCode(id: string) {
+  const previousVersion = useAtomValue(ATOM_previousVersion);
+  let previousCode: string = "";
+  if (previousVersion === null) {
+    // loading, no need to update
+    previousCode = "";
+  } else if (previousVersion === "init") {
+    previousCode = "";
+  } else {
+    const ydoc = previousVersion;
+    const codeMap = ydoc.getMap("rootMap").get("codeMap") as Y.Map<Y.Text>;
+    const str = codeMap.get(id);
+    if (str) {
+      previousCode = str.toString();
+    } else {
+      previousCode = "";
+    }
+  }
+  return previousCode;
+}
+
 function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
   const codeMap = useAtomValue(ATOM_codeMap);
 
@@ -301,6 +323,8 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
   myassert(provider);
 
   const viewRef = useRef<EditorView | null>(null);
+
+  const previousCode = usePreviousCode(node.id);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -321,6 +345,7 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
           keymap.of([indentWithTab]),
           formatKeymap,
           highlightExtension(),
+          gitGutterExtension(previousCode),
           match(node.data.lang)
             .with("javascript", () => javascript())
             .with("python", () => python())
@@ -342,7 +367,7 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
         viewRef.current.destroy();
       }
     };
-  }, []);
+  }, [previousCode]);
 
   useHighlight(viewRef, node);
 
