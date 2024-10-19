@@ -148,7 +148,8 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
               const chain = getScopeChain(id);
               console.log("scope nodes", chain);
               const specs = await preprocessChain(chain);
-              if (specs) runChain.mutate({ repoId: repoData.id, specs });
+              if (specs.length > 0)
+                runChain.mutate({ repoId: repoData.id, specs });
             }}
           >
             <Play /> Run All Pods
@@ -158,7 +159,8 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
             onSelect={async () => {
               const chain = getEdgeChain(id);
               const specs = await preprocessChain(chain);
-              if (specs) runChain.mutate({ repoId: repoData.id, specs });
+              if (specs.length > 0)
+                runChain.mutate({ repoId: repoData.id, specs });
             }}
           >
             <ListVideo /> Run Chain

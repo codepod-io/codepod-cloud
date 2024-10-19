@@ -9,6 +9,7 @@ import {
   ATOM_nodesMap,
   ATOM_resultMap,
   ATOM_runtimeMap,
+  getOrCreate_ATOM_runtimeReady,
 } from "./yjsSlice";
 import { produce } from "immer";
 import { ATOM_edges, ATOM_nodes } from "./canvasSlice";
@@ -387,6 +388,20 @@ function setRunning(get: Getter, set: Setter, podId: string) {
 }
 
 async function preprocessChain(get: Getter, set: Setter, ids: string[]) {
+  // Handle the case where hitting Shift-Enter in the code editor. The runtimeReady flag is not used there.
+  const nodesMap = get(ATOM_nodesMap);
+  if (ids.length === 1) {
+    const node = nodesMap.get(ids[0]);
+    if (node && node.type === "CODE") {
+      const runtimeReady = get(getOrCreate_ATOM_runtimeReady(node?.data.lang));
+      if (!runtimeReady) {
+        // if runtime is not ready, return
+        toast.error("Runtime not ready");
+        return [];
+      }
+    }
+  }
+
   // 1. parse
   await Promise.all(ids.map((id) => parsePod(get, set, id)));
   // 2. propagate

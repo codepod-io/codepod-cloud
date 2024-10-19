@@ -504,7 +504,7 @@ function useInitEditor({
             toast.error("Runtime is not ready.");
           } else {
             const specs = await preprocessChain([node.id]);
-            if (specs) runChain.mutate({ repoId, specs });
+            if (specs.length > 0) runChain.mutate({ repoId, specs });
           }
         },
       });
