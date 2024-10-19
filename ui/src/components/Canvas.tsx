@@ -301,14 +301,15 @@ function CanvasImpl() {
         }
         // This is still needed so that edges are shown on top of ReactFlow Handles in Connect mode.
         // This also put the edges on top of the symbol table.
-        // - UPDATE: no, the symbol table is still on top.
+        // - UPDATE 1: no, the symbol table is still on top.
+        // - UPDATE 2: still set to 9999 to let edges be on top of nodes.
         .react-flow__edges {
-          z-index: 1;
+          z-index: 9999;
         }
         // But put the nodes on top of the edges.
-        .react-flow__nodes {
-          z-index: 2;
-        }
+        // .react-flow__nodes {
+        //   z-index: 2;
+        // }
       `}
     >
       <ReactFlow<AppNode>
