@@ -428,7 +428,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
         disabled={!runtimeReady}
         onClick={async () => {
           const specs = await preprocessChain([id]);
-          if (specs) runChain.mutate({ repoId, specs });
+          if (specs.length > 0) runChain.mutate({ repoId, specs });
         }}
       >
         <Play />
@@ -452,7 +452,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
             shortcut="⇧ ⏎"
             onSelect={async () => {
               const specs = await preprocessChain([id]);
-              if (specs) runChain.mutate({ repoId, specs });
+              if (specs.length > 0) runChain.mutate({ repoId, specs });
             }}
             disabled={!runtimeReady}
           >
@@ -463,7 +463,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
             onSelect={async () => {
               const chain = getEdgeChain(id);
               const specs = await preprocessChain(chain);
-              if (specs) runChain.mutate({ repoId, specs });
+              if (specs.length > 0) runChain.mutate({ repoId, specs });
             }}
           >
             <ListVideo /> Run Chain

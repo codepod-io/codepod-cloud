@@ -8,6 +8,7 @@ import {
   StateEffect,
   Extension,
   StateField,
+  Prec,
 } from "@codemirror/state";
 import {
   crosshairCursor,
@@ -89,11 +90,14 @@ import { myassert } from "@/lib/utils/utils";
 
 import { match } from "ts-pattern";
 import {
+  ATOM_preprocessChain,
   getOrCreate_ATOM_parseResult,
   getOrCreate_ATOM_resolveResult,
 } from "@/lib/store/runtimeSlice";
 import { ATOM_previousVersion } from "@/pages/repo";
 import { gitGutterExtension } from "./MyCodeMirror_GitGutter";
+import { runtimeTrpc } from "@/lib/trpc";
+import { ATOM_repoData } from "@/lib/store/atom";
 
 const myScheme = {
   name: "scheme",
@@ -325,6 +329,25 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
   const viewRef = useRef<EditorView | null>(null);
 
   const previousCode = usePreviousCode(node.id);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  const repoId = repoData.id;
+
+  const runKeymap = keymap.of([
+    {
+      key: "Shift-Enter",
+      run: (view) => {
+        async function run() {
+          const specs = await preprocessChain([node.id]);
+          if (specs.length > 0) runChain.mutate({ repoId, specs });
+        }
+        run();
+        return true;
+      },
+    },
+  ]);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -344,6 +367,8 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
           indentUnit.of("    "),
           keymap.of([indentWithTab]),
           formatKeymap,
+          // The shift-enter keymap is occupied by standardkeymap, so we need to use the highest priority.
+          Prec.highest(runKeymap),
           highlightExtension(),
           gitGutterExtension(previousCode),
           match(node.data.lang)

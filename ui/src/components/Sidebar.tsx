@@ -76,7 +76,6 @@ import {
   ATOM_nodesMap,
   ATOM_resultMap,
   ATOM_richMap,
-  ATOM_runtimeChanged,
   ATOM_runtimeMap,
   ATOM_ydoc,
   ATOM_yjsStatus,
@@ -611,7 +610,7 @@ function DebugPanel() {
       <Button
         onClick={async () => {
           const specs = await preprocessAllPodsExceptTest();
-          if (specs) runChain.mutate({ repoId, specs });
+          if (specs.length > 0) runChain.mutate({ repoId, specs });
         }}
         variant="outline"
       >
@@ -794,7 +793,8 @@ const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
           disabled={!runtimeReady}
           onClick={async () => {
             const specs = await preprocessChain([id]);
-            if (specs) runChain.mutate({ repoId: repoData.id, specs });
+            if (specs.length > 0)
+              runChain.mutate({ repoId: repoData.id, specs });
           }}
         >
           <Play />
