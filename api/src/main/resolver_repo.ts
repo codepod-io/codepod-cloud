@@ -152,6 +152,9 @@ const repo = publicProcedure
           orderBy: {
             time: "desc",
           },
+          omit: {
+            blob: true,
+          },
         },
       },
     });
