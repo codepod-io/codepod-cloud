@@ -106,28 +106,31 @@ function compareMaps(map1: T_id2parent, map2: T_id2parent) {
   return true;
 }
 
-/**
- * Go up until a scope that is folded is found, and return its id. If no such scope is found, return undefined.
- * @param id
- * @param nodesMap
- * @returns
- */
-function getMaybeFoldedScopeId(
-  id: string,
+function getCommonAncestor(
+  node1: AppNode,
+  node2: AppNode,
   nodesMap: Y.Map<AppNode>
-): string | null {
-  let node = nodesMap.get(id);
+): string | undefined {
+  let sourceAncestors = new Set<string>();
+  let node = node1;
   while (node) {
-    if (node.type === "SCOPE" && node.data.folded) {
-      return node.id;
-    }
-    if (node.parentId) {
-      node = nodesMap.get(node.parentId);
-    } else {
-      return null;
-    }
+    sourceAncestors.add(node.id);
+    if (!node.parentId) break;
+    const tmpNode = nodesMap.get(node.parentId);
+    myassert(tmpNode);
+    node = tmpNode;
   }
-  return null;
+  node = node2;
+  while (node) {
+    if (sourceAncestors.has(node.id)) break;
+    if (!node.parentId) {
+      return undefined;
+    }
+    const tmpNode = nodesMap.get(node.parentId);
+    myassert(tmpNode);
+    node = tmpNode;
+  }
+  return node.id;
 }
 
 function generateCallEdges(get: Getter, set: Setter) {
@@ -142,8 +145,31 @@ function generateCallEdges(get: Getter, set: Setter) {
       // if the node is not visible, find the folded scope and connect to it
       const sourceId = value;
       const targetId = node.id;
-      const sourceId2 = getMaybeFoldedScopeId(sourceId, nodesMap) ?? sourceId;
-      const targetId2 = getMaybeFoldedScopeId(targetId, nodesMap) ?? targetId;
+      // the sourceId2 and targetId2 are the real source and target to use in the edges.
+      let sourceId2 = sourceId;
+      let targetId2 = targetId;
+
+      let sourceNode = nodesMap.get(sourceId);
+      let targetNode = nodesMap.get(targetId);
+      myassert(sourceNode && targetNode);
+      // Compute edges so that the source and target are in the same scope.
+      if (sourceNode.parentId !== targetNode.parentId) {
+        // get the common ancestor
+        const LCA = getCommonAncestor(sourceNode, targetNode, nodesMap);
+        while (sourceNode.parentId !== LCA) {
+          myassert(sourceNode.parentId);
+          sourceNode = nodesMap.get(sourceNode.parentId);
+          myassert(sourceNode);
+        }
+        while (targetNode.parentId !== LCA) {
+          myassert(targetNode.parentId);
+          targetNode = nodesMap.get(targetNode.parentId);
+          myassert(targetNode);
+        }
+        // now sourceNode and targetNode are in the same scope
+        sourceId2 = sourceNode.id;
+        targetId2 = targetNode.id;
+      }
       res.push({
         id: `${key}-${node.id}`,
         source: sourceId2,
