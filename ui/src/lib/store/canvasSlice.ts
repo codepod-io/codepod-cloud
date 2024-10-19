@@ -264,6 +264,18 @@ function toggleReadme(get: Getter, set: Setter, id: string) {
 
 export const ATOM_toggleReadme = atom(null, toggleReadme);
 
+function toggleIsInit(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  myassert(node.type === "CODE" || node.type === "SCOPE");
+  node.data.isInit = !node.data.isInit;
+  nodesMap.set(id, node);
+  updateView(get, set);
+}
+
+export const ATOM_toggleIsInit = atom(null, toggleIsInit);
+
 function toggleTest(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
