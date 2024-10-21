@@ -414,6 +414,26 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
         //   opacity: 1;
         //   transitionDelay: '0s'
         // }
+
+        .git-gutter {
+          width: 4px;
+          background-color: transparent;
+          margin-right: 3px;
+        }
+        .git-gutter-marker {
+          width: 4px;
+          height: 100%;
+          border-radius: 2px;
+        }
+        .git-add {
+          background-color: #28a745;
+        }
+        .git-delete {
+          background-color: #dc3545;
+        }
+        .git-modify {
+          background-color: #ffc107;
+        }
       `}
       ref={editorRef}
     />

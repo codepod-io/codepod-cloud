@@ -214,26 +214,28 @@ export function gitGutterExtension(startingCode: string) {
       markers: (view) => view.state.field(gutterMarkerField),
       initialSpacer: () => new GitGutterMarker("modify"),
     }),
-    EditorView.baseTheme({
-      ".git-gutter": {
-        width: "4px",
-        backgroundColor: "transparent",
-        marginRight: "3px",
-      },
-      ".git-gutter-marker": {
-        width: "4px",
-        height: "100%",
-        borderRadius: "2px",
-      },
-      ".git-add": {
-        backgroundColor: "#28a745",
-      },
-      ".git-delete": {
-        backgroundColor: "#dc3545",
-      },
-      ".git-modify": {
-        backgroundColor: "#ffc107",
-      },
-    }),
+    // FIXME: Adding this here will make it VERY slow to create the editors.
+    //
+    // EditorView.baseTheme({
+    //   ".git-gutter": {
+    //     width: "4px",
+    //     backgroundColor: "transparent",
+    //     marginRight: "3px",
+    //   },
+    //   ".git-gutter-marker": {
+    //     width: "4px",
+    //     height: "100%",
+    //     borderRadius: "2px",
+    //   },
+    //   ".git-add": {
+    //     backgroundColor: "#28a745",
+    //   },
+    //   ".git-delete": {
+    //     backgroundColor: "#dc3545",
+    //   },
+    //   ".git-modify": {
+    //     backgroundColor: "#ffc107",
+    //   },
+    // }),
   ];
 }
