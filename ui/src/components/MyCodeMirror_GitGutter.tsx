@@ -34,6 +34,17 @@ class GitGutterMarker extends GutterMarker {
 
 // Function to compute line-based differences
 function computeGitChanges(oldCode: string, newCode: string): GitChange[] {
+  // Temporary fix for the bug that the first line of added content is marked as
+  // modified. This only work where old content is empty.
+  if (!oldCode.trim()) {
+    const newLines = newCode.split("\n");
+    return newLines.map((_, index) => ({
+      from: index + 1,
+      to: index + 1,
+      type: "add" as GitChangeType,
+    }));
+  }
+
   const changes: GitChange[] = [];
 
   const oldLines = oldCode.split("\n");
