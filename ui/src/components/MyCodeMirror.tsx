@@ -98,6 +98,8 @@ import { ATOM_previousVersion } from "@/pages/repo";
 import { gitGutterExtension } from "./MyCodeMirror_GitGutter";
 import { runtimeTrpc } from "@/lib/trpc";
 import { ATOM_repoData } from "@/lib/store/atom";
+import { useStore } from "@xyflow/react";
+import { getAbsPos } from "@/lib/store/canvasSlice";
 
 const myScheme = {
   name: "scheme",
@@ -318,7 +320,11 @@ function usePreviousCode(id: string) {
   return previousCode;
 }
 
-function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
+const MyCodeMirrorImpl = memo(function MyCodeMirrorImpl({
+  node,
+}: {
+  node: CodeNodeType;
+}) {
   const codeMap = useAtomValue(ATOM_codeMap);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
@@ -396,7 +402,11 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
 
   useHighlight(viewRef, node);
 
+  const ytext = codeMap.get(node.id);
+  myassert(ytext);
+
   // return <pre>{"hello"}</pre>;
+  // return <pre>{ytext.toString()}</pre>;
 
   return (
     <div
@@ -418,6 +428,214 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
       ref={editorRef}
     />
   );
+});
+
+/**
+ * @return whether the node is in the current viewport.
+ */
+function useIsInView({ node, linum }: { node: CodeNodeType; linum: number }) {
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const absPos = getAbsPos(node, nodesMap);
+  return useStore((s) => {
+    const [x, y, zoom] = s.transform;
+    // console.log("x,y,zoom", x, y, zoom, s.width, s.height);
+    // check in viewport
+    // node.position.x, node.position.y
+    // The rectangle of the node
+    // get abs pos
+    const nodeRect = {
+      // x: node.position.x,
+      // y: node.position.y,
+      x: absPos.x,
+      y: absPos.y,
+      width: node.data.mywidth ?? 200,
+      // FIXME fixed height for this computation
+      // height: 200,
+      // height: linum * 1.5,
+      // height: (linum * 2762) / 112,
+      height: (linum * 2500) / 112,
+    };
+    // 2762, 112
+    // console.log("nodeRect", node.id, node.measured?.height, linum);
+    const viewport = {
+      x: -x / zoom,
+      y: -y / zoom,
+      zoom: zoom,
+      width: s.width / zoom,
+      height: s.height / zoom,
+    };
+    const viewport2 = {
+      x: viewport.x + 100,
+      y: viewport.y + 100,
+      width: viewport.width - 200,
+      height: viewport.height - 200,
+    };
+    // console.log("nodeRect", node.id, nodeRect);
+    // console.log("viewport", viewport);
+    // debug as long as any part the pod is out of scope
+    // return (
+    //   nodeRect.x + nodeRect.width < viewport.x + viewport.width &&
+    //   nodeRect.x > viewport.x &&
+    //   nodeRect.y + nodeRect.height < viewport.y + viewport.height &&
+    //   nodeRect.y > viewport.y
+    // );
+    // check if the node is in the viewport, i.e., the nodeRect has overlap with the viewport.
+    return (
+      nodeRect.x < viewport.x + viewport.width &&
+      nodeRect.x + nodeRect.width > viewport.x &&
+      nodeRect.y < viewport.y + viewport.height &&
+      nodeRect.y + nodeRect.height > viewport.y
+    );
+    return (
+      nodeRect.x < viewport2.x + viewport2.width &&
+      nodeRect.x + nodeRect.width > viewport2.x &&
+      nodeRect.y < viewport2.y + viewport2.height &&
+      nodeRect.y + nodeRect.height > viewport2.y
+    );
+  });
+}
+
+/**
+ * Only render codemirror editor when the node is in the viewport, and the zoom level is right.
+ */
+function ContextualZoom({ node }: { node: CodeNodeType }) {
+  // return <pre>{"hello"}</pre>;
+  const codeMap = useAtomValue(ATOM_codeMap);
+  const ytext = codeMap.get(node.id);
+  myassert(ytext);
+  const linum = ytext.toString().split("\n").length;
+
+  const zoomLevel = useStore((s) => {
+    const zoom = s.transform[2];
+    return Math.floor(zoom * 100) / 100;
+  });
+
+  // const { x, y, zoom } = useStore((s) => {
+  //   const [x, y, zoom] = s.transform;
+  //   // const zoom = s.transform[2];
+  //   // return lower round of zoom, digit 2
+  //   // return rounded numbers for x,y,zoom
+  //   return {
+  //     x: Math.floor(x / 10000) * 10000,
+  //     // y: Math.floor(y / 10) * 10,
+  //     y: 0,
+  //     zoom: Math.floor(zoom * 100) / 100,
+  //   };
+  // });
+
+  const isInView = useIsInView({ node, linum });
+  // const { x, y, zoom } = useViewport();
+  // useViewport();
+
+  const content = [
+    `${isInView}`,
+    `linum=${linum}`,
+    `zoomLevel=${zoomLevel}`,
+    // `x=${x}`,
+    // `y=${y}`,
+    // `zoom=${zoom}`,
+    // "hello",
+  ].join("\n");
+
+  // return <pre>{"hello"}</pre>;
+  // return <pre>{ytext.toString()}</pre>;
+
+  if (isInView && zoomLevel > 0.1) {
+    return <MyCodeMirrorImpl node={node} />;
+    return (
+      <div
+        style={{
+          // height is the linum * 1.5em
+          height: `${linum * 1.5}em`,
+          border: "1px solid red",
+        }}
+      >
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            fontSize: "10em",
+          }}
+        >
+          {content}
+        </pre>
+      </div>
+    );
+  }
+  // if (isInView && zoomLevel > 0.1) {
+  //   return <pre>{ytext.toString()}</pre>;
+  // }
+  // console.log("linum", linum);
+  return (
+    <div
+      style={{
+        height: `${linum * 1.5}em`,
+        border: "1px solid blue",
+      }}
+    >
+      {/* working */}
+      {/* {[1, 2, 3].map((_, i) => (
+        <div key={i}>Hello</div>
+      ))} */}
+      {/* Array.from(3) doesn't work because the empty array is not mappable. Must use Array.from({length: 3}) or .fill(null) */}
+      {/* {Array.from({ length: Math.max(linum - 1, 0) }).map((_, i) => (
+        <div key={i}>Hello</div>
+      ))} */}
+
+      {new Array(Math.max(linum - 1, 0)).fill(null).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            backgroundColor: "#eee",
+            width: "100%",
+            // height: "10px",
+            height: "1.3em",
+            marginBottom: "4px",
+          }}
+        />
+      ))}
+      {/* <div
+        style={{
+          backgroundColor: "#eee",
+          width: "100%",
+          height: "10px",
+          marginBottom: "4px",
+        }}
+      />
+      <div
+        style={{
+          backgroundColor: "#eee",
+          width: "100%",
+          height: "10px",
+          marginBottom: "4px",
+        }}
+      /> */}
+      <div
+        style={{
+          backgroundColor: "#eee",
+          width: "100%",
+          height: "10px",
+        }}
+      />
+    </div>
+  );
+  return (
+    <div
+      style={{
+        // height is the linum * 1.5em
+        height: `${linum * 1.5}em`,
+        border: "1px solid blue",
+      }}
+    >
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          fontSize: "10em",
+        }}
+      >
+        {content}
+      </pre>
+    </div>
+  );
 }
 
 export const MyCodeMirror = memo(({ id }: { id: string }) => {
@@ -425,6 +643,7 @@ export const MyCodeMirror = memo(({ id }: { id: string }) => {
   const node = nodesMap.get(id);
   myassert(node);
   myassert(node.type === "CODE");
-  return MyCodeMirrorImpl({ node });
+  // return MyCodeMirrorImpl({ node });
   // return MyCodeMirrorEmpty({ node });
+  return ContextualZoom({ node });
 });
