@@ -228,6 +228,7 @@ function Versions() {
   myassert(repoData);
   const [message, setMessage] = useState("");
   const utils = trpc.useUtils();
+  const yjsUtil = yjsTrpc.useUtils();
   const createVersion = yjsTrpc.createVersion.useMutation({
     onError(error) {
       toast.error(error.message);
@@ -235,6 +236,7 @@ function Versions() {
     onSuccess() {
       toast.success("Version created.");
       utils.repo.repo.invalidate();
+      yjsUtil.getPreviousVersion.invalidate();
     },
   });
   useTick(1000);
