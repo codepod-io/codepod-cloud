@@ -420,11 +420,104 @@ function MyCodeMirrorImpl({ node }: { node: CodeNodeType }) {
   );
 }
 
+function SimplePre({ node }: { node: CodeNodeType }) {
+  const codeMap = useAtomValue(ATOM_codeMap);
+  const ytext = codeMap.get(node.id);
+  myassert(ytext);
+  // return <pre>{ytext.toString()}</pre>;
+  return (
+    <div
+      style={
+        {
+          // height is the linum * 1.5em
+          // height: `${linum * 1.5}em`,
+          // border: "1px solid blue",
+        }
+      }
+    >
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          // fontSize: "10em",
+        }}
+      >
+        {/* {content} */}
+        {ytext.toString()}
+      </pre>
+    </div>
+  );
+}
+
+import Prism from "prismjs";
+import "prismjs/themes/prism.css";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-scheme";
+
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css"; // Choose your theme
+
+function PrismBlock({ node }: { node: CodeNodeType }) {
+  // console.log("PrismBlock");
+  const codeMap = useAtomValue(ATOM_codeMap);
+  const ytext = codeMap.get(node.id);
+  myassert(ytext);
+
+  const lang = node.data.lang === "racket" ? "scheme" : node.data.lang;
+
+  const codeRef = useRef(null); // Create a reference to the specific code block
+
+  useEffect(() => {
+    if (codeRef.current) {
+      Prism.highlightElement(codeRef.current); // Highlight only this code block
+    }
+  }, []); // Re-run when code changes
+
+  return (
+    <pre>
+      <code ref={codeRef} className={`language-${lang}`}>
+        {ytext.toString()}
+      </code>
+    </pre>
+  );
+}
+
+function HighlightjsBlock({ node }: { node: CodeNodeType }) {
+  const codeMap = useAtomValue(ATOM_codeMap);
+  const ytext = codeMap.get(node.id);
+  myassert(ytext);
+
+  const lang = node.data.lang === "racket" ? "scheme" : node.data.lang;
+  return <HighlightjsBlockImpl code={ytext.toString()} language={lang} />;
+}
+
+const HighlightjsBlockImpl = ({ code, language }) => {
+  const codeRef = useRef(null); // Create a reference for the code block
+
+  useEffect(() => {
+    if (codeRef.current) {
+      hljs.highlightElement(codeRef.current); // Highlight this specific code block
+    }
+  }, [code]); // Re-run when the code changes
+
+  return (
+    <pre>
+      <code ref={codeRef} className={language}>
+        {code}
+      </code>
+    </pre>
+  );
+};
+
 export const MyCodeMirror = memo(({ id }: { id: string }) => {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
   myassert(node.type === "CODE");
+  // return PrismBlock({ node });
+  // return HighlightjsBlock({ node });
+  // return SimplePre({ node });
   return MyCodeMirrorImpl({ node });
   // return MyCodeMirrorEmpty({ node });
 });
