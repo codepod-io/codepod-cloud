@@ -732,8 +732,8 @@ function SubpageMenu({ id }: { id: string }) {
       </Popover.Root>
       {/* Delete the subpage. */}
       <Popover.Root>
-        <Popover.Trigger>
-          <Tooltip content="Can only delete a subpage when (1) it's empty and (2) there's no ref to it.">
+        <Tooltip content="Can only delete a subpage when (1) it's empty and (2) there's no ref to it.">
+          <Popover.Trigger>
             <Button
               variant="soft"
               color="red"
@@ -741,8 +741,8 @@ function SubpageMenu({ id }: { id: string }) {
             >
               <Trash2 />
             </Button>
-          </Tooltip>
-        </Popover.Trigger>
+          </Popover.Trigger>
+        </Tooltip>
         <Popover.Content width="360px">
           <Flex gap="3">
             <Box flexGrow="1">
