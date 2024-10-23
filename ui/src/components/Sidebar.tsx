@@ -20,10 +20,13 @@ import {
   AlertDialog,
   RadioGroup,
   RadioCards,
+  Popover,
+  TextArea,
 } from "@radix-ui/themes";
 
 import {
   Files,
+  File,
   Search,
   ListTree,
   Cpu,
@@ -34,6 +37,8 @@ import {
   Move,
   Unplug,
   Play,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -60,10 +65,14 @@ import {
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  ATOM_centerSelection,
   ATOM_foldAll,
   ATOM_insertMode,
+  ATOM_jumpBack,
+  ATOM_jumpForward,
+  ATOM_jumpIndex,
+  ATOM_jumps,
   ATOM_nodes,
+  ATOM_onetimeCenterPod,
   ATOM_pinnedPods,
   ATOM_search,
   ATOM_selectedPods,
@@ -72,17 +81,19 @@ import {
   ATOM_updateView,
 } from "@/lib/store/canvasSlice";
 import {
+  ATOM_addSubpage,
   ATOM_codeMap,
   ATOM_nodesMap,
   ATOM_resultMap,
   ATOM_richMap,
   ATOM_runtimeMap,
+  ATOM_subpages,
   ATOM_ydoc,
   ATOM_yjsStatus,
   ATOM_yjsSyncStatus,
   getOrCreate_ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
-import { ATOM_repoData } from "@/lib/store/atom";
+import { ATOM_currentPage, ATOM_repoData } from "@/lib/store/atom";
 import { FpsMeter } from "@/lib/FpsMeter";
 
 import { toast } from "react-toastify";
@@ -429,9 +440,8 @@ function SearchPanel() {
     }[]
   >([]);
 
-  const selectPod = useSetAtom(ATOM_selectPod);
-  const setSelectedPods = useSetAtom(ATOM_selectedPods);
-  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
+
   return (
     <Flex
       direction="column"
@@ -466,9 +476,7 @@ function SearchPanel() {
         <Flex key={r.id} direction="column" gap="3">
           <Button
             onClick={() => {
-              setSelectedPods(new Set<string>());
-              selectPod({ id: r.id, selected: true });
-              setCenterSelection(true);
+              setOnetimeCenterPod(r.id);
             }}
             variant="outline"
             style={{
@@ -521,6 +529,122 @@ function SearchPanel() {
   );
 }
 
+/************************************************************
+ * Subpage
+ ************************************************************/
+
+function SubpagePanel() {
+  const [currentPage, setCurrengPage] = useAtom(ATOM_currentPage);
+  const updateView = useSetAtom(ATOM_updateView);
+  const subpages = useAtomValue(ATOM_subpages);
+  const addSubpage = useSetAtom(ATOM_addSubpage);
+  const [title, setTitle] = useState("");
+  return (
+    <Flex direction="column" gap="3">
+      <Flex>
+        <Heading size="2">Subpage</Heading>
+        {/* grow */}
+        <Flex flexGrow="1" />
+        <Popover.Root>
+          <Popover.Trigger>
+            <Button variant="soft">Add</Button>
+          </Popover.Trigger>
+          <Popover.Content width="360px">
+            <Flex gap="3">
+              <Box flexGrow="1">
+                <TextArea
+                  placeholder="Write a title…"
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <Flex gap="3" mt="3">
+                  <Flex flexGrow={"1"} />
+                  <Popover.Close>
+                    <Button
+                      size="1"
+                      disabled={title.length === 0}
+                      onClick={() => {
+                        addSubpage(title);
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </Popover.Close>
+                </Flex>
+              </Box>
+            </Flex>
+          </Popover.Content>
+        </Popover.Root>
+      </Flex>
+      <RadioCards.Root
+        value={currentPage ?? "main"}
+        columns={{ initial: "1" }}
+        onValueChange={(v: string) => {
+          if (v === "main") {
+            setCurrengPage(undefined);
+          } else {
+            setCurrengPage(v);
+          }
+          updateView();
+        }}
+      >
+        <RadioCards.Item value="main">
+          <Flex direction="row" width="100%" gap="3">
+            <File />
+            <Text weight="bold">Main</Text>
+          </Flex>
+        </RadioCards.Item>
+        {subpages.map(({ id, title }) => (
+          <RadioCards.Item key={id} value={id}>
+            <Flex direction="row" width="100%" gap="3">
+              <File />
+              <Text weight="bold">{title}</Text>
+            </Flex>
+          </RadioCards.Item>
+        ))}
+      </RadioCards.Root>
+    </Flex>
+  );
+}
+
+function JumpPanel() {
+  const jumps = useAtomValue(ATOM_jumps);
+  const jumpIndex = useAtomValue(ATOM_jumpIndex);
+  const jumpBack = useSetAtom(ATOM_jumpBack);
+  const jumpForward = useSetAtom(ATOM_jumpForward);
+  return (
+    <Flex direction="column" gap="3">
+      <Heading size="2">Jump</Heading>
+      {/* <Text>Jumps: {JSON.stringify(jumps)}</Text> */}
+      {/* <Text>JumpIndex: {jumpIndex}</Text> */}
+
+      <Flex gap="3">
+        <IconButton
+          variant="outline"
+          onClick={() => {
+            jumpBack();
+          }}
+          disabled={jumpIndex <= 0}
+        >
+          <ArrowLeft />
+        </IconButton>
+        <IconButton
+          variant="outline"
+          onClick={() => {
+            jumpForward();
+          }}
+          disabled={jumpIndex >= jumps.length - 1}
+        >
+          <ArrowRight />
+        </IconButton>
+      </Flex>
+    </Flex>
+  );
+}
+
+/************************************************************
+ * Debug Panel
+ ************************************************************/
+
 function DebugPanel() {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
@@ -539,6 +663,9 @@ function DebugPanel() {
   return (
     <Flex direction="column" gap="1">
       <YjsSyncStatus />
+      <Separator my="3" size="4" />
+      <JumpPanel />
+      <SubpagePanel />
       <Separator my="3" size="4" />
       <Flex>
         <Text>Selected: {selectedPods.size}</Text>
@@ -748,9 +875,7 @@ const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
 
-  const selectPod = useSetAtom(ATOM_selectPod);
-  const setSelectedPods = useSetAtom(ATOM_selectedPods);
-  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
 
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
@@ -772,9 +897,7 @@ const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
       <Flex>
         <Button
           onClick={() => {
-            setSelectedPods(new Set<string>());
-            selectPod({ id, selected: true });
-            setCenterSelection(true);
+            setOnetimeCenterPod(id);
           }}
           variant="outline"
           style={{

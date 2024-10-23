@@ -9,83 +9,155 @@ import {
 } from "./yjsSlice";
 import { match } from "ts-pattern";
 import { myassert, myNanoId } from "../utils/utils";
-import { AppNode, CodeNodeType, RichNodeType } from "./types";
+import {
+  AppNode,
+  CodeNodeType,
+  RichNodeType,
+  SubpageRefNodeType,
+} from "./types";
 
 import { getAbsPos, getRelativePos, updateView } from "./canvasSlice";
 import { SupportedLanguage } from "./types";
 import { toast } from "react-toastify";
+import { ATOM_currentPage } from "./atom";
 
-export const ATOM_addNode = atom(
-  null,
-  (
-    get,
-    set,
-    {
-      position,
-      type,
-      lang,
-      scopeId,
-    }: {
-      position: XYPosition;
-      type: "CODE" | "RICH";
-      lang?: SupportedLanguage;
-      scopeId?: string;
+import {
+  Block,
+  BlockNoteEditor,
+  blockToNode,
+  PartialBlock,
+} from "@blocknote/core";
+
+import {
+  prosemirrorToYDoc,
+  prosemirrorToYXmlFragment,
+  yXmlFragmentToProseMirrorRootNode,
+} from "y-prosemirror";
+
+const editor = BlockNoteEditor.create();
+
+function _blocksToProsemirrorNode(blocks: PartialBlock[]) {
+  const pmNodes = blocks.map((b) =>
+    blockToNode(b, editor.pmSchema, editor.schema.styleSchema)
+  );
+
+  const doc = editor.pmSchema.topNodeType.create(
+    null,
+    editor.pmSchema.nodes["blockGroup"].create(null, pmNodes)
+  );
+  return doc;
+}
+
+function blocksToYXmlFragment(blocks: Block[], xmlFragment?: Y.XmlFragment) {
+  return prosemirrorToYXmlFragment(
+    _blocksToProsemirrorNode(blocks),
+    xmlFragment
+  );
+}
+
+async function markdownToYXml(markdown: string) {
+  const blocks = await editor.tryParseMarkdownToBlocks(markdown);
+  return blocksToYXmlFragment(blocks);
+}
+
+type InputSpecCommon = {
+  position: XYPosition;
+  scopeId?: string;
+  subpageId?: string;
+};
+
+type InputSpecDiff =
+  | {
+      type: "CODE";
+      lang: SupportedLanguage;
     }
-  ) => {
-    let id = myNanoId();
-    const nodesMap = get(ATOM_nodesMap);
-    let parentId = scopeId;
-    while (parentId) {
-      const parent = nodesMap.get(parentId);
-      myassert(parent);
-      position = {
-        x: position.x - parent.position.x,
-        y: position.y - parent.position.y,
-      };
-      parentId = parent.parentId;
+  | {
+      type: "RICH";
     }
-    switch (type) {
-      case "CODE":
-        {
-          myassert(lang);
-          const node: CodeNodeType = {
-            id,
-            type: "CODE",
-            position,
-            dragHandle: ".custom-drag-handle",
-            parentId: scopeId,
-            data: {
-              lang,
-              mywidth: 600,
-            },
-          };
-          get(ATOM_codeMap).set(id, new Y.Text());
-          nodesMap.set(id, node);
-        }
-        break;
-      case "RICH":
-        {
-          const node: RichNodeType = {
-            id,
-            type: "RICH",
-            position,
-            dragHandle: ".custom-drag-handle",
-            parentId: scopeId,
-            data: {
-              mywidth: 600,
-            },
-          };
-          get(ATOM_richMap).set(id, new Y.XmlFragment());
-          nodesMap.set(id, node);
-        }
-        break;
-    }
-    if (scopeId) {
-      computeHierarchy(get, set);
-    }
-    updateView(get, set);
+  | {
+      type: "SubpageRef";
+      refId: string;
+    };
+
+type InputSpec = InputSpecCommon & InputSpecDiff;
+
+export async function addNode(get: Getter, set: Setter, spec: InputSpec) {
+  const { type, scopeId, subpageId } = spec;
+  let position = spec.position;
+  let id = myNanoId();
+  const nodesMap = get(ATOM_nodesMap);
+  const currentPage = get(ATOM_currentPage);
+  let parentId = scopeId;
+  while (parentId) {
+    const parent = nodesMap.get(parentId);
+    myassert(parent);
+    position = {
+      x: position.x - parent.position.x,
+      y: position.y - parent.position.y,
+    };
+    parentId = parent.parentId;
   }
-);
+  switch (type) {
+    case "CODE":
+      {
+        const node: CodeNodeType = {
+          id,
+          type: "CODE",
+          position,
+          dragHandle: ".custom-drag-handle",
+          parentId: scopeId,
+          data: {
+            lang: spec.lang,
+            mywidth: 600,
+            subpageId: subpageId ?? currentPage,
+          },
+        };
+        get(ATOM_codeMap).set(id, new Y.Text());
+        nodesMap.set(id, node);
+      }
+      break;
+    case "RICH":
+      {
+        const node: RichNodeType = {
+          id,
+          type: "RICH",
+          position,
+          dragHandle: ".custom-drag-handle",
+          parentId: scopeId,
+          data: {
+            mywidth: 600,
+            subpageId: subpageId ?? currentPage,
+          },
+        };
+        get(ATOM_richMap).set(id, new Y.XmlFragment());
+        // const yxml = await markdownToYXml("Hello, **world**!");
+        // get(ATOM_richMap).set(id, yxml);
+        nodesMap.set(id, node);
+      }
+      break;
+    case "SubpageRef": {
+      const node: SubpageRefNodeType = {
+        id,
+        type: "SubpageRef",
+        position,
+        dragHandle: ".custom-drag-handle",
+        parentId: scopeId,
+        data: {
+          mywidth: 400,
+          subpageId: subpageId ?? currentPage,
+          refId: spec.refId,
+        },
+      };
+      nodesMap.set(id, node);
+    }
+  }
+  if (scopeId) {
+    computeHierarchy(get, set);
+  }
+  updateView(get, set);
+}
+
+export const ATOM_addNode = atom(null, addNode);
 
 /**
  * Add a scope node that contains the selected nodes.
@@ -249,7 +321,9 @@ function deletePod(get: Getter, set: Setter, id: string) {
   const richMap = get(ATOM_richMap);
   const node = nodesMap.get(id);
   myassert(node);
-  myassert(node.type === "CODE" || node.type === "RICH");
+  myassert(
+    node.type === "CODE" || node.type === "RICH" || node.type === "SubpageRef"
+  );
   nodesMap.delete(id);
   // remove from codeMap or richMap
   if (codeMap.has(id)) codeMap.delete(id);

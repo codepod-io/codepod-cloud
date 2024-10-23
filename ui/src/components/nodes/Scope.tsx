@@ -31,6 +31,7 @@ import {
   ATOM_collisionIds,
   ATOM_escapedIds,
   ATOM_insertMode,
+  ATOM_onetimeCenterPod,
   ATOM_toggleFold,
   ATOM_toggleIsInit,
   ATOM_toggleTest,
@@ -522,6 +523,7 @@ const FoldedSymbolTable = memo(function FoldedSymbolTable({
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   const reactFlowInstance = useReactFlow();
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
   if (!node) throw new Error(`Node ${id} not found.`);
   return (
     <Box>
@@ -536,19 +538,9 @@ const FoldedSymbolTable = memo(function FoldedSymbolTable({
             <Button
               onClick={() => {
                 // jump to the node
-                const targetId = publicSt.get(key);
-                myassert(targetId);
-                const targetNode = nodesMap.get(targetId);
-                if (!targetNode) return;
-                const pos = getAbsPos(targetNode, nodesMap);
-                reactFlowInstance.setCenter(
-                  pos.x + (targetNode.measured?.width || 0) / 2,
-                  pos.y + (targetNode.measured?.height || 0) / 2,
-                  {
-                    zoom: reactFlowInstance.getZoom(),
-                    duration: 800,
-                  }
-                );
+                const target = publicSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
               }}
               variant="ghost"
               style={{
@@ -583,18 +575,9 @@ const FoldedSymbolTable = memo(function FoldedSymbolTable({
             <Button
               onClick={() => {
                 // jump to the node
-                const targetId = privateSt.get(key)!;
-                const targetNode = nodesMap.get(targetId);
-                if (!targetNode) return;
-                const pos = getAbsPos(targetNode, nodesMap);
-                reactFlowInstance.setCenter(
-                  pos.x + (targetNode.measured?.width || 0) / 2,
-                  pos.y + (targetNode.measured?.height || 0) / 2,
-                  {
-                    zoom: reactFlowInstance.getZoom(),
-                    duration: 800,
-                  }
-                );
+                const target = privateSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
               }}
               variant="ghost"
               style={{ fontSize: "inherit", padding: "0.5em 1em" }}

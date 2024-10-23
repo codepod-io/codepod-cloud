@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { getAbsPos } from "@/lib/store/canvasSlice";
+import { ATOM_onetimeCenterPod, getAbsPos } from "@/lib/store/canvasSlice";
 
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 
@@ -557,6 +557,7 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   const reactFlowInstance = useReactFlow();
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
   if (!node) throw new Error(`Node ${id} not found.`);
   return (
     <>
@@ -607,19 +608,9 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
             <Button
               onClick={() => {
                 // jump to the node
-                const targetId = publicSt.get(key);
-                myassert(targetId);
-                const targetNode = nodesMap.get(targetId);
-                if (!targetNode) return;
-                const pos = getAbsPos(targetNode, nodesMap);
-                reactFlowInstance.setCenter(
-                  pos.x + (targetNode.measured?.width || 0) / 2,
-                  pos.y + (targetNode.measured?.height || 0) / 2,
-                  {
-                    zoom: reactFlowInstance.getZoom(),
-                    duration: 800,
-                  }
-                );
+                const target = publicSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
               }}
               variant="ghost"
             >
@@ -650,18 +641,9 @@ export const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
             <Button
               onClick={() => {
                 // jump to the node
-                const targetId = privateSt.get(key)!;
-                const targetNode = nodesMap.get(targetId);
-                if (!targetNode) return;
-                const pos = getAbsPos(targetNode, nodesMap);
-                reactFlowInstance.setCenter(
-                  pos.x + (targetNode.measured?.width || 0) / 2,
-                  pos.y + (targetNode.measured?.height || 0) / 2,
-                  {
-                    zoom: reactFlowInstance.getZoom(),
-                    duration: 800,
-                  }
-                );
+                const target = privateSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
               }}
               variant="ghost"
             >

@@ -26,3 +26,5 @@ export const ATOM_collaborators = atom<any[]>([]);
 export const ATOM_error = atom<{ type: string; msg: string } | null>(null);
 
 export const ATOM_cutId = atom<string | null>(null);
+
+export const ATOM_currentPage = atom<string | undefined>(undefined);

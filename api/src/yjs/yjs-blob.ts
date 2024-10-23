@@ -158,6 +158,8 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     const nodesMap = new Y.Map<AppNode>();
     const richMap = new Y.Map<Y.XmlFragment>();
     const codeMap = new Y.Map<Y.Text>();
+    const subpageMap = new Y.Map<{ id: string; title: string }>();
+    rootMap.set("subpageMap", subpageMap);
     rootMap.set("nodesMap", nodesMap);
     rootMap.set("edgesMap", new Y.Map<any>());
     rootMap.set("codeMap", codeMap);

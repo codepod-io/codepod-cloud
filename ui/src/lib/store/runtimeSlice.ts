@@ -23,6 +23,7 @@ import { myassert } from "../utils/utils";
 import { ATOM_disableCodeRewrite } from "./settingSlice";
 import { AppNode } from "./types";
 import { topoSort } from "./topoSort";
+import { ATOM_currentPage } from "./atom";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -50,6 +51,10 @@ function rewriteCode(id: string, get: Getter): string | null {
   if (!codeMap.has(id)) return null;
   let code = codeMap.get(id)!.toString();
   if (code.startsWith("!")) return code;
+  // if (get(ATOM_disableCodeRewrite)) {
+  //   return code;
+  // }
+  // return code;
   // replace with symbol table
   let newcode = "";
   let index = 0;
@@ -104,38 +109,43 @@ export function getOrCreate_ATOM_parseResult(id: string) {
   return id2_ATOM_parseResult.get(id)!;
 }
 
+/**
+ * - The immediate field is the immediate pod where this symbol is from. It is
+ *   used for computing defuse edges.
+ * - The final field is the actual pod where this symbol is defined. It is used
+ *   for rewriting code.
+ */
+type SymbolTable = Map<string, { immediate: string; final: string }>;
+
 // ---- private symbol table
-const id2_ATOM_privateST = new Map<
-  string,
-  PrimitiveAtom<Map<string, string>>
->();
+const id2_ATOM_privateST = new Map<string, PrimitiveAtom<SymbolTable>>();
 export function getOrCreate_ATOM_privateST(id: string) {
   if (id2_ATOM_privateST.has(id)) {
     return id2_ATOM_privateST.get(id)!;
   }
-  const res = atom(new Map<string, string>());
+  const res = atom<SymbolTable>(new Map());
   id2_ATOM_privateST.set(id, res);
   return res;
 }
 
 // ---- self symbol table
-const id2_ATOM_selfST = new Map<string, PrimitiveAtom<Map<string, string>>>();
+const id2_ATOM_selfST = new Map<string, PrimitiveAtom<SymbolTable>>();
 export function getOrCreate_ATOM_selfST(id: string) {
   if (id2_ATOM_selfST.has(id)) {
     return id2_ATOM_selfST.get(id)!;
   }
-  const res = atom(new Map<string, string>());
+  const res = atom<SymbolTable>(new Map());
   id2_ATOM_selfST.set(id, res);
   return res;
 }
 
 // ---- public symbol table
-const id2_ATOM_publicST = new Map<string, PrimitiveAtom<Map<string, string>>>();
+const id2_ATOM_publicST = new Map<string, PrimitiveAtom<SymbolTable>>();
 export function getOrCreate_ATOM_publicST(id: string) {
   if (id2_ATOM_publicST.has(id)) {
     return id2_ATOM_publicST.get(id)!;
   }
-  const res = atom(new Map<string, string>());
+  const res = atom<SymbolTable>(new Map());
   id2_ATOM_publicST.set(id, res);
   return res;
 }
@@ -203,46 +213,91 @@ function propagateST(get: Getter, set: Setter, id: string) {
   parseResult.annotations
     .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
     .forEach((annotation) => {
-      selfSt.set(annotation.name, id);
+      selfSt.set(annotation.name, { immediate: id, final: id });
     });
   // set(getOrCreate_ATOM_selfST(id), selfSt);
 
   // Find the nearest scope parent, and insert the symbols to its private ST
-  const parentSt = get(getOrCreate_ATOM_privateST(node.parentId ?? "ROOT"));
+  const parentSt = get(
+    getOrCreate_ATOM_privateST(node.parentId ?? node.data.subpageId ?? "main")
+  );
   parseResult.annotations
     .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
     .forEach((annotation) => {
-      parentSt.set(annotation.name, id);
+      parentSt.set(annotation.name, { immediate: id, final: id });
     });
   // set(getOrCreate_ATOM_privateST(parentScopeId), parentScopeSt);
   // If it is public, insert to one layer up
-  if (node.parentId && node.data.isPublic) {
-    const parent = nodesMap.get(node.parentId);
-    myassert(parent);
-    const grandParentSt = get(
-      getOrCreate_ATOM_privateST(parent.parentId ?? "ROOT")
-    );
-    parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-      .forEach((annotation) => {
-        grandParentSt.set(annotation.name, id);
-      });
-    const parentScopePublicSt = get(getOrCreate_ATOM_publicST(node.parentId));
-    parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-      .forEach((annotation) => {
-        // This public ST is only for visualization purpose. Symbol resolving does not use this.
-        parentScopePublicSt.set(annotation.name, id);
-      });
-    // set(getOrCreate_ATOM_privateST(grandParentScopeId), grandParentScopeSt);
-    // set(getOrCreate_ATOM_publicST(parentScopeId), parentScopePublicSt);
+  if (node.data.isPublic) {
+    if (node.parentId) {
+      const parentId = node.parentId;
+      const parent = nodesMap.get(parentId);
+      myassert(parent);
+      const grandParentSt = get(
+        getOrCreate_ATOM_privateST(
+          parent.parentId ?? parent.data.subpageId ?? "main"
+        )
+      );
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          grandParentSt.set(annotation.name, {
+            immediate: parentId,
+            final: id,
+          });
+        });
+      const parentScopePublicSt = get(getOrCreate_ATOM_publicST(node.parentId));
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          // This public ST is only for visualization purpose. Symbol resolving does not use this.
+          parentScopePublicSt.set(annotation.name, {
+            immediate: id,
+            final: id,
+          });
+        });
+      // set(getOrCreate_ATOM_privateST(grandParentScopeId), grandParentScopeSt);
+      // set(getOrCreate_ATOM_publicST(parentScopeId), parentScopePublicSt);
+    } else {
+      // if it is a root node, and it is belong to a subpage, add to the subpage's public ST
+      const subpageId = node.data.subpageId;
+      if (subpageId) {
+        const subpagePublicSt = get(getOrCreate_ATOM_publicST(subpageId));
+        parseResult.annotations
+          .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+          .forEach((annotation) => {
+            subpagePublicSt.set(annotation.name, { immediate: id, final: id });
+          });
+        // get the subpage refs, and add to private ST there, i.e., the grandparent
+        const subpageRefs = Array.from(nodesMap.values()).filter(
+          (node) => node.type === "SubpageRef" && node.data.refId === subpageId
+        );
+        subpageRefs.forEach((ref) => {
+          const grandParentSt = get(
+            getOrCreate_ATOM_privateST(
+              ref.parentId ?? ref.data.subpageId ?? "main"
+            )
+          );
+          parseResult.annotations
+            .filter(({ type }) =>
+              ["function", "vardef", "bridge"].includes(type)
+            )
+            .forEach((annotation) => {
+              grandParentSt.set(annotation.name, {
+                immediate: ref.id,
+                final: id,
+              });
+            });
+        });
+      }
+    }
   }
 }
 
 async function parseAllPods(get: Getter, set: Setter) {
   const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
-  const nodes = Array.from<AppNode>(nodesMap.values());
+  const nodes = Array.from(nodesMap.values());
   // parse all code pods in parallel
   await Promise.all(
     nodes.map(async (node) => {
@@ -260,13 +315,13 @@ export function propagateAllST(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   // clear all symbol tables
   id2_ATOM_privateST.forEach((atom) => {
-    set(atom, new Map<string, string>());
+    set(atom, new Map());
   });
   id2_ATOM_publicST.forEach((atom) => {
-    set(atom, new Map<string, string>());
+    set(atom, new Map());
   });
   id2_ATOM_selfST.forEach((atom) => {
-    set(atom, new Map<string, string>());
+    set(atom, new Map());
   });
   // propagate symbol tables
   nodesMap.forEach((node) => {
@@ -302,6 +357,12 @@ export function getOrCreate_ATOM_resolveResult(id: string) {
 
 export const ATOM_resolvePod = atom(null, resolvePod);
 
+/**
+ * This is a map for recording the defuse edges during resolving symbols. It is
+ * reset in resolveAllPods.
+ */
+export const resolveDefUseEdges = new Map<string, Set<string>>();
+
 function resolvePod(get: Getter, set: Setter, id: string) {
   // 1. gather all symbols to be resolved
   const resolveResult = {
@@ -321,7 +382,7 @@ function resolvePod(get: Getter, set: Setter, id: string) {
     resolveResult.unresolved.forEach((symbol) => {
       const target = st.get(symbol);
       if (target) {
-        resolveResult.resolved.set(symbol, target);
+        resolveResult.resolved.set(symbol, target.final);
       }
     });
     resolveResult.resolved.forEach((_, key) =>
@@ -332,22 +393,36 @@ function resolvePod(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
-  resolveUp(get, set, { id: node.parentId, resolveResult });
+  resolveUp(get, set, { node, resolveResult });
   set(getOrCreate_ATOM_resolveResult(id), resolveResult);
 }
 
 function resolveUp(
   get: Getter,
   set: Setter,
-  { id, resolveResult }: { id?: string; resolveResult: ResolveResult }
+  { node, resolveResult }: { node: AppNode; resolveResult: ResolveResult }
 ) {
   if (resolveResult.unresolved.size == 0) return;
   // This is a scope termination node. Resolve in private ST.
-  const st = get(getOrCreate_ATOM_privateST(id ?? "ROOT"));
+  const st = get(
+    getOrCreate_ATOM_privateST(node.parentId ?? node.data.subpageId ?? "main")
+  );
   resolveResult.unresolved.forEach((symbol) => {
     const target = st.get(symbol);
     if (target) {
-      resolveResult.resolved.set(symbol, target);
+      {
+        // Recording defuse edges during resolving symbols.
+        //
+        // source: the pod where this symbol comes from
+        const sourceId = target.immediate;
+        // target: the current node
+        const targetId = node.id;
+        if (!resolveDefUseEdges.has(sourceId)) {
+          resolveDefUseEdges.set(sourceId, new Set());
+        }
+        resolveDefUseEdges.get(sourceId)!.add(targetId);
+      }
+      resolveResult.resolved.set(symbol, target.final);
     }
   });
   resolveResult.resolved.forEach((_, key) =>
@@ -356,16 +431,17 @@ function resolveUp(
 
   // Return conditions.
   if (resolveResult.unresolved.size == 0) return;
-  if (!id) return;
+  if (!node.parentId) return;
   // pass up
   const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(id);
-  myassert(node);
-  resolveUp(get, set, { id: node.parentId, resolveResult });
+  const parent = nodesMap.get(node.parentId);
+  myassert(parent);
+  resolveUp(get, set, { node: parent, resolveResult });
 }
 
 function resolveAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
+  resolveDefUseEdges.clear();
   nodesMap.forEach((node) => {
     if (node.type === "CODE") {
       resolvePod(get, set, node.id);
@@ -506,9 +582,13 @@ function buildAdjacencySet(edges: Edge[]): {
 export function getAllCode(get: Getter, set: Setter) {
   // 1. get root nodes
   const nodesMap = get(ATOM_nodesMap);
-  let nodes0 = Array.from<AppNode>(nodesMap.values());
+  let nodes0 = Array.from(nodesMap.values());
   const edges = get(ATOM_edges);
-  const rootNodes = nodes0.filter((node) => !node.parentId);
+  const currentPage = get(ATOM_currentPage);
+  // only run the current subpage
+  const rootNodes = nodes0.filter(
+    (node) => !node.parentId && node.data.subpageId === currentPage
+  );
   const rootIds = rootNodes.map((node) => node.id);
   // Build the adjacency set
   const { adjacencySet, reverseAdjacencySet } = buildAdjacencySet(edges);

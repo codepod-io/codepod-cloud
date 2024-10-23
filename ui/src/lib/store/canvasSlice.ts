@@ -8,6 +8,8 @@ import {
   MarkerType,
   Node,
   NodeChange,
+  ReactFlowInstance,
+  Viewport,
   XYPosition,
   applyNodeChanges,
 } from "@xyflow/react";
@@ -26,10 +28,15 @@ import { myassert, myNanoId } from "../utils/utils";
 import { AppNode } from "./types";
 
 import debounce from "lodash/debounce";
-import { ATOM_cutId } from "./atom";
+import { ATOM_currentPage, ATOM_cutId } from "./atom";
 import { DEFUSE_EDGE, MANUAL_EDGE } from "@/components/Canvas";
 import { toast } from "react-toastify";
-import { getOrCreate_ATOM_resolveResult, propagateAllST } from "./runtimeSlice";
+import {
+  getAllCode,
+  getOrCreate_ATOM_resolveResult,
+  propagateAllST,
+  resolveDefUseEdges,
+} from "./runtimeSlice";
 
 export const ATOM_insertMode = atom<"Insert" | "Move" | "Connect">("Insert");
 
@@ -63,6 +70,11 @@ export function getRelativePos(
   return { x, y };
 }
 
+export const ATOM_reactflowInstance = atom<ReactFlowInstance<
+  AppNode,
+  Edge
+> | null>(null);
+
 export const ATOM_nodes = atom<AppNode[]>([]);
 export const ATOM_edges = atom<Edge[]>([]);
 
@@ -72,7 +84,6 @@ export const ATOM_helperLineVertical = atom<number | undefined>(undefined);
 export const ATOM_focusedEditor = atom<string | null>(null);
 
 export const ATOM_selectedPods = atom<Set<string>>(new Set<string>());
-export const ATOM_centerSelection = atom<boolean>(false);
 
 function selectPod(
   get: Getter,
@@ -90,6 +101,91 @@ function selectPod(
 }
 
 export const ATOM_selectPod = atom(null, selectPod);
+
+type JumpLocation = { subpageId?: string; viewport: Viewport };
+
+export const ATOM_jumps = atom<JumpLocation[]>([]);
+export const ATOM_jumpIndex = atom(0);
+
+export const ATOM_onetimeViewport = atom<Viewport | undefined>(undefined);
+export const ATOM_onetimeCenterPod = atom<string | undefined>(undefined);
+
+function jumpToPod(get: Getter, set: Setter, id: string) {
+  const reactflowInstance = get(ATOM_reactflowInstance);
+  myassert(reactflowInstance);
+  const currentPage = get(ATOM_currentPage);
+  const viewport = reactflowInstance.getViewport();
+  const from = {
+    subpageId: currentPage,
+    viewport,
+  };
+  // save the current viewport position
+  const jumps = get(ATOM_jumps);
+  const jumpIndex = get(ATOM_jumpIndex);
+  // if we are in the middle of the jumps, we need to remove the jumps after
+  // the current jumpIndex
+  if (jumpIndex < jumps.length - 1) {
+    jumps.slice(0, jumpIndex + 1);
+  }
+  // save the current position
+  jumps.push(from);
+  set(ATOM_jumps, jumps);
+  set(ATOM_jumpIndex, jumps.length);
+  // jump to the pod
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  if (node.data.subpageId) {
+    set(ATOM_currentPage, node.data.subpageId);
+  }
+  set(ATOM_onetimeCenterPod, id);
+  updateView(get, set);
+}
+
+export const ATOM_jumpToPod = atom(null, jumpToPod);
+
+function jumpBack(get: Getter, set: Setter) {
+  const jumps = get(ATOM_jumps);
+  const jumpIndex = get(ATOM_jumpIndex);
+  if (jumpIndex <= 0) return;
+  const to = jumps[jumpIndex - 1];
+  set(ATOM_jumpIndex, jumpIndex - 1);
+  // if we are at the end of the jumps, we need to save the current viewport
+  // position
+  if (jumpIndex === jumps.length) {
+    const reactflowInstance = get(ATOM_reactflowInstance);
+    myassert(reactflowInstance);
+    const currentPage = get(ATOM_currentPage);
+    const viewport = reactflowInstance.getViewport();
+    const from = {
+      subpageId: currentPage,
+      viewport,
+    };
+    set(ATOM_jumps, [...jumps, from]);
+  }
+  myassert(to);
+  // do the jump
+  set(ATOM_currentPage, to.subpageId);
+  set(ATOM_onetimeViewport, to.viewport);
+  updateView(get, set);
+}
+
+export const ATOM_jumpBack = atom(null, jumpBack);
+
+function jumpForward(get: Getter, set: Setter) {
+  const jumps = get(ATOM_jumps);
+  const jumpIndex = get(ATOM_jumpIndex);
+  if (jumpIndex >= jumps.length - 1) return;
+  const to = jumps[jumpIndex + 1];
+  set(ATOM_jumpIndex, jumpIndex + 1);
+  myassert(to);
+  // do the jump
+  set(ATOM_currentPage, to.subpageId);
+  set(ATOM_onetimeViewport, to.viewport);
+  updateView(get, set);
+}
+
+export const ATOM_jumpForward = atom(null, jumpForward);
 
 type T_id2parent = Map<string, string | undefined>;
 let oldStructure: T_id2parent = new Map<string, string | undefined>();
@@ -136,58 +232,22 @@ function getCommonAncestor(
 function generateCallEdges(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   const res: Edge[] = [];
-  nodesMap.forEach((node) => {
-    const resolveResult = get(getOrCreate_ATOM_resolveResult(node.id));
-    myassert(resolveResult);
-    for (let [key, value] of resolveResult.resolved) {
-      // do not show self-connections
-      if (node.id === value) continue;
-      // if the node is not visible, find the folded scope and connect to it
-      const sourceId = value;
-      const targetId = node.id;
-      // the sourceId2 and targetId2 are the real source and target to use in the edges.
-      let sourceId2 = sourceId;
-      let targetId2 = targetId;
-
-      let sourceNode = nodesMap.get(sourceId);
-      let targetNode = nodesMap.get(targetId);
-      myassert(sourceNode && targetNode);
-      // Compute edges so that the source and target are in the same scope.
-      if (sourceNode.parentId !== targetNode.parentId) {
-        // get the common ancestor
-        const LCA = getCommonAncestor(sourceNode, targetNode, nodesMap);
-        while (sourceNode.parentId !== LCA) {
-          myassert(sourceNode.parentId);
-          sourceNode = nodesMap.get(sourceNode.parentId);
-          myassert(sourceNode);
-        }
-        while (targetNode.parentId !== LCA) {
-          myassert(targetNode.parentId);
-          targetNode = nodesMap.get(targetNode.parentId);
-          myassert(targetNode);
-        }
-        // now sourceNode and targetNode are in the same scope
-        sourceId2 = sourceNode.id;
-        targetId2 = targetNode.id;
+  // directly use the resolveDefUseEdge
+  resolveDefUseEdges.forEach((targets, sourceId) => {
+    targets.forEach((targetId) => {
+      const sourceNode = nodesMap.get(sourceId);
+      const targetNode = nodesMap.get(targetId);
+      if (!sourceNode || !targetNode) {
+        return;
       }
       res.push({
-        id: `${key}-${node.id}`,
-        source: sourceId2,
-        target: targetId2,
-        // sourceHandle: "right",
-        // targetHandle: "left",
-        // markerEnd: {
-        //   type: MarkerType.Arrow,
-        //   color: "red",
-        //   // strokeWidth: 4,
-        // },
+        id: `${sourceId}-${targetId}`,
+        source: sourceId,
+        target: targetId,
         type: DEFUSE_EDGE,
-        // Caution: animated edges have a huge performance hit.
-        // animated: true,
       });
-    }
+    });
   });
-  // console.log("call edges", res);
   return res;
 }
 
@@ -221,10 +281,14 @@ export function updateView(get: Getter, set: Setter) {
   // TODO compare new/old structure
 
   // The nodes from the nodesMap.
-  const nodes0 = Array.from<AppNode>(nodesMap.values());
+  const nodes0 = Array.from(nodesMap.values());
+  // get current page
+  const currentPage = get(ATOM_currentPage);
+  const rootNodes = nodes0.filter(
+    (node) => !node.parentId && node.data.subpageId === currentPage
+  );
 
   // render scope first
-  const rootNodes = nodes0.filter((node) => !node.parentId);
   const nodes1 = rootNodes
     .map(({ id }) => {
       return getSubtreeNodes(id, nodesMap);
@@ -363,7 +427,7 @@ export const ATOM_unfoldAll = atom(null, unfoldAll);
 
 function search(get: Getter, set: Setter, query: string) {
   const nodesMap = get(ATOM_nodesMap);
-  const nodes = Array.from<AppNode>(nodesMap.values()).filter(
+  const nodes = Array.from(nodesMap.values()).filter(
     (node) => node.type === "CODE"
   );
   const codeMap = get(ATOM_codeMap);
@@ -596,7 +660,10 @@ export const ATOM_escapedIds = atom<string[]>([]);
 function computeCollisions(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   const nodes = Array.from(nodesMap.values());
-  const rootNodes = nodes.filter((node) => !node.parentId);
+  const currentPage = get(ATOM_currentPage);
+  const rootNodes = nodes.filter(
+    (node) => !node.parentId && node.data.subpageId === currentPage
+  );
   // get collisions
   const collisionIds = getCollisionIds(rootNodes);
   const escapedIds = getEscapedIds(rootNodes);
