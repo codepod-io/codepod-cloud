@@ -160,7 +160,7 @@ const edgeTypes = {
  * using this wrapper component to load the useXXX functions only once.
  */
 function CanvasImplWrap() {
-  useCopyPaste();
+  // useCopyPaste();
   return (
     <Flex flexGrow={"1"} position="relative">
       <CanvasImpl />

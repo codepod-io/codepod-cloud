@@ -20,45 +20,7 @@ import { getAbsPos, getRelativePos, updateView } from "./canvasSlice";
 import { SupportedLanguage } from "./types";
 import { toast } from "react-toastify";
 import { ATOM_currentPage } from "./atom";
-
-import {
-  Block,
-  BlockNoteEditor,
-  blockToNode,
-  PartialBlock,
-} from "@blocknote/core";
-
-import {
-  prosemirrorToYDoc,
-  prosemirrorToYXmlFragment,
-  yXmlFragmentToProseMirrorRootNode,
-} from "y-prosemirror";
-
-const editor = BlockNoteEditor.create();
-
-function _blocksToProsemirrorNode(blocks: PartialBlock[]) {
-  const pmNodes = blocks.map((b) =>
-    blockToNode(b, editor.pmSchema, editor.schema.styleSchema)
-  );
-
-  const doc = editor.pmSchema.topNodeType.create(
-    null,
-    editor.pmSchema.nodes["blockGroup"].create(null, pmNodes)
-  );
-  return doc;
-}
-
-function blocksToYXmlFragment(blocks: Block[], xmlFragment?: Y.XmlFragment) {
-  return prosemirrorToYXmlFragment(
-    _blocksToProsemirrorNode(blocks),
-    xmlFragment
-  );
-}
-
-async function markdownToYXml(markdown: string) {
-  const blocks = await editor.tryParseMarkdownToBlocks(markdown);
-  return blocksToYXmlFragment(blocks);
-}
+import { blocksToYXmlFragment, yXmlFragmentToBlocks } from "./blockNoteUtils";
 
 type InputSpecCommon = {
   position: XYPosition;
@@ -568,3 +530,201 @@ function duplicateSelection(get: Getter, set: Setter, nodes1: AppNode[]) {
 }
 
 export const ATOM_duplicateSelection = atom(null, duplicateSelection);
+
+/**
+ * For the subtree rooted at id, create a clone with all new ids. Return the new id of the root.
+ */
+function copySubtree(
+  get: Getter,
+  set: Setter,
+  { id }: { id: string },
+  {
+    nodesMap2,
+    richMap2,
+    codeMap2,
+  }: {
+    nodesMap2: Map<string, AppNode>;
+    richMap2: Map<string, string>;
+    codeMap2: Map<string, string>;
+  }
+) {
+  const nodesMap = get(ATOM_nodesMap);
+  const richMap = get(ATOM_richMap);
+  const codeMap = get(ATOM_codeMap);
+  const node = nodesMap.get(id);
+  myassert(node);
+  nodesMap2.set(id, structuredClone(node));
+  switch (node.type) {
+    case "SCOPE":
+      {
+        node.data.childrenIds.forEach((id) => {
+          copySubtree(get, set, { id }, { nodesMap2, richMap2, codeMap2 });
+        });
+      }
+      break;
+    case "CODE":
+      {
+        const newNode = structuredClone(node);
+        const code = codeMap.get(id);
+        myassert(code);
+        codeMap2.set(newNode.id, code.toString());
+      }
+      break;
+    case "RICH":
+      {
+        const newNode = structuredClone(node);
+        const rich = richMap.get(id);
+        myassert(rich);
+        const blocks = yXmlFragmentToBlocks(rich);
+        richMap2.set(newNode.id, JSON.stringify(blocks));
+      }
+      break;
+    default:
+      myassert(false);
+  }
+  return true;
+}
+
+async function copyScope(get: Getter, set: Setter, id: string) {
+  const nodesMap2 = new Map<string, AppNode>();
+  const richMap2 = new Map<string, string>();
+  const codeMap2 = new Map<string, string>();
+  copySubtree(get, set, { id }, { nodesMap2, richMap2, codeMap2 });
+  // console.log("codeMap2", codeMap2);
+  // console.log("richMap2", richMap2);
+  const data = {
+    oldId: id,
+    // nodesMap2: JSON.stringify(Array.from(nodesMap2.entries())),
+    nodesMap2: Array.from(nodesMap2.entries()),
+    // richMap2: JSON.stringify(Array.from(richMap2.entries())),
+    // codeMap2: JSON.stringify(Array.from(codeMap2.entries())),
+    richMap2: Array.from(richMap2.entries()),
+    codeMap2: Array.from(codeMap2.entries()),
+  };
+  const serializedData = JSON.stringify(data);
+  // console.log("serializedData", serializedData);
+  await navigator.clipboard.writeText(serializedData);
+}
+
+export const ATOM_copyScope = atom(null, copyScope);
+
+function pasteSubtree(
+  get: Getter,
+  set: Setter,
+  { oldId, newParentId }: { oldId: string; newParentId?: string },
+  {
+    nodesMap2,
+    richMap2,
+    codeMap2,
+  }: {
+    nodesMap2: Map<string, AppNode>;
+    richMap2: Map<string, string>;
+    codeMap2: Map<string, string>;
+  }
+) {
+  const nodesMap = get(ATOM_nodesMap);
+  const richMap = get(ATOM_richMap);
+  const codeMap = get(ATOM_codeMap);
+  const node = structuredClone(nodesMap2.get(oldId));
+  myassert(node);
+  const newId = myNanoId();
+  // console.log("oldId", oldId, "newId", newId);
+  // set a new ID and the parentId
+  node.id = newId;
+  node.parentId = newParentId;
+  const currentPage = get(ATOM_currentPage);
+  node.data.subpageId = currentPage;
+  nodesMap.set(newId, node);
+  switch (node.type) {
+    case "CODE":
+      {
+        // copy the code
+        const code = codeMap2.get(oldId);
+        myassert(code);
+        const code2 = new Y.Text(code);
+        codeMap.set(newId, code2);
+      }
+      break;
+    case "RICH":
+      {
+        // copy the rich content
+        const rich = richMap2.get(oldId);
+        myassert(rich);
+        const blocks = JSON.parse(rich);
+        const rich2 = blocksToYXmlFragment(blocks);
+        richMap.set(newId, rich2);
+      }
+      break;
+    case "SCOPE":
+      {
+        node.data.childrenIds.forEach((childId) => {
+          pasteSubtree(
+            get,
+            set,
+            { oldId: childId, newParentId: newId },
+            { nodesMap2, richMap2, codeMap2 }
+          );
+        });
+      }
+      break;
+    default:
+      myassert(false);
+  }
+  return newId;
+}
+
+function pasteScopeImpl(
+  get: Getter,
+  set: Setter,
+  position: XYPosition,
+  {
+    oldId,
+    nodesMap2,
+    richMap2,
+    codeMap2,
+  }: {
+    oldId: string;
+    nodesMap2: Map<string, AppNode>;
+    richMap2: Map<string, string>;
+    codeMap2: Map<string, string>;
+  }
+) {
+  const newScopeId = pasteSubtree(
+    get,
+    set,
+    { oldId: oldId },
+    {
+      nodesMap2: nodesMap2,
+      richMap2: richMap2,
+      codeMap2: codeMap2,
+    }
+  );
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(newScopeId);
+  myassert(node);
+  // adjust the position
+  node.position = position;
+  // compute the hierarchy
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+
+async function pasteScope(get: Getter, set: Setter, position: XYPosition) {
+  try {
+    const text = await navigator.clipboard.readText(); // Read the clipboard
+    const parsedData = JSON.parse(text); // Parse the text as JSON
+    const data = {
+      oldId: parsedData.oldId,
+      nodesMap2: new Map<string, AppNode>(parsedData.nodesMap2),
+      richMap2: new Map<string, string>(parsedData.richMap2),
+      codeMap2: new Map<string, string>(parsedData.codeMap2),
+    };
+    // TODO validate
+    pasteScopeImpl(get, set, position, data);
+  } catch (err) {
+    toast.error("Failed to paste JSON from clipboard");
+    console.log("err", err);
+  }
+}
+
+export const ATOM_pasteScope = atom(null, pasteScope);

@@ -32,6 +32,7 @@ import {
   ATOM_deleteEdge,
   ATOM_deleteSelection,
   ATOM_duplicateSelection,
+  ATOM_pasteScope,
 } from "@/lib/store/canvasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap, ATOM_subpages } from "@/lib/store/yjsSlice";
@@ -140,6 +141,8 @@ export function usePaneContextMenu() {
 
   const subpages = useAtomValue(ATOM_subpages);
 
+  const pasteScope = useSetAtom(ATOM_pasteScope);
+
   const contextMenu = (
     <Box
       style={{
@@ -235,9 +238,20 @@ export function usePaneContextMenu() {
               Racket
             </DropdownMenu.Item>
             <DropdownMenu.Separator />
+            {/* paste */}
+            <DropdownMenu.Item
+              shortcut="⌘ E"
+              onSelect={() => {
+                pasteScope(position);
+              }}
+            >
+              Paste
+            </DropdownMenu.Item>
             {/* subpage */}
             <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>Subpage</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubTrigger disabled={subpages.length === 0}>
+                Subpage
+              </DropdownMenu.SubTrigger>
               <DropdownMenu.SubContent>
                 {subpages.map((subpage) => (
                   <DropdownMenu.Item
