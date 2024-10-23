@@ -74,6 +74,7 @@ import {
   ATOM_jumpForward,
   ATOM_jumpIndex,
   ATOM_jumps,
+  ATOM_jumpToPod,
   ATOM_nodes,
   ATOM_onetimeCenterPod,
   ATOM_pinnedPods,
@@ -447,15 +448,16 @@ function SearchPanel() {
   >([]);
 
   const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
+  const jumpToPod = useSetAtom(ATOM_jumpToPod);
 
   return (
     <Flex
       direction="column"
       gap="3"
-      style={{
-        maxHeight: "200px",
-        overflowY: "auto",
-      }}
+      // style={{
+      //   maxHeight: "200px",
+      //   overflowY: "auto",
+      // }}
     >
       <Heading size="2">Search</Heading>
       <TextField.Root
@@ -482,7 +484,7 @@ function SearchPanel() {
         <Flex key={r.id} direction="column" gap="3">
           <Button
             onClick={() => {
-              setOnetimeCenterPod(r.id);
+              jumpToPod(r.id);
             }}
             variant="outline"
             style={{
