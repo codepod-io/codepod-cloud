@@ -125,6 +125,7 @@ const highlightTheme = EditorView.baseTheme({
 });
 
 const highlightEffect = StateEffect.define<HighlightRange>();
+const clearHighlightsEffect = StateEffect.define<null>();
 
 const highlightMark = (color: string) =>
   Decoration.mark({
@@ -139,8 +140,12 @@ const highlightExtension = (): Extension => {
     },
     update(highlights, tr) {
       highlights = highlights.map(tr.changes);
+
       for (const e of tr.effects) {
-        if (e.is(highlightEffect)) {
+        if (e.is(clearHighlightsEffect)) {
+          // Clear all existing highlights
+          highlights = Decoration.none;
+        } else if (e.is(highlightEffect)) {
           highlights = highlights.update({
             add: [highlightMark(e.value.color).range(e.value.from, e.value.to)],
           });
@@ -169,7 +174,10 @@ function useHighlight(
       const toPos = viewRef.current.state.doc.line(to.row).from + to.col - 1;
 
       viewRef.current.dispatch({
-        effects: highlightEffect.of({ from: fromPos, to: toPos, color }),
+        effects: [
+          clearHighlightsEffect.of(null),
+          highlightEffect.of({ from: fromPos, to: toPos, color }),
+        ],
       });
     }
   };
@@ -183,7 +191,10 @@ function useHighlight(
       const fromPos = startIndex;
       const toPos = endIndex;
       viewRef.current.dispatch({
-        effects: highlightEffect.of({ from: fromPos, to: toPos, color }),
+        effects: [
+          clearHighlightsEffect.of(null),
+          highlightEffect.of({ from: fromPos, to: toPos, color }),
+        ],
       });
     }
   };
@@ -192,6 +203,14 @@ function useHighlight(
   const resolveResult = useAtomValue(getOrCreate_ATOM_resolveResult(node.id));
 
   useEffect(() => {
+    // Clear all highlights first
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: clearHighlightsEffect.of(null),
+      });
+    }
+
+    // Then add new highlights
     parseResult.annotations.forEach((annotation) => {
       // annotation.startIndex
       // annotation.startPosition
