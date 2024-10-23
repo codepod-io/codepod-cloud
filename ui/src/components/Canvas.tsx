@@ -14,6 +14,7 @@ import {
   getBezierPath,
   EdgeProps,
   Node,
+  Edge,
 } from "@xyflow/react";
 
 // you also need to adjust the style import
@@ -48,32 +49,41 @@ import {
   ATOM_nodes,
   ATOM_selectedPods,
   ATOM_onNodesChange,
-  ATOM_centerSelection,
   getAbsPos,
   ATOM_onConnect,
   ATOM_insertMode,
   ATOM_updateView,
   g_nonSelectableScopes,
+  ATOM_reactflowInstance,
+  ATOM_onetimeViewport,
+  ATOM_onetimeCenterPod,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
+  ATOM_currentPage,
   ATOM_editMode,
   ATOM_repoData,
   ATOM_shareOpen,
   INIT_ZOOM,
 } from "@/lib/store/atom";
-import { Box, Flex } from "@radix-ui/themes";
+import { Box, Button, Flex } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
 import { debounce } from "lodash";
 import { env } from "../lib/vars";
 import { myassert } from "@/lib/utils/utils";
 import { css } from "@emotion/css";
 import { AppNode } from "@/lib/store/types";
+import { SubpageRefNode } from "./nodes/SubpageRef";
+import {
+  getOrCreate_ATOM_privateST,
+  getOrCreate_ATOM_publicST,
+} from "@/lib/store/runtimeSlice";
 
 const nodeTypes = {
   CODE: CodeNode,
   RICH: RichNode,
   SCOPE: ScopeNode,
+  SubpageRef: SubpageRefNode,
 };
 
 function GradientEdge({
@@ -192,9 +202,11 @@ function CanvasImpl() {
   const onNodesChange = useSetAtom(ATOM_onNodesChange);
   const onConnect = useSetAtom(ATOM_onConnect);
 
-  const [selectedPods] = useAtom(ATOM_selectedPods);
-
-  const reactFlowInstance = useReactFlow();
+  const reactFlowInstance = useReactFlow<AppNode, Edge>();
+  const setReactflowInstance = useSetAtom(ATOM_reactflowInstance);
+  useEffect(() => {
+    setReactflowInstance(reactFlowInstance);
+  }, [reactFlowInstance]);
 
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
@@ -205,15 +217,21 @@ function CanvasImpl() {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const [shareOpen, setShareOpen] = useAtom(ATOM_shareOpen);
 
-  const [centerSelection, setCenterSelection] = useAtom(ATOM_centerSelection);
+  const currentPage = useAtomValue(ATOM_currentPage);
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    fitView({ maxZoom: 1 });
+  }, [currentPage]);
+
+  const [onetimeCenterPod, setOnetimeCenterSelection] = useAtom(
+    ATOM_onetimeCenterPod
+  );
 
   useEffect(() => {
     // move the viewport to the to node
     // get the absolute position of the to node
-    if (centerSelection && selectedPods.size > 0) {
-      const id = selectedPods.values().next().value;
-      if (!id) return;
-      const node = nodesMap.get(id);
+    if (onetimeCenterPod) {
+      const node = nodesMap.get(onetimeCenterPod);
       if (!node) return;
       const pos = getAbsPos(node, nodesMap);
 
@@ -226,9 +244,20 @@ function CanvasImpl() {
         zoom: 20 / Math.sqrt(width),
         duration: 800,
       });
-      setCenterSelection(false);
+      setOnetimeCenterSelection(undefined);
     }
-  }, [centerSelection, setCenterSelection]);
+  }, [onetimeCenterPod]);
+
+  // Set the viewport onetime.
+  const [onetimeViewport, setOnetimeViewport] = useAtom(ATOM_onetimeViewport);
+  useEffect(() => {
+    if (onetimeViewport) {
+      reactFlowInstance.setViewport(onetimeViewport, {
+        duration: 800,
+      });
+      setOnetimeViewport(undefined);
+    }
+  }, [onetimeViewport]);
 
   const [helperLineHorizontal] = useAtom(ATOM_helperLineHorizontal);
   const [helperLineVertical] = useAtom(ATOM_helperLineVertical);
@@ -357,12 +386,12 @@ function CanvasImpl() {
         }}
         // end custom edge
 
-        onMove={(e, { x, y, zoom }) => {
-          // FIXME this is causing the re-rendering of the canvas. All trpc
-          // mutations will cause the re-rendering.
-          if (env.READ_ONLY) return;
-          debouncedSaveViewPort({ repoId, x, y, zoom });
-        }}
+        // onMove={(e, { x, y, zoom }) => {
+        //   // FIXME this is causing the re-rendering of the canvas. All trpc
+        //   // mutations will cause the re-rendering.
+        //   if (env.READ_ONLY) return;
+        //   debouncedSaveViewPort({ repoId, x, y, zoom });
+        // }}
         // drag to select nodes instead of panning the canvas.
         panOnDrag={false}
         selectionOnDrag={true}
@@ -376,10 +405,11 @@ function CanvasImpl() {
         // multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         selectionMode={SelectionMode.Partial}
         // Restore previous viewport.
-        defaultViewport={{ zoom: repoData.zoom, x: repoData.x, y: repoData.y }}
+        // defaultViewport={{ zoom: repoData.zoom, x: repoData.x, y: repoData.y }}
         // Center node on repo creation. INIT_ZOOM is a magic number (1.001) to
         // trigger initial centering.
-        fitView={repoData.zoom === INIT_ZOOM}
+        // fitView={repoData.zoom === INIT_ZOOM}
+        fitView={true}
         fitViewOptions={{ maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
         disableKeyboardA11y={true}
@@ -432,10 +462,89 @@ function CanvasImpl() {
           />
         </Box>
       </ReactFlow>
+      <SubpageSymbolTable />
       {paneContextMenu}
       {edgeContextMenu}
       {selectionContextMenu}
     </Flex>
+  );
+}
+
+function SubpageSymbolTable() {
+  const currentPage = useAtomValue(ATOM_currentPage);
+  const privateSt = useAtomValue(
+    getOrCreate_ATOM_privateST(currentPage ?? "main")
+  );
+  const publicSt = useAtomValue(
+    getOrCreate_ATOM_publicST(currentPage ?? "main")
+  );
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
+  return (
+    <Box>
+      <Box
+        style={{
+          // place it on the left
+          position: "absolute",
+          top: 0,
+          left: 0,
+          // transform: "translateX(-100%) translateX(-10px)",
+          pointerEvents: "all",
+          // border: "1px solid red",
+        }}
+      >
+        {/* public */}
+        {[...publicSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const target = publicSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
+              }}
+              variant="ghost"
+            >
+              <code
+                style={{
+                  color: "green",
+                }}
+              >
+                {key}
+              </code>
+            </Button>
+          </Flex>
+        ))}
+      </Box>
+
+      {/* RIGHT: show private ST of this scope. */}
+      <Box
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          right: 0,
+          // transform: "translateX(100%) translateX(10px)",
+          pointerEvents: "all",
+        }}
+      >
+        {/* private */}
+        {[...privateSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const target = privateSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
+              }}
+              variant="ghost"
+            >
+              <code>{key}</code>
+            </Button>
+          </Flex>
+        ))}
+      </Box>
+    </Box>
   );
 }
 

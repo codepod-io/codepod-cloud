@@ -11,7 +11,8 @@ import { produce } from "immer";
 import { useCallback } from "react";
 import { updateView } from "./canvasSlice";
 import { ATOM_repoData } from "./atom";
-import { myassert } from "../utils/utils";
+import { myassert, myNanoId } from "../utils/utils";
+import { addNode } from "./canvasSlice_addNode";
 
 // The atoms
 
@@ -53,6 +54,51 @@ function triggerResultChanged(get: Getter, set: Setter, id: string) {
 /**
  * Yjs Map getters
  */
+// subpages
+type Subpage = {
+  id: string;
+  title: string;
+};
+function getSubpageMap(get: Getter) {
+  const ydoc = get(ATOM_ydoc);
+  return ydoc.getMap("rootMap").get("subpageMap") as Y.Map<Subpage>;
+}
+const ATOM_subpageMap = atom(getSubpageMap);
+
+export const ATOM_subpages = atom<Subpage[]>([]);
+function addSubpage(get: Getter, set: Setter, title: string) {
+  const id = myNanoId();
+  const subpageMap = get(ATOM_subpageMap);
+  subpageMap.set(id, { id, title });
+  set(ATOM_subpages, Array.from(subpageMap.values()));
+  // create a pod in this subpage
+  addNode(get, set, {
+    type: "RICH",
+    position: { x: 0, y: 0 },
+    subpageId: id,
+  });
+}
+export const ATOM_addSubpage = atom(null, addSubpage);
+
+function renameSubpage(get: Getter, set: Setter, id: string, title: string) {
+  const subpageMap = get(ATOM_subpageMap);
+  const subpage = subpageMap.get(id);
+  myassert(subpage);
+  subpage.title = title;
+  subpageMap.set(id, subpage);
+  set(ATOM_subpages, Array.from(subpageMap.values()));
+}
+
+export const ATOM_renameSubpage = atom(null, renameSubpage);
+
+function deleteSubpage(get: Getter, set: Setter, id: string) {
+  const subpageMap = get(ATOM_subpageMap);
+  subpageMap.delete(id);
+  set(ATOM_subpages, Array.from(subpageMap.values()));
+}
+
+export const ATOM_deleteSubpage = atom(null, deleteSubpage);
+
 function getNodesMap(get: Getter) {
   const ydoc = get(ATOM_ydoc);
   const rootMap = ydoc.getMap<Y.Map<AppNode>>("rootMap");
@@ -93,6 +139,7 @@ function getResultMap(get: Getter) {
 const ATOM_resultMap = atom(getResultMap);
 
 export {
+  ATOM_subpageMap,
   ATOM_nodesMap,
   ATOM_edgesMap,
   ATOM_codeMap,
@@ -252,6 +299,15 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
       if (transaction.local) return;
       updateView(get, set);
     });
+    // subpages
+    const subpageMap = get(ATOM_subpageMap);
+    set(ATOM_subpages, Array.from(subpageMap.values()));
+    subpageMap.observe(
+      (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+        if (transaction.local) return;
+        set(ATOM_subpages, Array.from(subpageMap.values()));
+      }
+    );
     // Set active runtime to the first one.
     const runtimeMap = getRuntimeMap(get);
 

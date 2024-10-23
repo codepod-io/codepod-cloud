@@ -20,6 +20,8 @@ type CommonData = {
   isTest?: boolean;
   // If true, the pod is marked as public API.
   isPublic?: boolean;
+  // subpage ID. If set, the pod belongs to a subpage.
+  subpageId?: string;
 };
 
 export type SupportedLanguage = "python" | "julia" | "javascript" | "racket";
@@ -41,4 +43,13 @@ type ScopeNodeType = Node<
   "SCOPE"
 >;
 
-export type AppNode = CodeNodeType | RichNodeType | ScopeNodeType;
+export type SubpageRefNodeType = Node<
+  CommonData & { refId: string },
+  "SubpageRef"
+>;
+
+export type AppNode =
+  | CodeNodeType
+  | RichNodeType
+  | ScopeNodeType
+  | SubpageRefNodeType;

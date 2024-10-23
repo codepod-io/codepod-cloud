@@ -20,10 +20,13 @@ import {
   AlertDialog,
   RadioGroup,
   RadioCards,
+  Popover,
+  TextArea,
 } from "@radix-ui/themes";
 
 import {
   Files,
+  File,
   Search,
   ListTree,
   Cpu,
@@ -34,6 +37,11 @@ import {
   Move,
   Unplug,
   Play,
+  ArrowLeft,
+  ArrowRight,
+  Pencil,
+  Trash2,
+  ListVideo,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -60,10 +68,14 @@ import {
 } from "@/lib/store/settingSlice";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  ATOM_centerSelection,
   ATOM_foldAll,
   ATOM_insertMode,
+  ATOM_jumpBack,
+  ATOM_jumpForward,
+  ATOM_jumpIndex,
+  ATOM_jumps,
   ATOM_nodes,
+  ATOM_onetimeCenterPod,
   ATOM_pinnedPods,
   ATOM_search,
   ATOM_selectedPods,
@@ -72,23 +84,28 @@ import {
   ATOM_updateView,
 } from "@/lib/store/canvasSlice";
 import {
+  ATOM_addSubpage,
   ATOM_codeMap,
+  ATOM_deleteSubpage,
   ATOM_nodesMap,
+  ATOM_renameSubpage,
   ATOM_resultMap,
   ATOM_richMap,
   ATOM_runtimeMap,
+  ATOM_subpageMap,
+  ATOM_subpages,
   ATOM_ydoc,
   ATOM_yjsStatus,
   ATOM_yjsSyncStatus,
   getOrCreate_ATOM_runtimeReady,
 } from "@/lib/store/yjsSlice";
-import { ATOM_repoData } from "@/lib/store/atom";
+import { ATOM_currentPage, ATOM_repoData } from "@/lib/store/atom";
 import { FpsMeter } from "@/lib/FpsMeter";
 
 import { toast } from "react-toastify";
 import {
+  ATOM_getSubpageChain,
   ATOM_parseAllPods,
-  ATOM_preprocessAllPodsExceptTest,
   ATOM_preprocessChain,
   ATOM_propagateAllST,
   ATOM_resolveAllPods,
@@ -429,9 +446,8 @@ function SearchPanel() {
     }[]
   >([]);
 
-  const selectPod = useSetAtom(ATOM_selectPod);
-  const setSelectedPods = useSetAtom(ATOM_selectedPods);
-  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
+
   return (
     <Flex
       direction="column"
@@ -466,9 +482,7 @@ function SearchPanel() {
         <Flex key={r.id} direction="column" gap="3">
           <Button
             onClick={() => {
-              setSelectedPods(new Set<string>());
-              selectPod({ id: r.id, selected: true });
-              setCenterSelection(true);
+              setOnetimeCenterPod(r.id);
             }}
             variant="outline"
             style={{
@@ -521,6 +535,279 @@ function SearchPanel() {
   );
 }
 
+/************************************************************
+ * Subpage
+ ************************************************************/
+
+function SubpagePanel() {
+  const [currentPage, setCurrengPage] = useAtom(ATOM_currentPage);
+  const updateView = useSetAtom(ATOM_updateView);
+  const subpages = useAtomValue(ATOM_subpages);
+  const addSubpage = useSetAtom(ATOM_addSubpage);
+  const [title, setTitle] = useState("");
+  const getSubpageChain = useSetAtom(ATOM_getSubpageChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  return (
+    <Flex direction="column" gap="3">
+      <Flex gap="1">
+        <Heading size="2">Subpage</Heading>
+        {/* grow */}
+        <Flex flexGrow="1" />
+        {/* The button to run all pages. */}
+        <Button
+          variant="soft"
+          onClick={async () => {
+            // Run all subpages
+            const chain = getSubpageChain(undefined);
+            subpages.forEach((s) => {
+              chain.push(...getSubpageChain(s.id));
+            });
+            const specs = await preprocessChain(chain);
+            if (specs.length > 0) {
+              runChain.mutate({ repoId: repoData.id, specs });
+            }
+          }}
+        >
+          <ListVideo />
+        </Button>
+        <Popover.Root>
+          <Popover.Trigger>
+            <Button variant="soft">Add</Button>
+          </Popover.Trigger>
+          <Popover.Content width="360px">
+            <Flex gap="3">
+              <Box flexGrow="1">
+                <TextArea
+                  placeholder="Write a title…"
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <Flex gap="3" mt="3">
+                  <Flex flexGrow={"1"} />
+                  <Popover.Close>
+                    <Button
+                      size="1"
+                      disabled={title.length === 0}
+                      onClick={() => {
+                        addSubpage(title);
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </Popover.Close>
+                </Flex>
+              </Box>
+            </Flex>
+          </Popover.Content>
+        </Popover.Root>
+      </Flex>
+      <RadioCards.Root
+        value={currentPage ?? "main"}
+        columns={{ initial: "1" }}
+        onValueChange={(v: string) => {
+          if (v === "main") {
+            setCurrengPage(undefined);
+          } else {
+            setCurrengPage(v);
+          }
+          updateView();
+        }}
+      >
+        {/* The "main" subpage. */}
+        <Flex align="center" gap="3">
+          <RadioCards.Item
+            value="main"
+            style={{
+              flexGrow: 1,
+            }}
+          >
+            <Flex direction="row" width="100%" gap="3">
+              <File />
+              <Text weight="bold">Main</Text>
+            </Flex>
+          </RadioCards.Item>
+          <Button
+            variant="soft"
+            onClick={async () => {
+              const chain = getSubpageChain(undefined);
+              const specs = await preprocessChain(chain);
+              if (specs.length > 0) {
+                runChain.mutate({ repoId: repoData.id, specs });
+              }
+            }}
+          >
+            <Play />
+          </Button>
+        </Flex>
+
+        {/* The subpages. */}
+        {subpages.map(({ id, title }) => (
+          <Flex align="center" gap="3" key={id}>
+            <RadioCards.Item
+              value={id}
+              style={{
+                flexGrow: 1,
+              }}
+            >
+              <Flex direction="row" width="100%" gap="3">
+                <File />
+                <Text weight="bold">{title}</Text>
+              </Flex>
+            </RadioCards.Item>
+            <SubpageMenu id={id} />
+          </Flex>
+        ))}
+      </RadioCards.Root>
+    </Flex>
+  );
+}
+
+function SubpageMenu({ id }: { id: string }) {
+  const subpageMap = useAtomValue(ATOM_subpageMap);
+  const subpage = subpageMap.get(id);
+  const renameSubpage = useSetAtom(ATOM_renameSubpage);
+  const deleteSubpage = useSetAtom(ATOM_deleteSubpage);
+  myassert(subpage);
+  const [title, setTitle] = useState(subpage.title);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const nodes = Array.from(nodesMap.values());
+  const subpageNodes = nodes.filter((n) => n.data.subpageId === id);
+  const subpageRefs = nodes.filter(
+    (n) => n.type === "SubpageRef" && n.data.refId === id
+  );
+  const getSubpageChain = useSetAtom(ATOM_getSubpageChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+
+  return (
+    <Flex gap="1">
+      {/* Run this subpage button. */}
+      <Button
+        variant="soft"
+        onClick={async () => {
+          const chain = getSubpageChain(id);
+          const specs = await preprocessChain(chain);
+          if (specs.length > 0) {
+            runChain.mutate({ repoId: repoData.id, specs });
+          }
+        }}
+      >
+        <Play />
+      </Button>
+      {/* Rename the title. */}
+      <Popover.Root>
+        <Popover.Trigger>
+          <Button variant="soft">
+            <Pencil />
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content width="360px">
+          <Flex gap="3">
+            <Box flexGrow="1">
+              <TextArea
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <Flex gap="3" mt="3">
+                <Flex flexGrow={"1"} />
+                <Popover.Close>
+                  <Button
+                    size="1"
+                    disabled={title.length === 0}
+                    onClick={() => {
+                      renameSubpage(id, title);
+                    }}
+                  >
+                    Rename
+                  </Button>
+                </Popover.Close>
+              </Flex>
+            </Box>
+          </Flex>
+        </Popover.Content>
+      </Popover.Root>
+      {/* Delete the subpage. */}
+      <Popover.Root>
+        <Popover.Trigger>
+          <Tooltip content="Can only delete a subpage when (1) it's empty and (2) there's no ref to it.">
+            <Button
+              variant="soft"
+              color="red"
+              disabled={subpageNodes.length > 0 || subpageRefs.length > 0}
+            >
+              <Trash2 />
+            </Button>
+          </Tooltip>
+        </Popover.Trigger>
+        <Popover.Content width="360px">
+          <Flex gap="3">
+            <Box flexGrow="1">
+              This will delete this subpage. Continue?
+              <Flex gap="3" mt="3">
+                <Flex flexGrow={"1"} />
+                <Popover.Close>
+                  <Button
+                    size="1"
+                    onClick={() => {
+                      deleteSubpage(id);
+                    }}
+                    color="red"
+                  >
+                    Delete
+                  </Button>
+                </Popover.Close>
+              </Flex>
+            </Box>
+          </Flex>
+        </Popover.Content>
+      </Popover.Root>
+    </Flex>
+  );
+}
+
+function JumpPanel() {
+  const jumps = useAtomValue(ATOM_jumps);
+  const jumpIndex = useAtomValue(ATOM_jumpIndex);
+  const jumpBack = useSetAtom(ATOM_jumpBack);
+  const jumpForward = useSetAtom(ATOM_jumpForward);
+  return (
+    <Flex direction="column" gap="3">
+      <Heading size="2">Jump</Heading>
+      {/* <Text>Jumps: {JSON.stringify(jumps)}</Text> */}
+      {/* <Text>JumpIndex: {jumpIndex}</Text> */}
+
+      <Flex gap="3">
+        <IconButton
+          variant="outline"
+          onClick={() => {
+            jumpBack();
+          }}
+          disabled={jumpIndex <= 0}
+        >
+          <ArrowLeft />
+        </IconButton>
+        <IconButton
+          variant="outline"
+          onClick={() => {
+            jumpForward();
+          }}
+          disabled={jumpIndex >= jumps.length - 1}
+        >
+          <ArrowRight />
+        </IconButton>
+      </Flex>
+    </Flex>
+  );
+}
+
+/************************************************************
+ * Debug Panel
+ ************************************************************/
+
 function DebugPanel() {
   const parseAllPods = useSetAtom(ATOM_parseAllPods);
   const propagateAllSt = useSetAtom(ATOM_propagateAllST);
@@ -529,16 +816,16 @@ function DebugPanel() {
   const updateView = useSetAtom(ATOM_updateView);
   const foldAll = useSetAtom(ATOM_foldAll);
   const unfoldAll = useSetAtom(ATOM_unfoldAll);
-  const preprocessAllPodsExceptTest = useSetAtom(
-    ATOM_preprocessAllPodsExceptTest
-  );
-  const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
   const repoId = repoData.id;
   return (
     <Flex direction="column" gap="1">
       <YjsSyncStatus />
+      <Separator my="3" size="4" />
+      <JumpPanel />
+      <Separator my="3" size="4" />
+      <SubpagePanel />
       <Separator my="3" size="4" />
       <Flex>
         <Text>Selected: {selectedPods.size}</Text>
@@ -607,18 +894,6 @@ function DebugPanel() {
       >
         Unfold All
       </Button>
-
-      <Separator my="3" size="4" />
-      <Button
-        onClick={async () => {
-          const specs = await preprocessAllPodsExceptTest();
-          if (specs.length > 0) runChain.mutate({ repoId, specs });
-        }}
-        variant="outline"
-      >
-        Run All Except Tests
-      </Button>
-
       <Runtime />
     </Flex>
   );
@@ -748,9 +1023,7 @@ const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
 
-  const selectPod = useSetAtom(ATOM_selectPod);
-  const setSelectedPods = useSetAtom(ATOM_selectedPods);
-  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
 
   const preprocessChain = useSetAtom(ATOM_preprocessChain);
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
@@ -772,9 +1045,7 @@ const PinnedPod = memo(function PinnedPod({ id }: { id: string }) {
       <Flex>
         <Button
           onClick={() => {
-            setSelectedPods(new Set<string>());
-            selectPod({ id, selected: true });
-            setCenterSelection(true);
+            setOnetimeCenterPod(id);
           }}
           variant="outline"
           style={{

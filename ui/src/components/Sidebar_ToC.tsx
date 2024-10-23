@@ -33,8 +33,8 @@ import { match } from "ts-pattern";
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  ATOM_centerSelection,
   ATOM_nodes,
+  ATOM_onetimeCenterPod,
   ATOM_selectedPods,
   ATOM_selectPod,
 } from "@/lib/store/canvasSlice";
@@ -130,7 +130,7 @@ function PodTreeItem({ id }) {
 
   const selectPod = useSetAtom(ATOM_selectPod);
   const setSelectedPods = useSetAtom(ATOM_selectedPods);
-  const setCenterSelection = useSetAtom(ATOM_centerSelection);
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
 
   return (
     <Flex direction="column">
@@ -185,9 +185,7 @@ function PodTreeItem({ id }) {
         <Button
           variant="ghost"
           onClick={() => {
-            setSelectedPods(new Set<string>());
-            selectPod({ id, selected: true });
-            setCenterSelection(true);
+            setOnetimeCenterPod(id);
           }}
         >
           <NodeName id={id} />

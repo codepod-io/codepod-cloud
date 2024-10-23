@@ -34,7 +34,7 @@ import {
   ATOM_duplicateSelection,
 } from "@/lib/store/canvasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
-import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import { ATOM_nodesMap, ATOM_subpages } from "@/lib/store/yjsSlice";
 import { AppNode } from "@/lib/store/types";
 
 export function useUpload() {
@@ -138,6 +138,8 @@ export function usePaneContextMenu() {
     fileInputRef!.current!.value = "";
   };
 
+  const subpages = useAtomValue(ATOM_subpages);
+
   const contextMenu = (
     <Box
       style={{
@@ -233,6 +235,27 @@ export function usePaneContextMenu() {
               Racket
             </DropdownMenu.Item>
             <DropdownMenu.Separator />
+            {/* subpage */}
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>Subpage</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                {subpages.map((subpage) => (
+                  <DropdownMenu.Item
+                    key={subpage.id}
+                    onSelect={() => {
+                      addNode({
+                        position,
+                        scopeId,
+                        type: "SubpageRef",
+                        refId: subpage.id,
+                      });
+                    }}
+                  >
+                    {subpage.title}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
             <DropdownMenu.Item
               shortcut="⌘ N"
               onClick={() => {
