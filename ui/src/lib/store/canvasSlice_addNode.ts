@@ -185,6 +185,7 @@ function addScope(get: Getter, set: Setter, nodes1: AppNode[]) {
   // get the bounding box of the nodes
   const bounds = getNodesBounds(nodes2);
   const id = myNanoId();
+  const currentPage = get(ATOM_currentPage);
   const scope: AppNode = {
     id,
     type: "SCOPE",
@@ -198,6 +199,7 @@ function addScope(get: Getter, set: Setter, nodes1: AppNode[]) {
       mywidth: bounds.width + 100,
       myheight: bounds.height + 100,
       childrenIds: nodes2.map((n) => n.id),
+      subpageId: currentPage,
     },
     // the parent id should be the old parent Id
     parentId: nodes2[0].parentId,
