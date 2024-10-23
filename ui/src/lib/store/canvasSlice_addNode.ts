@@ -632,6 +632,8 @@ function pasteSubtree(
   // set a new ID and the parentId
   node.id = newId;
   node.parentId = newParentId;
+  const currentPage = get(ATOM_currentPage);
+  node.data.subpageId = currentPage;
   nodesMap.set(newId, node);
   switch (node.type) {
     case "CODE":
