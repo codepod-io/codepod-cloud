@@ -55,6 +55,7 @@ import {
 import { css } from "@emotion/css";
 import { ConfirmedDelete, SymbolTable } from "./utils";
 import {
+  ATOM_copyScope,
   ATOM_deleteScope,
   ATOM_deleteSubTree,
   ATOM_duplicateScope,
@@ -69,6 +70,7 @@ import {
 import { RichEditor } from "./Rich_Editor";
 import { runtimeTrpc } from "@/lib/trpc";
 import { ATOM_repoData } from "@/lib/store/atom";
+import { toast } from "react-toastify";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const zoom = useStore((s) => Math.max(s.transform[2], 0.1));
@@ -102,6 +104,8 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   const toggleFold = useSetAtom(ATOM_toggleFold);
   const toggleTest = useSetAtom(ATOM_toggleTest);
   const toggleIsInit = useSetAtom(ATOM_toggleIsInit);
+
+  const copyScope = useSetAtom(ATOM_copyScope);
 
   const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const getEdgeChain = useSetAtom(ATOM_getEdgeChain);
@@ -223,6 +227,14 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
           </DropdownMenu.Item>
           {/* separator */}
           <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={async () => {
+              await copyScope(id);
+              toast.success("Scope is copied to clipboard!");
+            }}
+          >
+            <Copy /> Copy
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => {
               duplicateScope(id);

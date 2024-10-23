@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 import { trpc } from "@/lib/trpc";
 import { ATOM_repoData } from "@/lib/store/atom";
 import { useAtom, useAtomValue } from "jotai";
@@ -320,19 +319,15 @@ export function ShareProjDialog() {
           )}
 
           <Flex gap="3" mt="4" justify="end">
-            <CopyToClipboard
-              text={url}
-              onCopy={() => {
-                // enqueueSnackbar(`copy success`, {
-                //   variant: "success",
-                // });
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await navigator.clipboard.writeText(url);
                 toast.success("Link is copied to clipboard!");
               }}
             >
-              <Button variant="outline">
-                <Link /> Copy Link
-              </Button>
-            </CopyToClipboard>
+              <Link /> Copy Link
+            </Button>
             <Flex flexGrow={"1"} />
             <Dialog.Close>
               <Button>Done</Button>
