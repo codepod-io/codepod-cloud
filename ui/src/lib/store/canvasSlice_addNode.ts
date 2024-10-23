@@ -590,8 +590,8 @@ async function copyScope(get: Getter, set: Setter, id: string) {
   const richMap2 = new Map<string, string>();
   const codeMap2 = new Map<string, string>();
   copySubtree(get, set, { id }, { nodesMap2, richMap2, codeMap2 });
-  console.log("codeMap2", codeMap2);
-  console.log("richMap2", richMap2);
+  // console.log("codeMap2", codeMap2);
+  // console.log("richMap2", richMap2);
   const data = {
     oldId: id,
     // nodesMap2: JSON.stringify(Array.from(nodesMap2.entries())),
@@ -602,7 +602,7 @@ async function copyScope(get: Getter, set: Setter, id: string) {
     codeMap2: Array.from(codeMap2.entries()),
   };
   const serializedData = JSON.stringify(data);
-  console.log("serializedData", serializedData);
+  // console.log("serializedData", serializedData);
   await navigator.clipboard.writeText(serializedData);
 }
 
