@@ -39,6 +39,9 @@ import {
   Play,
   ArrowLeft,
   ArrowRight,
+  Pencil,
+  Trash2,
+  ListVideo,
 } from "lucide-react";
 
 import { repo2ipynb } from "./nodes/utils";
@@ -83,10 +86,13 @@ import {
 import {
   ATOM_addSubpage,
   ATOM_codeMap,
+  ATOM_deleteSubpage,
   ATOM_nodesMap,
+  ATOM_renameSubpage,
   ATOM_resultMap,
   ATOM_richMap,
   ATOM_runtimeMap,
+  ATOM_subpageMap,
   ATOM_subpages,
   ATOM_ydoc,
   ATOM_yjsStatus,
@@ -98,8 +104,8 @@ import { FpsMeter } from "@/lib/FpsMeter";
 
 import { toast } from "react-toastify";
 import {
+  ATOM_getSubpageChain,
   ATOM_parseAllPods,
-  ATOM_preprocessAllPodsExceptTest,
   ATOM_preprocessChain,
   ATOM_propagateAllST,
   ATOM_resolveAllPods,
@@ -539,12 +545,34 @@ function SubpagePanel() {
   const subpages = useAtomValue(ATOM_subpages);
   const addSubpage = useSetAtom(ATOM_addSubpage);
   const [title, setTitle] = useState("");
+  const getSubpageChain = useSetAtom(ATOM_getSubpageChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
   return (
     <Flex direction="column" gap="3">
-      <Flex>
+      <Flex gap="1">
         <Heading size="2">Subpage</Heading>
         {/* grow */}
         <Flex flexGrow="1" />
+        {/* The button to run all pages. */}
+        <Button
+          variant="soft"
+          onClick={async () => {
+            // Run all subpages
+            const chain = getSubpageChain(undefined);
+            subpages.forEach((s) => {
+              chain.push(...getSubpageChain(s.id));
+            });
+            const specs = await preprocessChain(chain);
+            if (specs.length > 0) {
+              runChain.mutate({ repoId: repoData.id, specs });
+            }
+          }}
+        >
+          <ListVideo />
+        </Button>
         <Popover.Root>
           <Popover.Trigger>
             <Button variant="soft">Add</Button>
@@ -587,21 +615,156 @@ function SubpagePanel() {
           updateView();
         }}
       >
-        <RadioCards.Item value="main">
-          <Flex direction="row" width="100%" gap="3">
-            <File />
-            <Text weight="bold">Main</Text>
-          </Flex>
-        </RadioCards.Item>
-        {subpages.map(({ id, title }) => (
-          <RadioCards.Item key={id} value={id}>
+        {/* The "main" subpage. */}
+        <Flex align="center" gap="3">
+          <RadioCards.Item
+            value="main"
+            style={{
+              flexGrow: 1,
+            }}
+          >
             <Flex direction="row" width="100%" gap="3">
               <File />
-              <Text weight="bold">{title}</Text>
+              <Text weight="bold">Main</Text>
             </Flex>
           </RadioCards.Item>
+          <Button
+            variant="soft"
+            onClick={async () => {
+              const chain = getSubpageChain(undefined);
+              const specs = await preprocessChain(chain);
+              if (specs.length > 0) {
+                runChain.mutate({ repoId: repoData.id, specs });
+              }
+            }}
+          >
+            <Play />
+          </Button>
+        </Flex>
+
+        {/* The subpages. */}
+        {subpages.map(({ id, title }) => (
+          <Flex align="center" gap="3" key={id}>
+            <RadioCards.Item
+              value={id}
+              style={{
+                flexGrow: 1,
+              }}
+            >
+              <Flex direction="row" width="100%" gap="3">
+                <File />
+                <Text weight="bold">{title}</Text>
+              </Flex>
+            </RadioCards.Item>
+            <SubpageMenu id={id} />
+          </Flex>
         ))}
       </RadioCards.Root>
+    </Flex>
+  );
+}
+
+function SubpageMenu({ id }: { id: string }) {
+  const subpageMap = useAtomValue(ATOM_subpageMap);
+  const subpage = subpageMap.get(id);
+  const renameSubpage = useSetAtom(ATOM_renameSubpage);
+  const deleteSubpage = useSetAtom(ATOM_deleteSubpage);
+  myassert(subpage);
+  const [title, setTitle] = useState(subpage.title);
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const nodes = Array.from(nodesMap.values());
+  const subpageNodes = nodes.filter((n) => n.data.subpageId === id);
+  const subpageRefs = nodes.filter(
+    (n) => n.type === "SubpageRef" && n.data.refId === id
+  );
+  const getSubpageChain = useSetAtom(ATOM_getSubpageChain);
+  const preprocessChain = useSetAtom(ATOM_preprocessChain);
+  const runChain = runtimeTrpc.k8s.runChain.useMutation();
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+
+  return (
+    <Flex gap="1">
+      {/* Run this subpage button. */}
+      <Button
+        variant="soft"
+        onClick={async () => {
+          const chain = getSubpageChain(id);
+          const specs = await preprocessChain(chain);
+          if (specs.length > 0) {
+            runChain.mutate({ repoId: repoData.id, specs });
+          }
+        }}
+      >
+        <Play />
+      </Button>
+      {/* Rename the title. */}
+      <Popover.Root>
+        <Popover.Trigger>
+          <Button variant="soft">
+            <Pencil />
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content width="360px">
+          <Flex gap="3">
+            <Box flexGrow="1">
+              <TextArea
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <Flex gap="3" mt="3">
+                <Flex flexGrow={"1"} />
+                <Popover.Close>
+                  <Button
+                    size="1"
+                    disabled={title.length === 0}
+                    onClick={() => {
+                      renameSubpage(id, title);
+                    }}
+                  >
+                    Rename
+                  </Button>
+                </Popover.Close>
+              </Flex>
+            </Box>
+          </Flex>
+        </Popover.Content>
+      </Popover.Root>
+      {/* Delete the subpage. */}
+      <Popover.Root>
+        <Popover.Trigger>
+          <Tooltip content="Can only delete a subpage when (1) it's empty and (2) there's no ref to it.">
+            <Button
+              variant="soft"
+              color="red"
+              disabled={subpageNodes.length > 0 || subpageRefs.length > 0}
+            >
+              <Trash2 />
+            </Button>
+          </Tooltip>
+        </Popover.Trigger>
+        <Popover.Content width="360px">
+          <Flex gap="3">
+            <Box flexGrow="1">
+              This will delete this subpage. Continue?
+              <Flex gap="3" mt="3">
+                <Flex flexGrow={"1"} />
+                <Popover.Close>
+                  <Button
+                    size="1"
+                    onClick={() => {
+                      deleteSubpage(id);
+                    }}
+                    color="red"
+                  >
+                    Delete
+                  </Button>
+                </Popover.Close>
+              </Flex>
+            </Box>
+          </Flex>
+        </Popover.Content>
+      </Popover.Root>
     </Flex>
   );
 }
@@ -653,10 +816,6 @@ function DebugPanel() {
   const updateView = useSetAtom(ATOM_updateView);
   const foldAll = useSetAtom(ATOM_foldAll);
   const unfoldAll = useSetAtom(ATOM_unfoldAll);
-  const preprocessAllPodsExceptTest = useSetAtom(
-    ATOM_preprocessAllPodsExceptTest
-  );
-  const runChain = runtimeTrpc.k8s.runChain.useMutation();
   const repoData = useAtomValue(ATOM_repoData);
   myassert(repoData);
   const repoId = repoData.id;
@@ -665,6 +824,7 @@ function DebugPanel() {
       <YjsSyncStatus />
       <Separator my="3" size="4" />
       <JumpPanel />
+      <Separator my="3" size="4" />
       <SubpagePanel />
       <Separator my="3" size="4" />
       <Flex>
@@ -734,18 +894,6 @@ function DebugPanel() {
       >
         Unfold All
       </Button>
-
-      <Separator my="3" size="4" />
-      <Button
-        onClick={async () => {
-          const specs = await preprocessAllPodsExceptTest();
-          if (specs.length > 0) runChain.mutate({ repoId, specs });
-        }}
-        variant="outline"
-      >
-        Run All Except Tests
-      </Button>
-
       <Runtime />
     </Flex>
   );

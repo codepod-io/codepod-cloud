@@ -80,6 +80,25 @@ function addSubpage(get: Getter, set: Setter, title: string) {
 }
 export const ATOM_addSubpage = atom(null, addSubpage);
 
+function renameSubpage(get: Getter, set: Setter, id: string, title: string) {
+  const subpageMap = get(ATOM_subpageMap);
+  const subpage = subpageMap.get(id);
+  myassert(subpage);
+  subpage.title = title;
+  subpageMap.set(id, subpage);
+  set(ATOM_subpages, Array.from(subpageMap.values()));
+}
+
+export const ATOM_renameSubpage = atom(null, renameSubpage);
+
+function deleteSubpage(get: Getter, set: Setter, id: string) {
+  const subpageMap = get(ATOM_subpageMap);
+  subpageMap.delete(id);
+  set(ATOM_subpages, Array.from(subpageMap.values()));
+}
+
+export const ATOM_deleteSubpage = atom(null, deleteSubpage);
+
 function getNodesMap(get: Getter) {
   const ydoc = get(ATOM_ydoc);
   const rootMap = ydoc.getMap<Y.Map<AppNode>>("rootMap");

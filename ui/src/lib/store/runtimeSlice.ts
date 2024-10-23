@@ -579,15 +579,17 @@ function buildAdjacencySet(edges: Edge[]): {
   return { adjacencySet, reverseAdjacencySet };
 }
 
-export function getAllCode(get: Getter, set: Setter) {
-  // 1. get root nodes
+function getSubpageChain(
+  get: Getter,
+  set: Setter,
+  subpageId?: string
+): string[] {
   const nodesMap = get(ATOM_nodesMap);
   let nodes0 = Array.from(nodesMap.values());
   const edges = get(ATOM_edges);
-  const currentPage = get(ATOM_currentPage);
   // only run the current subpage
   const rootNodes = nodes0.filter(
-    (node) => !node.parentId && node.data.subpageId === currentPage
+    (node) => !node.parentId && node.data.subpageId === subpageId
   );
   const rootIds = rootNodes.map((node) => node.id);
   // Build the adjacency set
@@ -604,52 +606,10 @@ export function getAllCode(get: Getter, set: Setter) {
       });
     })
     .flatMap((child) => child);
-  return nodes1;
+  return nodes1.map((node) => node.id);
 }
 
-async function preprocessAllPodsExceptTest(get: Getter, set: Setter) {
-  // parse and resolve
-  await parseAllPods(get, set);
-  propagateAllST(get, set);
-  resolveAllPods(get, set);
-  // get all non-test pods
-  const nodesMap = get(ATOM_nodesMap);
-  // run dfs, skip test scopes and pods
-  // TODO the order should be topological
-  const codeNodes = getAllCode(get, set);
-
-  // rewrite code and construct specs
-  let specs = codeNodes.map((node) => {
-    myassert(node.type === "CODE");
-    // skip parsing and resolving
-    const newcode = rewriteCode(node.id, get);
-    // console.log("newcode", newcode);
-    const lang = node?.data.lang;
-    return {
-      podId: node.id,
-      code: newcode || "",
-      kernelName: lang || "python",
-    };
-  });
-  // filter out empty code
-  specs = specs.filter(({ podId, code }) => {
-    if (code.length > 0) {
-      return true;
-    }
-    return false;
-  });
-  // clear old results and set running status
-  specs.forEach(({ podId }) => {
-    clearResults(get, set, podId);
-    setRunning(get, set, podId);
-  });
-  return specs;
-}
-
-export const ATOM_preprocessAllPodsExceptTest = atom(
-  null,
-  preprocessAllPodsExceptTest
-);
+export const ATOM_getSubpageChain = atom(null, getSubpageChain);
 
 function getScopeChain(get: Getter, set: Setter, id: string): string[] {
   const nodesMap = get(ATOM_nodesMap);

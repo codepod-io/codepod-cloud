@@ -32,7 +32,6 @@ import { ATOM_currentPage, ATOM_cutId } from "./atom";
 import { DEFUSE_EDGE, MANUAL_EDGE } from "@/components/Canvas";
 import { toast } from "react-toastify";
 import {
-  getAllCode,
   getOrCreate_ATOM_resolveResult,
   propagateAllST,
   resolveDefUseEdges,
