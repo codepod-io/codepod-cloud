@@ -195,6 +195,88 @@ async function parsePod(get: Getter, set: Setter, id: string) {
 export const ATOM_parsePod = atom(null, parsePod);
 
 /**
+ *
+ */
+function propagateUp(
+  get: Getter,
+  set: Setter,
+  parseResult: ParseResult,
+  originId: string,
+  node: AppNode
+) {
+  const nodesMap = get(ATOM_nodesMap);
+  if (node.parentId) {
+    // Parent scope's private ST
+    const parentSt = get(getOrCreate_ATOM_privateST(node.parentId));
+    parseResult.annotations
+      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .forEach((annotation) => {
+        parentSt.set(annotation.name, { immediate: node.id, final: originId });
+      });
+    if (node.data.isPublic) {
+      // parent scope's public ST and propagate up
+      const parent = nodesMap.get(node.parentId);
+      myassert(parent);
+      const parentScopePublicSt = get(getOrCreate_ATOM_publicST(node.parentId));
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          // This public ST is only for visualization purpose. Symbol resolving does not use this.
+          parentScopePublicSt.set(annotation.name, {
+            immediate: node.id,
+            final: originId,
+          });
+        });
+      propagateUp(get, set, parseResult, originId, parent);
+    }
+  } else {
+    // subpage private ST
+    const subpageSt = get(
+      getOrCreate_ATOM_privateST(node.data.subpageId ?? "main")
+    );
+    parseResult.annotations
+      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .forEach((annotation) => {
+        subpageSt.set(annotation.name, { immediate: node.id, final: originId });
+      });
+    if (node.data.isPublic) {
+      // subpage public ST and propagate to the subpage refs
+      const subpageId = node.data.subpageId;
+      const subpagePublicSt = get(
+        getOrCreate_ATOM_publicST(subpageId ?? "main")
+      );
+      parseResult.annotations
+        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .forEach((annotation) => {
+          subpagePublicSt.set(annotation.name, {
+            immediate: node.id,
+            final: originId,
+          });
+        });
+      // get the subpage refs, and add to private ST there, i.e., the grandparent
+      const subpageRefs = Array.from(nodesMap.values()).filter(
+        (node) => node.type === "SubpageRef" && node.data.refId === subpageId
+      );
+      subpageRefs.forEach((ref) => {
+        const grandParentSt = get(
+          getOrCreate_ATOM_privateST(
+            ref.parentId ?? ref.data.subpageId ?? "main"
+          )
+        );
+        parseResult.annotations
+          .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+          .forEach((annotation) => {
+            grandParentSt.set(annotation.name, {
+              immediate: ref.id,
+              final: originId,
+            });
+          });
+      });
+    }
+  }
+}
+
+/**
  * TODO this is nlogn, can be improved to n. But this is not a bottleneck, i.e.,
  * runs in sub millisecond.
  *
@@ -216,82 +298,7 @@ function propagateST(get: Getter, set: Setter, id: string) {
       selfSt.set(annotation.name, { immediate: id, final: id });
     });
   // set(getOrCreate_ATOM_selfST(id), selfSt);
-
-  // Find the nearest scope parent, and insert the symbols to its private ST
-  const parentSt = get(
-    getOrCreate_ATOM_privateST(node.parentId ?? node.data.subpageId ?? "main")
-  );
-  parseResult.annotations
-    .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-    .forEach((annotation) => {
-      parentSt.set(annotation.name, { immediate: id, final: id });
-    });
-  // set(getOrCreate_ATOM_privateST(parentScopeId), parentScopeSt);
-  // If it is public, insert to one layer up
-  if (node.data.isPublic) {
-    if (node.parentId) {
-      const parentId = node.parentId;
-      const parent = nodesMap.get(parentId);
-      myassert(parent);
-      const grandParentSt = get(
-        getOrCreate_ATOM_privateST(
-          parent.parentId ?? parent.data.subpageId ?? "main"
-        )
-      );
-      parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-        .forEach((annotation) => {
-          grandParentSt.set(annotation.name, {
-            immediate: parentId,
-            final: id,
-          });
-        });
-      const parentScopePublicSt = get(getOrCreate_ATOM_publicST(node.parentId));
-      parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-        .forEach((annotation) => {
-          // This public ST is only for visualization purpose. Symbol resolving does not use this.
-          parentScopePublicSt.set(annotation.name, {
-            immediate: id,
-            final: id,
-          });
-        });
-      // set(getOrCreate_ATOM_privateST(grandParentScopeId), grandParentScopeSt);
-      // set(getOrCreate_ATOM_publicST(parentScopeId), parentScopePublicSt);
-    } else {
-      // if it is a root node, and it is belong to a subpage, add to the subpage's public ST
-      const subpageId = node.data.subpageId;
-      if (subpageId) {
-        const subpagePublicSt = get(getOrCreate_ATOM_publicST(subpageId));
-        parseResult.annotations
-          .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
-          .forEach((annotation) => {
-            subpagePublicSt.set(annotation.name, { immediate: id, final: id });
-          });
-        // get the subpage refs, and add to private ST there, i.e., the grandparent
-        const subpageRefs = Array.from(nodesMap.values()).filter(
-          (node) => node.type === "SubpageRef" && node.data.refId === subpageId
-        );
-        subpageRefs.forEach((ref) => {
-          const grandParentSt = get(
-            getOrCreate_ATOM_privateST(
-              ref.parentId ?? ref.data.subpageId ?? "main"
-            )
-          );
-          parseResult.annotations
-            .filter(({ type }) =>
-              ["function", "vardef", "bridge"].includes(type)
-            )
-            .forEach((annotation) => {
-              grandParentSt.set(annotation.name, {
-                immediate: ref.id,
-                final: id,
-              });
-            });
-        });
-      }
-    }
-  }
+  propagateUp(get, set, parseResult, id, node);
 }
 
 async function parseAllPods(get: Getter, set: Setter) {
