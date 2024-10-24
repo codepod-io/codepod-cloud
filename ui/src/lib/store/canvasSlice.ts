@@ -134,9 +134,7 @@ function jumpToPod(get: Getter, set: Setter, id: string) {
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   myassert(node);
-  if (node.data.subpageId) {
-    set(ATOM_currentPage, node.data.subpageId);
-  }
+  set(ATOM_currentPage, node.data.subpageId);
   set(ATOM_onetimeCenterPod, id);
   updateView(get, set);
 }
