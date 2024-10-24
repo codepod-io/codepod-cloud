@@ -101,13 +101,12 @@ import { ATOM_repoData } from "@/lib/store/atom";
 
 const myScheme = {
   name: "scheme",
-  startState: scheme.startState,
+  ...scheme,
   token: function (stream, state) {
     const res = scheme.token(stream, state);
     if (res === "builtin") return "keyword";
     return res;
   },
-  indent: scheme.indent,
 };
 
 // ------------------------------
