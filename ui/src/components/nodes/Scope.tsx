@@ -34,6 +34,7 @@ import {
   ATOM_onetimeCenterPod,
   ATOM_toggleFold,
   ATOM_toggleIsInit,
+  ATOM_togglePublic,
   ATOM_toggleTest,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
@@ -71,6 +72,7 @@ import { RichEditor } from "./Rich_Editor";
 import { runtimeTrpc } from "@/lib/trpc";
 import { ATOM_repoData } from "@/lib/store/atom";
 import { toast } from "react-toastify";
+import { TbApi, TbApiOff } from "react-icons/tb";
 
 const MyToolbar = memo(function MyToolbar({ id }: { id: string }) {
   const zoom = useStore((s) => Math.max(s.transform[2], 0.1));
@@ -104,6 +106,7 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
   const toggleFold = useSetAtom(ATOM_toggleFold);
   const toggleTest = useSetAtom(ATOM_toggleTest);
   const toggleIsInit = useSetAtom(ATOM_toggleIsInit);
+  const togglePublic = useSetAtom(ATOM_togglePublic);
 
   const copyScope = useSetAtom(ATOM_copyScope);
 
@@ -222,6 +225,22 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
             ) : (
               <>
                 <FlaskConical /> Toggle Test
+              </>
+            )}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => {
+              togglePublic(id);
+            }}
+          >
+            {node.data.isPublic ? (
+              <>
+                <TbApiOff />
+                Toggle Public
+              </>
+            ) : (
+              <>
+                <TbApi /> Toggle Public
               </>
             )}
           </DropdownMenu.Item>
@@ -517,6 +536,25 @@ const Tags = function Tags({ id }: { id: string }) {
               }}
             >
               init
+            </Text>
+          </div>
+        )}
+        {node.data.isPublic && (
+          <div
+            style={{
+              fontSize: "1.5em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                backgroundColor: "lightgreen",
+                borderRadius: "5px",
+                padding: "2px 5px",
+              }}
+            >
+              public
             </Text>
           </div>
         )}
