@@ -100,7 +100,6 @@ import {
   ATOM_toggleTest,
   ATOM_updateView,
   getAbsPos,
-  nodeId2Order,
 } from "@/lib/store/canvasSlice";
 import {
   ATOM_changeScope,
