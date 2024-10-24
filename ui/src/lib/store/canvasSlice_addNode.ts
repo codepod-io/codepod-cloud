@@ -70,7 +70,7 @@ export async function addNode(get: Getter, set: Setter, spec: InputSpec) {
           parentId: scopeId,
           data: {
             lang: spec.lang,
-            mywidth: 600,
+            mywidth: 400,
             subpageId: subpageId ?? currentPage,
           },
         };
@@ -87,7 +87,7 @@ export async function addNode(get: Getter, set: Setter, spec: InputSpec) {
           dragHandle: ".custom-drag-handle",
           parentId: scopeId,
           data: {
-            mywidth: 600,
+            mywidth: 400,
             subpageId: subpageId ?? currentPage,
           },
         };

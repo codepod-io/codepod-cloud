@@ -246,9 +246,10 @@ export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
             switch (res.type) {
               case "stream_stdout":
                 return (
-                  <div key={combinedKey} style={{}}>
-                    <Ansi>{res.text}</Ansi>
-                  </div>
+                  // No newline if the result text doesn't contain new line.
+                  <code key={combinedKey} style={{}}>
+                    {res.text}
+                  </code>
                 );
               case "stream_stderr":
                 return (
@@ -936,7 +937,7 @@ const Tags = function Tags({ id }: { id: string }) {
                 color: "black",
                 // lineHeight: "var(--line-height-1)",
                 // lineHeight: "10px",
-                lineHeight: "0.5em",
+                lineHeight: "0.7em",
                 // do not wrap
                 whiteSpace: "nowrap",
               }}

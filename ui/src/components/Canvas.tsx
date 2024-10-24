@@ -57,6 +57,7 @@ import {
   ATOM_reactflowInstance,
   ATOM_onetimeViewport,
   ATOM_onetimeCenterPod,
+  ATOM_jumpToPod,
 } from "@/lib/store/canvasSlice";
 import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
 import {
@@ -478,7 +479,7 @@ function SubpageSymbolTable() {
   const publicSt = useAtomValue(
     getOrCreate_ATOM_publicST(currentPage ?? "main")
   );
-  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
+  const jumpToPod = useSetAtom(ATOM_jumpToPod);
   return (
     <Box>
       <Box
@@ -500,7 +501,7 @@ function SubpageSymbolTable() {
                 // jump to the node
                 const target = publicSt.get(key);
                 myassert(target);
-                setOnetimeCenterPod(target.final);
+                jumpToPod(target.final);
               }}
               variant="ghost"
             >
@@ -535,7 +536,7 @@ function SubpageSymbolTable() {
                 // jump to the node
                 const target = privateSt.get(key);
                 myassert(target);
-                setOnetimeCenterPod(target.final);
+                jumpToPod(target.final);
               }}
               variant="ghost"
             >

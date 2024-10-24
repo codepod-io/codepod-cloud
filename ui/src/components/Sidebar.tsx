@@ -447,7 +447,6 @@ function SearchPanel() {
     }[]
   >([]);
 
-  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
   const jumpToPod = useSetAtom(ATOM_jumpToPod);
 
   return (
