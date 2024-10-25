@@ -182,8 +182,8 @@ export function gitGutterExtension(startingCode: string) {
       const changes = computeGitChanges(startingCode, newCode);
 
       const newMarkers = changes.map((change) => ({
-        from: state.doc.line(change.from).from,
-        to: state.doc.line(change.from).from,
+        from: state.doc.line(Math.min(change.from, state.doc.lines)).from,
+        to: state.doc.line(Math.min(change.from, state.doc.lines)).from,
         value: new GitGutterMarker(change.type),
       })) as Range<GutterMarker>[];
 
@@ -197,8 +197,8 @@ export function gitGutterExtension(startingCode: string) {
       const changes = computeGitChanges(oldCode, newCode);
 
       const newMarkers = changes.map((change) => ({
-        from: tr.state.doc.line(change.from).from,
-        to: tr.state.doc.line(change.from).from,
+        from: tr.state.doc.line(Math.min(change.from, tr.state.doc.lines)).from,
+        to: tr.state.doc.line(Math.min(change.from, tr.state.doc.lines)).from,
         value: new GitGutterMarker(change.type),
       })) as Range<GutterMarker>[];
 
