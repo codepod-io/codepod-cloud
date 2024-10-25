@@ -328,6 +328,8 @@ export function ChangeScopeItem({ id }: { id: string }) {
           height: 1,
         })
           .filter((node) => node.type === "SCOPE")
+          // this item might be a scope. We don't move a scope into itself.
+          .filter((node) => node.id !== id)
           .sort(
             (a: AppNode, b: AppNode) =>
               (b.data.level ?? 0) - (a.data.level ?? 0)
