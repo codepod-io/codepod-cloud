@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import { trpc } from "@/lib/trpc";
-import { Earth, FileText, ThumbsUp, Trash2, Users } from "lucide-react";
+import { Earth, FileText, Star, ThumbsUp, Trash2, Users } from "lucide-react";
 import { toast } from "react-toastify";
 import { atom, useAtom } from "jotai";
 import { ATOM_selectedRepos, ATOM_selectMode, RepoType } from "./dashboard";
@@ -60,7 +60,7 @@ export const StarButton = ({
             }}
             disabled={unstar.isLoading}
           >
-            <ThumbsUp color="red" fill="pink" />
+            <Star color="var(--amber-6)" fill="var(--amber-6)" />
             <Box
               style={{
                 // Make the different numbers fixed width.
@@ -82,7 +82,7 @@ export const StarButton = ({
             }}
             disabled={star.isLoading}
           >
-            <ThumbsUp />
+            <Star />
             <Box
               style={{
                 fontVariant: "tabular-nums",
