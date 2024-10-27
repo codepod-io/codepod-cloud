@@ -59,7 +59,11 @@ import {
   ATOM_onetimeCenterPod,
   ATOM_jumpToPod,
 } from "@/lib/store/canvasSlice";
-import { ATOM_nodesMap } from "@/lib/store/yjsSlice";
+import {
+  ATOM_nodesMap,
+  ATOM_subpageMap,
+  ATOM_subpages,
+} from "@/lib/store/yjsSlice";
 import {
   ATOM_currentPage,
   ATOM_editMode,
@@ -191,6 +195,24 @@ function ViewportInfo() {
   );
 }
 
+function useSetTitle() {
+  // monitor the repo name change
+  const repoData = useAtomValue(ATOM_repoData);
+  myassert(repoData);
+  // monitor the subpage (title) change
+  const subpages = useAtomValue(ATOM_subpages);
+  // monitor the current page change
+  const currentPage = useAtomValue(ATOM_currentPage);
+  // set the title
+  const subpageMap = useAtomValue(ATOM_subpageMap);
+  const subpageTitle = currentPage
+    ? subpageMap.get(currentPage)?.title
+    : "main";
+  useEffect(() => {
+    document.title = `${subpageTitle} - ${repoData.name ?? "Untitled"}`;
+  }, [currentPage, repoData, subpages]);
+}
+
 /**
  * The canvas.
  * @returns
@@ -223,6 +245,8 @@ function CanvasImpl() {
   useEffect(() => {
     fitView({ maxZoom: 1 });
   }, [currentPage]);
+
+  useSetTitle();
 
   const [onetimeCenterPod, setOnetimeCenterSelection] = useAtom(
     ATOM_onetimeCenterPod
