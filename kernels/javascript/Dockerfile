@@ -1,6 +1,7 @@
-FROM node:16
+FROM denoland/deno:2.0.3
+# FROM node:16
 
-RUN npm install -g ijavascript
+# RUN npm install -g ijavascript
 
 COPY <<EOF /conn.json
 {
@@ -17,4 +18,5 @@ COPY <<EOF /conn.json
 }
 EOF
 
-CMD ["ijskernel", "--hide-undefined", "/conn.json", "--protocol=5.1"]
+# CMD ["ijskernel", "--hide-undefined", "/conn.json", "--protocol=5.1"]
+CMD ["deno", "jupyter",  "--kernel", "--conn", "/conn.json"]
