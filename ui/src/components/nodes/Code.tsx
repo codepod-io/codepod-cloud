@@ -285,7 +285,11 @@ export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
                     ) : (
                       // sometimes (e.g., in racket), both text and html are
                       // set. In this case, we just show the html.
-                      res.text
+                      //
+                      // res.text
+                      //
+                      // deno kernel outputs Ansi text.
+                      <Ansi>{res.text}</Ansi>
                     )}
                   </div>
                 );
