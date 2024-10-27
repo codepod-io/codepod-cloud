@@ -174,7 +174,7 @@ function useHighlight(
 
       viewRef.current.dispatch({
         effects: [
-          clearHighlightsEffect.of(null),
+          // clearHighlightsEffect.of(null),
           highlightEffect.of({ from: fromPos, to: toPos, color }),
         ],
       });
@@ -191,7 +191,7 @@ function useHighlight(
       const toPos = endIndex;
       viewRef.current.dispatch({
         effects: [
-          clearHighlightsEffect.of(null),
+          // clearHighlightsEffect.of(null),
           highlightEffect.of({ from: fromPos, to: toPos, color }),
         ],
       });
