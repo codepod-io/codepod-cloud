@@ -54,7 +54,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { css } from "@emotion/css";
-import { ConfirmedDelete, SymbolTable } from "./utils";
+import { ConfirmedDelete } from "./utils";
 import {
   ATOM_copyScope,
   ATOM_deleteScope,
@@ -65,8 +65,10 @@ import {
   ATOM_getEdgeChain,
   ATOM_getScopeChain,
   ATOM_preprocessChain,
+  getOrCreate_ATOM_parseResult,
   getOrCreate_ATOM_privateST,
   getOrCreate_ATOM_publicST,
+  getOrCreate_ATOM_selfST,
 } from "@/lib/store/runtimeSlice";
 import { RichEditor } from "./Rich_Editor";
 import { runtimeTrpc } from "@/lib/trpc";
@@ -562,6 +564,78 @@ const Tags = function Tags({ id }: { id: string }) {
     </>
   );
 };
+
+const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
+  const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
+  const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
+  const nodesMap = useAtomValue(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
+  if (!node) throw new Error(`Node ${id} not found.`);
+  return (
+    <>
+      {/* LEFT: show public ST of this scope. */}
+      <Box
+        style={{
+          // place it on the left
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translateX(-100%) translateX(-10px)",
+        }}
+      >
+        {[...publicSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const target = publicSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
+              }}
+              variant="ghost"
+            >
+              <code
+                style={{
+                  color: "green",
+                }}
+              >
+                {key}
+              </code>
+            </Button>
+          </Flex>
+        ))}
+      </Box>
+
+      {/* RIGHT: show private ST of this scope. */}
+      <Box
+        style={{
+          // place it on the right
+          position: "absolute",
+          top: 0,
+          right: 0,
+          transform: "translateX(100%) translateX(10px)",
+        }}
+      >
+        {[...privateSt.keys()].map((key) => (
+          <Flex align="center" key={key}>
+            <Button
+              onClick={() => {
+                // jump to the node
+                const target = privateSt.get(key);
+                myassert(target);
+                setOnetimeCenterPod(target.final);
+              }}
+              variant="ghost"
+            >
+              <code>{key}</code>
+            </Button>
+          </Flex>
+        ))}
+      </Box>
+    </>
+  );
+});
 
 const FoldedSymbolTable = memo(function FoldedSymbolTable({
   id,

@@ -28,7 +28,6 @@ import {
   JuliaLogo,
   PythonLogo,
   RacketLogo,
-  SymbolTable,
 } from "./utils";
 import { myassert, timeDifference, useTick } from "@/lib/utils/utils";
 
@@ -841,7 +840,6 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
             <Language lang={node.data.lang} />
           </div>
           <ResultBlock id={id} />
-          <SymbolTable id={id} />
           <MyNodeResizer />
 
           <MyHandle hover={hover} isTarget={isTarget} />
