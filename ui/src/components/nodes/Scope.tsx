@@ -568,47 +568,12 @@ const Tags = function Tags({ id }: { id: string }) {
 const SymbolTable = memo(function SymbolTable({ id }: { id: string }) {
   const privateSt = useAtomValue(getOrCreate_ATOM_privateST(id));
   const publicSt = useAtomValue(getOrCreate_ATOM_publicST(id));
-  const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
-  const parseResult = useAtomValue(getOrCreate_ATOM_parseResult(id));
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
-  const reactFlowInstance = useReactFlow();
   const setOnetimeCenterPod = useSetAtom(ATOM_onetimeCenterPod);
   if (!node) throw new Error(`Node ${id} not found.`);
   return (
     <>
-      {/* TOP: show self symbol table at the top, big font */}
-      <Flex
-        style={{
-          // place it on the right
-          position: "absolute",
-          top: 0,
-          left: 0,
-          transform: "translateY(-100%) translateY(-10px)",
-          pointerEvents: "none",
-        }}
-        direction={"column"}
-        gap="4"
-        wrap="wrap"
-      >
-        {[...selfSt.keys()].map((key) => (
-          <Flex align="center" key={key}>
-            <code
-              style={{
-                fontSize: "4em",
-                color: "black",
-                // lineHeight: "var(--line-height-1)",
-                // lineHeight: "10px",
-                lineHeight: "0.5em",
-                // do not wrap
-                whiteSpace: "nowrap",
-              }}
-            >
-              {key}
-            </code>
-          </Flex>
-        ))}
-      </Flex>
       {/* LEFT: show public ST of this scope. */}
       <Box
         style={{
