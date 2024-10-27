@@ -83,7 +83,6 @@ export function parsePython(code: string): ParseResult {
   `);
   const visited = new Set();
   query_func.matches(tree.rootNode).forEach((match) => {
-    // console.log("match", match);
     let node = match.captures[0].node;
     // FIXME This actually prevents the already parsed text from being recorded again.
     // 1. it might contain bugs
