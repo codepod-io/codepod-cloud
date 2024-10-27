@@ -66,7 +66,11 @@ export function parsePython(code: string): ParseResult {
   const function_def = "(module (function_definition (identifier) @function))";
   const callsite = `(call (identifier) @callsite)`;
   // top-level variable definition
-  const vardef = `(module (expression_statement (assignment (identifier) @vardef)))`;
+  const vardef = code.includes("CODEPOD_DEF")
+    ? `(module (expression_statement (assignment (identifier) @vardef)))`
+    : "";
+  // FIXME This will match the function def identifier, including function def,
+  // vardef. This is filtered out by the visited variable below.
   const varuse = `((identifier) @varuse)`;
 
   let query_func = parser.getLanguage().query(`
@@ -79,13 +83,17 @@ export function parsePython(code: string): ParseResult {
   `);
   const visited = new Set();
   query_func.matches(tree.rootNode).forEach((match) => {
+    // console.log("match", match);
     let node = match.captures[0].node;
+    // FIXME This actually prevents the already parsed text from being recorded again.
+    // 1. it might contain bugs
+    // 2. the order of the annotations must be that varuse is at the end.
     if (visited.has(JSON.stringify([node.startIndex, node.endIndex]))) return;
     visited.add(JSON.stringify([node.startIndex, node.endIndex]));
     annotations.push({
       name: node.text, // the name of the function or variable
       // FIXME the name may not be "callsite".
-      type: match.captures[0].name as "function" | "callsite",
+      type: match.captures[0].name as any,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
       startPosition: node.startPosition,
@@ -96,6 +104,8 @@ export function parsePython(code: string): ParseResult {
   annotations = annotations.filter(({ name }) => !keywords.has(name));
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
+
+  console.log("parsePython", annotations);
 
   return { annotations };
 }

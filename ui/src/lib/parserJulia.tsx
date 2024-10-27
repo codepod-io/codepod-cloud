@@ -50,7 +50,9 @@ export function parseJulia(code: string): ParseResult {
     "(source_file (function_definition (signature (call_expression (identifier) @function))))";
   const callsite = `(call_expression (identifier) @callsite)`;
   // top-level variable definition
-  const vardef = `(source_file (assignment (identifier) @vardef))`;
+  const vardef = code.includes("CODEPOD_DEF")
+    ? `(source_file (assignment (identifier) @vardef))`
+    : "";
   const varuse = "((identifier) @varuse)";
 
   let query_func = parser.getLanguage().query(`
