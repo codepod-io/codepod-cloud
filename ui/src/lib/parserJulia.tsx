@@ -71,7 +71,11 @@ export function parseJulia(code: string): ParseResult {
     annotations.push({
       name: node.text, // the name of the function or variable
       // FIXME the name may not be "callsite".
-      type: match.captures[0].name as "function" | "callsite",
+      type: match.captures[0].name as
+        | "function"
+        | "callsite"
+        | "vardef"
+        | "varuse",
       startIndex: node.startIndex,
       endIndex: node.endIndex,
       startPosition: node.startPosition,

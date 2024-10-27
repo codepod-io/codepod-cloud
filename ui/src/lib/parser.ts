@@ -93,7 +93,11 @@ export function parsePython(code: string): ParseResult {
     annotations.push({
       name: node.text, // the name of the function or variable
       // FIXME the name may not be "callsite".
-      type: match.captures[0].name as any,
+      type: match.captures[0].name as
+        | "function"
+        | "callsite"
+        | "vardef"
+        | "varuse",
       startIndex: node.startIndex,
       endIndex: node.endIndex,
       startPosition: node.startPosition,
@@ -104,8 +108,6 @@ export function parsePython(code: string): ParseResult {
   annotations = annotations.filter(({ name }) => !keywords.has(name));
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
-
-  console.log("parsePython", annotations);
 
   return { annotations };
 }
