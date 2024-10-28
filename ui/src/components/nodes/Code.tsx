@@ -246,9 +246,16 @@ export const ResultBlock = memo(function ResultBlock({ id }: { id: string }) {
               case "stream_stdout":
                 return (
                   // No newline if the result text doesn't contain new line.
-                  <code key={combinedKey} style={{}}>
-                    {res.text}
-                  </code>
+                  // <code key={combinedKey} style={{}}>
+                  //   {res.text}
+                  // </code>
+                  //
+                  // UPDATE: the above is to fix the datum->syntax debugging in
+                  // racket. The "extra newline" issue doesn't seem to present
+                  // in regular cases. So we revert back to the original.
+                  //
+                  // This Ansi is needed to e.g., show the color in the pip install output.
+                  <Ansi key={combinedKey}>{res.text}</Ansi>
                 );
               case "stream_stderr":
                 return (
