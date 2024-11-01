@@ -66,6 +66,7 @@ import { TbApi, TbApiOff } from "react-icons/tb";
 import { match } from "ts-pattern";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
+  ATOM_clearParseResult,
   ATOM_clearResults,
   ATOM_getEdgeChain,
   ATOM_preprocessChain,
@@ -409,6 +410,7 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
   myassert(repoData);
   const repoId = repoData.id;
   const parsePod = useSetAtom(ATOM_parsePod);
+  const clearParseResult = useSetAtom(ATOM_clearParseResult);
   const resolvePod = useSetAtom(ATOM_resolvePod);
 
   const deletePod = useSetAtom(ATOM_deletePod);
@@ -482,7 +484,12 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
             <ListVideo /> Run Chain
           </DropdownMenu.Item>
 
-          <DropdownMenu.Item onSelect={() => parsePod(id)}>
+          <DropdownMenu.Item
+            onSelect={async () => {
+              clearParseResult(id);
+              await parsePod(id);
+            }}
+          >
             <Variable /> Parse
           </DropdownMenu.Item>
           <DropdownMenu.Item onSelect={() => resolvePod(id)}>
