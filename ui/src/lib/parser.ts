@@ -423,17 +423,10 @@ function compileLHS(node, st) {
       return new Set([node.text]);
     case "pattern_list":
       // [a,b,c] = [1,2,3]
-      // (a,(b,c)) = (1,(2,3))
-      return node.namedChildren
-        .filter(notComment)
-        .map((n) => compileLHS(n, st))
-        .reduce(union);
+      return new Set(node.namedChildren.filter(notComment).map((n) => n.text));
     case "tuple_pattern":
       // (a,b,c) = (1,2,3)
-      return node.namedChildren
-        .filter(notComment)
-        .map((n) => compileLHS(n, st))
-        .reduce(union);
+      return new Set(node.namedChildren.filter(notComment).map((n) => n.text));
     case "subscript":
       // a[1] = 2
       let [l, r] = node.namedChildren.filter(notComment);
@@ -726,7 +719,7 @@ function compileExpression(node: Parser.SyntaxNode, st) {
       return new Set();
     case "integer":
     case "float":
-
+    case "string":
     case "boolean":
     case "ellipsis":
     case "none":
@@ -735,18 +728,6 @@ function compileExpression(node: Parser.SyntaxNode, st) {
     case "concatenated_string":
     case "self":
     case "super":
-      return new Set();
-    case "string":
-      {
-        // get interpolation expression
-        node.namedChildren.filter(notComment).forEach((n) => {
-          if (n.type === "interpolation") {
-            n.namedChildren.filter(notComment).map((nn) => {
-              compileExpression(nn, st);
-            });
-          }
-        });
-      }
       return new Set();
     // FIXME we should allow custom type names.
     case "type":
