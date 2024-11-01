@@ -210,6 +210,10 @@ function useSetTitle() {
     : "main";
   useEffect(() => {
     document.title = `${subpageTitle} - ${repoData.name ?? "Untitled"}`;
+    return () => {
+      // reset the title
+      document.title = "CodePod IDE";
+    };
   }, [currentPage, repoData, subpages]);
 }
 
