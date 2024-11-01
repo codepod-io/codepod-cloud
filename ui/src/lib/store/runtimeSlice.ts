@@ -194,6 +194,12 @@ async function parsePod(get: Getter, set: Setter, id: string) {
 
 export const ATOM_parsePod = atom(null, parsePod);
 
+function clearParseResult(get: Getter, set: Setter, id: string) {
+  set(getOrCreate_ATOM_parseResult(id), { annotations: [] });
+}
+
+export const ATOM_clearParseResult = atom(null, clearParseResult);
+
 /**
  *
  */
