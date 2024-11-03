@@ -13,6 +13,7 @@ import { updateView } from "./canvasSlice";
 import { ATOM_repoData } from "./atom";
 import { myassert, myNanoId } from "../utils/utils";
 import { addNode } from "./canvasSlice_addNode";
+import { addAwarenessStyle } from "./yjsSlice_utils";
 
 // The atoms
 
@@ -182,9 +183,9 @@ function setRuntimeReady(
  */
 function getRandomLightColor() {
   // Generate random values for RGB with a minimum of 128 for each component to avoid dark colors.
-  const r = Math.floor(Math.random() * 64) + 128 + 6;
-  const g = Math.floor(Math.random() * 64) + 128 + 6;
-  const b = Math.floor(Math.random() * 64) + 128 + 6;
+  const r = Math.floor(Math.random() * 64) + 128 + 64;
+  const g = Math.floor(Math.random() * 64) + 128 + 64;
+  const b = Math.floor(Math.random() * 64) + 128 + 64;
 
   // Convert RGB to hex format
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
@@ -239,6 +240,18 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
     //
     // In a word, this setting will be override by simpleAwareness in BlockNote.
     colorLight: mycolor + "55",
+  });
+
+  provider.awareness.on("update", (change) => {
+    const states = provider.awareness.getStates();
+    const nodes = change.added.concat(change.updated);
+    nodes.forEach((clientID) => {
+      const user = states.get(clientID)?.user;
+      if (user) {
+        // add client
+        addAwarenessStyle(clientID, user.color, user.name);
+      }
+    });
   });
   provider.on("status", ({ status }) => {
     set(ATOM_yjsStatus, status);

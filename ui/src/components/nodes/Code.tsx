@@ -853,8 +853,8 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
               position: "relative",
             }}
           >
-            {/* <MyMonaco id={id} /> */}
-            <MyCodeMirror id={id} />
+            <MyMonaco id={id} />
+            {/* <MyCodeMirror id={id} /> */}
             <Language lang={node.data.lang} />
           </div>
           <ResultBlock id={id} />

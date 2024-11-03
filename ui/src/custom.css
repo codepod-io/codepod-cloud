@@ -25,19 +25,19 @@ body {
 }
 
 .myDecoration-function {
-  background: var(--yellow-3);
+  background: var(--yellow-a3);
 }
 
 .myDecoration-callsite {
-  background: var(--yellow-2);
+  background: var(--yellow-a2);
 }
 
 .myDecoration-vardef {
-  background: var(--ruby-4);
+  background: var(--ruby-a4);
 }
 
 .myDecoration-varuse {
-  background: var(--ruby-2);
+  background: var(--ruby-a2);
 }
 
 /* Do not show unresolved marks, because it contains too many noise, e.g.,
