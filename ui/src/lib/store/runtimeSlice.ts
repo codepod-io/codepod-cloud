@@ -215,7 +215,7 @@ function propagateUp(
     // Parent scope's private ST
     const parentSt = get(getOrCreate_ATOM_privateST(node.parentId));
     parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .filter(({ type }) => ["function", "vardef"].includes(type))
       .forEach((annotation) => {
         parentSt.set(annotation.name, { immediate: node.id, final: originId });
       });
@@ -225,7 +225,7 @@ function propagateUp(
       myassert(parent);
       const parentScopePublicSt = get(getOrCreate_ATOM_publicST(node.parentId));
       parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .filter(({ type }) => ["function", "vardef"].includes(type))
         .forEach((annotation) => {
           // This public ST is only for visualization purpose. Symbol resolving does not use this.
           parentScopePublicSt.set(annotation.name, {
@@ -241,7 +241,7 @@ function propagateUp(
       getOrCreate_ATOM_privateST(node.data.subpageId ?? "main")
     );
     parseResult.annotations
-      .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+      .filter(({ type }) => ["function", "vardef"].includes(type))
       .forEach((annotation) => {
         subpageSt.set(annotation.name, { immediate: node.id, final: originId });
       });
@@ -252,7 +252,7 @@ function propagateUp(
         getOrCreate_ATOM_publicST(subpageId ?? "main")
       );
       parseResult.annotations
-        .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+        .filter(({ type }) => ["function", "vardef"].includes(type))
         .forEach((annotation) => {
           subpagePublicSt.set(annotation.name, {
             immediate: node.id,
@@ -270,7 +270,7 @@ function propagateUp(
           )
         );
         parseResult.annotations
-          .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+          .filter(({ type }) => ["function", "vardef"].includes(type))
           .forEach((annotation) => {
             grandParentSt.set(annotation.name, {
               immediate: ref.id,
@@ -299,7 +299,7 @@ function propagateST(get: Getter, set: Setter, id: string) {
   // const selfSt = new Map<string, string>();
   const selfSt = get(getOrCreate_ATOM_selfST(id));
   parseResult.annotations
-    .filter(({ type }) => ["function", "vardef", "bridge"].includes(type))
+    .filter(({ type }) => ["function", "vardef"].includes(type))
     .forEach((annotation) => {
       selfSt.set(annotation.name, { immediate: id, final: id });
     });
