@@ -302,8 +302,10 @@ export function updateView(get: Getter, set: Setter) {
     node.width = undefined;
     node.height = undefined;
     if (node.type === "SCOPE" && g_nonSelectableScopes.has(node.id)) {
-      console.log("nonSelectable", node.id);
+      // console.log("nonSelectable", node.id);
       node.selectable = false;
+    } else {
+      node.selectable = true;
     }
   });
   // compare old  and new structure, if changed, propagate symbol table
