@@ -1,3 +1,4 @@
+import { myassert } from "@/lib/utils/utils";
 import {
   Node,
   BaseEdge,
@@ -6,6 +7,9 @@ import {
   EdgeProps,
   getStraightPath,
   useInternalNode,
+  XYPosition,
+  useStore,
+  ReactFlowState,
 } from "@xyflow/react";
 
 import { Position, MarkerType } from "@xyflow/react";
@@ -159,14 +163,56 @@ function StraightFloatingEdgeGradient({
     return null;
   }
 
-  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
+  // All edges between these two nodes.
+  const alledges = useStore((s: ReactFlowState) => {
+    const edges = s.edges.filter(
+      (e) =>
+        (e.source === source && e.target === target) ||
+        (e.target === source && e.source === target)
+    );
 
-  const [edgePath] = getStraightPath({
-    sourceX: sx,
-    sourceY: sy,
-    targetX: tx + 0.01,
-    targetY: ty + 0.01,
+    return edges;
   });
+  myassert(alledges.length > 0);
+
+  let { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
+
+  let edgePath = "";
+
+  if (alledges.length > 1) {
+    // If there are multiple edges between the same two nodes, we need to offset
+    // them so they don't overlap.
+    const index = alledges.findIndex((e) => e.id === id);
+    myassert(index >= 0);
+    const { sourceX, sourceY, targetX, targetY } = {
+      sourceX: sx,
+      sourceY: sy,
+      targetX: tx + 0.01,
+      targetY: ty + 0.01,
+    };
+    const centerX = (sourceX + targetX) / 2;
+    const centerY = (sourceY + targetY) / 2;
+
+    // the index:
+    // 0, 1, 2, 3
+    // should map to
+    // -20, -10, 10, 20
+    const offset =
+      index >= alledges.length / 2
+        ? (index + 1 - alledges.length / 2) * 30
+        : (index - alledges.length / 2) * 30;
+
+    edgePath = `M ${sourceX} ${sourceY} Q ${centerX + offset} ${
+      centerY + offset
+    } ${targetX} ${targetY}`;
+  } else {
+    [edgePath] = getStraightPath({
+      sourceX: sx,
+      sourceY: sy,
+      targetX: tx + 0.01,
+      targetY: ty + 0.01,
+    });
+  }
 
   let x1, y1, x2, y2;
 
