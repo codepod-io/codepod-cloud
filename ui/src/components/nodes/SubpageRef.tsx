@@ -91,7 +91,6 @@ import { motion } from "framer-motion";
 import {
   ATOM_collisionIds,
   ATOM_escapedIds,
-  ATOM_insertMode,
   ATOM_jumpToPod,
   ATOM_selectPod,
   ATOM_toggleIsInit,
@@ -288,66 +287,6 @@ export const SubpageRefNode = memo(function ({ id }: NodeProps) {
   return <SubpageRefNodeImpl id={id} />;
 });
 
-/**
- * This is the handle that appears when the user is dragging a node to connect.
- */
-export const MyHandle = memo(function MyHandle({
-  hover,
-  isTarget,
-}: {
-  hover: boolean;
-  isTarget: boolean;
-}) {
-  const insertMode = useAtomValue(ATOM_insertMode);
-  return (
-    <Box
-      style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        ...(insertMode === "Connect"
-          ? {
-              width: "100%",
-              height: "100%",
-              backgroundColor: isTarget && hover ? "orange" : "transparent",
-            }
-          : { width: 0, height: 0 }),
-        // make content horizontally and vertically centered
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        opacity: 0.5,
-      }}
-    >
-      <Handle
-        id="left"
-        type="source"
-        position={Position.Left}
-        style={{
-          width: "100%",
-          height: "100%",
-          minWidth: 0,
-          minHeight: 0,
-          position: "absolute",
-          // background: "blue",
-          border: "none",
-          opacity: 0,
-          borderRadius: 0,
-          transform: "none",
-          top: 0,
-          left: 0,
-          fontWeight: "bold",
-        }}
-      />
-      <Text>
-        {insertMode === "Connect" &&
-          (isTarget ? "Drop Here" : "Drag to connect")}
-      </Text>
-    </Box>
-  );
-});
-
 const SubpageRefNodeImpl = memo(function SubpageRefNodeImpl({
   id,
 }: {
@@ -359,8 +298,6 @@ const SubpageRefNodeImpl = memo(function SubpageRefNodeImpl({
 
   const cutId = useAtomValue(ATOM_cutId);
   const [hover, setHover] = useState(false);
-
-  const insertMode = useAtomValue(ATOM_insertMode);
 
   const connection = useConnection();
 
@@ -391,27 +328,6 @@ const SubpageRefNodeImpl = memo(function SubpageRefNodeImpl({
         borderRadius: "8px",
       }}
     >
-      {insertMode === "Move" && (
-        <div
-          className="custom-drag-handle"
-          style={{
-            // put it on top of Monaco
-            zIndex: 10,
-            // make it full width of the node
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            top: 0,
-            left: 0,
-            opacity: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          Drag to move
-        </div>
-      )}
       <div
         // className="nodrag"
         style={{
@@ -469,7 +385,6 @@ const SubpageRefNodeImpl = memo(function SubpageRefNodeImpl({
           </Button>
           <SubpageSymbols subpageId={subpage.id} />
           <MyNodeResizer />
-          <MyHandle hover={hover} isTarget={isTarget} />
         </div>
       </div>
     </div>

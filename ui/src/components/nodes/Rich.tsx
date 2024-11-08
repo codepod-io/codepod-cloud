@@ -51,10 +51,9 @@ import { myassert } from "@/lib/utils/utils";
 import {
   ATOM_collisionIds,
   ATOM_escapedIds,
-  ATOM_insertMode,
   ATOM_toggleReadme,
 } from "@/lib/store/canvasSlice";
-import { ChangeScopeItem, MyHandle } from "./Code";
+import { ChangeScopeItem, HandleOnToolbar, MyHandle } from "./Code";
 import { ATOM_deletePod } from "@/lib/store/canvasSlice_addNode";
 
 const MyPodToolbar = memo(function MyPodToolbar({ id }: { id: string }) {
@@ -106,6 +105,8 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
       >
         <GripVertical />
       </Box>
+      <HandleOnToolbar />
+
       {/* The "more" button */}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
@@ -275,11 +276,10 @@ export const RichNode = function ({
   const node = nodesMap.get(id);
   const cutId = useAtomValue(ATOM_cutId);
 
-  const insertMode = useAtomValue(ATOM_insertMode);
-
   const connection = useConnection();
 
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
+  const isSource = connection.inProgress && connection.fromNode.id === id;
 
   // collisions
   const collisionIds = useAtomValue(ATOM_collisionIds);
@@ -298,29 +298,8 @@ export const RichNode = function ({
           backgroundColor: "pink",
         }}
       >
-        {insertMode === "Move" && (
-          <Box
-            className="custom-drag-handle"
-            style={{
-              // put it on top of Monaco
-              zIndex: 10,
-              // make it full width of the node
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              top: 0,
-              left: 0,
-              opacity: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            Drag to move
-          </Box>
-        )}
         Test
-        <MyHandle hover={hover} isTarget={isTarget} />
+        <MyHandle isTarget={isTarget} />
       </div>
     );
   }
@@ -335,27 +314,6 @@ export const RichNode = function ({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {insertMode === "Move" && (
-        <Box
-          className="custom-drag-handle"
-          style={{
-            // put it on top of Monaco
-            zIndex: 10,
-            // make it full width of the node
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            top: 0,
-            left: 0,
-            opacity: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          Drag to move
-        </Box>
-      )}
       <div
         style={{
           // This is the key to let the node auto-resize w.r.t. the content.
@@ -401,7 +359,7 @@ export const RichNode = function ({
             // </motion.div>
             <div
               style={{
-                opacity: hover ? 1 : 0,
+                opacity: hover || isSource ? 1 : 0,
               }}
             >
               <MyPodToolbar id={id} />
@@ -411,7 +369,7 @@ export const RichNode = function ({
           <Tags id={id} />
 
           <MyNodeResizer />
-          <MyHandle hover={hover} isTarget={isTarget} />
+          <MyHandle isTarget={isTarget} />
         </div>
       </div>
     </div>

@@ -69,7 +69,6 @@ import {
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ATOM_foldAll,
-  ATOM_insertMode,
   ATOM_jumpBack,
   ATOM_jumpForward,
   ATOM_jumpIndex,
@@ -387,47 +386,6 @@ function Versions() {
           </Text>
         </Flex>
       ))}
-    </Flex>
-  );
-}
-
-/**
- * Switch between modes:
- * - Insert
- * - Move
- * - Connect
- */
-function ModeSwitch() {
-  const [insertMode, setInsertMode] = useAtom(ATOM_insertMode);
-  return (
-    <Flex direction="column" gap="3">
-      <Heading size="2">Canvas Mode</Heading>
-      <RadioCards.Root
-        defaultValue={insertMode}
-        columns={{ initial: "1" }}
-        onValueChange={(v: "Insert" | "Move" | "Connect") => {
-          setInsertMode(v);
-        }}
-      >
-        <RadioCards.Item value="Insert">
-          <Flex direction="row" width="100%" gap="3">
-            <TextCursor />
-            <Text weight="bold">Insert</Text>
-          </Flex>
-        </RadioCards.Item>
-        <RadioCards.Item value="Move">
-          <Flex direction="row" width="100%" gap="3">
-            <Move />
-            <Text weight="bold">Move</Text>
-          </Flex>
-        </RadioCards.Item>
-        <RadioCards.Item value="Connect">
-          <Flex direction="row" width="100%" gap="3">
-            <Unplug />
-            <Text weight="bold">Connect</Text>
-          </Flex>
-        </RadioCards.Item>
-      </RadioCards.Root>
     </Flex>
   );
 }
@@ -837,8 +795,6 @@ function DebugPanel() {
       <ImportYDoc />
 
       <Separator my="3" size="4" />
-      <ModeSwitch />
-      <Separator my="3" size="4" />
       <Button
         onClick={async () => {
           await parseAllPods();
@@ -919,8 +875,6 @@ export function SidebarLeft() {
               </Heading>
               <ExportPDF />
               <Separator my="3" size="4" />
-              <ModeSwitch />
-
               <Runtime />
             </Flex>
           ),

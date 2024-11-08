@@ -51,7 +51,6 @@ import {
   ATOM_onNodesChange,
   getAbsPos,
   ATOM_onConnect,
-  ATOM_insertMode,
   ATOM_updateView,
   g_nonSelectableScopes,
   ATOM_reactflowInstance,
@@ -301,7 +300,6 @@ function CanvasImpl() {
   const { edgeContextMenu, onEdgeContextMenu } = useEdgeContextMenu();
   const { selectionContextMenu, onSelectionContextMenu } =
     useSelectionContextMenu();
-  const insertMode = useAtomValue(ATOM_insertMode);
 
   // ------------------------------------------------------------
   // Set non-selectable scopes
@@ -357,17 +355,22 @@ function CanvasImpl() {
         .react-flow__node-SCOPE {
           pointer-events: none !important;
         }
-        // This is still needed so that edges are shown on top of ReactFlow Handles in Connect mode.
-        // This also put the edges on top of the symbol table.
+        // This is still needed so that edges are shown on top of ReactFlow
+        // Handles in Connect mode. This also put the edges on top of the symbol
+        // table.
         // - UPDATE 1: no, the symbol table is still on top.
         // - UPDATE 2: still set to 9999 to let edges be on top of nodes.
-        .react-flow__edges {
-          z-index: 9999;
-        }
-        // But put the nodes on top of the edges.
-        // .react-flow__nodes {
-        //   z-index: 2;
+        //   .react-flow__edges { z-index: 9999;
+        //   }
+        // But put the nodes on top of the edges. .react-flow__nodes { z-index:
+        // 2;
         // }
+        // .react-flow__node { z-index: -1 !important;
+        // }
+        //
+        // UPDATE 3: put the nodes on top of the edges, because we are removing
+        // canvas modes, so we need to make edges selectable to remove it. If
+        // edges are above nodes, we can't select the nodes.
       `}
     >
       <ReactFlow<AppNode>
@@ -393,7 +396,7 @@ function CanvasImpl() {
           // style: { strokeWidth: 3, stroke: "black", strokeOpacity: 0.1 },
           // type: "floating",
           // type: "simplebezier",
-          selectable: insertMode !== "Insert",
+          // selectable: insertMode !== "Insert",
           // markerEnd: {
           //   type: MarkerType.ArrowClosed,
           //   color: "black",

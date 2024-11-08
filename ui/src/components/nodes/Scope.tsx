@@ -30,7 +30,6 @@ import { myassert } from "@/lib/utils/utils";
 import {
   ATOM_collisionIds,
   ATOM_escapedIds,
-  ATOM_insertMode,
   ATOM_onetimeCenterPod,
   ATOM_toggleFold,
   ATOM_toggleIsInit,
@@ -38,7 +37,7 @@ import {
   ATOM_toggleTest,
   getAbsPos,
 } from "@/lib/store/canvasSlice";
-import { ChangeScopeItem, MyHandle } from "./Code";
+import { ChangeScopeItem, HandleOnToolbar, MyHandle } from "./Code";
 import { memo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -138,6 +137,8 @@ const MyToolbarImpl = memo(function MyToolbarImpl({ id }: { id: string }) {
       >
         <GripVertical />
       </Box>
+
+      <HandleOnToolbar />
 
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
@@ -325,11 +326,10 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
 
   const [hover, setHover] = useState(false);
 
-  const insertMode = useAtomValue(ATOM_insertMode);
-
   const connection = useConnection();
 
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
+  const isSource = connection.inProgress && connection.fromNode.id === id;
 
   // collisions
   const collisionIds = useAtomValue(ATOM_collisionIds);
@@ -359,28 +359,6 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {insertMode === "Move" && (
-        <Box
-          className="custom-drag-handle"
-          style={{
-            pointerEvents: "all",
-            // put it on top of Monaco
-            // zIndex: 10,
-            // make it full width of the node
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            top: 0,
-            left: 0,
-            opacity: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          Drag to move
-        </Box>
-      )}
       <Tags id={id} />
       {node.data.folded ? (
         <div
@@ -455,7 +433,7 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
       >
         <SymbolTable id={id} />
       </Box>
-      <MyHandle hover={hover} isTarget={isTarget} />
+      <MyHandle isTarget={isTarget} />
       {/* THIS motion.div has a big performance hit. */}
       {/* <motion.div
         animate={{
@@ -470,7 +448,7 @@ export const ScopeNodeImpl = memo(function ScopeNodeImpl({
       <div
         style={{
           pointerEvents: "all",
-          opacity: hover ? 1 : 0,
+          opacity: hover || isSource ? 1 : 0,
         }}
       >
         <MyToolbar id={id} />
