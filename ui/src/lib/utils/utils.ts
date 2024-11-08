@@ -13,6 +13,14 @@ export function myassert(condition: any, msg?: string): asserts condition {
   }
 }
 
+/**
+ * Assert the condition and return the value.
+ */
+export function myAssertValue<T>(cond: T): NonNullable<T> {
+  myassert(cond);
+  return cond;
+}
+
 // FIXME performance for reading this from localstorage
 export const getAuthHeaders = () => {
   let authToken = localStorage.getItem("token") || null;
