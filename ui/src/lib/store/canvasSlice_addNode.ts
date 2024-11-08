@@ -1,6 +1,6 @@
 import { Getter, Setter, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import * as Y from "yjs";
-import { getNodesBounds, Node, XYPosition } from "@xyflow/react";
+import { Edge, getNodesBounds, Node, XYPosition } from "@xyflow/react";
 import {
   ATOM_codeMap,
   ATOM_edgesMap,
@@ -8,7 +8,7 @@ import {
   ATOM_richMap,
 } from "./yjsSlice";
 import { match } from "ts-pattern";
-import { myassert, myNanoId } from "../utils/utils";
+import { myassert, myAssertValue, myNanoId } from "../utils/utils";
 import {
   AppNode,
   CodeNodeType,
@@ -21,6 +21,7 @@ import { SupportedLanguage } from "./types";
 import { toast } from "react-toastify";
 import { ATOM_currentPage } from "./atom";
 import { blocksToYXmlFragment, yXmlFragmentToBlocks } from "./blockNoteUtils";
+import { MANUAL_EDGE } from "@/components/Canvas";
 
 type InputSpecCommon = {
   position: XYPosition;
@@ -592,10 +593,18 @@ async function copyScope(get: Getter, set: Setter, id: string) {
   copySubtree(get, set, { id }, { nodesMap2, richMap2, codeMap2 });
   // console.log("codeMap2", codeMap2);
   // console.log("richMap2", richMap2);
+  const edgesMap2 = new Map<string, Edge>();
+  const edgesMap = get(ATOM_edgesMap);
+  edgesMap.forEach((edge, id) => {
+    if (nodesMap2.has(edge.source) && nodesMap2.has(edge.target)) {
+      edgesMap2.set(id, edge);
+    }
+  });
   const data = {
     oldId: id,
     // nodesMap2: JSON.stringify(Array.from(nodesMap2.entries())),
     nodesMap2: Array.from(nodesMap2.entries()),
+    edgesMap2: Array.from(edgesMap2.entries()),
     // richMap2: JSON.stringify(Array.from(richMap2.entries())),
     // codeMap2: JSON.stringify(Array.from(codeMap2.entries())),
     richMap2: Array.from(richMap2.entries()),
@@ -611,15 +620,18 @@ export const ATOM_copyScope = atom(null, copyScope);
 function pasteSubtree(
   get: Getter,
   set: Setter,
-  { oldId, newParentId }: { oldId: string; newParentId?: string },
   {
+    oldId,
     nodesMap2,
     richMap2,
     codeMap2,
+    old2new,
   }: {
+    oldId: string;
     nodesMap2: Map<string, AppNode>;
     richMap2: Map<string, string>;
     codeMap2: Map<string, string>;
+    old2new: Map<string, string>;
   }
 ) {
   const nodesMap = get(ATOM_nodesMap);
@@ -627,13 +639,14 @@ function pasteSubtree(
   const codeMap = get(ATOM_codeMap);
   const node = structuredClone(nodesMap2.get(oldId));
   myassert(node);
-  const newId = myNanoId();
-  // console.log("oldId", oldId, "newId", newId);
+  const newId = old2new.get(oldId);
+  myassert(newId);
   // set a new ID and the parentId
   node.id = newId;
-  node.parentId = newParentId;
+  node.parentId = node.parentId && myAssertValue(old2new.get(node.parentId));
   const currentPage = get(ATOM_currentPage);
   node.data.subpageId = currentPage;
+  // set the node into nodesMap
   nodesMap.set(newId, node);
   switch (node.type) {
     case "CODE":
@@ -658,19 +671,19 @@ function pasteSubtree(
     case "SCOPE":
       {
         node.data.childrenIds.forEach((childId) => {
-          pasteSubtree(
-            get,
-            set,
-            { oldId: childId, newParentId: newId },
-            { nodesMap2, richMap2, codeMap2 }
-          );
+          pasteSubtree(get, set, {
+            oldId: childId,
+            nodesMap2,
+            richMap2,
+            codeMap2,
+            old2new,
+          });
         });
       }
       break;
     default:
       myassert(false);
   }
-  return newId;
 }
 
 function pasteScopeImpl(
@@ -680,30 +693,51 @@ function pasteScopeImpl(
   {
     oldId,
     nodesMap2,
+    edgesMap2,
     richMap2,
     codeMap2,
   }: {
     oldId: string;
     nodesMap2: Map<string, AppNode>;
+    edgesMap2: Map<string, Edge>;
     richMap2: Map<string, string>;
     codeMap2: Map<string, string>;
   }
 ) {
-  const newScopeId = pasteSubtree(
-    get,
-    set,
-    { oldId: oldId },
-    {
-      nodesMap2: nodesMap2,
-      richMap2: richMap2,
-      codeMap2: codeMap2,
-    }
-  );
+  // old ID to new ID
+  const old2new = new Map<string, string>();
+  // construct old2new
+  nodesMap2.forEach((node) => {
+    const newId = myNanoId();
+    old2new.set(node.id, newId);
+  });
+
+  pasteSubtree(get, set, {
+    oldId,
+    nodesMap2: nodesMap2,
+    richMap2: richMap2,
+    codeMap2: codeMap2,
+    old2new,
+  });
+
   const nodesMap = get(ATOM_nodesMap);
-  const node = nodesMap.get(newScopeId);
+  const node = nodesMap.get(myAssertValue(old2new.get(oldId)));
   myassert(node);
   // adjust the position
   node.position = position;
+  // paste the edges
+  const edgesMap = get(ATOM_edgesMap);
+  edgesMap2.forEach((edge, key) => {
+    const source = myAssertValue(old2new.get(edge.source));
+    const target = myAssertValue(old2new.get(edge.target));
+    const id = `${source}_${target}_manual`;
+    edgesMap.set(`${source}_${target}_manual`, {
+      id,
+      source,
+      target,
+      type: MANUAL_EDGE,
+    });
+  });
   // compute the hierarchy
   computeHierarchy(get, set);
   updateView(get, set);
@@ -716,6 +750,7 @@ async function pasteScope(get: Getter, set: Setter, position: XYPosition) {
     const data = {
       oldId: parsedData.oldId,
       nodesMap2: new Map<string, AppNode>(parsedData.nodesMap2),
+      edgesMap2: new Map<string, Edge>(parsedData.edgesMap2),
       richMap2: new Map<string, string>(parsedData.richMap2),
       codeMap2: new Map<string, string>(parsedData.codeMap2),
     };
