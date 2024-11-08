@@ -20,5 +20,14 @@ EOF
 
 # For development:
 # python3 -m ipykernel_launcher -f ./conn.json
-CMD ["python3", "-m", "ipykernel_launcher", "-f", "/conn.json"]
+# CMD ["python3", "-m", "ipykernel_launcher", "-f", "/conn.json"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]
+
+COPY <<EOF /run.sh
+#!/bin/bash
+python3 -m ipykernel_launcher -f /conn.json
+EOF
+
+RUN chmod +x /run.sh
+
+CMD ["/run.sh"]
