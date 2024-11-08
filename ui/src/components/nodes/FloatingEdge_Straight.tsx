@@ -202,9 +202,9 @@ function StraightFloatingEdgeGradient({
         ? (index + 1 - alledges.length / 2) * 30
         : (index - alledges.length / 2) * 30;
 
-    edgePath = `M ${sourceX} ${sourceY} Q ${centerX + offset} ${
-      centerY + offset
-    } ${targetX} ${targetY}`;
+    edgePath = `M ${sourceX} ${sourceY}
+                Q ${centerX + offset} ${centerY + offset}
+                ${targetX} ${targetY}`;
   } else {
     [edgePath] = getStraightPath({
       sourceX: sx,
@@ -214,7 +214,7 @@ function StraightFloatingEdgeGradient({
     });
   }
 
-  let x1, y1, x2, y2;
+  let x1: string, y1: string, x2: string, y2: string;
 
   if (sx === tx) {
     x1 = "0%";
@@ -257,6 +257,19 @@ function StraightFloatingEdgeGradient({
           ...style,
           stroke: `url(#${id})`,
         }}
+      />
+      {/* A transparent wide path to select easier. https://github.com/xyflow/xyflow/issues/1211#issuecomment-883673705 */}
+      <path
+        style={{
+          ...style,
+          fill: "none",
+          stroke: "transparent",
+          strokeWidth: 28,
+        }}
+        // className="react-flow__edge-path-selector"
+        d={edgePath}
+        // markerEnd={markerEnd}
+        fillRule="evenodd"
       />
     </>
   );

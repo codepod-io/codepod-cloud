@@ -44,6 +44,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import {
+  Cable,
   Check,
   CornerDownLeft,
   CornerRightUp,
@@ -90,7 +91,6 @@ import { motion } from "framer-motion";
 import {
   ATOM_collisionIds,
   ATOM_escapedIds,
-  ATOM_insertMode,
   ATOM_toggleIsInit,
   ATOM_togglePinPod,
   ATOM_togglePublic,
@@ -394,6 +394,49 @@ const MyPodToolbar = memo(function MyPodToolbar({
   );
 });
 
+/**
+ * The edge connect handler.
+ */
+export function HandleOnToolbar() {
+  return (
+    <Box
+      style={{
+        position: "relative",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: 1,
+      }}
+    >
+      <Handle
+        id="right"
+        type="source"
+        position={Position.Right}
+        style={{
+          width: "100%",
+          height: "100%",
+
+          minWidth: 0,
+          minHeight: 0,
+          // position: "absolute",
+          // background: "blue",
+          border: "none",
+          opacity: 0,
+          borderRadius: 0,
+          transform: "none",
+          top: 0,
+          left: 0,
+          fontWeight: "bold",
+          backgroundColor: "blue",
+        }}
+        // So that click on one handle then click on another handle will not trigger the edge creation.
+        isConnectableEnd={false}
+      />
+      <Cable />
+    </Box>
+  );
+}
+
 const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
   node,
 }: {
@@ -448,6 +491,8 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
       >
         <Play />
       </IconButton>
+
+      <HandleOnToolbar />
 
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
@@ -646,21 +691,21 @@ export const CodeNode = memo(function ({ id }: NodeProps) {
  * This is the handle that appears when the user is dragging a node to connect.
  */
 export const MyHandle = memo(function MyHandle({
-  hover,
   isTarget,
 }: {
-  hover: boolean;
   isTarget: boolean;
 }) {
-  const insertMode = useAtomValue(ATOM_insertMode);
+  const [hover, setHover] = useState(false);
   return (
     <Box
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         position: "absolute",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        ...(insertMode === "Connect"
+        ...(isTarget
           ? {
               width: "100%",
               height: "100%",
@@ -672,6 +717,8 @@ export const MyHandle = memo(function MyHandle({
         justifyContent: "center",
         alignItems: "center",
         opacity: 0.5,
+        // put it above Monaco
+        zIndex: 999,
       }}
     >
       <Handle
@@ -694,10 +741,7 @@ export const MyHandle = memo(function MyHandle({
           fontWeight: "bold",
         }}
       />
-      <Text>
-        {insertMode === "Connect" &&
-          (isTarget ? "Drop Here" : "Drag to connect")}
-      </Text>
+      {isTarget && <Text>"Drop Here"</Text>}
     </Box>
   );
 });
@@ -709,11 +753,11 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
   const cutId = useAtomValue(ATOM_cutId);
   const [hover, setHover] = useState(false);
 
-  const insertMode = useAtomValue(ATOM_insertMode);
-
   const connection = useConnection();
 
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
+  const isSource = connection.inProgress && connection.fromNode.id === id;
+
   // collisions
   const collisionIds = useAtomValue(ATOM_collisionIds);
   const escapedIds = useAtomValue(ATOM_escapedIds);
@@ -735,29 +779,8 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
           backgroundColor: "pink",
         }}
       >
-        {insertMode === "Move" && (
-          <Box
-            className="custom-drag-handle"
-            style={{
-              // put it on top of Monaco
-              zIndex: 10,
-              // make it full width of the node
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              top: 0,
-              left: 0,
-              opacity: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            Drag to move
-          </Box>
-        )}
         Test
-        <MyHandle hover={hover} isTarget={isTarget} />
+        <MyHandle isTarget={isTarget} />
       </div>
     );
   }
@@ -773,27 +796,6 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
         borderRadius: "8px",
       }}
     >
-      {insertMode === "Move" && (
-        <div
-          className="custom-drag-handle"
-          style={{
-            // put it on top of Monaco
-            zIndex: 10,
-            // make it full width of the node
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            top: 0,
-            left: 0,
-            opacity: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          Drag to move
-        </div>
-      )}
       <div
         // className="nodrag"
         style={{
@@ -842,7 +844,7 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
             // </motion.div>
             <div
               style={{
-                opacity: hover ? 1 : 0,
+                opacity: isSource || hover ? 1 : 0,
               }}
             >
               <MyPodToolbar node={node} />
@@ -859,8 +861,7 @@ const CodeNodeImpl = memo(function CodeNodeImpl({ id }: { id: string }) {
           </div>
           <ResultBlock id={id} />
           <MyNodeResizer />
-
-          <MyHandle hover={hover} isTarget={isTarget} />
+          <MyHandle isTarget={isTarget} />
         </div>
       </div>
     </div>

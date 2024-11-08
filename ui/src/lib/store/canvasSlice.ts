@@ -37,8 +37,6 @@ import {
   resolveDefUseEdges,
 } from "./runtimeSlice";
 
-export const ATOM_insertMode = atom<"Insert" | "Move" | "Connect">("Insert");
-
 /**
  * Get the absoluate position of the node.
  */
