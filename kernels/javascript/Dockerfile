@@ -19,4 +19,13 @@ COPY <<EOF /conn.json
 EOF
 
 # CMD ["ijskernel", "--hide-undefined", "/conn.json", "--protocol=5.1"]
-CMD ["deno", "jupyter",  "--kernel", "--conn", "/conn.json"]
+# CMD ["deno", "jupyter",  "--kernel", "--conn", "/conn.json"]
+
+COPY <<EOF /run.sh
+#!/bin/bash
+deno jupyter --kernel --conn /conn.json
+EOF
+
+RUN chmod +x /run.sh
+
+CMD ["/run.sh"]
