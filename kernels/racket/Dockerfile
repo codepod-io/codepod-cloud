@@ -15,7 +15,7 @@ RUN raco pkg install --auto --no-docs zeromq-r-lib uuid sha
 # RUN raco pkg install iracket
 # I added trusted code inspector so that installing a package can be loaded in already started kernels.
 # Ref: https://github.com/codepod-io/iracket/pull/1
-RUN raco pkg install https://github.com/codepod-io/iracket.git#use-trusted-code-inspector
+RUN raco pkg install --auto --no-docs https://github.com/codepod-io/iracket.git#use-trusted-code-inspector
 
 COPY <<EOF /conn.json
 {
@@ -51,5 +51,14 @@ RUN raco pkg install --auto --no-docs graph rebellion
 # > subprocess: `execute' access denied for /bin/sh
 #
 # Ref: https://github.com/rmculpepper/iracket/issues/13#issuecomment-880958818
-CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
+# CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
 # CMD ["sh", "-c", "racket -l iracket/iracket -- -t /conn.json"]
+
+COPY <<EOF /run.sh
+#!/bin/bash
+racket -l iracket/iracket -- -t /conn.json
+EOF
+
+RUN chmod +x /run.sh
+
+CMD ["/run.sh"]

@@ -30,4 +30,13 @@ COPY <<EOF /conn.json
 EOF
 
 # ENTRYPOINT ["tail", "-f", "/dev/null"]
-CMD [ "julia", "-i", "--color=yes", "/kernel.jl", "/conn.json"]
+# CMD [ "julia", "-i", "--color=yes", "/kernel.jl", "/conn.json"]
+
+COPY <<EOF /run.sh
+#!/bin/bash
+julia -i --color=yes /kernel.jl /conn.json
+EOF
+
+RUN chmod +x /run.sh
+
+CMD ["/run.sh"]
