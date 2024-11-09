@@ -245,12 +245,20 @@ export function debouncedTryParsePod(get: Getter, set: Setter, id: string) {
   set(getOrCreate_ATOM_isParsing(id), true);
   if (!debouncedFunctions.has(id)) {
     // Create a new debounced function for this specific id
-    const debouncedFunc = debounce(async () => {
-      // console.log("debouncedTryParsePod", id);
-      await tryParsePod(get, set, id);
-      set(getOrCreate_ATOM_isParsing(id), false);
-      debouncedFunctions.delete(id); // Clean up after execution
-    }, 1000);
+    const debouncedFunc = debounce(
+      async () => {
+        // console.log("debouncedTryParsePod", id);
+        await tryParsePod(get, set, id);
+        set(getOrCreate_ATOM_isParsing(id), false);
+        debouncedFunctions.delete(id); // Clean up after execution
+      },
+      // parse if no new activity in 1s
+      1000,
+      {
+        // parse at least every 2s
+        maxWait: 2000,
+      }
+    );
 
     debouncedFunctions.set(id, debouncedFunc);
   }
