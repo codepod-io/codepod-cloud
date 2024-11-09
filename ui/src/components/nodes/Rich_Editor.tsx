@@ -40,6 +40,9 @@ import { WebsocketProvider } from "@/../../api/src/runtime/y-websocket";
 
 import { css } from "@emotion/css";
 import { Extension } from "@tiptap/core";
+
+import { Link } from "@tiptap/extension-link";
+
 import { MyDropcursor } from "./MyDropCursor_tiptap";
 import { useAtomValue } from "jotai";
 import { ATOM_nodesMap, ATOM_simpleAwareness } from "@/lib/store/yjsSlice";
@@ -123,10 +126,17 @@ export function RichEditor({
         default: "Enter text or type '/'",
       },
     },
-    disableExtensions: ["dropCursor"],
+    disableExtensions: ["dropCursor", "link"],
     trailingBlock: false,
     _tiptapOptions: {
-      extensions: [ArrowConversionExtension, MyDropcursor],
+      extensions: [
+        ArrowConversionExtension,
+        MyDropcursor,
+        // Customize the link behavior to not open the link on click.
+        Link.configure({
+          openOnClick: false,
+        }),
+      ],
     },
     // initialContent: [
     //   {
