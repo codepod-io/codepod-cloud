@@ -12,7 +12,7 @@ import {
   getOrCreate_ATOM_runtimeReady,
 } from "./yjsSlice";
 import { produce } from "immer";
-import { ATOM_edges, ATOM_nodes } from "./canvasSlice";
+import { ATOM_edges, ATOM_nodes, updateView } from "./canvasSlice";
 import { Edge, Node } from "@xyflow/react";
 import { toast } from "react-toastify";
 import { match } from "ts-pattern";
@@ -24,6 +24,7 @@ import { ATOM_disableCodeRewrite } from "./settingSlice";
 import { AppNode } from "./types";
 import { topoSort } from "./topoSort";
 import { ATOM_currentPage } from "./atom";
+import { debounce, DebouncedFunc } from "lodash";
 
 /**
  * 1. parse the code, get: (defs, refs) to functions & variables
@@ -161,13 +162,18 @@ async function computeHash(input: string): Promise<string> {
 /**
  * Parse the code for defined variables and functions.
  * @param id paod
+ * @returns true if the result is updated, false otherwise.
  */
-async function parsePod(get: Getter, set: Setter, id: string) {
+async function parsePod(
+  get: Getter,
+  set: Setter,
+  id: string
+): Promise<boolean> {
   // console.log("parsePod", id);
   const nodesMap = get(ATOM_nodesMap);
   const node = nodesMap.get(id);
   if (!node) throw new Error(`Node not found for id: ${id}`);
-  if (node.type !== "CODE") return;
+  if (node.type !== "CODE") return false;
   const codeMap = get(ATOM_codeMap);
   const analyzeCode = match(node.data.lang)
     .with("python", () => parsePython)
@@ -178,18 +184,19 @@ async function parsePod(get: Getter, set: Setter, id: string) {
   if (!analyzeCode) {
     console.log("Unsupported language: " + node.data.lang);
     // set(getOrCreate_ATOM_parseResult(id), null);
-    return;
+    return false;
   }
   const code = codeMap.get(id)?.toString() || "";
   // compute hash. If the hash is the same, return the previous result.
   const hash = await computeHash(code);
   const prevResult = get(getOrCreate_ATOM_parseResult(id));
   if (prevResult.hash === hash) {
-    return;
+    return false;
   }
   const parseResult = analyzeCode(code);
   parseResult.hash = hash;
   set(getOrCreate_ATOM_parseResult(id), parseResult);
+  return true;
 }
 
 export const ATOM_parsePod = atom(null, parsePod);
@@ -201,8 +208,69 @@ function clearParseResult(get: Getter, set: Setter, id: string) {
 export const ATOM_clearParseResult = atom(null, clearParseResult);
 
 /**
- *
+ * An indicator for whether the pod is being QUEUEd for re-parsing.
  */
+const id2_ATOM_isParsing = new Map<string, PrimitiveAtom<boolean>>();
+export function getOrCreate_ATOM_isParsing(id: string) {
+  if (id2_ATOM_isParsing.has(id)) {
+    return id2_ATOM_isParsing.get(id)!;
+  }
+  const res = atom<boolean>(false);
+  id2_ATOM_isParsing.set(id, res);
+  return res;
+}
+
+/**
+ * This function is meant to be called for auto-reparse/re-resolve, in a debounced fashion.
+ * - It is prefixed with "try" in that if the node is not a code pod, return.
+ * - It will also trigger propagate and resolve.
+ */
+async function tryParsePod(get: Getter, set: Setter, id: string) {
+  const nodesMap = get(ATOM_nodesMap);
+  const node = nodesMap.get(id);
+  if (!node) return;
+  if (node.type !== "CODE") return;
+  const changed = await parsePod(get, set, id);
+  if (changed) {
+    propagateAllST(get, set);
+    resolveAllPods(get, set);
+    // FIXME should we update view here?
+    updateView(get, set);
+  }
+}
+
+const debouncedFunctions = new Map<string, DebouncedFunc<() => void>>();
+
+export function debouncedTryParsePod(get: Getter, set: Setter, id: string) {
+  set(getOrCreate_ATOM_isParsing(id), true);
+  if (!debouncedFunctions.has(id)) {
+    // Create a new debounced function for this specific id
+    const debouncedFunc = debounce(
+      async () => {
+        // console.log("debouncedTryParsePod", id);
+        await tryParsePod(get, set, id);
+        set(getOrCreate_ATOM_isParsing(id), false);
+        debouncedFunctions.delete(id); // Clean up after execution
+      },
+      // parse if no new activity in 1s
+      1000,
+      {
+        // parse at least every 2s
+        maxWait: 2000,
+      }
+    );
+
+    debouncedFunctions.set(id, debouncedFunc);
+  }
+
+  // Call the debounced function for the given id
+  debouncedFunctions.get(id)!();
+}
+
+/********************************************
+ * Propagation of the symbol table
+ ********************************************/
+
 function propagateUp(
   get: Getter,
   set: Setter,
@@ -452,7 +520,7 @@ function resolveUp(
   resolveUp(get, set, { node: parent, resolveResult });
 }
 
-function resolveAllPods(get: Getter, set: Setter) {
+export function resolveAllPods(get: Getter, set: Setter) {
   const nodesMap = get(ATOM_nodesMap);
   resolveDefUseEdges.clear();
   nodesMap.forEach((node) => {

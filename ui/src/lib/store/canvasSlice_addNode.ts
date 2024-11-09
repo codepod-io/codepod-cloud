@@ -22,6 +22,7 @@ import { toast } from "react-toastify";
 import { ATOM_currentPage } from "./atom";
 import { blocksToYXmlFragment, yXmlFragmentToBlocks } from "./blockNoteUtils";
 import { MANUAL_EDGE } from "@/components/Canvas";
+import { propagateAllST, resolveAllPods } from "./runtimeSlice";
 
 type InputSpecCommon = {
   position: XYPosition;
@@ -230,6 +231,9 @@ function computeHierarchy(get: Getter, set: Setter) {
   nodes.forEach((node) => {
     nodesMap.set(node.id, node);
   });
+  // resolve all here
+  propagateAllST(get, set);
+  resolveAllPods(get, set);
 }
 
 export const ATOM_addScope = atom(null, addScope);

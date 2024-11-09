@@ -14,6 +14,7 @@ import { ATOM_repoData } from "./atom";
 import { myassert, myNanoId } from "../utils/utils";
 import { addNode } from "./canvasSlice_addNode";
 import { addAwarenessStyle } from "./yjsSlice_utils";
+import { debouncedTryParsePod } from "./runtimeSlice";
 
 // The atoms
 
@@ -312,6 +313,22 @@ export const ATOM_connectYjs = atom(null, (get, set, name: string) => {
       if (transaction.local) return;
       updateView(get, set);
     });
+    const codeMap = getCodeMap(get);
+
+    // Observe all code changes, and re-parse the code when it changes.
+    codeMap.observeDeep(
+      (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+        // if (transaction.local) return;
+        events.forEach((event) => {
+          if (event instanceof Y.YTextEvent && event.path.length > 0) {
+            const id = event.path[0];
+            if (typeof id === "string") {
+              debouncedTryParsePod(get, set, id);
+            }
+          }
+        });
+      }
+    );
     // subpages
     const subpageMap = get(ATOM_subpageMap);
     set(ATOM_subpages, Array.from(subpageMap.values()));
