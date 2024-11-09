@@ -58,6 +58,7 @@ import {
   Play,
   ScissorsLineDashed,
   ShieldQuestion,
+  SquareFunction,
   Trash2,
   Variable,
   X,
@@ -952,6 +953,17 @@ const Tags = function Tags({ id }: { id: string }) {
         )}
         {[...selfSt.keys()].map((key) => (
           <Flex align="center" key={key}>
+            {/* A marker if it is a function def. */}
+            <Flex
+              style={{
+                fontSize: "2em",
+              }}
+            >
+              {selfSt.get(key)!.type === "function" && (
+                <SquareFunction color="blue" />
+              )}
+            </Flex>
+
             <code
               style={{
                 fontSize: "4em",
