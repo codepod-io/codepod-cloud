@@ -34,6 +34,7 @@ import { toast } from "react-toastify";
 import {
   getOrCreate_ATOM_resolveResult,
   propagateAllST,
+  resolveAllPods,
   resolveDefUseEdges,
 } from "./runtimeSlice";
 
@@ -272,7 +273,7 @@ export function updateView(get: Getter, set: Setter) {
   const t1 = performance.now();
   const nodesMap = get(ATOM_nodesMap);
   let selectedPods = get(ATOM_selectedPods);
-  const newStructure: T_id2parent = new Map();
+  // const newStructure: T_id2parent = new Map();
   // TODO compare new/old structure
 
   // The nodes from the nodesMap.
@@ -308,10 +309,10 @@ export function updateView(get: Getter, set: Setter) {
   });
   // compare old  and new structure, if changed, propagate symbol table
   // FIXME performance
-  if (!compareMaps(oldStructure, newStructure)) {
-    propagateAllST(get, set);
-    oldStructure = newStructure;
-  }
+  // if (!compareMaps(oldStructure, newStructure)) {
+  //   propagateAllST(get, set);
+  //   oldStructure = newStructure;
+  // }
 
   set(ATOM_nodes, [...nodes]);
 
@@ -380,6 +381,10 @@ function togglePublic(get: Getter, set: Setter, id: string) {
   myassert(node);
   node.data.isPublic = !node.data.isPublic;
   nodesMap.set(id, node);
+  // deal with symbol table propagation
+  propagateAllST(get, set);
+  resolveAllPods(get, set);
+  // update the view
   updateView(get, set);
 }
 

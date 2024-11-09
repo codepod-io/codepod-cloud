@@ -72,6 +72,7 @@ import {
   ATOM_getEdgeChain,
   ATOM_preprocessChain,
   ATOM_resolvePod,
+  getOrCreate_ATOM_isParsing,
   getOrCreate_ATOM_selfST,
 } from "@/lib/store/runtimeSlice";
 import {
@@ -872,6 +873,7 @@ const Tags = function Tags({ id }: { id: string }) {
   const nodesMap = useAtomValue(ATOM_nodesMap);
   const node = nodesMap.get(id);
   const selfSt = useAtomValue(getOrCreate_ATOM_selfST(id));
+  const isParsing = useAtomValue(getOrCreate_ATOM_isParsing(id));
   const reactFlowInstance = useReactFlow();
   if (!node) throw new Error(`Node ${id} not found.`);
   return (
@@ -953,7 +955,7 @@ const Tags = function Tags({ id }: { id: string }) {
             <code
               style={{
                 fontSize: "4em",
-                color: "black",
+                color: isParsing ? "gray" : "black",
                 // lineHeight: "var(--line-height-1)",
                 // lineHeight: "10px",
                 lineHeight: "0.7em",
