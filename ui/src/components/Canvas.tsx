@@ -478,8 +478,8 @@ function CanvasImpl() {
             vertical={helperLineVertical}
           />
 
-          {/* <Background /> */}
-          <Background
+          {/* <Background gap={100} size={10} /> */}
+          {/* <Background
             id="1"
             gap={10}
             color="#f1f1f1"
@@ -491,7 +491,7 @@ function CanvasImpl() {
             offset={1}
             color="#ccc"
             variant={BackgroundVariant.Lines}
-          />
+          /> */}
         </Box>
       </ReactFlow>
       <SubpageSymbolTable />
