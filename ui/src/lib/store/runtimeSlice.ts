@@ -369,7 +369,11 @@ function propagateST(get: Getter, set: Setter, id: string) {
   parseResult.annotations
     .filter(({ type }) => ["function", "vardef"].includes(type))
     .forEach((annotation) => {
-      selfSt.set(annotation.name, { immediate: id, final: id });
+      selfSt.set(annotation.name, {
+        immediate: id,
+        final: id,
+        type: annotation.type,
+      });
     });
   // set(getOrCreate_ATOM_selfST(id), selfSt);
   propagateUp(get, set, parseResult, id, node);
