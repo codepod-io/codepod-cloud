@@ -492,22 +492,6 @@ function useInitEditor({
       editor.onDidContentSizeChange(updateHeight);
       // Set the height for the first time.
       updateHeight({ contentHeight: editor.getContentHeight() });
-      // Note: must use addAction instead of addCommand. The addCommand is not
-      // working because it is bound to only the latest Monaco instance. This is a
-      // known bug: https://github.com/microsoft/monaco-editor/issues/2947
-      editor.addAction({
-        id: "Run",
-        label: "Run",
-        keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-        run: async () => {
-          if (!runtimeReady) {
-            toast.error("Runtime is not ready.");
-          } else {
-            const specs = await preprocessChain([node.id]);
-            if (specs.length > 0) runChain.mutate({ repoId, specs });
-          }
-        },
-      });
       editor.addAction({
         id: "trigger-inline-suggest",
         label: "Trigger Suggest",
@@ -548,6 +532,27 @@ function useInitEditor({
       );
     }
   }, [editor]);
+
+  useEffect(() => {
+    if (editor && editor.getModel()) {
+      // Note: must use addAction instead of addCommand. The addCommand is not
+      // working because it is bound to only the latest Monaco instance. This is a
+      // known bug: https://github.com/microsoft/monaco-editor/issues/2947
+      editor.addAction({
+        id: "Run",
+        label: "Run",
+        keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+        run: async () => {
+          if (!runtimeReady) {
+            toast.error("Runtime is not ready.");
+          } else {
+            const specs = await preprocessChain([node.id]);
+            if (specs.length > 0) runChain.mutate({ repoId, specs });
+          }
+        },
+      });
+    }
+  }, [runtimeReady, editor]);
 }
 
 export const MyMonaco = memo(({ id }: { id: string }) => {
@@ -559,7 +564,7 @@ export const MyMonaco = memo(({ id }: { id: string }) => {
 });
 
 function MyMonacoImpl({ node }: { node: CodeNodeType }) {
-  const editorRef = useRef(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
