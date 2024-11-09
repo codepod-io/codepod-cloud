@@ -381,6 +381,7 @@ const MyPodToolbar = memo(function MyPodToolbar({
         position: "absolute",
         top: 0,
         right: 0,
+        padding: "4px",
         // border: "solid 1px var(--gray-8)",
         transform: `translate(0%, -100%) scale(${1 / zoom})`,
         transformOrigin: "bottom right",
@@ -470,7 +471,6 @@ const MyPodToolbarImpl = memo(function MyPodToolbarImpl({
         className="custom-drag-handle"
         style={{
           cursor: "grab",
-          padding: "8px",
           display: "inline-flex",
         }}
       >
