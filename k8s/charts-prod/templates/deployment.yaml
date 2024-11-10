@@ -369,6 +369,12 @@ spec:
               value: "{{ .Values.kernelImages.javascript }}"
             - name: KERNEL_IMAGE_RACKET
               value: "{{ .Values.kernelImages.racket }}"
+            - name: KERNEL_MAX_LIFETIME
+              # 60 * 60 * 1000; // 1 hr
+              # 60 * 60 * 24 * 1000 = 86400000; // 1 day
+              value: "86400000"
+            - name: KERNEL_ULIMIT_MEMORY
+              value: "16Gi"
           resources:
             limits:
               memory: 512Mi

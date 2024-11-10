@@ -69,6 +69,44 @@ spec:
       storage: 1Gi
 
 ---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: longhorn-replica-1
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+parameters:
+  numberOfReplicas: "1"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-public
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn-replica-1
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-pip-cache
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn-replica-1
+  resources:
+    requests:
+      storage: 10Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -96,13 +134,35 @@ spec:
       containers:
         - name: kernel
           image: "{{ .Values.kernelImages.python }}"
+          resources:
+            limits:
+              memory: 2048Mi
+              cpu: "2"
+            requests:
+              memory: 128Mi
+              cpu: "0.2"
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - |
+              ulimit -v 1048576; /run.sh
           volumeMounts:
             - name: myvolume
               mountPath: /mnt/data
+            - name: pip-cache
+              mountPath: /root/.cache/pip
+            - name: public
+              mountPath: /mnt/public
       volumes:
         - name: myvolume
           persistentVolumeClaim:
             claimName: testuser-volume
+        - name: pip-cache
+          persistentVolumeClaim:
+            claimName: pvc-pip-cache
+        - name: public
+          persistentVolumeClaim:
+            claimName: pvc-public
 
 ---
 # this deployment is for pulling in the kernel images

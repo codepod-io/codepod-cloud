@@ -16,10 +16,13 @@ export const myenv = z
     YJS_WS_URL: z.string(),
     READ_ONLY: z.enum(["true", "false"]).transform((x) => x === "true"),
     JWT_SECRET: z.string(),
+    KERNEL_MAX_LIFETIME: z.string().transform((x) => parseInt(x)),
+    KERNEL_ULIMIT_MEMORY: z.string(),
   })
   .parse(process.env);
 
 export const repoId2ydoc = new Map<string, Y.Doc>();
 export const repoId2wireMap = new Map<string, Map<string, ZmqWire>>();
 
-export const kernelMaxLifetime = 60 * 60 * 1000; // 1 hr
+// 60 * 60 * 1000; // 1 hr
+export const kernelMaxLifetime = myenv.KERNEL_MAX_LIFETIME; // 1 hr
