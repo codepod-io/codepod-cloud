@@ -36,6 +36,7 @@
     "@tanstack/react-query": "^4.18.0",
     "@tanstack/zod-form-adapter": "^0.28.0",
     "@tiptap/core": "^2.6.6",
+    "@tiptap/extension-link": "^2.9.1",
     "@tiptap/pm": "^2.6.6",
     "@tiptap/react": "^2.6.6",
     "@trpc/client": "^10.45.2",
