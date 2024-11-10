@@ -115,8 +115,13 @@ export function getOrCreate_ATOM_parseResult(id: string) {
  *   used for computing defuse edges.
  * - The final field is the actual pod where this symbol is defined. It is used
  *   for rewriting code.
+ * - The type field is optional and is only used in selfSt to show the function
+ *   mark in the UI.
  */
-type SymbolTable = Map<string, { immediate: string; final: string }>;
+type SymbolTable = Map<
+  string,
+  { immediate: string; final: string; type?: string }
+>;
 
 // ---- private symbol table
 const id2_ATOM_privateST = new Map<string, PrimitiveAtom<SymbolTable>>();
