@@ -34,6 +34,44 @@ spec:
     requests:
       storage: 1Gi
 
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: longhorn-replica-1
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+parameters:
+  numberOfReplicas: "1"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-public
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn-replica-1
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-pip-cache
+  namespace: "{{ .Release.Namespace }}-runtime"
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn-replica-1
+  resources:
+    requests:
+      storage: 10Gi
+
 # These deployment is for pulling in the kernel images
 ---
 apiVersion: apps/v1

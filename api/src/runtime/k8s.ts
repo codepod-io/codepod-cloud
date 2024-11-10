@@ -59,6 +59,20 @@ function getDeploymentSpec({
             {
               name: `rt-${repoId}-${kernelName}`,
               image,
+              command: [
+                "sh",
+                "-c",
+                // 1GiB memory limit
+                // "ulimit -v 1024000; /run.sh",
+                //
+                // set ulimit to 8GiB
+                // "ulimit -v 8192000; /run.sh",
+                //
+                // set ulimit to 40GiB
+                // "ulimit -v 40960000; /run.sh",
+                //
+                `ulimit -v ${myenv.KERNEL_ULIMIT_MEMORY}; /run.sh`,
+              ],
               ports: [
                 // These are pre-defined in kernel/conn.json
                 { containerPort: 55692 },
@@ -72,12 +86,22 @@ function getDeploymentSpec({
                   name: "myvolume",
                   mountPath: "/mnt/data",
                 },
+                {
+                  name: "pip-cache",
+                  mountPath: "/root/.cache/pip",
+                },
+                {
+                  name: "public",
+                  mountPath: "/mnt/public",
+                  readOnly: true,
+                },
               ],
               resources: {
-                limits: {
-                  memory: "2560Mi",
-                  cpu: "1",
-                },
+                // This k8s limit is larger than the ulimit, and won't be hit.
+                // limits: {
+                //   memory: "40Gi",
+                //   cpu: "4",
+                // },
                 requests: {
                   memory: "128Mi",
                   cpu: "0.2",
@@ -90,6 +114,18 @@ function getDeploymentSpec({
               name: "myvolume",
               persistentVolumeClaim: {
                 claimName: `vol-${userId}`,
+              },
+            },
+            {
+              name: "pip-cache",
+              persistentVolumeClaim: {
+                claimName: "pvc-pip-cache",
+              },
+            },
+            {
+              name: "public",
+              persistentVolumeClaim: {
+                claimName: "pvc-public",
               },
             },
           ],
