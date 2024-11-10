@@ -47,11 +47,11 @@ function getDebouncedCallback(key) {
           console.log("debounced callback for", key);
           cb();
         },
-        // write if no new activity in 10s
-        10000,
+        // write if no new activity in 1s
+        1000,
         {
-          // write at least every 20s
-          maxWait: 20000,
+          // write at least every 2s
+          maxWait: 2000,
         }
       )
     );
