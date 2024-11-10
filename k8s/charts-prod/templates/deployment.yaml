@@ -246,7 +246,7 @@ metadata:
   labels:
     app: codepod-yjs
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: codepod-yjs
