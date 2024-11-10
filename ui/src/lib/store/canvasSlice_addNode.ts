@@ -5,6 +5,7 @@ import {
   ATOM_codeMap,
   ATOM_edgesMap,
   ATOM_nodesMap,
+  ATOM_resultMap,
   ATOM_richMap,
 } from "./yjsSlice";
 import { match } from "ts-pattern";
@@ -13,6 +14,7 @@ import {
   AppNode,
   CodeNodeType,
   RichNodeType,
+  ScopeNodeType,
   SubpageRefNodeType,
 } from "./types";
 
@@ -20,7 +22,11 @@ import { getAbsPos, getRelativePos, updateView } from "./canvasSlice";
 import { SupportedLanguage } from "./types";
 import { toast } from "react-toastify";
 import { ATOM_currentPage } from "./atom";
-import { blocksToYXmlFragment, yXmlFragmentToBlocks } from "./blockNoteUtils";
+import {
+  blocksToYXmlFragment,
+  markdownToYXml,
+  yXmlFragmentToBlocks,
+} from "./blockNoteUtils";
 import { MANUAL_EDGE } from "@/components/Canvas";
 import { propagateAllST, resolveAllPods } from "./runtimeSlice";
 
@@ -767,3 +773,148 @@ async function pasteScope(get: Getter, set: Setter, position: XYPosition) {
 }
 
 export const ATOM_pasteScope = atom(null, pasteScope);
+
+async function importLocalCode(
+  get: Getter,
+  set: Setter,
+  {
+    position,
+    scopeId,
+    subpageId,
+    cellList,
+  }: {
+    position: XYPosition;
+    scopeId?: string;
+    subpageId?: string;
+    cellList: any[];
+  }
+) {
+  const currentPage = get(ATOM_currentPage);
+
+  const nodesMap = get(ATOM_nodesMap);
+  const newScopeId = myNanoId();
+  let scopeNode: ScopeNodeType = {
+    id: newScopeId,
+    type: "SCOPE",
+    position: position,
+    dragHandle: ".custom-drag-handle",
+    parentId: scopeId,
+    data: {
+      childrenIds: [],
+      mywidth: 50 + 450 * cellList.length,
+      myheight: 500,
+      subpageId: subpageId ?? currentPage,
+    },
+  };
+
+  nodesMap.set(scopeNode.id, scopeNode);
+
+  let maxLineLength = 0;
+  if (cellList.length > 0) {
+    for (let i = 0; i < cellList.length; i++) {
+      const cell = cellList[i];
+      let newPos = {
+        x: 50 + i * 450,
+        y: 100,
+      };
+
+      switch (cell.cellType) {
+        case "code":
+          {
+            const id = myNanoId();
+            const node: CodeNodeType = {
+              id,
+              type: "CODE",
+              position: newPos,
+              dragHandle: ".custom-drag-handle",
+              parentId: newScopeId,
+              data: {
+                lang: "python",
+                mywidth: 400,
+                subpageId: subpageId ?? currentPage,
+              },
+            };
+            // maxLineLength = Math.max(
+            //   maxLineLength,
+            //   Math.max(...podContent.split(/\r?\n/).map((line) => line.length))
+            // );
+            get(ATOM_codeMap).set(id, new Y.Text(cell.cellSource));
+            nodesMap.set(id, node);
+            // execution results
+            let execution_count = cell.execution_count || null;
+            let podResults: {
+              type: string;
+              html?: string;
+              text?: string;
+              image?: string;
+            }[] = [];
+            let podError = { ename: "", evalue: "", stacktrace: [] };
+            for (const cellOutput of cell.cellOutputs) {
+              switch (cellOutput["output_type"]) {
+                case "stream":
+                  podResults.push({
+                    // "stream_stdout" or "stream_stderr"
+                    type: `${cellOutput["output_type"]}_${cellOutput["name"]}`,
+                    text: cellOutput["text"].join(""),
+                  });
+                  break;
+                case "execute_result":
+                  podResults.push({
+                    type: cellOutput["output_type"],
+                    text: cellOutput["data"]["text/plain"].join(""),
+                  });
+                  break;
+                case "display_data":
+                  podResults.push({
+                    type: cellOutput["output_type"],
+                    text: cellOutput["data"]["text/plain"].join(""),
+                    image: cellOutput["data"]["image/png"],
+                  });
+                  break;
+                case "error":
+                  podError.ename = cellOutput["ename"];
+                  podError.evalue = cellOutput["evalue"];
+                  podError.stacktrace = cellOutput["traceback"];
+                  break;
+                default:
+                  break;
+              }
+            }
+            const resultMap = get(ATOM_resultMap);
+            resultMap.set(id, {
+              exec_count: execution_count,
+              data: podResults,
+              error: podError,
+            });
+          }
+          break;
+        case "markdown":
+          {
+            const id = myNanoId();
+            const node: RichNodeType = {
+              id,
+              type: "RICH",
+              position: newPos,
+              dragHandle: ".custom-drag-handle",
+              parentId: newScopeId,
+              data: {
+                mywidth: 400,
+                subpageId: subpageId ?? currentPage,
+              },
+            };
+            const yxml = await markdownToYXml(cell.cellSource);
+            get(ATOM_richMap).set(id, yxml);
+            nodesMap.set(id, node);
+          }
+          break;
+        default:
+          console.log("Unsupported cell type", cell.cellType);
+          myassert(false);
+      }
+    }
+  }
+  computeHierarchy(get, set);
+  updateView(get, set);
+}
+
+export const ATOM_importLocalCode = atom(null, importLocalCode);
