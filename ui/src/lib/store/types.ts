@@ -35,7 +35,7 @@ export type RichNodeData = CommonData & {};
 
 export type CodeNodeType = Node<CodeNodeData, "CODE">;
 export type RichNodeType = Node<RichNodeData, "RICH">;
-type ScopeNodeType = Node<
+export type ScopeNodeType = Node<
   CommonData & {
     childrenIds: string[];
     folded?: boolean;

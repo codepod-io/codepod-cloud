@@ -55,6 +55,7 @@ function rewriteCode(id: string, get: Getter): string | null {
   // if (get(ATOM_disableCodeRewrite)) {
   //   return code;
   // }
+  // DEBUG disable code rewrite for racket, before we convert all syntax to procedures.
   // return code;
   // replace with symbol table
   let newcode = "";

@@ -10,7 +10,7 @@ import {
 
 import { Box, Button, DropdownMenu } from "@radix-ui/themes";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ATOM_nodes } from "@/lib/store/canvasSlice";
+import { ATOM_nodes, ATOM_updateView } from "@/lib/store/canvasSlice";
 import {
   FileUp,
   NotebookPen,
@@ -32,21 +32,42 @@ import {
   ATOM_deleteEdge,
   ATOM_deleteSelection,
   ATOM_duplicateSelection,
+  ATOM_importLocalCode,
   ATOM_pasteScope,
 } from "@/lib/store/canvasSlice_addNode";
 import { myassert } from "@/lib/utils/utils";
 import { ATOM_nodesMap, ATOM_subpages } from "@/lib/store/yjsSlice";
 import { AppNode } from "@/lib/store/types";
+import {
+  ATOM_parseAllPods,
+  ATOM_propagateAllST,
+  ATOM_resolveAllPods,
+} from "@/lib/store/runtimeSlice";
 
 export function useUpload() {
   const nodes = useAtom(ATOM_nodes);
 
-  const handleFileInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  const importLocalCode = useSetAtom(ATOM_importLocalCode);
+  const parseAllPods = useSetAtom(ATOM_parseAllPods);
+  const propagateAllSt = useSetAtom(ATOM_propagateAllST);
+  const resolveAllPods = useSetAtom(ATOM_resolveAllPods);
+  const updateView = useSetAtom(ATOM_updateView);
+
+  const handleFileInputChange = async (
+    e: ChangeEvent<HTMLInputElement>,
+    {
+      scopeId,
+      position,
+    }: {
+      scopeId?: string;
+      position: XYPosition;
+    }
+  ) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const fileName = e.target.files[0].name;
     console.log("Import Jupyter Notebook or Python scripts: ", fileName);
     const fileReader = new FileReader();
-    fileReader.onload = (e) => {
+    fileReader.onload = async (e) => {
       const fileContent =
         typeof e.target!.result === "string"
           ? e.target!.result
@@ -70,12 +91,11 @@ export function useUpload() {
           return;
       }
 
-      // TODO enable this on new Tree layout.
-      // importLocalCode(
-      //   project({ x: client.x, y: client.y }),
-      //   importScopeName,
-      //   cellList
-      // );
+      importLocalCode({ scopeId, position, cellList });
+      await parseAllPods();
+      propagateAllSt();
+      resolveAllPods();
+      updateView();
     };
     fileReader.readAsText(e.target.files[0], "UTF-8");
   };
@@ -163,7 +183,7 @@ export function usePaneContextMenu() {
         accept=".ipynb, .py"
         ref={fileInputRef}
         style={{ display: "none" }}
-        onChange={(e) => handleFileInputChange(e)}
+        onChange={(e) => handleFileInputChange(e, { scopeId, position })}
       />
       {showContextMenu && (
         <DropdownMenu.Root

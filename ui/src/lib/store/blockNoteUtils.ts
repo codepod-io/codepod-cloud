@@ -40,7 +40,7 @@ export function blocksToYXmlFragment(
   );
 }
 
-async function markdownToYXml(markdown: string) {
+export async function markdownToYXml(markdown: string) {
   const blocks = await editor.tryParseMarkdownToBlocks(markdown);
   return blocksToYXmlFragment(blocks);
 }
