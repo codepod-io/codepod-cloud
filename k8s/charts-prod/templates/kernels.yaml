@@ -105,7 +105,7 @@ spec:
               cpu: "1"
             requests:
               memory: 128Mi
-              cpu: "0.2"
+              cpu: "0.02"
           volumeMounts:
             - name: myvolume
               mountPath: /mnt/data
@@ -147,7 +147,7 @@ spec:
               cpu: "1"
             requests:
               memory: 128Mi
-              cpu: "0.2"
+              cpu: "0.02"
           volumeMounts:
             - name: myvolume
               mountPath: /mnt/data
@@ -189,7 +189,7 @@ spec:
               cpu: "1"
             requests:
               memory: 128Mi
-              cpu: "0.2"
+              cpu: "0.02"
           volumeMounts:
             - name: myvolume
               mountPath: /mnt/data
@@ -231,7 +231,7 @@ spec:
               cpu: "1"
             requests:
               memory: 128Mi
-              cpu: "0.2"
+              cpu: "0.02"
           volumeMounts:
             - name: myvolume
               mountPath: /mnt/data
